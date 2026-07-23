@@ -34,7 +34,7 @@ Zwei Teile im bestehenden Repo:
 | `GET /api/pages/{page_id}` | Words-JSON (`width`, `height`, `words[]`) plus `tags[]` aus `data/labeled/`, falls vorhanden |
 | `GET /api/pages/{page_id}/image` | PNG aus `data/images/` |
 | `GET /api/evaluation` | Inhalte aller `data/eval/*.json`, gruppiert nach Variante und Split; `[]` wenn leer |
-| `POST /api/inference` | PDF-Upload → `{width, height, words[], tags[]}`; `503` mit Meldung, wenn kein Checkpoint unter `checkpoints/layoutxlm/best` existiert |
+| `POST /api/inference` | PDF-Upload → `{width, height, words[], tags[], image_b64}` (Seiten-PNG als Base64, weil das Bild bei einem Upload nirgends auf der Platte liegt); `503` mit Meldung, wenn kein Checkpoint unter `checkpoints/layoutxlm/best` existiert |
 
 Fehlerverhalten: unbekannte `page_id` → 404. Leere Verzeichnisse sind kein
 Fehler, sondern liefern leere Listen — die Empty States sind Sache des Frontends.
