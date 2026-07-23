@@ -31,7 +31,8 @@ describe("InspectorPage", () => {
       "/api/pages": [{ page_id: "462828_p3", catalog: "462828", labeled: true }],
     })
     renderWithProviders(<InspectorPage />)
-    await userEvent.click(await screen.findByText("462828_p3"))
+    // Die Liste zeigt nur den Seitenteil ("p3") unter dem Katalog-Gruppenkopf.
+    await userEvent.click(await screen.findByText("p3"))
     expect(await screen.findByText("Rinderhackfleisch")).toBeInTheDocument()
     expect(screen.getByText("3.99")).toBeInTheDocument()
   })

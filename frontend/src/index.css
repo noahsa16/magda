@@ -128,3 +128,45 @@
     @apply font-sans;
     }
 }
+
+/* --- Scan-Reveal (Demo): Scanlinie fährt über die Seite, Boxen erscheinen
+       gestaffelt dahinter – Motion, die zeigt, was das Modell tut. --- */
+
+@keyframes scanline {
+  from { top: 0; opacity: 1; }
+  90%  { opacity: 1; }
+  to   { top: 100%; opacity: 0; }
+}
+
+.scanline {
+  animation: scanline 1.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes box-reveal {
+  from { opacity: 0; transform: scale(0.85); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+.box-reveal {
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: box-reveal 0.35s ease-out forwards;
+  /* Verzögerung pro Box via --reveal-delay (nach y-Position sortiert) */
+  animation-delay: var(--reveal-delay, 0s);
+}
+
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.fade-up {
+  animation: fade-up 0.4s ease-out both;
+  animation-delay: var(--reveal-delay, 0s);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scanline { animation: none; opacity: 0; }
+  .box-reveal, .fade-up { animation: none; opacity: 1; transform: none; }
+}

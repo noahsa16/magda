@@ -1,7 +1,6 @@
 import { useMemo, useState } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
-import { ScrollArea } from "@/components/ui/scroll-area"
 import { cn } from "@/lib/utils"
 import type { PageSummary } from "@/lib/types"
 
@@ -23,30 +22,42 @@ export function PageList({ pages, selected, onSelect }: PageListProps) {
     return [...groups.entries()]
   }, [pages, query])
 
+  const labeledCount = pages.filter((p) => p.labeled).length
+
   return (
-    <div className="flex h-full flex-col gap-2">
+    <div className="flex min-w-0 flex-col gap-2">
       <Input
         placeholder="Seite suchen…"
         value={query}
         onChange={(e) => setQuery(e.target.value)}
       />
-      <ScrollArea className="h-[70vh]">
+      <p className="px-1 text-xs text-muted-foreground">
+        {labeledCount} von {pages.length} Seiten gelabelt
+      </p>
+      <div className="min-h-0 overflow-y-auto" style={{ maxHeight: "72vh" }}>
         {byCatalog.map(([catalog, catalogPages]) => (
           <div key={catalog} className="mb-3">
-            <p className="px-2 py-1 font-mono text-xs text-muted-foreground">{catalog}</p>
-            <ul>
+            <p className="sticky top-0 bg-background px-2 py-1 font-mono text-xs text-muted-foreground">
+              Katalog {catalog}
+            </p>
+            <ul className="space-y-0.5">
               {catalogPages.map((p) => (
                 <li key={p.page_id}>
                   <button
                     type="button"
                     className={cn(
-                      "flex w-full items-center justify-between rounded px-2 py-1 text-left text-sm hover:bg-accent",
+                      "flex w-full min-w-0 items-center justify-between gap-2 rounded-md px-2 py-1 text-left text-sm transition-colors hover:bg-accent",
                       selected === p.page_id && "bg-accent font-medium",
                     )}
                     onClick={() => onSelect(p.page_id)}
                   >
-                    <span className="font-mono">{p.page_id}</span>
-                    <Badge variant={p.labeled ? "default" : "outline"}>
+                    <span className="min-w-0 truncate font-mono text-[13px]">
+                      {p.page_id.split("_")[1] ?? p.page_id}
+                    </span>
+                    <Badge
+                      variant={p.labeled ? "default" : "outline"}
+                      className="shrink-0 text-[10px]"
+                    >
                       {p.labeled ? "gelabelt" : "offen"}
                     </Badge>
                   </button>
@@ -55,7 +66,7 @@ export function PageList({ pages, selected, onSelect }: PageListProps) {
             </ul>
           </div>
         ))}
-      </ScrollArea>
+      </div>
     </div>
   )
 }

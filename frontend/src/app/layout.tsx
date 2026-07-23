@@ -6,9 +6,12 @@ export function Layout() {
   return (
     <SidebarProvider>
       <AppSidebar />
-      <main className="flex-1 p-6">
+      {/* min-w-0: sonst können Grids in den Seiten breiter als der Viewport werden */}
+      <main className="min-w-0 flex-1 p-6">
         <SidebarTrigger className="mb-4 md:hidden" />
-        <Outlet />
+        <div className="mx-auto max-w-6xl">
+          <Outlet />
+        </div>
       </main>
     </SidebarProvider>
   )

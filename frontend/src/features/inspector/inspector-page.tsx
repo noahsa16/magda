@@ -5,6 +5,7 @@ import { EntityList } from "@/components/entity-list"
 import { PageOverlay } from "@/components/page-overlay"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Skeleton } from "@/components/ui/skeleton"
+import { groupEntities } from "@/lib/bio"
 import { api } from "@/lib/api"
 import { PageList } from "./page-list"
 
@@ -48,55 +49,74 @@ export function InspectorPage() {
     )
   }
 
-  return (
-    <div className="grid grid-cols-[240px_1fr_280px] gap-4">
-      <PageList
-        pages={pages.data ?? []}
-        selected={selected}
-        onSelect={(id) => {
-          setHighlight(null)
-          setSearchParams({ page: id })
-        }}
-      />
+  const entityCount =
+    page.data?.tags ? groupEntities(page.data.words, page.data.tags).length : null
 
-      <div>
-        {!selected && (
-          <p className="mt-12 text-center text-muted-foreground">Seite links auswählen.</p>
-        )}
-        {selected && page.isPending && <Skeleton className="aspect-[595/842] w-full" />}
+  return (
+    <div className="flex min-w-0 flex-col gap-4">
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <h1 className="text-2xl font-semibold">Label-Inspektor</h1>
         {selected && page.data && (
-          <PageOverlay
-            imageUrl={api.pageImageUrl(selected)}
-            width={page.data.width}
-            height={page.data.height}
-            words={page.data.words}
-            tags={page.data.tags}
-            entityTypes={entityTypes}
-            visibleTypes={visibleTypes}
-            highlight={highlight}
-          />
+          <p className="font-mono text-sm text-muted-foreground">
+            {selected} · {page.data.words.length} Wörter
+            {entityCount != null && <> · {entityCount} Entities</>}
+          </p>
         )}
       </div>
 
-      <div>
-        {selected && page.data && page.data.tags && (
-          <EntityList
-            words={page.data.words}
-            tags={page.data.tags}
-            entityTypes={entityTypes}
-            visibleTypes={visibleTypes}
-            onToggleType={toggleType}
-            onSelect={setHighlight}
+      <div className="grid min-w-0 gap-4 lg:grid-cols-[220px_minmax(0,1fr)_280px]">
+        <div className="min-w-0">
+          <PageList
+            pages={pages.data ?? []}
+            selected={selected}
+            onSelect={(id) => {
+              setHighlight(null)
+              setSearchParams({ page: id })
+            }}
           />
-        )}
-        {selected && page.data && !page.data.tags && (
-          <Alert>
-            <AlertTitle>Noch nicht gelabelt</AlertTitle>
-            <AlertDescription>
-              <code>python scripts/03_label_words.py</code> erzeugt die Labels.
-            </AlertDescription>
-          </Alert>
-        )}
+        </div>
+
+        <div className="min-w-0">
+          {!selected && (
+            <div className="flex h-64 items-center justify-center rounded-lg border border-dashed">
+              <p className="text-muted-foreground">Seite links auswählen.</p>
+            </div>
+          )}
+          {selected && page.isPending && <Skeleton className="aspect-[595/842] w-full" />}
+          {selected && page.data && (
+            <PageOverlay
+              imageUrl={api.pageImageUrl(selected)}
+              width={page.data.width}
+              height={page.data.height}
+              words={page.data.words}
+              tags={page.data.tags}
+              entityTypes={entityTypes}
+              visibleTypes={visibleTypes}
+              highlight={highlight}
+            />
+          )}
+        </div>
+
+        <div className="min-w-0 lg:sticky lg:top-6 lg:self-start">
+          {selected && page.data && page.data.tags && (
+            <EntityList
+              words={page.data.words}
+              tags={page.data.tags}
+              entityTypes={entityTypes}
+              visibleTypes={visibleTypes}
+              onToggleType={toggleType}
+              onSelect={setHighlight}
+            />
+          )}
+          {selected && page.data && !page.data.tags && (
+            <Alert>
+              <AlertTitle>Noch nicht gelabelt</AlertTitle>
+              <AlertDescription>
+                <code>python scripts/03_label_words.py</code> erzeugt die Labels.
+              </AlertDescription>
+            </Alert>
+          )}
+        </div>
       </div>
     </div>
   )
