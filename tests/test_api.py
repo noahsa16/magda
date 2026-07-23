@@ -104,3 +104,46 @@ def test_page_image(client):
 
 def test_page_image_404(client):
     assert client.get("/api/pages/nope_p1/image").status_code == 404
+
+
+def test_evaluation_leer(client):
+    assert client.get("/api/evaluation").json() == []
+
+
+def test_evaluation_liefert_reports(client):
+    report = {
+        "variant": "layoutxlm",
+        "split": "test",
+        "num_pages": 12,
+        "created": "2026-07-23T12:00:00",
+        "report": {"PRODUCT": {"precision": 0.9, "recall": 0.8, "f1-score": 0.85, "support": 40}},
+    }
+    with open(config.EVAL_DIR / "layoutxlm_test.json", "w") as f:
+        json.dump(report, f)
+
+    body = client.get("/api/evaluation").json()
+
+    assert len(body) == 1
+    assert body[0]["variant"] == "layoutxlm"
+
+
+@pytest.fixture
+def clean_model_cache(monkeypatch):
+    monkeypatch.setattr(api, "_MODEL_CACHE", {})
+
+
+def test_inference_ohne_checkpoint_ist_503(client, clean_model_cache):
+    resp = client.post(
+        "/api/inference",
+        files={"file": ("seite.pdf", b"%PDF-fake", "application/pdf")},
+    )
+    assert resp.status_code == 503
+    assert "04_train" in resp.json()["detail"]
+
+
+def test_inference_lehnt_nicht_pdf_ab(client, clean_model_cache):
+    resp = client.post(
+        "/api/inference",
+        files={"file": ("bild.png", b"\x89PNG", "image/png")},
+    )
+    assert resp.status_code == 400

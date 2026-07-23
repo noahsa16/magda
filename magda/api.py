@@ -8,13 +8,15 @@ Pfade werden bewusst als config.X-Attribute zur Laufzeit gelesen (nicht
 importiert), damit die Tests sie auf ein Temp-Verzeichnis umbiegen können.
 """
 
+import base64
 import json
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, UploadFile
 from fastapi.responses import FileResponse
 
 from magda import config
-from magda.labels import ENTITY_TYPES
+from magda.labels import ENTITY_TYPES, id2label
+from magda.ocr import extract_words, normalize_bbox, render_png
 
 app = FastAPI(title="Magda API")
 
@@ -94,3 +96,79 @@ def get_page_image(page_id: str):
     if not image_file.exists():
         raise HTTPException(404, f"Kein Bild für Seite: {page_id}")
     return FileResponse(image_file, media_type="image/png")
+
+
+@app.get("/api/evaluation")
+def get_evaluation():
+    reports = []
+    for f in sorted(config.EVAL_DIR.glob("*.json")):
+        with open(f) as fh:
+            reports.append(json.load(fh))
+    return reports
+
+
+# Modell + Tokenizer sind teuer zu laden – einmal laden, dann wiederverwenden.
+# Tests leeren den Cache über monkeypatch.
+_MODEL_CACHE: dict = {}
+
+
+def _load_model():
+    if "model" not in _MODEL_CACHE:
+        model_dir = config.CHECKPOINTS_DIR / "layoutxlm" / "best"
+        if not model_dir.exists():
+            raise HTTPException(
+                503,
+                "Kein trainiertes Modell unter checkpoints/layoutxlm/best. "
+                "Erst python scripts/04_train.py layoutxlm laufen lassen.",
+            )
+        # Import erst hier: torch/transformers sind schwer und für die
+        # reinen Daten-Endpoints unnötig.
+        from transformers import AutoModelForTokenClassification, AutoTokenizer
+
+        _MODEL_CACHE["tokenizer"] = AutoTokenizer.from_pretrained(config.LAYOUT_MODEL)
+        _MODEL_CACHE["model"] = AutoModelForTokenClassification.from_pretrained(model_dir).eval()
+    return _MODEL_CACHE["tokenizer"], _MODEL_CACHE["model"]
+
+
+@app.post("/api/inference")
+def run_inference(file: UploadFile):
+    if not (file.filename or "").lower().endswith(".pdf"):
+        raise HTTPException(400, "Nur einseitige PDF-Dateien werden unterstützt.")
+
+    tokenizer, model = _load_model()
+
+    pdf_bytes = file.file.read()
+    try:
+        page = extract_words(pdf_bytes)
+    except Exception:
+        raise HTTPException(400, "PDF konnte nicht gelesen werden.")
+    if not page["words"]:
+        raise HTTPException(
+            422, "Kein Textlayer gefunden – reine Bild-PDFs werden nicht unterstützt (kein OCR)."
+        )
+
+    import torch
+
+    # Encoding exakt wie in dataset.LayoutDataset, nur ohne Labels/Padding.
+    words = [w["text"] for w in page["words"]]
+    boxes = [normalize_bbox(w["bbox"], page["width"], page["height"]) for w in page["words"]]
+    enc = tokenizer(
+        words, boxes=boxes, truncation=True,
+        max_length=config.MAX_SEQ_LENGTH, return_tensors="pt",
+    )
+    with torch.no_grad():
+        logits = model(**enc).logits[0]
+    pred_ids = logits.argmax(-1).tolist()
+
+    # Erstes Subword trägt die Prediction (Konvention aus alignment.py);
+    # abgeschnittene Wörter (>512 Subwords) bleiben "O".
+    tags = ["O"] * len(words)
+    seen: set[int] = set()
+    for token_idx, word_id in enumerate(enc.word_ids()):
+        if word_id is not None and word_id not in seen:
+            seen.add(word_id)
+            tags[word_id] = id2label[pred_ids[token_idx]]
+
+    page["tags"] = tags
+    page["image_b64"] = base64.b64encode(render_png(pdf_bytes)).decode("ascii")
+    return page
