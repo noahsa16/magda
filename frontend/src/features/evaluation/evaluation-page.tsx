@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query"
 import { useState } from "react"
+import { Link } from "react-router-dom"
 import {
   Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, XAxis, YAxis,
 } from "recharts"
@@ -41,39 +42,47 @@ export function EvaluationPage() {
   const delta = gbert != null && layoutxlm != null ? layoutxlm - gbert : null
   const rows = perEntityRows(data, metric)
 
+  const missing = layoutxlm == null || gbert == null
+
   return (
-    <div className="space-y-6">
-      <h1 className="font-display text-3xl tracking-tight">Evaluation</h1>
+    <div className="mx-auto max-w-5xl space-y-6">
+      <h1 className="text-3xl font-extrabold tracking-tight">Evaluation</h1>
 
       <div className="grid gap-4 sm:grid-cols-3">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">GBERT (nur Text) · F1</CardTitle>
-          </CardHeader>
-          <CardContent><span className="text-3xl font-semibold tabular-nums">{fmt(gbert)}</span></CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">LayoutXLM (Text + Layout) · F1</CardTitle>
-          </CardHeader>
-          <CardContent><span className="text-3xl font-semibold tabular-nums">{fmt(layoutxlm)}</span></CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Layout-Gewinn (Δ F1)</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {/* Der Layout-Gewinn ist DAS Ergebnis des Projekts – Coral, wenn positiv */}
-            <span className={`text-3xl font-semibold tabular-nums ${delta != null && delta > 0 ? "text-primary" : ""}`}>
-              {delta == null ? "–" : `${delta >= 0 ? "+" : ""}${delta.toFixed(3)}`}
-            </span>
-          </CardContent>
-        </Card>
+        <div className="plate rounded-lg border-2 border-foreground bg-card p-4">
+          <p className="font-mono text-[11px] uppercase tracking-widest text-muted-foreground">
+            GBERT · nur Text
+          </p>
+          <p className="mt-1 text-4xl font-extrabold tabular-nums">{fmt(gbert)}</p>
+        </div>
+        <div className="plate rounded-lg border-2 border-foreground bg-card p-4">
+          <p className="font-mono text-[11px] uppercase tracking-widest text-muted-foreground">
+            LayoutXLM · Text + Layout
+          </p>
+          <p className="mt-1 text-4xl font-extrabold tabular-nums">{fmt(layoutxlm)}</p>
+        </div>
+        <div className="plate-pink rounded-lg border-2 border-foreground bg-card p-4">
+          <p className="font-mono text-[11px] uppercase tracking-widest text-muted-foreground">
+            Layout-Gewinn · Δ F1
+          </p>
+          {/* Die Differenz ist das Ergebnis des Projekts – im Signalton. */}
+          <p className={`mt-1 text-4xl font-extrabold tabular-nums ${delta != null && delta > 0 ? "text-primary" : ""}`}>
+            {delta == null ? "–" : `${delta >= 0 ? "+" : ""}${delta.toFixed(3)}`}
+          </p>
+        </div>
       </div>
 
-      <Card>
+      {missing && (
+        <p className="rounded-md border-2 border-dashed border-foreground/30 px-4 py-3 text-sm text-muted-foreground">
+          Erst ein Modell ausgewertet – der Vergleich braucht beide. Die fehlende Variante
+          startest du auf der{" "}
+          <Link to="/" className="font-medium underline underline-offset-2">Übersicht</Link>.
+        </p>
+      )}
+
+      <Card className="border-2 border-foreground">
         <CardHeader className="flex-row items-center justify-between">
-          <CardTitle>{METRIC_LABELS[metric]} pro Entity-Typ</CardTitle>
+          <CardTitle className="font-bold">{METRIC_LABELS[metric]} pro Entity-Typ</CardTitle>
           <Tabs value={metric} onValueChange={(v) => setMetric(v as MetricKey)}>
             <TabsList>
               {(Object.keys(METRIC_LABELS) as MetricKey[]).map((k) => (
@@ -89,17 +98,17 @@ export function EvaluationPage() {
               <XAxis dataKey="entity" tick={{ fontSize: 12 }} />
               <YAxis domain={[0, 1]} tick={{ fontSize: 12 }} />
               <Legend />
-              <Bar dataKey="gbert" name="GBERT" fill="#B8B2A6" radius={[3, 3, 0, 0]} />
-              <Bar dataKey="layoutxlm" name="LayoutXLM" fill="#C96442" radius={[3, 3, 0, 0]} />
+              <Bar dataKey="gbert" name="GBERT" fill="#8E97A8" radius={[2, 2, 0, 0]} />
+              <Bar dataKey="layoutxlm" name="LayoutXLM" fill="#2951E8" radius={[2, 2, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </CardContent>
       </Card>
 
       {data.map((r) => (
-        <Card key={`${r.variant}-${r.split}`}>
+        <Card key={`${r.variant}-${r.split}`} className="border-2 border-foreground">
           <CardHeader>
-            <CardTitle className="text-base">
+            <CardTitle className="font-mono text-sm font-semibold">
               {r.variant} · {r.split}-Split · {r.num_pages} Seiten · {r.created}
             </CardTitle>
           </CardHeader>

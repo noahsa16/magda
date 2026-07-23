@@ -11,7 +11,7 @@ function Sparkline({ history }: { history: ModelStatus["history"] }) {
     .map((v, i) => `${(i / (values.length - 1)) * 100},${28 - (v / max) * 26}`)
     .join(" ")
   return (
-    <svg viewBox="0 0 100 28" preserveAspectRatio="none" className="h-8 w-full">
+    <svg viewBox="0 0 100 28" preserveAspectRatio="none" className="mt-3 h-10 w-full border-b border-border">
       <polyline
         points={points}
         fill="none"
@@ -23,17 +23,25 @@ function Sparkline({ history }: { history: ModelStatus["history"] }) {
   )
 }
 
-export function ModelStatusCard({ status }: { status: ModelStatus | undefined }) {
+export function ModelStatusCard({
+  status, active = false,
+}: { status: ModelStatus | undefined; active?: boolean }) {
   if (!status) return null
 
   const progress =
     status.steps && status.max_steps ? Math.round((status.steps / status.max_steps) * 100) : null
 
   return (
-    <div className="plate rounded-lg border-2 border-foreground bg-card p-4">
+    <div
+      className={cn(
+        "rounded-lg border-2 bg-card p-4",
+        active ? "plate-pink border-foreground" : "border-border",
+      )}
+    >
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <p className="font-mono text-[11px] uppercase tracking-widest text-muted-foreground">
-          Modellstand · layoutxlm
+          {status.variant}
+          {active && <span className="text-primary"> · rechnet hier</span>}
         </p>
         <span
           className={cn(
@@ -50,7 +58,7 @@ export function ModelStatusCard({ status }: { status: ModelStatus | undefined })
       {!status.trained && (
         <p className="mt-2 text-sm text-muted-foreground">
           Für die Extraktion braucht es einen Checkpoint unter{" "}
-          <code className="font-mono text-xs">checkpoints/layoutxlm/best</code>. Das Training
+          <code className="font-mono text-xs">checkpoints/{status.variant}/best</code>. Das Training
           startest du auf der <Link to="/" className="underline underline-offset-2">Übersicht</Link>.
         </p>
       )}
@@ -82,9 +90,9 @@ export function ModelStatusCard({ status }: { status: ModelStatus | undefined })
             </div>
           </div>
           <Sparkline history={status.history} />
-          <p className="text-[11px] text-muted-foreground">
-            Dev-F1 auf Entity-Ebene über {status.history.length} Auswertungen. Die belastbare Zahl
-            steht in der <Link to="/evaluation" className="underline underline-offset-2">Evaluation</Link> –
+          <p className="mt-2 text-[11px] text-muted-foreground">
+            Dev-F1 über {status.history.length} Auswertungen. Die belastbare Zahl steht in der{" "}
+            <Link to="/evaluation" className="underline underline-offset-2">Evaluation</Link> –
             sie misst auf dem Test-Split.
           </p>
         </>

@@ -27,8 +27,20 @@ describe("stepStates", () => {
     expect(s["04_train"]).toBe("ready")
   })
 
-  it("erklärt Training und Evaluation erst mit Report für erledigt", () => {
-    const s = stepStates({ raw: 40, words: 40, images: 40, labeled: 40 }, [report])
+  it("bleibt bei nur einer Variante offen – der Vergleich fehlt noch", () => {
+    const full = { raw: 40, words: 40, images: 40, labeled: 40 }
+    const s = stepStates(full, [report], ["gbert"])
+    expect(s["04_train"]).toBe("ready")
+    expect(s["05_evaluate"]).toBe("ready")
+  })
+
+  it("ist erst mit beiden Varianten erledigt", () => {
+    const full = { raw: 40, words: 40, images: 40, labeled: 40 }
+    const s = stepStates(
+      full,
+      [report, { ...report, variant: "gbert" } as EvalReport],
+      ["layoutxlm", "gbert"],
+    )
     expect(s["04_train"]).toBe("done")
     expect(s["05_evaluate"]).toBe("done")
   })

@@ -48,12 +48,20 @@ export type StepState = "done" | "ready" | "blocked"
  * startbar, sobald sein Vorgänger Daten geliefert hat. Trainieren ohne
  * gelabelte Seiten ergibt keinen Lauf, den man abbrechen müsste – der Knopf
  * bleibt gesperrt.
+ *
+ * Training und Evaluation gelten erst mit *beiden* Varianten als erledigt:
+ * ein einzelnes Modell beantwortet die Forschungsfrage nicht, die lebt vom
+ * Vergleich.
  */
 export function stepStates(
   totals: PipelineStatus["totals"],
   reports: EvalReport[],
+  trainedVariants: string[] = [],
 ): Record<string, StepState> {
-  const trained = new Set(reports.map((r) => r.variant))
+  const VARIANTS = ["layoutxlm", "gbert"]
+  const bothTrained = VARIANTS.every((v) => trainedVariants.includes(v))
+  const evaluated = new Set<string>(reports.map((r) => r.variant))
+  const bothEvaluated = VARIANTS.every((v) => evaluated.has(v))
   return {
     "01_download_flyers": totals.raw > 0 ? "done" : "ready",
     "02_extract_words":
@@ -64,9 +72,20 @@ export function stepStates(
         : totals.words > 0
           ? "ready"
           : "blocked",
-    "04_train": trained.size > 0 ? "done" : totals.labeled > 0 ? "ready" : "blocked",
-    "05_evaluate": reports.length > 0 ? "done" : totals.labeled > 0 ? "ready" : "blocked",
+    "04_train": bothTrained ? "done" : totals.labeled > 0 ? "ready" : "blocked",
+    "05_evaluate": bothEvaluated ? "done" : totals.labeled > 0 ? "ready" : "blocked",
   }
+}
+
+/** Welche Varianten eines Schritts liegen schon vor? Markiert die Knöpfe. */
+export function doneVariants(
+  job: string,
+  reports: EvalReport[],
+  trainedVariants: string[],
+): Set<string> {
+  if (job === "04_train") return new Set<string>(trainedVariants)
+  if (job === "05_evaluate") return new Set<string>(reports.map((r) => r.variant))
+  return new Set<string>()
 }
 
 /** Fortschrittstext pro Schritt, z. B. "37 / 40 Seiten". */

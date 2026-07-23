@@ -3,9 +3,9 @@ import { Check, Loader2, Play, Square } from "lucide-react"
 import { useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { api } from "@/lib/api"
-import type { EvalReport, PipelineStatus } from "@/lib/types"
+import type { EvalReport, ModelStatus, PipelineStatus } from "@/lib/types"
 import { cn } from "@/lib/utils"
-import { STEPS, stepProgress, stepStates } from "./steps"
+import { STEPS, doneVariants, stepProgress, stepStates } from "./steps"
 
 function Console({ lines, running }: { lines: string[]; running: boolean }) {
   const endRef = useRef<HTMLDivElement>(null)
@@ -35,15 +35,19 @@ function Console({ lines, running }: { lines: string[]; running: boolean }) {
 }
 
 export function PipelineRunner({
-  totals, reports,
-}: { totals: PipelineStatus["totals"]; reports: EvalReport[] }) {
+  totals, reports, models,
+}: { totals: PipelineStatus["totals"]; reports: EvalReport[]; models: ModelStatus[] }) {
   const qc = useQueryClient()
 
   // Solange etwas läuft, alle 1,5 s nachfragen; danach schlafen lassen.
+  // refetchIntervalInBackground: ein Trainingslauf dauert Minuten, in denen
+  // der Tab im Hintergrund liegt – ohne das Flag pausiert das Polling und die
+  // Konsole steht still.
   const run = useQuery({
     queryKey: ["run"],
     queryFn: api.run,
     refetchInterval: (q) => (q.state.data?.running ? 1500 : false),
+    refetchIntervalInBackground: true,
   })
 
   const start = useMutation({
@@ -66,7 +70,8 @@ export function PipelineRunner({
     }
   }, [running, qc])
 
-  const states = stepStates(totals, reports)
+  const trainedVariants = models.filter((m) => m.trained).map((m) => m.variant)
+  const states = stepStates(totals, reports, trainedVariants)
   const busy = running || start.isPending
 
   return (
@@ -130,17 +135,26 @@ export function PipelineRunner({
                     <Square className="size-3.5" /> Stoppen
                   </Button>
                 ) : step.variants.length > 0 ? (
-                  step.variants.map((v) => (
-                    <Button
-                      key={v}
-                      variant="outline"
-                      size="sm"
-                      disabled={busy || state === "blocked"}
-                      onClick={() => start.mutate({ job: step.job, variant: v })}
-                    >
-                      <Play className="size-3.5" /> {v}
-                    </Button>
-                  ))
+                  step.variants.map((v) => {
+                    const done = doneVariants(step.job, reports, trainedVariants).has(v)
+                    return (
+                      <Button
+                        key={v}
+                        variant="outline"
+                        size="sm"
+                        disabled={busy || state === "blocked"}
+                        onClick={() => start.mutate({ job: step.job, variant: v })}
+                        title={done ? `${v} liegt vor – erneut laufen lassen` : `${v} starten`}
+                      >
+                        {done ? (
+                          <Check className="size-3.5 text-[var(--riso-blue)]" />
+                        ) : (
+                          <Play className="size-3.5" />
+                        )}
+                        {v}
+                      </Button>
+                    )
+                  })
                 ) : (
                   <Button
                     variant={state === "ready" ? "default" : "outline"}

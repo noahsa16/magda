@@ -25,6 +25,11 @@ Pipeline: `01_download_flyers` → `02_extract_words` → `03_label_words` →
 `04_train` → `05_evaluate`. Jeder Schritt liest vom Vorgänger über die Platte,
 nichts läuft im Speicher durch.
 
+Die Schritte lassen sich auch aus dem Frontend starten (`magda/runner.py`
+startet sie als Subprozess und streamt die Ausgabe an `/api/run`). Der Runner
+kennt nur die fünf Skripte und ihre erlaubten Varianten – kein Durchreichen
+beliebiger Kommandos.
+
 ## Kommandos
 
 ```bash
@@ -70,6 +75,9 @@ Skripte immer aus dem Projektroot starten – sie hängen den Root selbst an
   damit alle im Team auf denselben Testseiten evaluieren. Neu würfeln = löschen.
 - **`magda/blackbox.py` ist kein toter Code**, sondern der alte Prototyp. Er
   bleibt als Vergleichssystem für die Requirements-Stufe „Excellent".
+- **Der Trainingsverlauf steht nicht in `checkpoints/{variant}/best`.**
+  `trainer.save_model()` schreibt dort kein `trainer_state.json`; `/api/model`
+  liest deshalb den `checkpoint-N`-Ordner mit der höchsten Schrittzahl.
 
 ## Offene Entscheidungen (nicht eigenmächtig festlegen)
 

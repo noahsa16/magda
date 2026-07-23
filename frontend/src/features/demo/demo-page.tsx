@@ -51,7 +51,15 @@ export function DemoPage() {
         </p>
       </div>
 
-      <ModelStatusCard status={layoutxlm} />
+      <section className="space-y-2">
+        <h2 className="font-mono text-[11px] uppercase tracking-widest text-muted-foreground">
+          Modellstand
+        </h2>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <ModelStatusCard status={layoutxlm} active />
+          <ModelStatusCard status={model.data?.find((m) => m.variant === "gbert")} />
+        </div>
+      </section>
 
       <button
         type="button"

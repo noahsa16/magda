@@ -37,6 +37,7 @@ function Fact({ label, children }: { label: string; children: React.ReactNode })
 export function OverviewPage() {
   const { data, isPending, isError, error } = useQuery({ queryKey: ["status"], queryFn: api.status })
   const evalQ = useQuery({ queryKey: ["evaluation"], queryFn: api.evaluation })
+  const modelQ = useQuery({ queryKey: ["model"], queryFn: api.model })
 
   if (isPending) return <Skeleton className="h-40 w-full" />
   if (isError) {
@@ -88,7 +89,7 @@ export function OverviewPage() {
         <StatCard label="Gelabelt" value={t.labeled} hint={`${labeledPct}% aller Seiten`} />
       </div>
 
-      <PipelineRunner totals={t} reports={evalQ.data ?? []} />
+      <PipelineRunner totals={t} reports={evalQ.data ?? []} models={modelQ.data ?? []} />
 
       {data.catalogs.length > 0 && (
         <Card className="border-2 border-foreground">

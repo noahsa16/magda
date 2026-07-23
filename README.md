@@ -98,6 +98,19 @@ cd frontend && npm install && npm run dev
 
 Das Frontend läuft auf http://localhost:5173 und proxied `/api` ans Backend.
 
+Die vier Bereiche:
+
+- **Übersicht** – Projektbeschreibung, Zähler pro Pipeline-Stufe und die fünf
+  Schritte zum Starten, inklusive Live-Ausgabe des laufenden Skripts.
+- **Inspektor** – jede Seite mit den Label-Boxen über dem Prospektbild;
+  Entity-Liste und Bild sind in beide Richtungen verknüpft, ← → blättert.
+- **Evaluation** – F1 pro Entity-Typ, LayoutXLM gegen GBERT.
+- **Demo** – PDF hochladen, das trainierte Modell extrahiert lokal.
+
+Die Schritte laufen als Subprozess auf demselben Rechner wie das Backend
+(`magda/runner.py`). Der Runner nimmt nur die fünf bekannten Skripte an –
+gedacht für das lokale Setup, nicht für einen offen erreichbaren Server.
+
 ## Tests
 
 ```bash
