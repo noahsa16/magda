@@ -1,3 +1,17 @@
+# ---------------------------------------------------------------------------
+# Magda-spezifisch: Daten und Checkpoints bleiben lokal, nur die
+# Ordnerstruktur (.gitkeep) wird versioniert.
+# ---------------------------------------------------------------------------
+data/**
+!data/**/
+!data/**/.gitkeep
+checkpoints/**
+!checkpoints/**/
+!checkpoints/.gitkeep
+
+# persönliche Notizen, bleiben lokal
+EXPLANATION.md
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
