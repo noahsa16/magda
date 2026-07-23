@@ -1,3 +1,137 @@
+import { useQuery } from "@tanstack/react-query"
+import { useState } from "react"
+import {
+  Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, XAxis, YAxis,
+} from "recharts"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Skeleton } from "@/components/ui/skeleton"
+import {
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+} from "@/components/ui/table"
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { api } from "@/lib/api"
+import { type MetricKey, overallF1, perEntityRows } from "./transform"
+
+const METRIC_LABELS: Record<MetricKey, string> = {
+  "f1-score": "F1",
+  precision: "Precision",
+  recall: "Recall",
+}
+
+const fmt = (v: number | null | undefined) => (v == null ? "–" : v.toFixed(3))
+
 export function EvaluationPage() {
-  return <h1 className="text-2xl font-semibold">Evaluation</h1>
+  const [metric, setMetric] = useState<MetricKey>("f1-score")
+  const { data, isPending } = useQuery({ queryKey: ["evaluation"], queryFn: api.evaluation })
+
+  if (isPending) return <Skeleton className="h-40 w-full" />
+
+  if (!data || data.length === 0) {
+    return (
+      <Alert>
+        <AlertTitle>Noch keine Evaluationsergebnisse</AlertTitle>
+        <AlertDescription>
+          <code>python scripts/05_evaluate.py gbert</code> bzw.{" "}
+          <code>python scripts/05_evaluate.py layoutxlm</code> schreiben die Reports
+          nach data/eval/.
+        </AlertDescription>
+      </Alert>
+    )
+  }
+
+  const gbert = overallF1(data, "gbert")
+  const layoutxlm = overallF1(data, "layoutxlm")
+  const delta = gbert != null && layoutxlm != null ? layoutxlm - gbert : null
+  const rows = perEntityRows(data, metric)
+
+  return (
+    <div className="space-y-6">
+      <h1 className="text-2xl font-semibold">Evaluation</h1>
+
+      <div className="grid gap-4 sm:grid-cols-3">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">GBERT (nur Text) · F1</CardTitle>
+          </CardHeader>
+          <CardContent><span className="text-3xl font-semibold tabular-nums">{fmt(gbert)}</span></CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">LayoutXLM (Text + Layout) · F1</CardTitle>
+          </CardHeader>
+          <CardContent><span className="text-3xl font-semibold tabular-nums">{fmt(layoutxlm)}</span></CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Layout-Gewinn (Δ F1)</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <span className="text-3xl font-semibold tabular-nums">
+              {delta == null ? "–" : `${delta >= 0 ? "+" : ""}${delta.toFixed(3)}`}
+            </span>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Card>
+        <CardHeader className="flex-row items-center justify-between">
+          <CardTitle>{METRIC_LABELS[metric]} pro Entity-Typ</CardTitle>
+          <Tabs value={metric} onValueChange={(v) => setMetric(v as MetricKey)}>
+            <TabsList>
+              {(Object.keys(METRIC_LABELS) as MetricKey[]).map((k) => (
+                <TabsTrigger key={k} value={k}>{METRIC_LABELS[k]}</TabsTrigger>
+              ))}
+            </TabsList>
+          </Tabs>
+        </CardHeader>
+        <CardContent className="h-80">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={rows}>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} />
+              <XAxis dataKey="entity" tick={{ fontSize: 12 }} />
+              <YAxis domain={[0, 1]} tick={{ fontSize: 12 }} />
+              <Legend />
+              <Bar dataKey="gbert" name="GBERT" fill="#94a3b8" radius={[3, 3, 0, 0]} />
+              <Bar dataKey="layoutxlm" name="LayoutXLM" fill="#0072B2" radius={[3, 3, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </CardContent>
+      </Card>
+
+      {data.map((r) => (
+        <Card key={`${r.variant}-${r.split}`}>
+          <CardHeader>
+            <CardTitle className="text-base">
+              {r.variant} · {r.split}-Split · {r.num_pages} Seiten · {r.created}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Entity</TableHead>
+                  <TableHead className="text-right">Precision</TableHead>
+                  <TableHead className="text-right">Recall</TableHead>
+                  <TableHead className="text-right">F1</TableHead>
+                  <TableHead className="text-right">Support</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {Object.entries(r.report).map(([entity, m]) => (
+                  <TableRow key={entity}>
+                    <TableCell className="font-mono">{entity}</TableCell>
+                    <TableCell className="text-right tabular-nums">{fmt(m.precision)}</TableCell>
+                    <TableCell className="text-right tabular-nums">{fmt(m.recall)}</TableCell>
+                    <TableCell className="text-right tabular-nums">{fmt(m["f1-score"])}</TableCell>
+                    <TableCell className="text-right tabular-nums">{m.support}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  )
 }
