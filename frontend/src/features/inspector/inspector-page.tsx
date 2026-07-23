@@ -1,9 +1,11 @@
 import { useQuery } from "@tanstack/react-query"
-import { useState } from "react"
+import { ChevronLeft, ChevronRight } from "lucide-react"
+import { useEffect, useState } from "react"
 import { useSearchParams } from "react-router-dom"
 import { EntityList } from "@/components/entity-list"
 import { PageOverlay } from "@/components/page-overlay"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { groupEntities } from "@/lib/bio"
 import { api } from "@/lib/api"
@@ -25,6 +27,27 @@ export function InspectorPage() {
   })
 
   const entityTypes = schema.data?.entity_types ?? []
+
+  // Blättern folgt der sortierten Seitenliste; -1 = keine Auswahl, dann
+  // springt "weiter" auf die erste Seite.
+  const ids = (pages.data ?? []).map((p) => p.page_id)
+  const idx = selected ? ids.indexOf(selected) : -1
+
+  function goto(i: number) {
+    if (i < 0 || i >= ids.length) return
+    setHighlight(null)
+    setSearchParams({ page: ids[i] })
+  }
+
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if ((e.target as HTMLElement)?.tagName === "INPUT") return
+      if (e.key === "ArrowLeft") goto(idx - 1)
+      if (e.key === "ArrowRight") goto(idx + 1)
+    }
+    window.addEventListener("keydown", onKey)
+    return () => window.removeEventListener("keydown", onKey)
+  })
 
   function toggleType(type: string) {
     setVisibleTypes((prev) => {
@@ -54,14 +77,28 @@ export function InspectorPage() {
 
   return (
     <div className="flex min-w-0 flex-col gap-4">
-      <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h1 className="text-2xl font-semibold">Label-Inspektor</h1>
-        {selected && page.data && (
-          <p className="font-mono text-sm text-muted-foreground">
-            {selected} · {page.data.words.length} Wörter
-            {entityCount != null && <> · {entityCount} Entities</>}
-          </p>
-        )}
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h1 className="font-display text-3xl tracking-tight">Label-Inspektor</h1>
+        <div className="flex items-center gap-2">
+          {selected && page.data && (
+            <p className="font-mono text-sm text-muted-foreground">
+              {selected} · {page.data.words.length} Wörter
+              {entityCount != null && <> · {entityCount} Entities</>}
+            </p>
+          )}
+          <Button
+            variant="outline" size="icon" aria-label="Vorherige Seite (←)"
+            disabled={idx <= 0} onClick={() => goto(idx - 1)}
+          >
+            <ChevronLeft />
+          </Button>
+          <Button
+            variant="outline" size="icon" aria-label="Nächste Seite (→)"
+            disabled={idx >= ids.length - 1} onClick={() => goto(idx + 1)}
+          >
+            <ChevronRight />
+          </Button>
+        </div>
       </div>
 
       <div className="grid min-w-0 gap-4 lg:grid-cols-[220px_minmax(0,1fr)_280px]">

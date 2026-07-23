@@ -41,7 +41,7 @@ export function DemoPage() {
   return (
     <div className="flex min-w-0 flex-col gap-6">
       <div>
-        <h1 className="text-2xl font-semibold">Live-Demo</h1>
+        <h1 className="font-display text-3xl tracking-tight">Live-Demo</h1>
         <p className="mt-1 text-sm text-muted-foreground">
           Eine Prospektseite hochladen – das trainierte LayoutXLM extrahiert die Angebote lokal,
           ohne LLM-API.
@@ -61,12 +61,12 @@ export function DemoPage() {
         }}
         className={cn(
           "flex w-full flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed px-6 py-10 text-center transition-colors",
-          dragOver ? "border-[#0072B2] bg-[#0072B2]/5" : "border-border hover:border-muted-foreground/40",
+          dragOver ? "border-primary bg-primary/5" : "border-border bg-card hover:border-primary/50",
         )}
       >
         {file ? (
           <>
-            <FileText className="size-8 text-[#0072B2]" />
+            <FileText className="size-8 text-primary" />
             <span className="font-medium">{file.name}</span>
             <span className="text-xs text-muted-foreground">Klicken, um eine andere Datei zu wählen</span>
           </>

@@ -85,8 +85,8 @@ export function PageOverlay({
         <div
           className="scanline pointer-events-none absolute inset-x-0 h-0.5"
           style={{
-            background: "linear-gradient(90deg, transparent, #0072B2 20%, #56B4E9 50%, #0072B2 80%, transparent)",
-            boxShadow: "0 0 12px 2px rgba(0, 114, 178, 0.45)",
+            background: "linear-gradient(90deg, transparent, #C96442 20%, #E8A283 50%, #C96442 80%, transparent)",
+            boxShadow: "0 0 12px 2px rgba(201, 100, 66, 0.45)",
           }}
         />
       )}

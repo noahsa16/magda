@@ -29,14 +29,17 @@ export function EvaluationPage() {
 
   if (!data || data.length === 0) {
     return (
-      <Alert>
-        <AlertTitle>Noch keine Evaluationsergebnisse</AlertTitle>
-        <AlertDescription>
-          <code>python scripts/05_evaluate.py gbert</code> bzw.{" "}
-          <code>python scripts/05_evaluate.py layoutxlm</code> schreiben die Reports
-          nach data/eval/.
-        </AlertDescription>
-      </Alert>
+      <div className="space-y-6">
+        <h1 className="font-display text-3xl tracking-tight">Evaluation</h1>
+        <Alert>
+          <AlertTitle>Noch keine Evaluationsergebnisse</AlertTitle>
+          <AlertDescription>
+            <code>python scripts/05_evaluate.py gbert</code> bzw.{" "}
+            <code>python scripts/05_evaluate.py layoutxlm</code> schreiben die Reports
+            nach data/eval/.
+          </AlertDescription>
+        </Alert>
+      </div>
     )
   }
 
@@ -47,7 +50,7 @@ export function EvaluationPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold">Evaluation</h1>
+      <h1 className="font-display text-3xl tracking-tight">Evaluation</h1>
 
       <div className="grid gap-4 sm:grid-cols-3">
         <Card>
@@ -67,7 +70,8 @@ export function EvaluationPage() {
             <CardTitle className="text-sm font-medium text-muted-foreground">Layout-Gewinn (Δ F1)</CardTitle>
           </CardHeader>
           <CardContent>
-            <span className="text-3xl font-semibold tabular-nums">
+            {/* Der Layout-Gewinn ist DAS Ergebnis des Projekts – Coral, wenn positiv */}
+            <span className={`text-3xl font-semibold tabular-nums ${delta != null && delta > 0 ? "text-primary" : ""}`}>
               {delta == null ? "–" : `${delta >= 0 ? "+" : ""}${delta.toFixed(3)}`}
             </span>
           </CardContent>
@@ -92,8 +96,8 @@ export function EvaluationPage() {
               <XAxis dataKey="entity" tick={{ fontSize: 12 }} />
               <YAxis domain={[0, 1]} tick={{ fontSize: 12 }} />
               <Legend />
-              <Bar dataKey="gbert" name="GBERT" fill="#94a3b8" radius={[3, 3, 0, 0]} />
-              <Bar dataKey="layoutxlm" name="LayoutXLM" fill="#0072B2" radius={[3, 3, 0, 0]} />
+              <Bar dataKey="gbert" name="GBERT" fill="#B8B2A6" radius={[3, 3, 0, 0]} />
+              <Bar dataKey="layoutxlm" name="LayoutXLM" fill="#C96442" radius={[3, 3, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </CardContent>
