@@ -30,9 +30,18 @@ CHECKPOINTS_DIR = PROJECT_ROOT / "checkpoints"
 CHAT_AI_BASE_URL = os.getenv("CHAT_AI_BASE_URL", "https://chat-ai.academiccloud.de/v1")
 CHAT_AI_API_KEY = os.getenv("CHAT_AI_API_KEY", "")
 
-# Vision-Modell fürs Labeling. Welche Modelle verfügbar sind, listet
-# https://docs.hpc.gwdg.de/services/chat-ai/ – ggf. hier anpassen.
-CHAT_AI_VISION_MODEL = os.getenv("CHAT_AI_VISION_MODEL", "qwen2.5-vl-72b-instruct")
+# Vision-Modell fürs Labeling.
+#
+# Von den 16 Modellen der GWDG (Stand 23.07.2026) nehmen nur drei Bilder an:
+# gemma-4-31b-it, mistral-medium-3.5-128b und qwen3-omni-30b-a3b-instruct.
+# Auf einer Testseite mit zwei Angeboten war gemma-4-31b-it am saubersten –
+# als einziges hat es die BIO-Fortsetzung richtig gesetzt ("500"=B-QUANTITY,
+# "g"=I-QUANTITY). Mistral vergab dort zweimal B-, was aus einer Mengenangabe
+# zwei Entitäten macht; qwen3-omni hielt Streichpreise für Rabatte.
+#
+# Der Modellkatalog ändert sich – Namen nicht raten, sondern prüfen:
+#   curl -H "Authorization: Bearer $CHAT_AI_API_KEY" $CHAT_AI_BASE_URL/models
+CHAT_AI_VISION_MODEL = os.getenv("CHAT_AI_VISION_MODEL", "gemma-4-31b-it")
 
 # ---------------------------------------------------------------------------
 # Modelle (siehe Proposal, Abschnitt "Baseline Architecture")
