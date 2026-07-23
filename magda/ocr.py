@@ -10,6 +10,17 @@ es hier einen Tesseract-Fallback.
 import fitz  # PyMuPDF
 
 
+def _is_artifact(text: str) -> bool:
+    """Filtert Steuerdaten des Blätterkatalogs aus dem Textlayer.
+
+    Die Penny-PDFs enthalten unsichtbare Tokens wie
+    "json://…_1279x1076.gif;0.000;0.000;112.688;133.926" oder "animation://…",
+    mit denen der Web-Viewer seine Animationen platziert. Die sind kein
+    Seiteninhalt und hätten im Training nichts verloren.
+    """
+    return text.startswith(("json://", "animation://", "video://", "link://"))
+
+
 def extract_words(pdf_bytes: bytes) -> dict:
     """Extrahiert alle Wörter der ersten Seite eines (einseitigen) PDFs.
 
@@ -24,7 +35,7 @@ def extract_words(pdf_bytes: bytes) -> dict:
         words = [
             {"text": w[4], "bbox": [round(w[0], 2), round(w[1], 2), round(w[2], 2), round(w[3], 2)]}
             for w in raw
-            if w[4].strip()
+            if w[4].strip() and not _is_artifact(w[4])
         ]
         return {
             "width": round(page.rect.width, 2),

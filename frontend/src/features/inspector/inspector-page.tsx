@@ -1,22 +1,39 @@
 import { useQuery } from "@tanstack/react-query"
-import { ChevronLeft, ChevronRight } from "lucide-react"
-import { useEffect, useState } from "react"
+import { ChevronLeft, ChevronRight, Eye, EyeOff, Scan } from "lucide-react"
+import { useEffect, useMemo, useState } from "react"
 import { useSearchParams } from "react-router-dom"
-import { EntityList } from "@/components/entity-list"
+import { EntityList, type EntityRef } from "@/components/entity-list"
 import { PageOverlay } from "@/components/page-overlay"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { groupEntities } from "@/lib/bio"
 import { api } from "@/lib/api"
+import { cn } from "@/lib/utils"
 import { PageList } from "./page-list"
+
+function Metric({ label, value, tone }: { label: string; value: string; tone?: "warn" }) {
+  return (
+    <div>
+      <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+        {label}
+      </p>
+      <p className={cn("font-mono text-sm font-semibold tabular-nums", tone === "warn" && "text-destructive")}>
+        {value}
+      </p>
+    </div>
+  )
+}
 
 export function InspectorPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const selected = searchParams.get("page")
   // null = alle Typen sichtbar; Set = explizite Auswahl.
   const [visibleTypes, setVisibleTypes] = useState<Set<string> | null>(null)
-  const [highlight, setHighlight] = useState<{ start: number; end: number } | null>(null)
+  const [picked, setPicked] = useState<EntityRef | null>(null)
+  const [hovered, setHovered] = useState<EntityRef | null>(null)
+  const [showBoxes, setShowBoxes] = useState(true)
+  const [showPlainWords, setShowPlainWords] = useState(true)
 
   const schema = useQuery({ queryKey: ["schema"], queryFn: api.schema })
   const pages = useQuery({ queryKey: ["pages"], queryFn: api.pages })
@@ -30,12 +47,13 @@ export function InspectorPage() {
 
   // Blättern folgt der sortierten Seitenliste; -1 = keine Auswahl, dann
   // springt "weiter" auf die erste Seite.
-  const ids = (pages.data ?? []).map((p) => p.page_id)
+  const ids = useMemo(() => (pages.data ?? []).map((p) => p.page_id), [pages.data])
   const idx = selected ? ids.indexOf(selected) : -1
 
   function goto(i: number) {
     if (i < 0 || i >= ids.length) return
-    setHighlight(null)
+    setPicked(null)
+    setHovered(null)
     setSearchParams({ page: ids[i] })
   }
 
@@ -58,6 +76,17 @@ export function InspectorPage() {
     })
   }
 
+  /** Klick auf eine Box im Bild wählt das umgebende Entity aus. */
+  function selectWord(wordIdx: number) {
+    const tags = page.data?.tags
+    if (!tags || tags[wordIdx] === "O") return setPicked(null)
+    let start = wordIdx
+    while (start > 0 && tags[start].startsWith("I-")) start--
+    let end = wordIdx + 1
+    while (end < tags.length && tags[end].startsWith("I-")) end++
+    setPicked({ start, end })
+  }
+
   if (pages.isPending || schema.isPending) return <Skeleton className="h-40 w-full" />
 
   if (pages.data?.length === 0) {
@@ -65,91 +94,146 @@ export function InspectorPage() {
       <Alert>
         <AlertTitle>Noch keine Seiten extrahiert</AlertTitle>
         <AlertDescription>
-          <code>python scripts/02_extract_words.py</code> aus dem Projektroot laufen lassen
-          (davor <code>01_download_flyers.py</code>, falls data/raw/ leer ist).
+          Auf der Übersicht <code>02_extract_words</code> starten (davor
+          <code>01_download_flyers</code>, falls data/raw/ leer ist).
         </AlertDescription>
       </Alert>
     )
   }
 
-  const entityCount =
-    page.data?.tags ? groupEntities(page.data.words, page.data.tags).length : null
+  const data = page.data
+  const entities = data?.tags ? groupEntities(data.words, data.tags) : null
+  const tagged = data?.tags ? data.tags.filter((t) => t !== "O").length : 0
+  const coverage = data?.tags?.length ? Math.round((tagged / data.tags.length) * 100) : 0
 
   return (
     <div className="flex min-w-0 flex-col gap-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h1 className="font-display text-3xl tracking-tight">Label-Inspektor</h1>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-baseline gap-3">
+          <h1 className="text-3xl font-extrabold tracking-tight">Label-Inspektor</h1>
+          <p className="font-mono text-xs text-muted-foreground">
+            {idx >= 0 ? `${idx + 1} / ${ids.length}` : `${ids.length} Seiten`}
+          </p>
+        </div>
         <div className="flex items-center gap-2">
-          {selected && page.data && (
-            <p className="font-mono text-sm text-muted-foreground">
-              {selected} · {page.data.words.length} Wörter
-              {entityCount != null && <> · {entityCount} Entities</>}
-            </p>
-          )}
           <Button
-            variant="outline" size="icon" aria-label="Vorherige Seite (←)"
+            variant="outline" size="sm" aria-label="Vorherige Seite (Pfeil links)"
             disabled={idx <= 0} onClick={() => goto(idx - 1)}
           >
-            <ChevronLeft />
+            <ChevronLeft className="size-4" />
           </Button>
           <Button
-            variant="outline" size="icon" aria-label="Nächste Seite (→)"
+            variant="outline" size="sm" aria-label="Nächste Seite (Pfeil rechts)"
             disabled={idx >= ids.length - 1} onClick={() => goto(idx + 1)}
           >
-            <ChevronRight />
+            <ChevronRight className="size-4" />
           </Button>
         </div>
       </div>
 
-      <div className="grid min-w-0 gap-4 lg:grid-cols-[220px_minmax(0,1fr)_280px]">
+      <div className="grid min-w-0 gap-5 lg:grid-cols-[240px_minmax(0,1fr)_360px]">
         <div className="min-w-0">
           <PageList
             pages={pages.data ?? []}
             selected={selected}
             onSelect={(id) => {
-              setHighlight(null)
+              setPicked(null)
+              setHovered(null)
               setSearchParams({ page: id })
             }}
           />
         </div>
 
-        <div className="min-w-0">
+        <div className="min-w-0 space-y-3">
           {!selected && (
-            <div className="flex h-64 items-center justify-center rounded-lg border border-dashed">
-              <p className="text-muted-foreground">Seite links auswählen.</p>
+            <div className="flex h-96 flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-foreground/30">
+              <Scan className="size-8 text-muted-foreground" />
+              <p className="text-muted-foreground">Seite links auswählen</p>
+              <p className="font-mono text-xs text-muted-foreground">
+                oder mit ← → durch die Seiten blättern
+              </p>
             </div>
           )}
           {selected && page.isPending && <Skeleton className="aspect-[595/842] w-full" />}
-          {selected && page.data && (
-            <PageOverlay
-              imageUrl={api.pageImageUrl(selected)}
-              width={page.data.width}
-              height={page.data.height}
-              words={page.data.words}
-              tags={page.data.tags}
-              entityTypes={entityTypes}
-              visibleTypes={visibleTypes}
-              highlight={highlight}
-            />
+          {selected && data && (
+            <>
+              <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border-2 border-foreground bg-card px-4 py-2.5">
+                <div className="flex flex-wrap gap-x-6 gap-y-2">
+                  <Metric label="Seite" value={selected} />
+                  <Metric label="Wörter" value={String(data.words.length)} />
+                  <Metric label="Entities" value={entities ? String(entities.length) : "–"} />
+                  <Metric
+                    label="Abdeckung"
+                    value={data.tags ? `${coverage}%` : "–"}
+                    tone={data.tags && coverage === 0 ? "warn" : undefined}
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    variant={showBoxes ? "default" : "outline"} size="sm"
+                    onClick={() => setShowBoxes((v) => !v)}
+                  >
+                    {showBoxes ? <Eye className="size-4" /> : <EyeOff className="size-4" />}
+                    Boxen
+                  </Button>
+                  <Button
+                    variant={showPlainWords ? "secondary" : "outline"} size="sm"
+                    disabled={!showBoxes}
+                    onClick={() => setShowPlainWords((v) => !v)}
+                  >
+                    Wörter ohne Label
+                  </Button>
+                </div>
+              </div>
+
+              {data.tags && coverage === 0 && (
+                <Alert variant="destructive">
+                  <AlertTitle>Seite ist gelabelt, aber leer</AlertTitle>
+                  <AlertDescription>
+                    Alle {data.tags.length} Wörter tragen „O“. Das LLM hat für diese Seite
+                    nichts Verwertbares geliefert – ein Fall für die Fehleranalyse.
+                  </AlertDescription>
+                </Alert>
+              )}
+
+              <PageOverlay
+                imageUrl={api.pageImageUrl(selected)}
+                width={data.width}
+                height={data.height}
+                words={data.words}
+                tags={data.tags}
+                entityTypes={entityTypes}
+                visibleTypes={visibleTypes}
+                highlight={hovered ?? picked}
+                showBoxes={showBoxes}
+                showPlainWords={showPlainWords}
+                onWordClick={selectWord}
+              />
+            </>
           )}
         </div>
 
-        <div className="min-w-0 lg:sticky lg:top-6 lg:self-start">
-          {selected && page.data && page.data.tags && (
+        <div className="min-w-0 lg:sticky lg:top-24 lg:self-start">
+          {selected && data?.tags && (
             <EntityList
-              words={page.data.words}
-              tags={page.data.tags}
+              words={data.words}
+              tags={data.tags}
               entityTypes={entityTypes}
               visibleTypes={visibleTypes}
               onToggleType={toggleType}
-              onSelect={setHighlight}
+              onSelect={setPicked}
+              onHover={setHovered}
+              selected={picked}
+              searchable
+              maxHeight="60vh"
             />
           )}
-          {selected && page.data && !page.data.tags && (
+          {selected && data && !data.tags && (
             <Alert>
               <AlertTitle>Noch nicht gelabelt</AlertTitle>
               <AlertDescription>
-                <code>python scripts/03_label_words.py</code> erzeugt die Labels.
+                Diese Seite hat noch keine Tags. Auf der Übersicht{" "}
+                <code>03_label_words</code> starten.
               </AlertDescription>
             </Alert>
           )}

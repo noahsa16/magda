@@ -46,6 +46,15 @@ def full_report(predictions: np.ndarray, label_ids: np.ndarray) -> str:
 
 
 def report_dict(predictions: np.ndarray, label_ids: np.ndarray) -> dict:
-    """Wie full_report, aber als Dict – für den JSON-Export ans Frontend."""
+    """Wie full_report, aber als Dict – für den JSON-Export ans Frontend.
+
+    seqeval gibt "support" als numpy.int64 zurück, worüber json.dump stolpert.
+    Deshalb hier gleich in native Python-Typen umwandeln.
+    """
     true_tags, pred_tags = _decode(predictions, label_ids)
-    return classification_report(true_tags, pred_tags, digits=3, output_dict=True)
+    report = classification_report(true_tags, pred_tags, digits=3, output_dict=True)
+    return {
+        entity: {metric: value.item() if hasattr(value, "item") else value
+                 for metric, value in scores.items()}
+        for entity, scores in report.items()
+    }

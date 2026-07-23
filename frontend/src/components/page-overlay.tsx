@@ -11,6 +11,12 @@ interface PageOverlayProps {
   entityTypes: string[]
   visibleTypes?: Set<string> | null // null/undefined = alle
   highlight?: { start: number; end: number } | null
+  /** Boxen komplett ausblenden – zeigt die Seite, wie sie gedruckt wurde. */
+  showBoxes?: boolean
+  /** Auch Wörter ohne Entity dünn umranden (zeigt, was die Extraktion gefunden hat). */
+  showPlainWords?: boolean
+  /** Klick auf eine Box, z. B. um sie in der Liste auszuwählen. */
+  onWordClick?: (index: number) => void
   /** Scan-Reveal: Scanlinie + gestaffeltes Einblenden der Boxen (Demo). */
   animate?: boolean
 }
@@ -23,7 +29,8 @@ interface Hover {
 }
 
 export function PageOverlay({
-  imageUrl, width, height, words, tags, entityTypes, visibleTypes, highlight, animate = false,
+  imageUrl, width, height, words, tags, entityTypes, visibleTypes, highlight,
+  showBoxes = true, showPlainWords = true, onWordClick, animate = false,
 }: PageOverlayProps) {
   const [hover, setHover] = useState<Hover | null>(null)
 
@@ -41,7 +48,7 @@ export function PageOverlay({
   }, [animate, words, tags])
 
   return (
-    <div className="relative overflow-hidden rounded-lg border shadow-sm">
+    <div className="relative overflow-hidden rounded-lg border-2 border-foreground bg-card">
       <img src={imageUrl} alt="Prospektseite" className="block w-full" />
       {/* viewBox im PDF-Koordinatenraum: der Browser skaliert die Boxen aufs
           Bild, egal mit welcher DPI das PNG gerendert wurde. */}
@@ -50,10 +57,11 @@ export function PageOverlay({
         viewBox={`0 0 ${width} ${height}`}
         preserveAspectRatio="none"
       >
-        {words.map((word, i) => {
+        {showBoxes && words.map((word, i) => {
           const tag = tags?.[i] ?? "O"
           const type = tag === "O" ? null : tag.slice(2)
           if (type && visibleTypes && !visibleTypes.has(type)) return null
+          if (!type && !showPlainWords) return null
           const [x0, y0, x1, y1] = word.bbox
           const highlighted = highlight != null && i >= highlight.start && i < highlight.end
           const rank = type != null ? revealRank?.get(i) : undefined
@@ -66,13 +74,14 @@ export function PageOverlay({
               style={
                 rank != null
                   ? { "--reveal-delay": `${0.45 + rank * 0.028}s` } as React.CSSProperties
-                  : { transition: "fill-opacity 150ms, stroke-width 150ms" }
+                  : { transition: "fill-opacity 150ms, stroke-width 150ms", cursor: onWordClick ? "pointer" : undefined }
               }
               fill={type ? entityColor(entityTypes, type) : "none"}
               fillOpacity={highlighted ? 0.6 : 0.35}
-              stroke={type ? entityColor(entityTypes, type) : "#9ca3af"}
-              strokeOpacity={type ? 1 : 0.4}
+              stroke={type ? entityColor(entityTypes, type) : "#14203C"}
+              strokeOpacity={type ? 1 : 0.25}
               strokeWidth={highlighted ? 2.5 : 0.8}
+              onClick={() => onWordClick?.(i)}
               onMouseEnter={() =>
                 setHover({ text: word.text, tag, xPct: (x0 / width) * 100, yPct: (y1 / height) * 100 })
               }
@@ -85,14 +94,14 @@ export function PageOverlay({
         <div
           className="scanline pointer-events-none absolute inset-x-0 h-0.5"
           style={{
-            background: "linear-gradient(90deg, transparent, #C96442 20%, #E8A283 50%, #C96442 80%, transparent)",
-            boxShadow: "0 0 12px 2px rgba(201, 100, 66, 0.45)",
+            background: "linear-gradient(90deg, transparent, #E8377D 20%, #2951E8 50%, #E8377D 80%, transparent)",
+            boxShadow: "0 0 12px 2px rgba(232, 55, 125, 0.45)",
           }}
         />
       )}
       {hover && (
         <div
-          className="pointer-events-none absolute z-10 max-w-[80%] -translate-y-1 truncate rounded bg-foreground px-2 py-1 font-mono text-xs text-background shadow-md"
+          className="pointer-events-none absolute z-10 max-w-[80%] -translate-y-1 truncate rounded bg-foreground px-2 py-1 font-mono text-xs text-background"
           style={{
             left: `min(${hover.xPct}%, 70%)`,
             top: `${hover.yPct}%`,

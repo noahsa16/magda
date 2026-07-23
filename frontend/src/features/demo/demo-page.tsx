@@ -1,23 +1,26 @@
 import { useMutation, useQuery } from "@tanstack/react-query"
 import { FileText, Loader2, Sparkles, Upload } from "lucide-react"
 import { useRef, useState } from "react"
-import { EntityList } from "@/components/entity-list"
+import { EntityList, type EntityRef } from "@/components/entity-list"
 import { PageOverlay } from "@/components/page-overlay"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { groupEntities } from "@/lib/bio"
 import { api } from "@/lib/api"
 import { cn } from "@/lib/utils"
+import { ModelStatusCard } from "./model-status"
 
 export function DemoPage() {
   const [file, setFile] = useState<File | null>(null)
   const [dragOver, setDragOver] = useState(false)
   const [visibleTypes, setVisibleTypes] = useState<Set<string> | null>(null)
-  const [highlight, setHighlight] = useState<{ start: number; end: number } | null>(null)
+  const [highlight, setHighlight] = useState<EntityRef | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
   const schema = useQuery({ queryKey: ["schema"], queryFn: api.schema })
   const entityTypes = schema.data?.entity_types ?? []
+  const model = useQuery({ queryKey: ["model"], queryFn: api.model })
+  const layoutxlm = model.data?.find((m) => m.variant === "layoutxlm")
 
   const inference = useMutation({ mutationFn: api.inference })
 
@@ -39,16 +42,17 @@ export function DemoPage() {
     : null
 
   return (
-    <div className="flex min-w-0 flex-col gap-6">
+    <div className="mx-auto flex min-w-0 max-w-5xl flex-col gap-6">
       <div>
-        <h1 className="font-display text-3xl tracking-tight">Live-Demo</h1>
+        <h1 className="text-3xl font-extrabold tracking-tight">Live-Demo</h1>
         <p className="mt-1 text-sm text-muted-foreground">
           Eine Prospektseite hochladen – das trainierte LayoutXLM extrahiert die Angebote lokal,
           ohne LLM-API.
         </p>
       </div>
 
-      {/* Dropzone */}
+      <ModelStatusCard status={layoutxlm} />
+
       <button
         type="button"
         onClick={() => inputRef.current?.click()}
@@ -60,20 +64,22 @@ export function DemoPage() {
           acceptFile(e.dataTransfer.files?.[0])
         }}
         className={cn(
-          "flex w-full flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed px-6 py-10 text-center transition-colors",
-          dragOver ? "border-primary bg-primary/5" : "border-border bg-card hover:border-primary/50",
+          "flex w-full flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed px-6 py-10 text-center transition-colors",
+          dragOver
+            ? "border-primary bg-primary/10"
+            : "border-foreground/30 bg-card hover:border-primary",
         )}
       >
         {file ? (
           <>
             <FileText className="size-8 text-primary" />
-            <span className="font-medium">{file.name}</span>
+            <span className="font-semibold">{file.name}</span>
             <span className="text-xs text-muted-foreground">Klicken, um eine andere Datei zu wählen</span>
           </>
         ) : (
           <>
             <Upload className="size-8 text-muted-foreground" />
-            <span className="font-medium">Einseitiges Prospekt-PDF hierher ziehen</span>
+            <span className="font-semibold">Einseitiges Prospekt-PDF hierher ziehen</span>
             <span className="text-xs text-muted-foreground">oder klicken zum Auswählen</span>
           </>
         )}
@@ -104,7 +110,7 @@ export function DemoPage() {
         </Button>
         {inference.data && entityCount != null && (
           <p className="fade-up text-sm text-muted-foreground" style={{ "--reveal-delay": "1.2s" } as React.CSSProperties}>
-            <span className="font-semibold text-foreground tabular-nums">{entityCount}</span>{" "}
+            <span className="font-bold text-foreground tabular-nums">{entityCount}</span>{" "}
             Entities in {inference.data.words.length} Wörtern gefunden
           </p>
         )}
@@ -118,7 +124,7 @@ export function DemoPage() {
       )}
 
       {inference.data && (
-        <div className="grid min-w-0 gap-4 lg:grid-cols-[minmax(0,1fr)_280px]">
+        <div className="grid min-w-0 gap-4 lg:grid-cols-[minmax(0,1fr)_300px]">
           <div className="min-w-0">
             <PageOverlay
               key={inference.submittedAt /* Re-Mount pro Lauf: Animation startet neu */}
@@ -130,10 +136,11 @@ export function DemoPage() {
               entityTypes={entityTypes}
               visibleTypes={visibleTypes}
               highlight={highlight}
+              showPlainWords={false}
               animate
             />
           </div>
-          <div className="min-w-0 lg:sticky lg:top-6 lg:self-start">
+          <div className="min-w-0 lg:sticky lg:top-24 lg:self-start">
             <EntityList
               words={inference.data.words}
               tags={inference.data.tags}
@@ -141,6 +148,7 @@ export function DemoPage() {
               visibleTypes={visibleTypes}
               onToggleType={toggleType}
               onSelect={setHighlight}
+              selected={highlight}
               animate
             />
           </div>

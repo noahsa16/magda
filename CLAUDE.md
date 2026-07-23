@@ -96,8 +96,34 @@ Der Modellkatalog der GWDG ändert sich – Modellnamen nicht raten, sondern
 gegen `GET /v1/models` prüfen. Nicht jedes Modell dort versteht Bilder, und
 das Labeling in Schritt 03 braucht zwingend Bild-Input.
 
-Getestet am 23.07.2026: von 16 Modellen nehmen nur `gemma-4-31b-it`,
-`mistral-medium-3.5-128b` und `qwen3-omni-30b-a3b-instruct` Bilder an.
-Default ist `gemma-4-31b-it` (Begründung im Kommentar in `magda/config.py`).
-Modelle starten kalt und brauchen beim ersten Request teils Minuten –
-Timeouts im Labeling-Skript großzügig lassen.
+Getestet am 23.07.2026: von 16 Modellen nehmen nur `mistral-medium-3.5-128b`,
+`gemma-4-31b-it` und `qwen3-omni-30b-a3b-instruct` Bilder an. Default ist
+`mistral-medium-3.5-128b` (Begründung im Kommentar in `magda/config.py`).
+Modelle starten kalt und brauchen beim ersten Request teils Minuten.
+
+## Erster kompletter Durchlauf (23.07.2026)
+
+Die Pipeline ist einmal end-to-end gelaufen: Katalog 1342881 (Penny, Woche
+20.–25.7.), 40 Seiten, 7216 Wörter, 4796 davon getaggt (66 %). GBERT
+trainiert, Test-F1 0.333. Details in `reports/woche-01.md`.
+
+Was daraus für die weitere Arbeit wichtig ist:
+
+- **Modellwahl an echten Seiten prüfen, nicht an Beispielen.** Auf einer
+  synthetischen Seite mit 23 Wörtern sah `gemma-4-31b-it` am besten aus; auf
+  echten Seiten mit 150–400 Wörtern schaffte es 1 von 3 und lief einmal in
+  eine Endlosschleife. Entscheidend ist, ob ein Modell 50–80 Spans am Stück
+  ohne Formatbruch durchhält.
+- **`temperature=0` ist beim Labeling gefährlich.** Greedy Decoding kann in
+  Wiederholungsschleifen laufen, bis das Token-Limit greift. Deshalb 0.2.
+- **LLM-Antworten enthalten Prosa**, trotz gegenteiliger Anweisung im Prompt –
+  einmal sogar auf Koreanisch. `labeling._extract_json_array()` schneidet das
+  Array per Klammerzählung heraus.
+- **Der Textlayer der Penny-PDFs enthält Steuerdaten** des Web-Viewers
+  (`json://…gif;0.000;…`). Werden in `ocr._is_artifact()` gefiltert.
+- **Ergebnisprofil:** Preise, Streichpreise und Rabatte erreichen F1 0.59–0.78,
+  Produkte und Marken nur 0.08–0.10. Plausible Erklärung: Preise erkennt man am
+  Textmuster, Marke vs. Produktname erst an der Position auf der Seite. Genau
+  das ist die Hypothese, die LayoutXLM prüfen soll.
+- **Nicht überinterpretieren:** 32 Trainingsseiten, 4 Testseiten. VALID hat 4
+  Instanzen im Testsplit – die 0.000 dort sind Rauschen, kein Befund.

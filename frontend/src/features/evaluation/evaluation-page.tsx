@@ -3,7 +3,6 @@ import { useState } from "react"
 import {
   Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, XAxis, YAxis,
 } from "recharts"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
@@ -11,6 +10,7 @@ import {
 } from "@/components/ui/table"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { api } from "@/lib/api"
+import { EvaluationEmptyState } from "./empty-state"
 import { type MetricKey, overallF1, perEntityRows } from "./transform"
 
 const METRIC_LABELS: Record<MetricKey, string> = {
@@ -29,16 +29,9 @@ export function EvaluationPage() {
 
   if (!data || data.length === 0) {
     return (
-      <div className="space-y-6">
-        <h1 className="font-display text-3xl tracking-tight">Evaluation</h1>
-        <Alert>
-          <AlertTitle>Noch keine Evaluationsergebnisse</AlertTitle>
-          <AlertDescription>
-            <code>python scripts/05_evaluate.py gbert</code> bzw.{" "}
-            <code>python scripts/05_evaluate.py layoutxlm</code> schreiben die Reports
-            nach data/eval/.
-          </AlertDescription>
-        </Alert>
+      <div className="mx-auto max-w-5xl space-y-6">
+        <h1 className="text-3xl font-extrabold tracking-tight">Evaluation</h1>
+        <EvaluationEmptyState />
       </div>
     )
   }

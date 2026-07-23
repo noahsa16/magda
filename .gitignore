@@ -12,6 +12,10 @@ checkpoints/**
 # persönliche Notizen, bleiben lokal
 EXPLANATION.md
 
+# Node: das Frontend hat eine eigene .gitignore, hier landet nur der
+# Vitest-Cache, wenn npm test aus dem Projektroot gestartet wird.
+node_modules/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]

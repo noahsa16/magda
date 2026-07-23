@@ -147,3 +147,81 @@ def test_inference_lehnt_nicht_pdf_ab(client, clean_model_cache):
         files={"file": ("bild.png", b"\x89PNG", "image/png")},
     )
     assert resp.status_code == 400
+
+
+# --- Modellstatus ----------------------------------------------------------
+
+
+def test_model_status_ohne_checkpoints(client):
+    body = client.get("/api/model").json()
+
+    assert [e["variant"] for e in body] == ["layoutxlm", "gbert"]
+    assert all(e["trained"] is False for e in body)
+
+
+def test_model_status_liest_trainingsverlauf(client):
+    ckpt = config.CHECKPOINTS_DIR / "layoutxlm" / "checkpoint-120"
+    ckpt.mkdir(parents=True)
+    (config.CHECKPOINTS_DIR / "layoutxlm" / "best").mkdir()
+    state = {
+        "epoch": 3.0,
+        "global_step": 120,
+        "max_steps": 400,
+        "best_metric": 0.83,
+        "log_history": [
+            {"epoch": 1.0, "loss": 0.9},
+            {"epoch": 1.0, "eval_f1": 0.71},
+            {"epoch": 2.0, "eval_f1": 0.83},
+        ],
+    }
+    with open(ckpt / "trainer_state.json", "w") as f:
+        json.dump(state, f)
+
+    entry = client.get("/api/model").json()[0]
+
+    assert entry["trained"] is True
+    assert entry["steps"] == 120
+    assert entry["best_f1"] == 0.83
+    # Nur Zeilen mit eval_f1 landen im Verlauf, die reinen Loss-Logs nicht.
+    assert entry["history"] == [{"epoch": 1.0, "f1": 0.71}, {"epoch": 2.0, "f1": 0.83}]
+
+
+# --- Pipeline-Runner -------------------------------------------------------
+
+
+@pytest.fixture
+def clean_runner():
+    from magda import runner
+
+    runner.reset()
+    yield
+    runner.stop()
+    runner.reset()
+
+
+def test_run_lehnt_unbekannten_schritt_ab(client, clean_runner):
+    resp = client.post("/api/run", json={"job": "rm -rf /"})
+
+    assert resp.status_code == 400
+    assert "Unbekannter Schritt" in resp.json()["detail"]
+
+
+def test_run_lehnt_ungueltige_variante_ab(client, clean_runner):
+    resp = client.post("/api/run", json={"job": "04_train", "variant": "bash"})
+
+    assert resp.status_code == 400
+    assert "Ungültige Variante" in resp.json()["detail"]
+
+
+def test_run_verlangt_variante_wo_noetig(client, clean_runner):
+    resp = client.post("/api/run", json={"job": "05_evaluate"})
+
+    assert resp.status_code == 400
+
+
+def test_run_status_ist_leer_ohne_lauf(client, clean_runner):
+    body = client.get("/api/run").json()
+
+    assert body["running"] is False
+    assert body["job"] is None
+    assert body["lines"] == []

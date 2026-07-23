@@ -34,15 +34,22 @@ CHAT_AI_API_KEY = os.getenv("CHAT_AI_API_KEY", "")
 # Vision-Modell fürs Labeling.
 #
 # Von den 16 Modellen der GWDG (Stand 23.07.2026) nehmen nur drei Bilder an:
-# gemma-4-31b-it, mistral-medium-3.5-128b und qwen3-omni-30b-a3b-instruct.
-# Auf einer Testseite mit zwei Angeboten war gemma-4-31b-it am saubersten –
-# als einziges hat es die BIO-Fortsetzung richtig gesetzt ("500"=B-QUANTITY,
-# "g"=I-QUANTITY). Mistral vergab dort zweimal B-, was aus einer Mengenangabe
-# zwei Entitäten macht; qwen3-omni hielt Streichpreise für Rabatte.
+# mistral-medium-3.5-128b, gemma-4-31b-it und qwen3-omni-30b-a3b-instruct.
+#
+# Gemessen auf echten Prospektseiten (150-220 Wörter, je 3 Seiten):
+#   mistral-medium-3.5-128b   3/3 erfolgreich, 67-89 % der Wörter getaggt
+#   qwen3-omni-30b-a3b        2/3, 49-53 %
+#   gemma-4-31b-it            1/3, und dabei nur 4 % getaggt
+#
+# Achtung, daraus gelernt: auf einer kleinen synthetischen Testseite (23 Wörter)
+# sah gemma am besten aus. Erst die echten Seiten mit 50-80 nötigen Spans pro
+# Antwort zeigen, welches Modell das durchhält – gemma lief dort in
+# Endlosschleifen, qwen schnitt ab. Modellwahl nie an Spielzeugbeispielen
+# entscheiden.
 #
 # Der Modellkatalog ändert sich – Namen nicht raten, sondern prüfen:
 #   curl -H "Authorization: Bearer $CHAT_AI_API_KEY" $CHAT_AI_BASE_URL/models
-CHAT_AI_VISION_MODEL = os.getenv("CHAT_AI_VISION_MODEL", "gemma-4-31b-it")
+CHAT_AI_VISION_MODEL = os.getenv("CHAT_AI_VISION_MODEL", "mistral-medium-3.5-128b")
 
 # ---------------------------------------------------------------------------
 # Modelle (siehe Proposal, Abschnitt "Baseline Architecture")

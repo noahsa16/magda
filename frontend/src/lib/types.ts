@@ -52,3 +52,22 @@ export interface InferenceResult extends PageDetail {
   tags: string[]
   image_b64: string
 }
+
+export interface ModelStatus {
+  variant: "layoutxlm" | "gbert"
+  trained: boolean
+  epoch: number | null
+  steps: number | null
+  max_steps: number | null
+  best_f1: number | null
+  history: { epoch: number; f1: number }[]
+}
+
+/** Zustand des laufenden Pipeline-Schritts (magda/runner.py). */
+export interface RunStatus {
+  running: boolean
+  job: string | null
+  lines: string[]
+  exit_code: number | null
+  elapsed: number | null
+}

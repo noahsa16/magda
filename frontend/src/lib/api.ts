@@ -1,4 +1,6 @@
-import type { EvalReport, InferenceResult, PageDetail, PageSummary, PipelineStatus } from "./types"
+import type {
+  EvalReport, InferenceResult, ModelStatus, PageDetail, PageSummary, PipelineStatus, RunStatus,
+} from "./types"
 
 async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
   const res = await fetch(url, init)
@@ -19,9 +21,18 @@ export const api = {
   page: (id: string) => fetchJson<PageDetail>(`/api/pages/${id}`),
   pageImageUrl: (id: string) => `/api/pages/${id}/image`,
   evaluation: () => fetchJson<EvalReport[]>("/api/evaluation"),
+  model: () => fetchJson<ModelStatus[]>("/api/model"),
   inference: (file: File) => {
     const form = new FormData()
     form.append("file", file)
     return fetchJson<InferenceResult>("/api/inference", { method: "POST", body: form })
   },
+  run: () => fetchJson<RunStatus>("/api/run"),
+  startRun: (job: string, variant?: string) =>
+    fetchJson<RunStatus>("/api/run", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ job, variant: variant ?? null }),
+    }),
+  stopRun: () => fetchJson<RunStatus>("/api/run/stop", { method: "POST" }),
 }

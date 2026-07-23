@@ -4,10 +4,11 @@ import { mockFetch, renderWithProviders } from "@/test/utils"
 import { EvaluationPage } from "./evaluation-page"
 
 describe("EvaluationPage", () => {
-  it("zeigt den Empty State mit Evaluate-Kommando", async () => {
+  it("erklärt im Empty State, was hier entsteht, statt nur ein Kommando zu zeigen", async () => {
     mockFetch({ "/api/evaluation": [] })
     renderWithProviders(<EvaluationPage />)
-    // Beide Varianten-Kommandos (gbert + layoutxlm) matchen den Regex.
-    expect(await screen.findAllByText(/05_evaluate/)).toHaveLength(2)
+    expect(await screen.findByText(/Forschungsfrage/)).toBeInTheDocument()
+    expect(screen.getByText(/seqeval/)).toBeInTheDocument()
+    expect(screen.getByRole("link", { name: /Training/ })).toHaveAttribute("href", "/")
   })
 })

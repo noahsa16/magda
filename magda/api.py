@@ -13,8 +13,9 @@ import json
 
 from fastapi import FastAPI, HTTPException, UploadFile
 from fastapi.responses import FileResponse
+from pydantic import BaseModel
 
-from magda import config
+from magda import config, runner
 from magda.labels import ENTITY_TYPES, id2label
 from magda.ocr import extract_words, normalize_bbox, render_png
 
@@ -105,6 +106,82 @@ def get_evaluation():
         with open(f) as fh:
             reports.append(json.load(fh))
     return reports
+
+
+def _training_state(variant: str) -> dict:
+    """Trainingsstand aus dem jüngsten Checkpoint.
+
+    `trainer.save_model()` schreibt kein trainer_state.json nach best/, der
+    Verlauf steht nur in den checkpoint-N-Ordnern. Der mit der höchsten
+    Schrittzahl ist der aktuellste.
+    """
+    variant_dir = config.CHECKPOINTS_DIR / variant
+    checkpoints = sorted(
+        variant_dir.glob("checkpoint-*"),
+        key=lambda p: int(p.name.split("-")[1]) if p.name.split("-")[1].isdigit() else 0,
+    )
+    entry: dict = {
+        "variant": variant,
+        "trained": (variant_dir / "best").exists(),
+        "epoch": None,
+        "steps": None,
+        "max_steps": None,
+        "best_f1": None,
+        "history": [],
+    }
+    if not checkpoints:
+        return entry
+
+    state_file = checkpoints[-1] / "trainer_state.json"
+    if not state_file.exists():
+        return entry
+    with open(state_file) as f:
+        state = json.load(f)
+
+    entry["epoch"] = state.get("epoch")
+    entry["steps"] = state.get("global_step")
+    entry["max_steps"] = state.get("max_steps")
+    entry["best_f1"] = state.get("best_metric")
+    entry["history"] = [
+        {"epoch": row.get("epoch"), "f1": row["eval_f1"]}
+        for row in state.get("log_history", [])
+        if "eval_f1" in row
+    ]
+    return entry
+
+
+@app.get("/api/model")
+def get_model_status():
+    """Trainingsstand beider Varianten – die Demo zeigt daran, wie weit das
+    Modell ist, das dort gerade rechnet."""
+    return [_training_state(v) for v in ("layoutxlm", "gbert")]
+
+
+class RunRequest(BaseModel):
+    job: str
+    variant: str | None = None
+
+
+@app.post("/api/run")
+def start_run(req: RunRequest):
+    try:
+        runner.start(req.job, req.variant)
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+    except RuntimeError as e:
+        raise HTTPException(409, str(e))
+    return runner.status()
+
+
+@app.get("/api/run")
+def get_run():
+    return runner.status()
+
+
+@app.post("/api/run/stop")
+def stop_run():
+    runner.stop()
+    return runner.status()
 
 
 # Modell + Tokenizer sind teuer zu laden – einmal laden, dann wiederverwenden.
