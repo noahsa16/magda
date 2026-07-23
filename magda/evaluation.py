@@ -43,3 +43,9 @@ def full_report(predictions: np.ndarray, label_ids: np.ndarray) -> str:
     """Ausführlicher Report pro Entity-Typ, für die Fehleranalyse in Phase 3."""
     true_tags, pred_tags = _decode(predictions, label_ids)
     return classification_report(true_tags, pred_tags, digits=3)
+
+
+def report_dict(predictions: np.ndarray, label_ids: np.ndarray) -> dict:
+    """Wie full_report, aber als Dict – für den JSON-Export ans Frontend."""
+    true_tags, pred_tags = _decode(predictions, label_ids)
+    return classification_report(true_tags, pred_tags, digits=3, output_dict=True)

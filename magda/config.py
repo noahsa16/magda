@@ -22,6 +22,7 @@ WORDS_DIR = DATA_DIR / "words"      # Wörter + Bounding-Boxen pro Seite (JSON)
 IMAGES_DIR = DATA_DIR / "images"    # gerenderte Seitenbilder (PNG)
 LABELED_DIR = DATA_DIR / "labeled"  # vom LLM gelabelte Seiten (BIO-Tags)
 SPLITS_DIR = DATA_DIR / "splits"    # train/dev/test-Aufteilung
+EVAL_DIR = DATA_DIR / "eval"        # Evaluations-Reports als JSON (fürs Frontend)
 CHECKPOINTS_DIR = PROJECT_ROOT / "checkpoints"
 
 # ---------------------------------------------------------------------------
@@ -54,11 +55,22 @@ SEED = 13
 
 
 def make_llm_client():
-    """OpenAI-Client für die Academic Cloud. Wirft früh, wenn der Key fehlt."""
+    """OpenAI-Client für die Academic Cloud. Wirft früh, wenn der Key fehlt.
+
+    Timeout bewusst eng: die GWDG lädt Modelle bei Bedarf und hängt dabei
+    gern minutenlang. Lieber nach 2 Minuten abbrechen und die Seite beim
+    nächsten Lauf erneut versuchen (Skripte sind idempotent), als einen
+    Batchlauf an einer einzigen Seite festhängen zu lassen.
+    """
     from openai import OpenAI
 
     if not CHAT_AI_API_KEY:
         raise RuntimeError(
             "CHAT_AI_API_KEY ist nicht gesetzt. .env anlegen, siehe .env.example."
         )
-    return OpenAI(base_url=CHAT_AI_BASE_URL, api_key=CHAT_AI_API_KEY)
+    return OpenAI(
+        base_url=CHAT_AI_BASE_URL,
+        api_key=CHAT_AI_API_KEY,
+        timeout=120.0,
+        max_retries=2,
+    )

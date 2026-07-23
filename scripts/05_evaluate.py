@@ -10,7 +10,9 @@ der Blackbox mit unseren Token-Entities matchen – kommt in Phase 3.
 """
 
 import argparse
+import json
 import sys
+from datetime import datetime
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -18,7 +20,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import numpy as np
 from transformers import AutoModelForTokenClassification, AutoTokenizer, Trainer
 
-from magda.config import CHECKPOINTS_DIR, LAYOUT_MODEL, MAX_SEQ_LENGTH, TEXT_MODEL
+from magda.config import CHECKPOINTS_DIR, EVAL_DIR, LAYOUT_MODEL, MAX_SEQ_LENGTH, TEXT_MODEL
 from magda.dataset import (
     LayoutDataset,
     TextDataset,
@@ -26,7 +28,7 @@ from magda.dataset import (
     load_labeled_pages,
     select_split,
 )
-from magda.evaluation import full_report
+from magda.evaluation import full_report, report_dict
 
 
 def main():
@@ -57,6 +59,24 @@ def main():
 
     predictions = np.argmax(output.predictions, axis=-1)
     print(full_report(predictions, output.label_ids))
+
+    # Zusätzlich als JSON für das Frontend-Dashboard.
+    EVAL_DIR.mkdir(parents=True, exist_ok=True)
+    out_file = EVAL_DIR / f"{args.variant}_{args.split}.json"
+    with open(out_file, "w") as f:
+        json.dump(
+            {
+                "variant": args.variant,
+                "split": args.split,
+                "num_pages": len(eval_pages),
+                "created": datetime.now().isoformat(timespec="seconds"),
+                "report": report_dict(predictions, output.label_ids),
+            },
+            f,
+            ensure_ascii=False,
+            indent=2,
+        )
+    print(f"Report gespeichert: {out_file}")
 
 
 if __name__ == "__main__":
