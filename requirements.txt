@@ -7,7 +7,10 @@ openai
 
 # Modelltraining & Evaluation
 torch
-transformers>=4.44
+# transformers 5.x hat die Slow-Tokenizer entfernt; deepset/gbert-base liefert
+# aber nur vocab.txt und lässt sich dort nicht mehr laden -> bei 4.x bleiben.
+transformers>=4.44,<5
+sentencepiece
 numpy
 seqeval
 
@@ -16,5 +19,11 @@ seqeval
 # https://detectron2.readthedocs.io/en/latest/tutorials/install.html
 # detectron2
 
+# Frontend-API
+fastapi
+uvicorn
+python-multipart
+
 # Entwicklung
 pytest
+httpx
