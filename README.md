@@ -87,10 +87,22 @@ docs/proposal/          das Projekt-Proposal
 im BIO-Format. Wird nach Sichtung der ersten gelabelten Daten finalisiert,
 siehe `magda/labels.py`.
 
+## Frontend
+
+Web-Oberfläche für Pipeline-Status, Label-Inspektion, Evaluation und Live-Demo.
+
+```bash
+uvicorn magda.api:app --reload    # Backend, Port 8000
+cd frontend && npm install && npm run dev
+```
+
+Das Frontend läuft auf http://localhost:5173 und proxied `/api` ans Backend.
+
 ## Tests
 
 ```bash
-pytest
+pytest                    # Backend + Pipeline
+cd frontend && npm test   # Frontend (Vitest)
 ```
 
 ## Offene Punkte

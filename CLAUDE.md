@@ -12,9 +12,10 @@ Ausführliche Erklärung der Pipeline: `EXPLANATION.md` (lokal, nicht im Repo).
 ## Struktur
 
 ```
-magda/       Kern-Package – hier liegt die Logik
+magda/       Kern-Package – hier liegt die Logik (inkl. api.py, FastAPI fürs Frontend)
 scripts/     nummerierte Pipeline-Schritte, dünne CLI-Wrapper um magda/
-tests/       pytest (Labels, Alignment)
+frontend/    React-SPA (Vite, Tailwind, shadcn) – liest data/ über magda/api.py
+tests/       pytest (Labels, Alignment, API)
 data/        lokal, gitignored (nur .gitkeep versioniert)
 checkpoints/ lokal, gitignored
 docs/        Proposal
@@ -30,6 +31,9 @@ nichts läuft im Speicher durch.
 pytest                                   # Tests
 python scripts/02_extract_words.py       # Schritt ausführen (aus dem Projektroot)
 python scripts/04_train.py layoutxlm     # bzw. gbert
+uvicorn magda.api:app --reload           # Frontend-API (Port 8000)
+cd frontend && npm run dev               # Frontend-Dev-Server (proxied /api)
+cd frontend && npm test                  # Frontend-Tests (Vitest)
 ```
 
 Skripte immer aus dem Projektroot starten – sie hängen den Root selbst an
