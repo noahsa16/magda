@@ -78,6 +78,15 @@ Skripte immer aus dem Projektroot starten – sie hängen den Root selbst an
 - **Der Trainingsverlauf steht nicht in `checkpoints/{variant}/best`.**
   `trainer.save_model()` schreibt dort kein `trainer_state.json`; `/api/model`
   liest deshalb den `checkpoint-N`-Ordner mit der höchsten Schrittzahl.
+- **`gold/` ist versioniert, `data/` nicht.** Handannotierte Referenzlabels
+  sind nicht reproduzierbar – ein verlorenes `data/labeled/` kostet API-Zeit,
+  ein verlorenes `gold/` kostet Arbeitstage. Gespeichert werden Spans, nicht
+  BIO-Tags: git-diffbar, und `labels.spans_to_bio()` erzeugt die Tags daraus.
+- **Der `words_hash` in Gold-Dateien** ist die Absicherung des
+  Wortreihenfolge-Vertrags. Ändert sich Schritt 02, zeigen die Span-Indizes
+  auf andere Wörter, ohne dass etwas kaputtgeht. Die API lehnt dann mit 409 ab.
+- **Die API ist nicht mehr read-only**, schreibt aber ausschließlich nach
+  `gold/` – dieselbe enge Beschränkung wie beim Runner.
 
 ## Offene Entscheidungen (nicht eigenmächtig festlegen)
 

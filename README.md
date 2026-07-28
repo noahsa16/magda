@@ -111,6 +111,14 @@ Die Schritte laufen als Subprozess auf demselben Rechner wie das Backend
 (`magda/runner.py`). Der Runner nimmt nur die fünf bekannten Skripte an –
 gedacht für das lokale Setup, nicht für einen offen erreichbaren Server.
 
+### Annotieren
+
+`/annotate` ist das Werkzeug für handgelabelte Referenzdaten. Wort anklicken
+(Shift-Klick erweitert die Auswahl), Ziffer `1`–`8` setzt das Label, `0`
+entfernt es, `f` markiert die Seite als fertig. Gespeichert wird laufend nach
+`gold/` – im Unterschied zu `data/` versioniert, weil Handarbeit sich nicht
+neu erzeugen lässt.
+
 ## Tests
 
 ```bash

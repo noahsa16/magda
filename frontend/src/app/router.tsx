@@ -3,6 +3,7 @@ import { DemoPage } from "@/features/demo/demo-page"
 import { EvaluationPage } from "@/features/evaluation/evaluation-page"
 import { InspectorPage } from "@/features/inspector/inspector-page"
 import { OverviewPage } from "@/features/overview/overview-page"
+import { AnnotatePage } from "@/features/annotate/annotate-page"
 import { Layout } from "./layout"
 
 export const routes: RouteObject[] = [
@@ -11,6 +12,7 @@ export const routes: RouteObject[] = [
     children: [
       { path: "/", element: <OverviewPage /> },
       { path: "/inspector", element: <InspectorPage /> },
+      { path: "/annotate", element: <AnnotatePage /> },
       { path: "/evaluation", element: <EvaluationPage /> },
       { path: "/demo", element: <DemoPage /> },
     ],

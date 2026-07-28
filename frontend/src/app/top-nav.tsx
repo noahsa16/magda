@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils"
 const items = [
   { title: "Übersicht", url: "/" },
   { title: "Inspektor", url: "/inspector" },
+  { title: "Annotieren", url: "/annotate" },
   { title: "Evaluation", url: "/evaluation" },
   { title: "Demo", url: "/demo" },
 ]
