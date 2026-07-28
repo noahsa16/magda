@@ -56,13 +56,14 @@ def test_status_zaehlt_pro_katalog(client):
 
     body = client.get("/api/status").json()
 
-    entry = body["catalogs"][0]
-    assert entry["id"] == "462828"
-    assert entry["raw"] == 2
-    assert entry["words"] == 1
-    assert entry["images"] == 0
-    assert entry["labeled"] == 0
-    assert entry["downloaded"] is not None
+    assert len(body["catalogs"]) == 1
+    # Der Vergleich gegen das ganze Dict ist Absicht: Das Frontend-Interface
+    # CatalogStatus spiegelt genau diese Schlüsselmenge, ein stillschweigend
+    # dazugekommenes Feld soll hier auffallen. Das Ladedatum hängt an der Uhr
+    # und wird in test_status_liefert_ladedatum_je_katalog eigens geprüft.
+    entry = dict(body["catalogs"][0])
+    assert entry.pop("downloaded") is not None
+    assert entry == {"id": "462828", "raw": 2, "words": 1, "images": 0, "labeled": 0}
     assert body["totals"]["raw"] == 2
 
 
