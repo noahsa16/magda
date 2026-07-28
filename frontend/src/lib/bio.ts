@@ -37,6 +37,14 @@ export function spansToTags(spans: Span[], wordCount: number): string[] {
     if (span.start < 0 || span.end > wordCount || span.start >= span.end) {
       continue
     }
+    // Bei Überlappung gewinnt der zuerst genannte Span – dieselbe Regel wie in
+    // labels.spans_to_bio(). Über die Oberfläche entstehen keine Überlappungen,
+    // über eine von Hand gemergte Datei in gold/ aber schon: Liefen beide
+    // Seiten auseinander, sähe der Annotator etwas anderes, als später ins
+    // Training ginge – ohne dass es irgendwo auffiele.
+    if (tags.slice(span.start, span.end).some((tag) => tag !== "O")) {
+      continue
+    }
     tags[span.start] = `B-${span.label}`
     for (let i = span.start + 1; i < span.end; i++) tags[i] = `I-${span.label}`
   }

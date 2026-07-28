@@ -4,7 +4,7 @@ Die Spans kommen vom LLM und sind entsprechend unzuverlässig – hier wird
 vor allem geprüft, dass kaputter Input verworfen wird statt zu crashen.
 """
 
-from magda.labels import LABELS, label2id, spans_to_bio
+from magda.labels import LABELS, label2id, spans_to_bio, validate_spans
 
 
 def test_einfacher_span():
@@ -47,9 +47,6 @@ def test_label_ids_sind_konsistent():
     # id2label/label2id müssen exakt invers sein, sonst knallt es erst beim Training
     assert len(LABELS) == len(set(LABELS))
     assert all(label2id[label] == i for i, label in enumerate(LABELS))
-
-
-from magda.labels import validate_spans
 
 
 def test_validate_spans_akzeptiert_gueltige_spans():

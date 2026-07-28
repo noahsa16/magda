@@ -70,6 +70,19 @@ describe("spansToTags", () => {
     expect(tags).toEqual(["O", "O", "O"])
   })
 
+  it("lässt bei Überlappung den ersten Span gewinnen, wie spans_to_bio", () => {
+    // Gleicher Fall wie test_ueberlappung_erster_gewinnt in tests/test_labels.py.
+    // Aus dem Annotator kommt so etwas nie, aus einem Merge in gold/ schon.
+    const tags = spansToTags(
+      [
+        { start: 0, end: 2, label: "PRODUCT" },
+        { start: 1, end: 3, label: "BRAND" },
+      ],
+      4,
+    )
+    expect(tags).toEqual(["B-PRODUCT", "I-PRODUCT", "O", "O"])
+  })
+
   it("verarbeitet valide Spans auch bei Grenzen", () => {
     const tags = spansToTags(
       [
