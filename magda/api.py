@@ -51,7 +51,13 @@ def _downloaded_at(catalog: str) -> str | None:
     directory = config.RAW_DIR / catalog
     if not directory.exists():
         return None
-    return datetime.fromtimestamp(directory.stat().st_mtime).date().isoformat()
+    try:
+        return datetime.fromtimestamp(directory.stat().st_mtime).date().isoformat()
+    except OSError:
+        # Ein unlesbarer Katalog (z.B. fehlende Berechtigung) darf nicht die
+        # komplette Statusübersicht zerstören. Stattdessen wird das Datum als
+        # nicht verfügbar gekennzeichnet.
+        return None
 
 
 @app.get("/api/schema")
