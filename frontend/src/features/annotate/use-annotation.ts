@@ -34,6 +34,18 @@ export function useAnnotation(pageId: string | null, annotator: string) {
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const pendingRef = useRef<Pending | null>(null)
 
+  // Immer die zuletzt angezeigte Seite griffbereit - direkt im Render-Body
+  // geschrieben (nicht in einem Effekt), damit sie beim nächsten Aufruf von
+  // flush() garantiert aktuell ist, auch wenn flush selbst über einen
+  // Seitenwechsel hinweg dieselbe Closure bleibt.
+  const pageIdRef = useRef(pageId)
+  pageIdRef.current = pageId
+
+  // false ab dem Unmount, damit ein spät auflösender Flush keinen State an
+  // einer längst verschwundenen Komponente mehr setzt.
+  const mountedRef = useRef(true)
+  useEffect(() => () => { mountedRef.current = false }, [])
+
   const query = useQuery({
     queryKey: ["gold", pageId],
     queryFn: () => api.goldPage(pageId!),
@@ -58,7 +70,11 @@ export function useAnnotation(pageId: string | null, annotator: string) {
   const flush = useCallback(async () => {
     const pending = pendingRef.current
     if (!pending) return
-    setSaveState("saving")
+    // Gehört diese Änderung noch zur gerade angezeigten Seite? Nur dann darf
+    // dieser Flush ihren Speicherzustand anzeigen - sonst landet ein Fehler
+    // oder ein "gespeichert" einer längst verlassenen Seite auf der falschen.
+    const isCurrentPage = () => pending.pageId === pageIdRef.current
+    if (mountedRef.current && isCurrentPage()) setSaveState("saving")
     try {
       await api.saveGold(pending.pageId, {
         words_hash: pending.hash,
@@ -67,12 +83,20 @@ export function useAnnotation(pageId: string | null, annotator: string) {
         annotator,
         spans: pending.spans,
       })
-      pendingRef.current = null
-      setSaveState("saved")
+      // Nur zurücksetzen, wenn seither keine neuere Änderung geplant wurde -
+      // sonst ginge eine während des Wartens eingetroffene Bearbeitung
+      // verloren (zwei überlappende Flushes, deren älterer nach dem
+      // neueren aufloest, z. B. durch retry() parallel zu einem Timer).
+      if (pendingRef.current === pending) pendingRef.current = null
+      // Der Gold-Übersicht ist es egal, ob die gespeicherte Seite noch
+      // angezeigt wird - ihr Status soll trotzdem aktuell sein.
       queryClient.invalidateQueries({ queryKey: ["gold"] })
+      if (mountedRef.current && isCurrentPage()) setSaveState("saved")
     } catch (err) {
-      if (err instanceof Error && err.message.includes("Wortliste")) setConflict(true)
-      setSaveState("error")
+      if (mountedRef.current && isCurrentPage()) {
+        if (err instanceof Error && err.message.includes("Wortliste")) setConflict(true)
+        setSaveState("error")
+      }
     }
   }, [annotator, queryClient])
 
