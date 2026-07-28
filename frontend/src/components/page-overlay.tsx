@@ -71,11 +71,19 @@ export function PageOverlay({
               x={x0} y={y0} width={x1 - x0} height={y1 - y0}
               rx={1.5}
               className={rank != null ? "box-reveal" : undefined}
-              style={
-                rank != null
-                  ? { "--reveal-delay": `${0.45 + rank * 0.028}s` } as React.CSSProperties
-                  : { transition: "fill-opacity 150ms, stroke-width 150ms", cursor: onWordClick ? "pointer" : undefined }
-              }
+              style={{
+                // SVG liefert Zeigerereignisse standardmäßig nur dort, wo
+                // gemalt wird. Ungelabelte Wörter haben fill="none", treffbar
+                // wäre also nur ihre 0,8 pt dünne Kontur - im Annotator, wo
+                // jedes Wort ungefüllt anfängt, praktisch kein Wort. "all"
+                // entkoppelt das Treffen vom Füllzustand, ohne am Aussehen
+                // etwas zu ändern.
+                pointerEvents: "all",
+                cursor: onWordClick ? "pointer" : undefined,
+                ...(rank != null
+                  ? ({ "--reveal-delay": `${0.45 + rank * 0.028}s` } as React.CSSProperties)
+                  : { transition: "fill-opacity 150ms, stroke-width 150ms" }),
+              }}
               fill={type ? entityColor(entityTypes, type) : "none"}
               fillOpacity={highlighted ? 0.6 : 0.35}
               stroke={type ? entityColor(entityTypes, type) : "#14203C"}

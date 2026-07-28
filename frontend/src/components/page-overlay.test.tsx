@@ -29,6 +29,21 @@ describe("PageOverlay", () => {
     expect(container.querySelectorAll("rect")).toHaveLength(1)
   })
 
+  it("macht auch ungefuellte Boxen auf ganzer Flaeche treffbar", () => {
+    const { container } = render(
+      <PageOverlay imageUrl="/img.png" width={595.28} height={841.89}
+        words={words} entityTypes={TYPES} />,
+    )
+    // jsdom kennt kein SVG-Hit-Testing, ein Klick traefe hier auch ohne
+    // pointer-events. Geprueft wird deshalb die Eigenschaft selbst: ohne sie
+    // faengt fill="none" gar keinen Zeiger, und ungelabelte Woerter - im
+    // Annotator alle - sind nur auf ihrer duennen Kontur anklickbar.
+    for (const rect of container.querySelectorAll("rect")) {
+      expect((rect as SVGRectElement).style.pointerEvents).toBe("all")
+      expect(rect.getAttribute("fill")).toBe("none")
+    }
+  })
+
   it("rendert ohne tags alle Woerter als Kontur", () => {
     const { container } = render(
       <PageOverlay imageUrl="/img.png" width={595.28} height={841.89}
