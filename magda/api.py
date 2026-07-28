@@ -49,14 +49,13 @@ def _downloaded_at(catalog: str) -> str | None:
     nur dort existiert, wo das LLM ihn als VALID erkannt hat.
     """
     directory = config.RAW_DIR / catalog
-    if not directory.exists():
-        return None
     try:
+        # stat() wirft FileNotFoundError bei fehlendem Verzeichnis und PermissionError
+        # bei Zugriffsproblemen auf Elternverzeichnissen. Beides ist OSError und wird
+        # als „Datum nicht verfügbar" behandelt — ein einzelner unlesbarer Katalog
+        # darf nicht die komplette Statusübersicht zerstören.
         return datetime.fromtimestamp(directory.stat().st_mtime).date().isoformat()
     except OSError:
-        # Ein unlesbarer Katalog (z.B. fehlende Berechtigung) darf nicht die
-        # komplette Statusübersicht zerstören. Stattdessen wird das Datum als
-        # nicht verfügbar gekennzeichnet.
         return None
 
 
