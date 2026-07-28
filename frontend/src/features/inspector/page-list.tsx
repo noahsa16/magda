@@ -1,17 +1,24 @@
 import { useMemo, useState } from "react"
 import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
-import type { PageSummary } from "@/lib/types"
+import type { GoldSummary, PageSummary } from "@/lib/types"
 
 interface PageListProps {
   pages: PageSummary[]
   selected: string | null
   onSelect: (id: string) => void
+  /** Wenn gesetzt, zeigt der Punkt den Gold-Status statt "gelabelt". */
+  goldStatus?: GoldSummary[]
 }
 
-export function PageList({ pages, selected, onSelect }: PageListProps) {
+export function PageList({ pages, selected, onSelect, goldStatus }: PageListProps) {
   const [query, setQuery] = useState("")
   const [onlyLabeled, setOnlyLabeled] = useState(false)
+
+  const goldById = useMemo(
+    () => new Map((goldStatus ?? []).map((g) => [g.page_id, g.status])),
+    [goldStatus],
+  )
 
   const byCatalog = useMemo(() => {
     const filtered = pages.filter(
@@ -69,13 +76,27 @@ export function PageList({ pages, selected, onSelect }: PageListProps) {
                     <span className="min-w-0 truncate font-mono text-[13px]">
                       {p.page_id.split("_")[1] ?? p.page_id}
                     </span>
-                    <span
-                      className={cn(
-                        "size-2 shrink-0 rounded-full",
-                        p.labeled ? "bg-[var(--riso-blue)]" : "border border-muted-foreground",
-                      )}
-                      title={p.labeled ? "gelabelt" : "offen"}
-                    />
+                    {goldStatus ? (
+                      <span
+                        className={cn(
+                          "size-2 shrink-0 rounded-full",
+                          goldById.get(p.page_id) === "done"
+                            ? "bg-[var(--riso-blue)]"
+                            : goldById.get(p.page_id) === "in_progress"
+                              ? "bg-primary"
+                              : "border border-muted-foreground",
+                        )}
+                        title={goldById.get(p.page_id) ?? "unberührt"}
+                      />
+                    ) : (
+                      <span
+                        className={cn(
+                          "size-2 shrink-0 rounded-full",
+                          p.labeled ? "bg-[var(--riso-blue)]" : "border border-muted-foreground",
+                        )}
+                        title={p.labeled ? "gelabelt" : "offen"}
+                      />
+                    )}
                   </button>
                 </li>
               ))}

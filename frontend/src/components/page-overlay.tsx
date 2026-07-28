@@ -16,7 +16,7 @@ interface PageOverlayProps {
   /** Auch Wörter ohne Entity dünn umranden (zeigt, was die Extraktion gefunden hat). */
   showPlainWords?: boolean
   /** Klick auf eine Box, z. B. um sie in der Liste auszuwählen. */
-  onWordClick?: (index: number) => void
+  onWordClick?: (index: number, event: React.MouseEvent) => void
   /** Scan-Reveal: Scanlinie + gestaffeltes Einblenden der Boxen (Demo). */
   animate?: boolean
 }
@@ -81,7 +81,7 @@ export function PageOverlay({
               stroke={type ? entityColor(entityTypes, type) : "#14203C"}
               strokeOpacity={type ? 1 : 0.25}
               strokeWidth={highlighted ? 2.5 : 0.8}
-              onClick={() => onWordClick?.(i)}
+              onClick={(e) => onWordClick?.(i, e)}
               onMouseEnter={() =>
                 setHover({ text: word.text, tag, xPct: (x0 / width) * 100, yPct: (y1 / height) * 100 })
               }

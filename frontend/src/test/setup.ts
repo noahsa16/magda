@@ -22,3 +22,30 @@ class ResizeObserverStub {
   disconnect() {}
 }
 window.ResizeObserver = window.ResizeObserver ?? (ResizeObserverStub as unknown as typeof ResizeObserver)
+
+// Node bringt seit Version 22 ein eigenes globales localStorage mit, das ohne
+// --localstorage-file nicht funktioniert (getItem etc. fehlen) und jsdoms
+// funktionierende Implementierung in diesem Setup überschattet. Ersatz durch
+// eine einfache In-Memory-Variante, ausschließlich für Tests.
+class MemoryStorageStub implements Storage {
+  private store = new Map<string, string>()
+  get length() {
+    return this.store.size
+  }
+  clear() {
+    this.store.clear()
+  }
+  getItem(key: string) {
+    return this.store.has(key) ? this.store.get(key)! : null
+  }
+  key(index: number) {
+    return [...this.store.keys()][index] ?? null
+  }
+  removeItem(key: string) {
+    this.store.delete(key)
+  }
+  setItem(key: string, value: string) {
+    this.store.set(key, String(value))
+  }
+}
+Object.defineProperty(window, "localStorage", { value: new MemoryStorageStub(), writable: true })
