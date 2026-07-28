@@ -54,4 +54,30 @@ describe("spansToTags", () => {
     const entities = groupEntities(words, spansToTags(spans, words.length))
     expect(entities.map((e) => ({ start: e.start, end: e.end, label: e.type }))).toEqual(spans)
   })
+
+  it("überspringt Spans außerhalb der Wortliste, statt das Array zu verlängern", () => {
+    const tags = spansToTags([{ start: 1, end: 9, label: "PRICE" }], 3)
+    expect(tags).toEqual(["O", "O", "O"])
+  })
+
+  it("überspringt Spans mit negativem start", () => {
+    const tags = spansToTags([{ start: -1, end: 2, label: "BRAND" }], 3)
+    expect(tags).toEqual(["O", "O", "O"])
+  })
+
+  it("überspringt Spans mit start >= end", () => {
+    const tags = spansToTags([{ start: 2, end: 2, label: "BRAND" }], 3)
+    expect(tags).toEqual(["O", "O", "O"])
+  })
+
+  it("verarbeitet valide Spans auch bei Grenzen", () => {
+    const tags = spansToTags(
+      [
+        { start: 0, end: 1, label: "BRAND" },
+        { start: 2, end: 3, label: "PRICE" },
+      ],
+      3,
+    )
+    expect(tags).toEqual(["B-BRAND", "O", "B-PRICE"])
+  })
 })

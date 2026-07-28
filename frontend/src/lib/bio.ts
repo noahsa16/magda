@@ -31,6 +31,12 @@ export function groupEntities(words: { text: string }[], tags: string[]): Entity
 export function spansToTags(spans: Span[], wordCount: number): string[] {
   const tags: string[] = new Array(wordCount).fill("O")
   for (const span of spans) {
+    // Ungültige Spans verwerfen statt das Array zu erweitern.
+    // Das verhindert, dass das Frontend Tags mit falscher Länge
+    // an groupEntities() übergibt – z.B. wenn die Wortliste schrumpft.
+    if (span.start < 0 || span.end > wordCount || span.start >= span.end) {
+      continue
+    }
     tags[span.start] = `B-${span.label}`
     for (let i = span.start + 1; i < span.end; i++) tags[i] = `I-${span.label}`
   }
