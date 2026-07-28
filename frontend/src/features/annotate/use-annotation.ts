@@ -83,15 +83,20 @@ export function useAnnotation(pageId: string | null, annotator: string) {
         annotator,
         spans: pending.spans,
       })
-      // Nur zurücksetzen, wenn seither keine neuere Änderung geplant wurde -
-      // sonst ginge eine während des Wartens eingetroffene Bearbeitung
-      // verloren (zwei überlappende Flushes, deren älterer nach dem
-      // neueren aufloest, z. B. durch retry() parallel zu einem Timer).
-      if (pendingRef.current === pending) pendingRef.current = null
-      // Der Gold-Übersicht ist es egal, ob die gespeicherte Seite noch
-      // angezeigt wird - ihr Status soll trotzdem aktuell sein.
-      queryClient.invalidateQueries({ queryKey: ["gold"] })
-      if (mountedRef.current && isCurrentPage()) setSaveState("saved")
+      // Nur wenn seither keine neuere Änderung geplant wurde, darf dieser
+      // Flush pendingRef zurücksetzen UND "gespeichert" anzeigen - sonst
+      // gälte eine bereits wartende neuere Bearbeitung als gesichert, obwohl
+      // ihr eigener Timer noch gar nicht gefeuert hat (zwei überlappende
+      // Flushes, deren älterer nach dem neueren aufloest, z. B. durch
+      // retry() parallel zu einem Timer).
+      const isLatest = pendingRef.current === pending
+      if (isLatest) pendingRef.current = null
+      // Exaktes Match trifft nur die Übersichts-Query ["gold"], nicht
+      // ["gold", pageId] der gerade offenen Seite - sonst würde der davon
+      // ausgelöste Refetch eine zwischen Flush-Ende und Refetch-Antwort
+      // weiterlaufende Bearbeitung stillschweigend überschreiben.
+      queryClient.invalidateQueries({ queryKey: ["gold"], exact: true })
+      if (isLatest && mountedRef.current && isCurrentPage()) setSaveState("saved")
     } catch (err) {
       if (mountedRef.current && isCurrentPage()) {
         if (err instanceof Error && err.message.includes("Wortliste")) setConflict(true)

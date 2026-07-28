@@ -21,11 +21,21 @@ interface PendingPut {
   resolve: (status: number, body: unknown) => void
 }
 
+interface PendingGet {
+  url: string
+  resolve: (status: number, body: unknown) => void
+}
+
 /** Eigener fetch-Mock statt des bestehenden mockFetch-Helfers: Der deckt nur
  * sofort auflösende Erfolgsfälle ab. Hier müssen PUTs kontrolliert und in
- * einer bestimmten Reihenfolge auflösen, auch mit Fehlerantworten. */
+ * einer bestimmten Reihenfolge auflösen, auch mit Fehlerantworten - und GET-
+ * Refetches (durch invalidateQueries ausgelöst) müssen sich von der ersten
+ * Ladung derselben URL unterscheiden lassen, um "Bearbeitung während eines
+ * laufenden Refetch" gezielt zu simulieren. */
 function stubFetch(getRoutes: Record<string, unknown>) {
   const puts: PendingPut[] = []
+  const gets: PendingGet[] = []
+  const getCounts: Record<string, number> = {}
   vi.stubGlobal(
     "fetch",
     vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
@@ -35,6 +45,25 @@ function stubFetch(getRoutes: Record<string, unknown>) {
           puts.push({
             url,
             body: JSON.parse(init.body as string),
+            resolve: (status, body) =>
+              resolvePromise(
+                new Response(JSON.stringify(body), {
+                  status,
+                  headers: { "Content-Type": "application/json" },
+                }),
+              ),
+          })
+        })
+      }
+
+      // Erster Aufruf je URL: sofort aus dem Kanon-Entwurf auflösen (das
+      // Erstladen der Seite). Jeder weitere Aufruf derselben URL ist ein
+      // Refetch und löst erst auf, wenn der Test es explizit anstößt.
+      const seen = (getCounts[url] = (getCounts[url] ?? 0) + 1)
+      if (seen > 1) {
+        return new Promise<Response>((resolvePromise) => {
+          gets.push({
+            url,
             resolve: (status, body) =>
               resolvePromise(
                 new Response(JSON.stringify(body), {
@@ -58,7 +87,7 @@ function stubFetch(getRoutes: Record<string, unknown>) {
       return Promise.resolve(new Response(JSON.stringify({ detail: "not found" }), { status: 404 }))
     }),
   )
-  return puts
+  return { puts, gets }
 }
 
 function renderAnnotation(initialPageId: string) {
@@ -78,7 +107,7 @@ afterEach(() => vi.unstubAllGlobals())
 
 describe("useAnnotation", () => {
   it("verliert die neuere Änderung nicht, wenn der ältere Flush später aufloest", async () => {
-    const puts = stubFetch({ "/api/gold/462828_p1": GOLD_A })
+    const { puts } = stubFetch({ "/api/gold/462828_p1": GOLD_A })
     const { result } = renderAnnotation("462828_p1")
     await waitFor(() => expect(result.current.isPending).toBe(false))
 
@@ -97,6 +126,12 @@ describe("useAnnotation", () => {
     // Der ältere Save löst zuerst auf.
     puts[0].resolve(200, { ...GOLD_A, spans: puts[0].body.spans })
 
+    // Direkt nach dieser Auflösung, aber weit vor dem zweiten Timer (300 ms):
+    // pendingRef hält bereits die neuere, noch nicht gesendete Änderung -
+    // "gespeichert" wäre hier irreführend, die Arbeit liegt noch nirgends.
+    await new Promise((r) => setTimeout(r, 20))
+    expect(result.current.saveState).not.toBe("saved")
+
     // Ohne den Fix (Referenzvergleich vor dem Nullen von pendingRef) würde
     // dieser Save pendingRef.current nullen, bevor der zweite Timer feuert -
     // die zweite Änderung ginge dann nie ab.
@@ -108,7 +143,7 @@ describe("useAnnotation", () => {
   })
 
   it("sichert beim Seitenwechsel die alte Seite, die neue behält ihre eigene Bearbeitung", async () => {
-    const puts = stubFetch({
+    const { puts } = stubFetch({
       "/api/gold/462828_p1": GOLD_A,
       "/api/gold/462828_p2": GOLD_B,
     })
@@ -145,7 +180,7 @@ describe("useAnnotation", () => {
   })
 
   it("markiert nach fehlgeschlagenem Flush einer verlassenen Seite nicht die neue Seite", async () => {
-    const puts = stubFetch({
+    const { puts } = stubFetch({
       "/api/gold/462828_p1": GOLD_A,
       "/api/gold/462828_p2": GOLD_B,
     })
@@ -178,5 +213,44 @@ describe("useAnnotation", () => {
     await waitFor(() => expect(puts).toHaveLength(2), { timeout: 1000 })
     puts[1].resolve(200, { ...GOLD_B, spans: puts[1].body.spans })
     await waitFor(() => expect(result.current.saveState).toBe("saved"))
+  })
+
+  it("löst durch das Speichern keinen Refetch der eigenen Seiten-Query aus, damit eine laufende Bearbeitung nicht verloren geht", async () => {
+    const { puts, gets } = stubFetch({ "/api/gold/462828_p1": GOLD_A })
+    const { result } = renderAnnotation("462828_p1")
+    await waitFor(() => expect(result.current.isPending).toBe(false))
+
+    act(() => result.current.setSpans([{ start: 0, end: 1, label: "PRODUCT" }]))
+    await waitFor(() => expect(puts).toHaveLength(1))
+
+    puts[0].resolve(200, { ...GOLD_A, spans: puts[0].body.spans })
+    await waitFor(() => expect(result.current.saveState).toBe("saved"))
+
+    // invalidateQueries(["gold"]) matcht ohne exaktes Match per Präfix auch
+    // die eigene Seiten-Query ["gold", pageId] und würde sie neu laden.
+    // Puffer, damit ein solcher (unerwünschter) Refetch seinen fetch()-Aufruf
+    // sicher schon abgesetzt hätte, bevor wir nachsehen.
+    await new Promise((r) => setTimeout(r, 30))
+    expect(gets).toHaveLength(0)
+
+    // Direkte Folge, falls doch ein Refetch ausgelöst würde: Eine Bearbeitung
+    // direkt nach dem Speichern - während seine (veraltete) Antwort mit den
+    // ursprünglich leeren Spans noch aussteht - darf nicht überschrieben
+    // werden. gets bliebe hier normalerweise leer (siehe oben); dieser Teil
+    // greift nur, falls die Prüfung oben regressiert und wieder ein Refetch
+    // ausgelöst wird.
+    act(() =>
+      result.current.setSpans([
+        { start: 0, end: 1, label: "PRODUCT" },
+        { start: 1, end: 2, label: "BRAND" },
+      ]),
+    )
+    if (gets.length > 0) gets[0].resolve(200, GOLD_A)
+
+    await new Promise((r) => setTimeout(r, 30))
+    expect(result.current.spans).toEqual([
+      { start: 0, end: 1, label: "PRODUCT" },
+      { start: 1, end: 2, label: "BRAND" },
+    ])
   })
 })
