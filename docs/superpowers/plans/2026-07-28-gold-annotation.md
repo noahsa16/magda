@@ -784,18 +784,84 @@ man vierzig Seiten am Stück annotiert."
 ### Task 5: API-Client und Annotations-Hook
 
 **Dateien:**
+- Ändern: `magda/api.py` (`get_gold`)
+- Ändern: `tests/test_api.py`
 - Ändern: `frontend/src/lib/api.ts`
+- Ändern: `frontend/src/lib/types.ts`
 - Erstellen: `frontend/src/features/annotate/use-annotation.ts`
 
 **Schnittstellen:**
 - Verbraucht: `GoldAnnotation`, `GoldSummary`, `Span` aus `lib/types.ts` (Task 3); Endpunkte aus Task 2
+- Erzeugt: `GET /api/gold/{page_id}` liefert zusätzlich `stale: bool`
 - Erzeugt: `api.gold()`, `api.goldPage(id)`, `api.saveGold(id, payload)`
 - Erzeugt: `useAnnotation(pageId: string | null, annotator: string)` mit Rückgabe:
   `{ spans, status, saveState, conflict, isPending, setSpans, setStatus, retry }`
   wobei `saveState: "saved" | "saving" | "error"` und
   `status: "untouched" | "in_progress" | "done"`
 
-- [ ] **Schritt 1: API-Client erweitern**
+- [ ] **Schritt 1: `stale`-Flag in `get_gold` ergänzen**
+
+`GET /api/gold/{page_id}` liefert bei vorhandener Gold-Datei den *gespeicherten*
+`words_hash`, nicht den aktuellen. Damit erkennt das Frontend eine veraltete
+Wortliste erst beim Speichern über den 409 — bis dahin zeigt es stillschweigend
+Labels, die auf andere Wörter zeigen. Wer nur liest und nichts ändert, merkt nie
+etwas. Genau dieser Fall ist der Grund, warum es den Hash gibt.
+
+Der Server hat beide Werte bereits vorliegen und muss sie nur vergleichen.
+
+In `magda/api.py` in `get_gold` den Rückgabewert für den Fall einer vorhandenen
+Gold-Datei ergänzen:
+
+```python
+    with open(gold_file) as f:
+        gold = json.load(f)
+    # Der gespeicherte Hash wird mitgeliefert, nicht der aktuelle - nur so kann
+    # das Frontend beim Speichern denselben Wert zurückschicken. stale sagt
+    # ihm vorab, dass die Wortliste sich seither geändert hat.
+    return {
+        "page_id": page_id,
+        "updated": None,
+        **gold,
+        "stale": gold.get("words_hash") != current_hash,
+    }
+```
+
+Im Zweig für die unberührte Seite `"stale": False` ergänzen.
+
+Test in `tests/test_api.py`:
+
+```python
+def test_gold_meldet_veraltete_wortliste_als_stale(client):
+    _write_words("462828_p1")
+    client.put("/api/gold/462828_p1", json={
+        "words_hash": _hash_of(client, "462828_p1"),
+        "status": "done",
+        "annotator": "noah",
+        "spans": [{"start": 0, "end": 1, "label": "PRODUCT"}],
+    })
+    assert client.get("/api/gold/462828_p1").json()["stale"] is False
+
+    # Schritt 02 lief erneut und die Wortliste hat sich geändert.
+    _write_words("462828_p1", {
+        "page_id": "462828_p1", "width": 595.28, "height": 841.89,
+        "words": [{"text": "Anders", "bbox": [1, 2, 3, 4]}],
+    })
+
+    assert client.get("/api/gold/462828_p1").json()["stale"] is True
+```
+
+Ausführen: `.venv/bin/python -m pytest tests/test_api.py -v -k gold`
+Erwartet: PASS, jetzt 10 Gold-Tests
+
+- [ ] **Schritt 2: API-Client erweitern**
+
+In `frontend/src/lib/types.ts` das Feld an `GoldAnnotation` ergänzen:
+
+```ts
+  /** Serverseitig: passt words_hash noch zur aktuellen Wortliste? */
+  stale: boolean
+```
+
 
 In `frontend/src/lib/api.ts` den Typimport um `GoldAnnotation, GoldSummary, Span` erweitern und in das `api`-Objekt einfügen:
 
@@ -813,7 +879,7 @@ In `frontend/src/lib/api.ts` den Typimport um `GoldAnnotation, GoldSummary, Span
     }),
 ```
 
-- [ ] **Schritt 2: Hook implementieren**
+- [ ] **Schritt 3: Hook implementieren**
 
 `frontend/src/features/annotate/use-annotation.ts` erstellen:
 
@@ -856,7 +922,9 @@ export function useAnnotation(pageId: string | null, annotator: string) {
     setStatusState(query.data.status)
     hashRef.current = query.data.words_hash
     setSaveState("saved")
-    setConflict(false)
+    // Der Server hat den gespeicherten Hash gegen die aktuelle Wortliste
+    // geprüft. Ohne das wüssten wir es erst beim ersten Speicherversuch.
+    setConflict(query.data.stale)
   }, [query.data])
 
   const flush = useCallback(async () => {
@@ -917,25 +985,32 @@ export function useAnnotation(pageId: string | null, annotator: string) {
 }
 ```
 
-- [ ] **Schritt 3: Typprüfung laufen lassen**
+- [ ] **Schritt 4: Typprüfung laufen lassen**
 
 Ausführen: `cd frontend && npx tsc --noEmit`
 Erwartet: keine Fehler
 
-- [ ] **Schritt 4: Bestehende Tests prüfen**
+- [ ] **Schritt 5: Bestehende Tests prüfen**
 
 Ausführen: `cd frontend && npm test`
 Erwartet: alle bisherigen Tests grün
 
-- [ ] **Schritt 5: Committen**
+Ausführen: `.venv/bin/python -m pytest -q` (aus dem Projektroot)
+Erwartet: 53 passed — die 52 bisherigen plus der neue `stale`-Test
+
+- [ ] **Schritt 6: Committen**
 
 ```bash
-git add frontend/src/lib/api.ts frontend/src/features/annotate/use-annotation.ts
+git add magda/api.py tests/test_api.py frontend/src/lib/api.ts frontend/src/lib/types.ts frontend/src/features/annotate/use-annotation.ts
 git commit -m "Ergänze Gold-API-Client und Annotations-Hook
 
 Auto-Speichern nach 300 ms Ruhe. Der Fehlerfall bleibt sichtbar und der
 ungesicherte Zustand im Speicher, damit ein Wiederholen nichts verliert.
-Bei geänderter Wortliste (409) schaltet der Hook auf conflict."
+
+get_gold liefert jetzt ein stale-Flag: Der Server vergleicht den
+gespeicherten words_hash gegen die aktuelle Wortliste. Ohne das merkt das
+Frontend eine veraltete Annotation erst beim Speichern - wer nur liest,
+sähe stillschweigend Labels, die auf andere Wörter zeigen."
 ```
 
 ---
