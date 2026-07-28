@@ -323,6 +323,18 @@ def test_gold_lehnt_veralteten_hash_mit_409_ab(client):
     assert resp.status_code == 409
 
 
+def test_gold_lehnt_ungueltigen_status_ab(client):
+    # "untouched" ist ein server-berechneter Anzeigezustand, kein speicherbarer.
+    _write_words("462828_p1")
+    resp = client.put("/api/gold/462828_p1", json={
+        "words_hash": _hash_of(client, "462828_p1"),
+        "status": "untouched",
+        "annotator": "noah",
+        "spans": [],
+    })
+    assert resp.status_code == 422
+
+
 def test_gold_uebersicht_listet_auch_unberuehrte_seiten(client):
     _write_words("462828_p1")
     _write_words("462828_p2")

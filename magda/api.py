@@ -3,8 +3,11 @@
 Liest data/ direkt von der Platte. Schreiben darf sie ausschließlich nach
 gold/ (handannotierte Referenz) - alles andere unter data/ erzeugen die
 Pipeline-Skripte. Dieselbe Beschränkung wie beim Runner: eng umrissen statt
-allgemein.  Start: uvicorn magda.api:app --reload (Port 8000, das
+allgemein. Start: uvicorn magda.api:app --reload (Port 8000, das
 Frontend-Dev-Setup proxied /api hierhin).
+
+Pfade werden bewusst als config.X-Attribute zur Laufzeit gelesen (nicht
+importiert), damit die Tests sie auf ein Temp-Verzeichnis umbiegen können.
 """
 
 import base64
