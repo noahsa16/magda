@@ -331,13 +331,20 @@ def get_gold(page_id: str):
             "annotator": "",
             "updated": None,
             "spans": [],
+            "stale": False,
         }
 
     with open(gold_file) as f:
         gold = json.load(f)
-    # Der gespeicherte Hash wird mitgeliefert, nicht der aktuelle: Nur so
-    # erkennt das Frontend, dass die Wortliste sich seither geändert hat.
-    return {"page_id": page_id, "updated": None, **gold}
+    # Der gespeicherte Hash wird mitgeliefert, nicht der aktuelle - nur so kann
+    # das Frontend beim Speichern denselben Wert zurückschicken. stale sagt
+    # ihm vorab, dass die Wortliste sich seither geändert hat.
+    return {
+        "page_id": page_id,
+        "updated": None,
+        **gold,
+        "stale": gold.get("words_hash") != current_hash,
+    }
 
 
 @app.put("/api/gold/{page_id}")

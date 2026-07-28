@@ -86,6 +86,8 @@ export interface GoldAnnotation {
   annotator: string
   updated: string | null
   spans: Span[]
+  /** Serverseitig: passt words_hash noch zur aktuellen Wortliste? */
+  stale: boolean
 }
 
 export interface GoldSummary {

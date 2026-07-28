@@ -1,5 +1,6 @@
 import type {
-  EvalReport, InferenceResult, ModelStatus, PageDetail, PageSummary, PipelineStatus, RunStatus,
+  EvalReport, GoldAnnotation, GoldSummary, InferenceResult, ModelStatus, PageDetail, PageSummary,
+  PipelineStatus, RunStatus, Span,
 } from "./types"
 
 async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
@@ -35,4 +36,15 @@ export const api = {
       body: JSON.stringify({ job, variant: variant ?? null }),
     }),
   stopRun: () => fetchJson<RunStatus>("/api/run/stop", { method: "POST" }),
+  gold: () => fetchJson<GoldSummary[]>("/api/gold"),
+  goldPage: (id: string) => fetchJson<GoldAnnotation>(`/api/gold/${id}`),
+  saveGold: (
+    id: string,
+    payload: { words_hash: string; status: "in_progress" | "done"; annotator: string; spans: Span[] },
+  ) =>
+    fetchJson<GoldAnnotation>(`/api/gold/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    }),
 }

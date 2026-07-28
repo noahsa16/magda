@@ -335,6 +335,25 @@ def test_gold_lehnt_ungueltigen_status_ab(client):
     assert resp.status_code == 422
 
 
+def test_gold_meldet_veraltete_wortliste_als_stale(client):
+    _write_words("462828_p1")
+    client.put("/api/gold/462828_p1", json={
+        "words_hash": _hash_of(client, "462828_p1"),
+        "status": "done",
+        "annotator": "noah",
+        "spans": [{"start": 0, "end": 1, "label": "PRODUCT"}],
+    })
+    assert client.get("/api/gold/462828_p1").json()["stale"] is False
+
+    # Schritt 02 lief erneut und die Wortliste hat sich geändert.
+    _write_words("462828_p1", {
+        "page_id": "462828_p1", "width": 595.28, "height": 841.89,
+        "words": [{"text": "Anders", "bbox": [1, 2, 3, 4]}],
+    })
+
+    assert client.get("/api/gold/462828_p1").json()["stale"] is True
+
+
 def test_gold_uebersicht_listet_auch_unberuehrte_seiten(client):
     _write_words("462828_p1")
     _write_words("462828_p2")
