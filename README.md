@@ -89,7 +89,7 @@ siehe `magda/labels.py`.
 
 ## Frontend
 
-Web-Oberfläche für Pipeline-Status, Label-Inspektion, Evaluation und Live-Demo.
+Web-Oberfläche für Pipeline-Status, Label-Inspektion, Annotation, Evaluation und Live-Demo.
 
 ```bash
 uvicorn magda.api:app --reload    # Backend, Port 8000
@@ -98,12 +98,13 @@ cd frontend && npm install && npm run dev
 
 Das Frontend läuft auf http://localhost:5173 und proxied `/api` ans Backend.
 
-Die vier Bereiche:
+Die fünf Bereiche:
 
 - **Übersicht** – Projektbeschreibung, Zähler pro Pipeline-Stufe und die fünf
   Schritte zum Starten, inklusive Live-Ausgabe des laufenden Skripts.
 - **Inspektor** – jede Seite mit den Label-Boxen über dem Prospektbild;
   Entity-Liste und Bild sind in beide Richtungen verknüpft, ← → blättert.
+- **Annotieren** – handgelabelte Referenzdaten für evaluierende Vergleiche.
 - **Evaluation** – F1 pro Entity-Typ, LayoutXLM gegen GBERT.
 - **Demo** – PDF hochladen, das trainierte Modell extrahiert lokal.
 
