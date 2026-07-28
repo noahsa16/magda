@@ -25,6 +25,8 @@ export interface CatalogStatus {
   words: number
   images: number
   labeled: number
+  /** Ladedatum als YYYY-MM-DD; null, wenn data/raw/<id> fehlt. */
+  downloaded: string | null
 }
 
 export interface PipelineStatus {
@@ -99,4 +101,17 @@ export interface GoldSummary {
   num_spans: number
   /** Serverseitig: passt words_hash noch zur aktuellen Wortliste? */
   stale: boolean
+}
+
+/** Eine Kachel in der Prospekt-Übersicht. Gleiche Form für beide Werkzeuge. */
+export interface CatalogTile {
+  id: string
+  pages: number
+  /** Annotator: Gold fertig. Inspektor: vom LLM gelabelt. */
+  done: number
+  downloaded: string | null
+  /** Nur im Annotator > 0: Wortliste hat sich seit dem Annotieren geändert. */
+  stale: number
+  /** Nur im Annotator > 0: Gold-Datei nicht lesbar. */
+  broken: number
 }
