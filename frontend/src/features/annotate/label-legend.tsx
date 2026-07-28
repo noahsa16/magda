@@ -6,9 +6,12 @@ interface LabelLegendProps {
   /** Anzahl fertig annotierter Seiten und Gesamtzahl. */
   done: number
   total: number
+  /** Seiten mit veralteter Wortliste oder unlesbarer Datei. Die zählen nicht
+   * als fertig, sonst meldet der Fortschritt Arbeit, die keine mehr ist. */
+  invalid: number
 }
 
-export function LabelLegend({ entityTypes, done, total }: LabelLegendProps) {
+export function LabelLegend({ entityTypes, done, total, invalid }: LabelLegendProps) {
   return (
     <div className="space-y-3 rounded-lg border-2 border-foreground bg-card p-4">
       <div>
@@ -18,6 +21,14 @@ export function LabelLegend({ entityTypes, done, total }: LabelLegendProps) {
         <p className="font-mono text-sm font-semibold tabular-nums">
           {done} / {total} Seiten fertig
         </p>
+        {invalid > 0 && (
+          <p
+            className="font-mono text-xs font-semibold tabular-nums text-destructive"
+            title="Wortliste geändert oder Gold-Datei unlesbar"
+          >
+            {invalid} {invalid === 1 ? "Seite" : "Seiten"} ungültig
+          </p>
+        )}
       </div>
 
       <ul className="space-y-1">

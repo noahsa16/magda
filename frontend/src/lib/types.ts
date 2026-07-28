@@ -93,7 +93,10 @@ export interface GoldAnnotation {
 export interface GoldSummary {
   page_id: string
   catalog: string
-  status: "untouched" | "in_progress" | "done"
+  /** "broken": Die Gold-Datei ist nicht lesbar (z.B. Merge-Konfliktmarker). */
+  status: "untouched" | "in_progress" | "done" | "broken"
   annotator: string
   num_spans: number
+  /** Serverseitig: passt words_hash noch zur aktuellen Wortliste? */
+  stale: boolean
 }

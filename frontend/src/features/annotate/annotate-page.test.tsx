@@ -14,19 +14,20 @@ const PAGE = {
   ],
 }
 
-function setup() {
+function setup(overrides: Record<string, unknown> = {}) {
   mockFetch({
     "/api/schema": { entity_types: ["PRODUCT", "BRAND"] },
     "/api/pages/462828_p1": PAGE,
     "/api/pages": [{ page_id: "462828_p1", catalog: "462828", labeled: false }],
     "/api/gold/462828_p1": {
       page_id: "462828_p1", words_hash: "abc", status: "untouched",
-      annotator: "", updated: null, spans: [],
+      annotator: "", updated: null, spans: [], stale: false,
     },
     "/api/gold": [{
       page_id: "462828_p1", catalog: "462828", status: "untouched",
-      annotator: "", num_spans: 0,
+      annotator: "", num_spans: 0, stale: false,
     }],
+    ...overrides,
   })
   return renderWithProviders(<AnnotatePage />, { route: "/annotate?page=462828_p1" })
 }
@@ -43,6 +44,17 @@ describe("AnnotatePage", () => {
   it("zeigt den Fortschritt über alle Seiten", async () => {
     setup()
     expect(await screen.findByText("0 / 1 Seiten fertig")).toBeInTheDocument()
+  })
+
+  it("zählt eine Seite mit veralteter Wortliste nicht als fertig", async () => {
+    setup({
+      "/api/gold": [{
+        page_id: "462828_p1", catalog: "462828", status: "done",
+        annotator: "noah", num_spans: 12, stale: true,
+      }],
+    })
+    expect(await screen.findByText("0 / 1 Seiten fertig")).toBeInTheDocument()
+    expect(screen.getByText("1 Seite ungültig")).toBeInTheDocument()
   })
 
   it("meldet den Speicherzustand", async () => {

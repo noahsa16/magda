@@ -11,27 +11,43 @@ interface PageListProps {
   goldStatus?: GoldSummary[]
 }
 
+/** Punktfarbe und Titel einer Seite im Gold-Modus. Ungültige Seiten (kaputte
+ * Datei, veraltete Wortliste) bekommen einen eigenen Zustand: Sie als "fertig"
+ * zu zeigen wäre genau die stille Falschanzeige, gegen die der Hash existiert. */
+function goldDot(gold: GoldSummary | undefined): { className: string; title: string } {
+  if (gold?.status === "broken") return { className: "bg-destructive", title: "Datei unlesbar" }
+  if (gold?.stale) return { className: "bg-destructive", title: "Wortliste geändert" }
+  if (gold?.status === "done") return { className: "bg-[var(--riso-blue)]", title: "fertig" }
+  if (gold?.status === "in_progress") return { className: "bg-primary", title: "in Arbeit" }
+  return { className: "border border-muted-foreground", title: "unberührt" }
+}
+
 export function PageList({ pages, selected, onSelect, goldStatus }: PageListProps) {
   const [query, setQuery] = useState("")
-  const [onlyLabeled, setOnlyLabeled] = useState(false)
+  const [filterOn, setFilterOn] = useState(false)
 
   const goldById = useMemo(
-    () => new Map((goldStatus ?? []).map((g) => [g.page_id, g.status])),
+    () => new Map((goldStatus ?? []).map((g) => [g.page_id, g])),
     [goldStatus],
   )
 
+  // Der Knopf filtert nach derselben Bedeutung, die der Punkt daneben zeigt:
+  // im Gold-Modus nach "noch nicht fertig", sonst nach "vom LLM gelabelt".
+  const matchesFilter = (p: PageSummary) =>
+    goldStatus ? goldById.get(p.page_id)?.status !== "done" : p.labeled
+
   const byCatalog = useMemo(() => {
     const filtered = pages.filter(
-      (p) => p.page_id.includes(query) && (!onlyLabeled || p.labeled),
+      (p) => p.page_id.includes(query) && (!filterOn || matchesFilter(p)),
     )
     const groups = new Map<string, PageSummary[]>()
     for (const p of filtered) {
       groups.set(p.catalog, [...(groups.get(p.catalog) ?? []), p])
     }
     return [...groups.entries()]
-  }, [pages, query, onlyLabeled])
+  }, [pages, query, filterOn, goldById, goldStatus])
 
-  const labeledCount = pages.filter((p) => p.labeled).length
+  const matchCount = pages.filter(matchesFilter).length
 
   return (
     <div className="flex min-w-0 flex-col gap-2">
@@ -43,15 +59,15 @@ export function PageList({ pages, selected, onSelect, goldStatus }: PageListProp
       />
       <button
         type="button"
-        onClick={() => setOnlyLabeled((v) => !v)}
+        onClick={() => setFilterOn((v) => !v)}
         className={cn(
           "self-start rounded-full border px-2 py-0.5 font-mono text-[10px] uppercase tracking-widest transition-colors",
-          onlyLabeled
+          filterOn
             ? "border-transparent bg-primary text-primary-foreground"
             : "border-border text-muted-foreground hover:text-foreground",
         )}
       >
-        {labeledCount} von {pages.length} gelabelt
+        {matchCount} von {pages.length} {goldStatus ? "offen" : "gelabelt"}
       </button>
 
       <div className="min-h-0 overflow-y-auto" style={{ maxHeight: "70vh" }}>
@@ -78,15 +94,8 @@ export function PageList({ pages, selected, onSelect, goldStatus }: PageListProp
                     </span>
                     {goldStatus ? (
                       <span
-                        className={cn(
-                          "size-2 shrink-0 rounded-full",
-                          goldById.get(p.page_id) === "done"
-                            ? "bg-[var(--riso-blue)]"
-                            : goldById.get(p.page_id) === "in_progress"
-                              ? "bg-primary"
-                              : "border border-muted-foreground",
-                        )}
-                        title={goldById.get(p.page_id) ?? "unberührt"}
+                        className={cn("size-2 shrink-0 rounded-full", goldDot(goldById.get(p.page_id)).className)}
+                        title={goldDot(goldById.get(p.page_id)).title}
                       />
                     ) : (
                       <span

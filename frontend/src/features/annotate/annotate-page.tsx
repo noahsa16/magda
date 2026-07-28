@@ -88,7 +88,11 @@ export function AnnotatePage() {
   if (pages.isPending || schema.isPending) return <Skeleton className="h-40 w-full" />
 
   const data = page.data
-  const doneCount = (gold.data ?? []).filter((g) => g.status === "done").length
+  const goldRows = gold.data ?? []
+  // Eine Seite mit veralteter Wortliste ist keine fertige Seite mehr, auch
+  // wenn in der Datei "done" steht.
+  const doneCount = goldRows.filter((g) => g.status === "done" && !g.stale).length
+  const invalidCount = goldRows.filter((g) => g.status === "broken" || g.stale).length
   const tags = data ? spansToTags(ann.spans, data.words.length) : undefined
 
   return (
@@ -193,7 +197,12 @@ export function AnnotatePage() {
         </div>
 
         <div className="lg:sticky lg:top-24 lg:self-start">
-          <LabelLegend entityTypes={entityTypes} done={doneCount} total={ids.length} />
+          <LabelLegend
+            entityTypes={entityTypes}
+            done={doneCount}
+            total={ids.length}
+            invalid={invalidCount}
+          />
         </div>
       </div>
     </div>
