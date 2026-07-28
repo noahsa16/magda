@@ -31,8 +31,15 @@ export function useAnnotation(pageId: string | null, annotator: string) {
   const [conflict, setConflict] = useState(false)
 
   const hashRef = useRef<string>("")
+  // Zu welcher Seite der Hash gehört. Ohne das lässt sich "noch kein Hash
+  // geladen" nicht von "Hash der vorigen Seite" unterscheiden - beides sieht
+  // im Hash selbst gleich harmlos aus und führt zu einem falschen 409.
+  const hashPageIdRef = useRef<string | null>(null)
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const pendingRef = useRef<Pending | null>(null)
+  // Seite, zu der der lokale Zustand gehört. Solange sie nicht die angezeigte
+  // ist, sind spans/status die der Vorseite und dürfen nicht gerendert werden.
+  const [loadedPageId, setLoadedPageId] = useState<string | null>(null)
 
   // Immer die zuletzt angezeigte Seite griffbereit - direkt im Render-Body
   // geschrieben (nicht in einem Effekt), damit sie beim nächsten Aufruf von
@@ -55,14 +62,28 @@ export function useAnnotation(pageId: string | null, annotator: string) {
   // Serverzustand in den lokalen Zustand übernehmen, wenn die Seite wechselt.
   useEffect(() => {
     if (!query.data) return
+    hashRef.current = query.data.words_hash
+    hashPageIdRef.current = pageId
+    setLoadedPageId(pageId)
+
+    // Steht für diese Seite noch eine ungesicherte Änderung aus, ist sie neuer
+    // als alles, was der Server sagen kann - etwa wenn ein Refetch nach dem
+    // Speichern antwortet oder man zu einer Seite mit fehlgeschlagenem Save
+    // zurückkehrt. Sie zurückholen statt sie überschreiben zu lassen.
+    const pending = pendingRef.current
+    if (pending && pending.pageId === pageId) {
+      setSpansState(pending.spans)
+      setStatusState(pending.status)
+      return
+    }
+
     setSpansState(query.data.spans)
     setStatusState(query.data.status)
-    hashRef.current = query.data.words_hash
     setSaveState("saved")
     // Der Server hat den gespeicherten Hash gegen die aktuelle Wortliste
     // geprüft. Ohne das wüssten wir es erst beim ersten Speicherversuch.
     setConflict(query.data.stale)
-  }, [query.data])
+  }, [query.data, pageId])
 
   // Hängt bewusst nicht an pageId: pendingRef trägt die Zielseite selbst mit,
   // damit ein bereits laufender Timer beim Seitenwechsel weiter die richtige
@@ -76,7 +97,7 @@ export function useAnnotation(pageId: string | null, annotator: string) {
     const isCurrentPage = () => pending.pageId === pageIdRef.current
     if (mountedRef.current && isCurrentPage()) setSaveState("saving")
     try {
-      await api.saveGold(pending.pageId, {
+      const saved = await api.saveGold(pending.pageId, {
         words_hash: pending.hash,
         // "untouched" ist ein Anzeigezustand, kein speicherbarer.
         status: pending.status === "done" ? "done" : "in_progress",
@@ -91,10 +112,18 @@ export function useAnnotation(pageId: string | null, annotator: string) {
       // retry() parallel zu einem Timer).
       const isLatest = pendingRef.current === pending
       if (isLatest) pendingRef.current = null
+      // Den Cache dieser Seite mit dem Gespeicherten füllen. Ohne das bleibt
+      // ["gold", pageId] für immer auf dem Stand der Erstladung: Wer die Seite
+      // später wieder aufschlägt, sieht kurz eine leere Seite und verliert
+      // seine Arbeit, sobald er in diesem Fenster ein Label setzt.
+      // Übersprungen, wenn für dieselbe Seite bereits etwas Neueres aussteht -
+      // dann wäre die Antwort schon wieder veraltet.
+      const superseded = pendingRef.current?.pageId === pending.pageId
+      if (!superseded) queryClient.setQueryData(["gold", pending.pageId], saved)
       // Exaktes Match trifft nur die Übersichts-Query ["gold"], nicht
-      // ["gold", pageId] der gerade offenen Seite - sonst würde der davon
-      // ausgelöste Refetch eine zwischen Flush-Ende und Refetch-Antwort
-      // weiterlaufende Bearbeitung stillschweigend überschreiben.
+      // ["gold", pageId] der gerade offenen Seite - die wird oben gezielt
+      // gesetzt. Ein Refetch stattdessen würde eine zwischen Flush-Ende und
+      // Refetch-Antwort weiterlaufende Bearbeitung überschreiben.
       queryClient.invalidateQueries({ queryKey: ["gold"], exact: true })
       if (isLatest && mountedRef.current && isCurrentPage()) setSaveState("saved")
     } catch (err) {
@@ -116,6 +145,11 @@ export function useAnnotation(pageId: string | null, annotator: string) {
   const schedule = useCallback(
     (next: { spans: Span[]; status: PageStatus }) => {
       if (!pageId) return
+      // Ohne geladenen Hash *dieser* Seite gibt es nichts zu speichern: Beim
+      // Erstladen ist er leer, direkt nach einem Seitenwechsel noch der der
+      // vorigen Seite. Beides quittiert der Server mit einem 409, der wie ein
+      // echter Konflikt aussieht und die Seite grundlos sperrt.
+      if (hashPageIdRef.current !== pageId) return
       // Steht noch eine Änderung für eine andere Seite aus (Seitenwechsel kurz
       // vor Ablauf des Timers), sofort sichern statt sie hier zu überschreiben.
       if (pendingRef.current && pendingRef.current.pageId !== pageId) {
@@ -160,7 +194,11 @@ export function useAnnotation(pageId: string | null, annotator: string) {
 
   return {
     spans, status, saveState, conflict,
-    isPending: query.isPending && pageId !== null,
+    // Auch dann "lädt noch", wenn die Query bereits aus dem Cache antwortet,
+    // der lokale Zustand aber noch der Vorseite gehört (die Übernahme läuft
+    // erst im Effekt). Sonst rendert der Aufrufer einmal die Spans der einen
+    // Seite über den Wörtern der anderen.
+    isPending: pageId !== null && (query.isPending || loadedPageId !== pageId),
     setSpans, setStatus, retry: flush,
   }
 }

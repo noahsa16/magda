@@ -215,6 +215,60 @@ describe("useAnnotation", () => {
     await waitFor(() => expect(result.current.saveState).toBe("saved"))
   })
 
+  it("hält den Seiten-Cache nach dem Speichern aktuell, damit die Rückkehr nicht leer aussieht", async () => {
+    const { puts, gets } = stubFetch({
+      "/api/gold/462828_p1": GOLD_A,
+      "/api/gold/462828_p2": GOLD_B,
+    })
+    const { result, rerender } = renderAnnotation("462828_p1")
+    await waitFor(() => expect(result.current.isPending).toBe(false))
+
+    act(() => result.current.setSpans([{ start: 0, end: 1, label: "PRODUCT" }]))
+    await waitFor(() => expect(puts).toHaveLength(1))
+    puts[0].resolve(200, {
+      ...GOLD_A, status: "in_progress", spans: puts[0].body.spans,
+    })
+    await waitFor(() => expect(result.current.saveState).toBe("saved"))
+
+    rerender({ pageId: "462828_p2" })
+    await waitFor(() => expect(result.current.isPending).toBe(false))
+    rerender({ pageId: "462828_p1" })
+    await waitFor(() => expect(result.current.isPending).toBe(false))
+
+    // Der Refetch der Rückkehr steht noch aus (gets, nicht aufgelöst): Käme
+    // hier der Erstladestand mit leeren Spans, stünde die Seite sichtbar leer
+    // da - und eine Eingabe in diesem Fenster überschriebe das Gespeicherte.
+    expect(result.current.spans).toEqual([{ start: 0, end: 1, label: "PRODUCT" }])
+
+    // Bearbeitung, während der Refetch noch läuft. Seine (veraltete) Antwort
+    // darf sie nicht zurückdrehen.
+    act(() =>
+      result.current.setSpans([
+        { start: 0, end: 1, label: "PRODUCT" },
+        { start: 1, end: 2, label: "BRAND" },
+      ]),
+    )
+    gets.forEach((g) => g.resolve(200, GOLD_A))
+
+    await new Promise((r) => setTimeout(r, 30))
+    expect(result.current.spans).toHaveLength(2)
+  })
+
+  it("plant nichts ein, solange der Hash der Seite nicht geladen ist", async () => {
+    // Tastenkürzel greifen ab dem ersten Render, also auch während des Ladens.
+    // Mit leerem Hash (oder dem der Vorseite) antwortet der Server mit 409 und
+    // die Oberfläche sperrt eine völlig intakte Seite.
+    const { puts } = stubFetch({ "/api/gold/462828_p1": GOLD_A })
+    const { result } = renderAnnotation("462828_p1")
+
+    act(() => result.current.setStatus("done"))
+
+    await waitFor(() => expect(result.current.isPending).toBe(false))
+    await new Promise((r) => setTimeout(r, 400))
+    expect(puts).toHaveLength(0)
+    expect(result.current.conflict).toBe(false)
+  })
+
   it("löst durch das Speichern keinen Refetch der eigenen Seiten-Query aus, damit eine laufende Bearbeitung nicht verloren geht", async () => {
     const { puts, gets } = stubFetch({ "/api/gold/462828_p1": GOLD_A })
     const { result } = renderAnnotation("462828_p1")
