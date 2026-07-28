@@ -90,8 +90,8 @@ function stubFetch(getRoutes: Record<string, unknown>) {
   return { puts, gets }
 }
 
-function renderAnnotation(initialPageId: string) {
-  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+function renderAnnotation(initialPageId: string, client?: QueryClient) {
+  const qc = client ?? new QueryClient({ defaultOptions: { queries: { retry: false } } })
   const rendered = renderHook(
     ({ pageId }: { pageId: string | null }) => useAnnotation(pageId, "noah"),
     {
@@ -180,6 +180,39 @@ describe("useAnnotation", () => {
       { start: 1, end: 2, label: "BRAND" },
     ])
     expect(result.current.saveState).toBe("saved")
+  })
+
+  it("lässt die verspätete Antwort einer verlassenen Hook-Instanz die neue nicht zurückdrehen", async () => {
+    const { puts } = stubFetch({ "/api/gold/462828_p1": GOLD_A })
+    const first = renderAnnotation("462828_p1")
+    await waitFor(() => expect(first.result.current.isPending).toBe(false))
+
+    act(() => first.result.current.setSpans([{ start: 0, end: 1, label: "PRODUCT" }]))
+    await waitFor(() => expect(puts).toHaveLength(1))
+
+    // Die Annotationsseite wird verlassen, während der PUT noch unterwegs ist;
+    // der Unmount-Cleanup sichert die Änderung noch einmal. Danach kehrt man
+    // zurück - eine neue Hook-Instanz, deren Zustand die alte nicht kennt.
+    first.unmount()
+    const stale = puts.length
+    const second = renderAnnotation("462828_p1", first.qc)
+    await waitFor(() => expect(second.result.current.isPending).toBe(false))
+
+    act(() => second.result.current.setSpans([{ start: 2, end: 3, label: "PRICE" }]))
+    await waitFor(() => expect(puts.length).toBeGreaterThan(stale), { timeout: 1000 })
+    const latest = puts[puts.length - 1]
+    expect(latest.body.spans).toEqual([{ start: 2, end: 3, label: "PRICE" }])
+    latest.resolve(200, { ...GOLD_A, status: "in_progress", spans: latest.body.spans })
+    await waitFor(() => expect(second.result.current.saveState).toBe("saved"))
+
+    // Erst jetzt antworten die PUTs der alten Instanz, mit deren altem Stand.
+    // An Refs gebundene Reihenfolge wäre mit der alten Instanz verschwunden.
+    for (const p of puts.slice(0, stale)) {
+      p.resolve(200, { ...GOLD_A, status: "in_progress", spans: p.body.spans })
+    }
+
+    await new Promise((r) => setTimeout(r, 30))
+    expect(second.result.current.spans).toEqual([{ start: 2, end: 3, label: "PRICE" }])
   })
 
   it("lässt einen vor dem Speichern losgelaufenen Refetch die gesicherte Arbeit nicht zurückdrehen", async () => {

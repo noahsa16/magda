@@ -17,6 +17,21 @@ interface Pending {
   status: PageStatus
 }
 
+/** Reihenfolge über die *abgeschlossenen* Speicherungen: Jeder Flush bekommt
+ * eine monoton steigende Nummer, pro Seite steht hier die höchste, deren
+ * Antwort schon übernommen wurde. Eine Prüfung nur gegen noch offene
+ * Änderungen reicht dafür grundsätzlich nicht - zwei PUTs derselben Seite
+ * können in umgekehrter Reihenfolge antworten, und die verspätete ältere
+ * fände nichts Offenes mehr vor.
+ *
+ * Bewusst außerhalb des Hooks: Der Unmount-Cleanup sichert noch, seine Antwort
+ * trifft also erst ein, wenn längst eine neue Hook-Instanz läuft. An Refs
+ * gebunden wäre die Ordnung genau in dem Fall verloren, für den sie existiert.
+ * Der Zähler steigt global, deshalb bleibt jede spätere Speicherung auch über
+ * Instanzgrenzen hinweg die jüngere. */
+let saveSeq = 0
+const appliedSeq = new Map<string, number>()
+
 /** Annotation einer Seite: laden, im Speicher halten, verzögert sichern.
  *
  * Auto-Speichern darf nicht stillschweigend scheitern - sonst annotiert man
@@ -37,15 +52,6 @@ export function useAnnotation(pageId: string | null, annotator: string) {
   const hashPageIdRef = useRef<string | null>(null)
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const pendingRef = useRef<Pending | null>(null)
-  // Reihenfolge über die *abgeschlossenen* Speicherungen: Jeder Flush bekommt
-  // eine monoton steigende Nummer, pro Seite merken wir die höchste, deren
-  // Antwort schon übernommen wurde. Eine Prüfung nur gegen noch offene
-  // Änderungen (pendingRef) reicht dafür grundsätzlich nicht: Zwei PUTs
-  // derselben Seite können in umgekehrter Reihenfolge antworten, und die
-  // verspätete ältere träfe pendingRef bereits leer an - sie schriebe den
-  // alten Stand zurück in den Cache, und nichts danach widerspricht dem.
-  const seqRef = useRef(0)
-  const appliedSeqRef = useRef(new Map<string, number>())
   // Seite, zu der der lokale Zustand gehört. Solange sie nicht die angezeigte
   // ist, sind spans/status die der Vorseite und dürfen nicht gerendert werden.
   const [loadedPageId, setLoadedPageId] = useState<string | null>(null)
@@ -104,10 +110,10 @@ export function useAnnotation(pageId: string | null, annotator: string) {
     // dieser Flush ihren Speicherzustand anzeigen - sonst landet ein Fehler
     // oder ein "gespeichert" einer längst verlassenen Seite auf der falschen.
     const isCurrentPage = () => pending.pageId === pageIdRef.current
-    const seq = ++seqRef.current
+    const seq = ++saveSeq
     // Ist zu dieser Seite bereits eine neuere Antwort verarbeitet worden? Dann
     // ist diese hier überholt und darf weder Cache noch Anzeige anfassen.
-    const outdated = () => (appliedSeqRef.current.get(pending.pageId) ?? 0) > seq
+    const outdated = () => (appliedSeq.get(pending.pageId) ?? 0) > seq
     if (mountedRef.current && isCurrentPage()) setSaveState("saving")
     try {
       const saved = await api.saveGold(pending.pageId, {
@@ -137,7 +143,7 @@ export function useAnnotation(pageId: string | null, annotator: string) {
       // bereits angekommen ist - dann ist diese Antwort schon veraltet.
       const superseded = pendingRef.current?.pageId === pending.pageId || outdated()
       if (!superseded) {
-        appliedSeqRef.current.set(pending.pageId, seq)
+        appliedSeq.set(pending.pageId, seq)
         queryClient.setQueryData(["gold", pending.pageId], saved)
       }
       // Exaktes Match trifft nur die Übersichts-Query ["gold"], nicht
