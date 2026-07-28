@@ -15,25 +15,58 @@ const PAGE = {
   ],
   tags: ["B-PRODUCT", "B-PRICE"],
 }
+const STATUS = {
+  catalogs: [{ id: "462828", raw: 1, words: 1, images: 1, labeled: 1, downloaded: "2026-07-20" }],
+  totals: { raw: 1, words: 1, images: 1, labeled: 1 },
+}
+
+function setup({ route, ...overrides }: Record<string, unknown> & { route?: string } = {}) {
+  mockFetch({
+    "/api/schema": SCHEMA,
+    "/api/pages/462828_p3": PAGE,
+    "/api/pages": [{ page_id: "462828_p3", catalog: "462828", labeled: true }],
+    "/api/status": STATUS,
+    ...overrides,
+  })
+  return renderWithProviders(<InspectorPage />, {
+    route: (route as string | undefined) ?? "/inspector?catalog=462828&page=462828_p3",
+  })
+}
 
 describe("InspectorPage", () => {
   it("zeigt den Empty State ohne Seiten", async () => {
-    mockFetch({ "/api/schema": SCHEMA, "/api/pages": [] })
-    renderWithProviders(<InspectorPage />)
+    setup({
+      route: "/inspector",
+      "/api/pages": [],
+      "/api/status": { catalogs: [], totals: { raw: 0, words: 0, images: 0, labeled: 0 } },
+    })
     expect(await screen.findByText(/02_extract_words/)).toBeInTheDocument()
   })
 
   it("zeigt nach Seitenauswahl die gruppierten Entities", async () => {
-    // Achtung: mockFetch matcht per Präfix – die Detail-URL MUSS vor /api/pages stehen.
-    mockFetch({
-      "/api/schema": SCHEMA,
-      "/api/pages/462828_p3": PAGE,
-      "/api/pages": [{ page_id: "462828_p3", catalog: "462828", labeled: true }],
-    })
-    renderWithProviders(<InspectorPage />)
+    setup({ route: "/inspector?catalog=462828" })
     // Die Liste zeigt nur den Seitenteil ("p3") unter dem Katalog-Gruppenkopf.
     await userEvent.click(await screen.findByText("p3"))
     expect(await screen.findByText("Rinderhackfleisch")).toBeInTheDocument()
     expect(screen.getByText("3.99")).toBeInTheDocument()
+  })
+})
+
+describe("InspectorPage — Ebenen", () => {
+  it("zeigt ohne Parameter die Prospekt-Übersicht", async () => {
+    setup({ route: "/inspector" })
+    expect(await screen.findByText("462828")).toBeInTheDocument()
+  })
+
+  it("beschriftet die Kennzahl als gelabelt", async () => {
+    setup({ route: "/inspector" })
+    expect(await screen.findByText(/gelabelt$/)).toBeInTheDocument()
+  })
+
+  it("öffnet per Klick auf eine Kachel die Seitenliste", async () => {
+    const user = userEvent.setup()
+    setup({ route: "/inspector" })
+    await user.click(await screen.findByRole("button", { name: /462828/ }))
+    expect(await screen.findByText("Label-Inspektor")).toBeInTheDocument()
   })
 })

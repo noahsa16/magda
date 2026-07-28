@@ -2,12 +2,15 @@ import { useQuery } from "@tanstack/react-query"
 import { ChevronLeft, ChevronRight, Eye, EyeOff, Scan } from "lucide-react"
 import { useEffect, useMemo, useState } from "react"
 import { useSearchParams } from "react-router-dom"
+import { CatalogGrid } from "@/components/catalog-grid"
+import { Crumbs } from "@/components/crumbs"
 import { EntityList, type EntityRef } from "@/components/entity-list"
 import { PageOverlay } from "@/components/page-overlay"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { groupEntities } from "@/lib/bio"
+import { groupPagesByCatalog } from "@/lib/catalogs"
 import { api } from "@/lib/api"
 import { cn } from "@/lib/utils"
 import { PageList } from "./page-list"
@@ -28,6 +31,10 @@ function Metric({ label, value, tone }: { label: string; value: string; tone?: "
 export function InspectorPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const selected = searchParams.get("page")
+  // Die page_id enthält den Katalog bereits (1342881_p3); ein gesetzter
+  // ?page= impliziert ihn also. Eigenen Parameter braucht nur der Zustand
+  // "Prospekt offen, aber keine Seite gewählt".
+  const catalog = searchParams.get("catalog") ?? selected?.split("_p")[0] ?? null
   // null = alle Typen sichtbar; Set = explizite Auswahl.
   const [visibleTypes, setVisibleTypes] = useState<Set<string> | null>(null)
   const [picked, setPicked] = useState<EntityRef | null>(null)
@@ -42,19 +49,29 @@ export function InspectorPage() {
     queryFn: () => api.page(selected!),
     enabled: selected !== null,
   })
+  const status = useQuery({ queryKey: ["status"], queryFn: api.status })
+
+  const tiles = useMemo(
+    () => groupPagesByCatalog(pages.data ?? [], status.data?.catalogs ?? []),
+    [pages.data, status.data],
+  )
+  const catalogPages = useMemo(
+    () => (pages.data ?? []).filter((p) => p.catalog === catalog),
+    [pages.data, catalog],
+  )
 
   const entityTypes = schema.data?.entity_types ?? []
 
   // Blättern folgt der sortierten Seitenliste; -1 = keine Auswahl, dann
   // springt "weiter" auf die erste Seite.
-  const ids = useMemo(() => (pages.data ?? []).map((p) => p.page_id), [pages.data])
+  const ids = useMemo(() => catalogPages.map((p) => p.page_id), [catalogPages])
   const idx = selected ? ids.indexOf(selected) : -1
 
   function goto(i: number) {
     if (i < 0 || i >= ids.length) return
     setPicked(null)
     setHovered(null)
-    setSearchParams({ page: ids[i] })
+    setSearchParams({ catalog: catalog!, page: ids[i] })
   }
 
   useEffect(() => {
@@ -89,15 +106,34 @@ export function InspectorPage() {
 
   if (pages.isPending || schema.isPending) return <Skeleton className="h-40 w-full" />
 
-  if (pages.data?.length === 0) {
+  if (catalog === null) {
     return (
-      <Alert>
-        <AlertTitle>Noch keine Seiten extrahiert</AlertTitle>
-        <AlertDescription>
-          Auf der Übersicht <code>02_extract_words</code> starten (davor
-          <code>01_download_flyers</code>, falls data/raw/ leer ist).
-        </AlertDescription>
-      </Alert>
+      <div className="flex min-w-0 flex-col gap-4">
+        <h1 className="text-3xl font-extrabold tracking-tight">Label-Inspektor</h1>
+        <CatalogGrid
+          tiles={tiles}
+          unit="gelabelt"
+          onSelect={(id) => setSearchParams({ catalog: id })}
+          emptyHint={
+            <>Noch keine Seiten extrahiert. Auf der Übersicht <code>02_extract_words</code> starten (davor <code>01_download_flyers</code>, falls data/raw/ leer ist).</>
+          }
+        />
+      </div>
+    )
+  }
+
+  if (tiles.length > 0 && !tiles.some((t) => t.id === catalog)) {
+    return (
+      <div className="flex min-w-0 flex-col gap-4">
+        <h1 className="text-3xl font-extrabold tracking-tight">Label-Inspektor</h1>
+        <Alert variant="destructive">
+          <AlertTitle>Prospekt nicht gefunden</AlertTitle>
+          <AlertDescription>
+            Der Katalog <code>{catalog}</code> existiert nicht (mehr). Unten stehen die vorhandenen.
+          </AlertDescription>
+        </Alert>
+        <CatalogGrid tiles={tiles} unit="gelabelt" onSelect={(id) => setSearchParams({ catalog: id })} />
+      </div>
     )
   }
 
@@ -111,6 +147,15 @@ export function InspectorPage() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-baseline gap-3">
           <h1 className="text-3xl font-extrabold tracking-tight">Label-Inspektor</h1>
+          <Crumbs
+            items={[
+              { label: "Prospekte", onClick: () => setSearchParams({}) },
+              selected
+                ? { label: catalog, onClick: () => setSearchParams({ catalog }) }
+                : { label: catalog },
+              ...(selected ? [{ label: selected.split("_").pop()! }] : []),
+            ]}
+          />
           <p className="font-mono text-xs text-muted-foreground">
             {idx >= 0 ? `${idx + 1} / ${ids.length}` : `${ids.length} Seiten`}
           </p>
@@ -134,12 +179,12 @@ export function InspectorPage() {
       <div className="grid min-w-0 gap-5 lg:grid-cols-[240px_minmax(0,1fr)_360px]">
         <div className="min-w-0">
           <PageList
-            pages={pages.data ?? []}
+            pages={catalogPages}
             selected={selected}
             onSelect={(id) => {
               setPicked(null)
               setHovered(null)
-              setSearchParams({ page: id })
+              setSearchParams({ catalog: catalog, page: id })
             }}
           />
         </div>

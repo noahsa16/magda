@@ -120,6 +120,14 @@ entfernt es, `f` markiert die Seite als fertig. Gespeichert wird laufend nach
 `gold/` – im Unterschied zu `data/` versioniert, weil Handarbeit sich nicht
 neu erzeugen lässt.
 
+### Prospekt-Übersicht
+
+Inspektor und Annotieren beginnen mit einer Übersicht über alle Prospekte —
+eine Kachel je Katalog mit Seitenzahl, Ladedatum und Fortschritt. Erst ein
+Klick darauf öffnet die Seitenliste. Der Weg zurück führt über den Pfad in
+der Kopfzeile. Der Fortschritt bedeutet je nach Werkzeug Verschiedenes: im
+Inspektor „vom LLM gelabelt", beim Annotieren „von Hand fertig annotiert".
+
 ## Tests
 
 ```bash
