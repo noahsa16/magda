@@ -56,7 +56,13 @@ def test_status_zaehlt_pro_katalog(client):
 
     body = client.get("/api/status").json()
 
-    assert body["catalogs"] == [{"id": "462828", "raw": 2, "words": 1, "images": 0, "labeled": 0}]
+    entry = body["catalogs"][0]
+    assert entry["id"] == "462828"
+    assert entry["raw"] == 2
+    assert entry["words"] == 1
+    assert entry["images"] == 0
+    assert entry["labeled"] == 0
+    assert entry["downloaded"] is not None
     assert body["totals"]["raw"] == 2
 
 
@@ -468,3 +474,32 @@ def test_gold_schreiben_laesst_keinen_torso_zurueck(client, monkeypatch):
     assert [f.name for f in config.GOLD_DIR.iterdir()] == ["462828_p1.json"]
     # Die Temp-Datei von mkstemp kommt mit 0600; gold/ wird aber geteilt.
     assert (config.GOLD_DIR / "462828_p1.json").stat().st_mode & 0o777 == 0o644
+
+
+def test_status_liefert_ladedatum_je_katalog(client):
+    (config.RAW_DIR / "462828").mkdir()
+    (config.RAW_DIR / "462828" / "bk_1.pdf").write_bytes(b"x")
+    _write_words("462828_p1")
+
+    row = client.get("/api/status").json()["catalogs"][0]
+
+    assert row["downloaded"] is not None
+    assert len(row["downloaded"]) == 10  # YYYY-MM-DD
+
+
+def test_status_ohne_rohdaten_hat_kein_ladedatum(client):
+    # Wörter da, aber data/raw/ geleert: der Katalog existiert weiter,
+    # das Datum ist nicht mehr ableitbar.
+    _write_words("462828_p1")
+
+    row = client.get("/api/status").json()["catalogs"][0]
+
+    assert row["downloaded"] is None
+
+
+def test_status_totals_enthalten_kein_ladedatum(client):
+    _write_words("462828_p1")
+
+    totals = client.get("/api/status").json()["totals"]
+
+    assert set(totals) == {"raw", "words", "images", "labeled"}

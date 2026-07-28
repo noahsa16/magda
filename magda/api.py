@@ -41,6 +41,19 @@ def _page_num(page_id: str) -> int:
         return 0
 
 
+def _downloaded_at(catalog: str) -> str | None:
+    """Ladedatum aus der Änderungszeit des Katalogverzeichnisses.
+
+    Katalog-IDs sind nichtssagende Blätterkatalog-Nummern. Das Datum macht sie
+    in der Übersicht unterscheidbar - anders als der Gültigkeitszeitraum, der
+    nur dort existiert, wo das LLM ihn als VALID erkannt hat.
+    """
+    directory = config.RAW_DIR / catalog
+    if not directory.exists():
+        return None
+    return datetime.fromtimestamp(directory.stat().st_mtime).date().isoformat()
+
+
 @app.get("/api/schema")
 def get_schema():
     return {"entity_types": ENTITY_TYPES}
@@ -52,7 +65,8 @@ def get_status():
 
     def bump(catalog: str, key: str):
         entry = catalogs.setdefault(
-            catalog, {"id": catalog, "raw": 0, "words": 0, "images": 0, "labeled": 0}
+            catalog, {"id": catalog, "raw": 0, "words": 0, "images": 0, "labeled": 0,
+             "downloaded": None}
         )
         entry[key] += 1
 
@@ -64,6 +78,9 @@ def get_status():
         bump(_catalog_of(f.stem), "images")
     for f in config.LABELED_DIR.glob("*.json"):
         bump(_catalog_of(f.stem), "labeled")
+
+    for catalog, entry in catalogs.items():
+        entry["downloaded"] = _downloaded_at(catalog)
 
     rows = sorted(catalogs.values(), key=lambda c: c["id"])
     totals = {k: sum(c[k] for c in rows) for k in ("raw", "words", "images", "labeled")}
