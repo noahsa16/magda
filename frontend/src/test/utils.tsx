@@ -17,11 +17,20 @@ export function renderWithProviders(ui: ReactElement, opts: { route?: string } =
 export function mockFetch(routes: Record<string, unknown>) {
   vi.stubGlobal(
     "fetch",
-    vi.fn(async (input: RequestInfo | URL) => {
+    vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = input.toString()
       for (const [prefix, data] of Object.entries(routes)) {
         if (url.startsWith(prefix)) {
-          return new Response(JSON.stringify(data), {
+          // Ein PUT beantwortet die API mit dem gespeicherten Datensatz. Der
+          // Stub spiegelt den Body in die Route zurück, sonst antwortet er auf
+          // jedes Speichern mit dem Ausgangszustand - und wer die Antwort in
+          // seinen Cache legt, dreht damit die eigene Eingabe zurück.
+          const isRecord = data !== null && typeof data === "object" && !Array.isArray(data)
+          const body =
+            init?.method === "PUT" && isRecord && typeof init.body === "string"
+              ? { ...(data as object), ...JSON.parse(init.body) }
+              : data
+          return new Response(JSON.stringify(body), {
             status: 200,
             headers: { "Content-Type": "application/json" },
           })

@@ -56,13 +56,20 @@ export function AnnotatePage() {
 
   const range = sel ? { start: Math.min(sel.anchor, sel.focus), end: Math.max(sel.anchor, sel.focus) + 1 } : null
 
+  function toggleDone() {
+    ann.setStatus(ann.status === "done" ? "in_progress" : "done")
+  }
+
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if ((e.target as HTMLElement)?.tagName === "INPUT") return
+      // Cmd+F (Suchen) und Cmd+1…8 (Tab-Wechsel) sind beiläufige Griffe. Ohne
+      // diese Zeile schreiben sie still in die Gold-Datei.
+      if (e.metaKey || e.ctrlKey || e.altKey) return
       if (e.key === "ArrowLeft") return goto(idx - 1)
       if (e.key === "ArrowRight") return goto(idx + 1)
       if (ann.conflict) return
-      if (e.key === "f") return ann.setStatus(ann.status === "done" ? "in_progress" : "done")
+      if (e.key === "f") return toggleDone()
       if (!range) return
       if (e.key === "0" || e.key === "Delete" || e.key === "Backspace") {
         ann.setSpans(removeRange(ann.spans, range.start, range.end))
@@ -165,7 +172,7 @@ export function AnnotatePage() {
             <Skeleton className="aspect-[595/842] w-full" />
           )}
 
-          {selected && data && !page.isPending && (
+          {selected && data && !page.isPending && !ann.isPending && (
             <>
               <div className="flex items-center justify-between gap-3 rounded-lg border-2 border-foreground bg-card px-4 py-2.5">
                 <p className="font-mono text-sm tabular-nums">
@@ -175,7 +182,7 @@ export function AnnotatePage() {
                   size="sm"
                   variant={ann.status === "done" ? "default" : "outline"}
                   disabled={ann.conflict}
-                  onClick={() => ann.setStatus(ann.status === "done" ? "in_progress" : "done")}
+                  onClick={toggleDone}
                 >
                   <Check className="size-4" />
                   {ann.status === "done" ? "Fertig" : "Als fertig markieren"}
