@@ -56,6 +56,8 @@ describe("InspectorPage — Ebenen", () => {
   it("zeigt ohne Parameter die Prospekt-Übersicht", async () => {
     setup({ route: "/inspector" })
     expect(await screen.findByText("462828")).toBeInTheDocument()
+    // Die Überschrift steht auf beiden Ebenen; nur die Seitenliste trennt sie.
+    expect(screen.queryByPlaceholderText("Seite suchen…")).not.toBeInTheDocument()
   })
 
   it("beschriftet die Kennzahl als gelabelt", async () => {
@@ -67,6 +69,50 @@ describe("InspectorPage — Ebenen", () => {
     const user = userEvent.setup()
     setup({ route: "/inspector" })
     await user.click(await screen.findByRole("button", { name: /462828/ }))
-    expect(await screen.findByText("Label-Inspektor")).toBeInTheDocument()
+    expect(await screen.findByPlaceholderText("Seite suchen…")).toBeInTheDocument()
+  })
+
+  it("führt über den Brotkrumen zurück zur Übersicht", async () => {
+    const user = userEvent.setup()
+    setup({ route: "/inspector?catalog=462828" })
+    await user.click(await screen.findByRole("button", { name: "Prospekte" }))
+    expect(await screen.findByRole("button", { name: /462828/ })).toBeInTheDocument()
+    expect(screen.queryByPlaceholderText("Seite suchen…")).not.toBeInTheDocument()
+  })
+
+  it("zeigt bei unbekanntem Katalog die Übersicht mit Hinweis", async () => {
+    setup({ route: "/inspector?catalog=gibtsnicht" })
+    expect(await screen.findByText(/nicht gefunden/i)).toBeInTheDocument()
+  })
+
+  it("zeigt den Hinweis auch, wenn es noch gar keine Prospekte gibt", async () => {
+    // Ohne Kacheln darf ein veralteter Lesezeichen-Link nicht in der
+    // Seitenansicht mit leerer Liste landen.
+    setup({
+      route: "/inspector?catalog=gibtsnicht",
+      "/api/pages": [],
+      "/api/status": { catalogs: [], totals: { raw: 0, words: 0, images: 0, labeled: 0 } },
+    })
+    expect(await screen.findByText(/nicht gefunden/i)).toBeInTheDocument()
+    expect(screen.queryByPlaceholderText("Seite suchen…")).not.toBeInTheDocument()
+  })
+
+  it("blättert nicht über die Grenze des offenen Prospekts hinaus", async () => {
+    setup({
+      route: "/inspector?catalog=462828&page=462828_p3",
+      "/api/pages": [
+        { page_id: "462828_p3", catalog: "462828", labeled: true },
+        { page_id: "999999_p1", catalog: "999999", labeled: true },
+      ],
+      "/api/status": {
+        catalogs: [
+          { id: "462828", raw: 1, words: 1, images: 1, labeled: 1, downloaded: "2026-07-20" },
+          { id: "999999", raw: 1, words: 1, images: 1, labeled: 1, downloaded: "2026-07-21" },
+        ],
+        totals: { raw: 2, words: 2, images: 2, labeled: 2 },
+      },
+    })
+    expect(await screen.findByText("1 / 1")).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: /Nächste Seite/ })).toBeDisabled()
   })
 })

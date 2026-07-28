@@ -14,9 +14,15 @@ const PAGE = {
   ],
 }
 
+const STATUS = {
+  catalogs: [{ id: "462828", raw: 1, words: 1, images: 1, labeled: 0, downloaded: "2026-07-20" }],
+  totals: { raw: 1, words: 1, images: 1, labeled: 0 },
+}
+
 function setup({ route, ...overrides }: Record<string, unknown> & { route?: string } = {}) {
   mockFetch({
     "/api/schema": { entity_types: ["PRODUCT", "BRAND"] },
+    "/api/status": STATUS,
     "/api/pages/462828_p1": PAGE,
     "/api/pages": [{ page_id: "462828_p1", catalog: "462828", labeled: false }],
     "/api/gold/462828_p1": {
@@ -195,5 +201,84 @@ describe("AnnotatePage — Ebenen", () => {
   it("zeigt bei unbekanntem Katalog die Übersicht mit Hinweis", async () => {
     setup({ route: "/annotate?catalog=gibtsnicht" })
     expect(await screen.findByText(/nicht gefunden/i)).toBeInTheDocument()
+  })
+
+  it("zeigt den Hinweis auch, wenn es noch gar keine Prospekte gibt", async () => {
+    // Ohne Kacheln darf ein veralteter Lesezeichen-Link nicht in der
+    // Seitenansicht mit leerer Liste landen.
+    setup({
+      route: "/annotate?catalog=gibtsnicht",
+      "/api/pages": [],
+      "/api/gold": [],
+      "/api/status": { catalogs: [], totals: { raw: 0, words: 0, images: 0, labeled: 0 } },
+    })
+    expect(await screen.findByText(/nicht gefunden/i)).toBeInTheDocument()
+    expect(screen.queryByLabelText("Annotator")).not.toBeInTheDocument()
+  })
+
+  it("zeigt den Leerzustand nicht, solange die Gold-Übersicht lädt", async () => {
+    // Die Kacheln kommen aus /api/gold. Löst /api/pages zuerst auf, forderte
+    // die Übersicht sonst zum Neu-Extrahieren auf, während gold noch unterwegs war.
+    const json = (data: unknown) =>
+      new Response(JSON.stringify(data), {
+        status: 200, headers: { "Content-Type": "application/json" },
+      })
+    const routes: Record<string, unknown> = {
+      "/api/schema": { entity_types: ["PRODUCT", "BRAND"] },
+      "/api/pages": [{ page_id: "462828_p1", catalog: "462828", labeled: false }],
+      "/api/status": STATUS,
+    }
+    vi.stubGlobal(
+      "fetch",
+      vi.fn((input: RequestInfo | URL) => {
+        const url = input.toString()
+        // Die Gold-Übersicht lädt für die Dauer des Tests nie.
+        if (url.startsWith("/api/gold")) return new Promise<Response>(() => {})
+        for (const [prefix, data] of Object.entries(routes)) {
+          if (url.startsWith(prefix)) return Promise.resolve(json(data))
+        }
+        return Promise.resolve(json({ detail: "not found" }))
+      }),
+    )
+    const { container } = renderWithProviders(<AnnotatePage />, { route: "/annotate" })
+
+    await new Promise((r) => setTimeout(r, 100))
+
+    expect(screen.queryByText(/Noch keine Prospekte extrahiert/)).not.toBeInTheDocument()
+    expect(container.querySelector('[data-slot="skeleton"]')).toBeInTheDocument()
+  })
+
+  it("zeigt das Ladedatum des Prospekts auf der Kachel", async () => {
+    setup({ route: "/annotate" })
+    expect(await screen.findByText(/geladen 20\.07\./)).toBeInTheDocument()
+  })
+
+  it("blättert nicht über die Grenze des offenen Prospekts hinaus", async () => {
+    setup({
+      route: "/annotate?catalog=462828&page=462828_p1",
+      "/api/pages": [
+        { page_id: "462828_p1", catalog: "462828", labeled: false },
+        { page_id: "999999_p1", catalog: "999999", labeled: false },
+      ],
+      "/api/gold": [
+        {
+          page_id: "462828_p1", catalog: "462828", status: "untouched",
+          annotator: "", num_spans: 0, stale: false,
+        },
+        {
+          page_id: "999999_p1", catalog: "999999", status: "untouched",
+          annotator: "", num_spans: 0, stale: false,
+        },
+      ],
+      "/api/status": {
+        catalogs: [
+          { id: "462828", raw: 1, words: 1, images: 1, labeled: 0, downloaded: "2026-07-20" },
+          { id: "999999", raw: 1, words: 1, images: 1, labeled: 0, downloaded: "2026-07-21" },
+        ],
+        totals: { raw: 2, words: 2, images: 2, labeled: 0 },
+      },
+    })
+    expect(await screen.findByText("1 / 1")).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: /Nächste Seite/ })).toBeDisabled()
   })
 })
