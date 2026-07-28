@@ -92,7 +92,7 @@ function stubFetch(getRoutes: Record<string, unknown>) {
 
 function renderAnnotation(initialPageId: string) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
-  return renderHook(
+  const rendered = renderHook(
     ({ pageId }: { pageId: string | null }) => useAnnotation(pageId, "noah"),
     {
       initialProps: { pageId: initialPageId as string | null },
@@ -101,6 +101,9 @@ function renderAnnotation(initialPageId: string) {
       ),
     },
   )
+  // Der Client gehört mit zurück: Nur über ihn lässt sich ein Refetch der
+  // Seiten-Query anstoßen, wie ihn im Betrieb der Fensterfokus auslöst.
+  return { ...rendered, qc }
 }
 
 afterEach(() => vi.unstubAllGlobals())
@@ -140,6 +143,66 @@ describe("useAnnotation", () => {
 
     puts[1].resolve(200, { ...GOLD_A, spans: puts[1].body.spans })
     await waitFor(() => expect(result.current.saveState).toBe("saved"))
+  })
+
+  it("verwirft die verspätete ältere Antwort, wenn die neuere schon übernommen ist", async () => {
+    const { puts } = stubFetch({ "/api/gold/462828_p1": GOLD_A })
+    const { result } = renderAnnotation("462828_p1")
+    await waitFor(() => expect(result.current.isPending).toBe(false))
+
+    act(() => result.current.setSpans([{ start: 0, end: 1, label: "PRODUCT" }]))
+    await waitFor(() => expect(puts).toHaveLength(1))
+
+    // Zweite Bearbeitung nach dem Debounce: Sie geht als eigener PUT ab,
+    // während der erste noch unterwegs ist - jede Serverlatenz über 300 ms
+    // genügt dafür, etwa Plattenlast durch einen parallelen Trainingslauf.
+    act(() =>
+      result.current.setSpans([
+        { start: 0, end: 1, label: "PRODUCT" },
+        { start: 1, end: 2, label: "BRAND" },
+      ]),
+    )
+    await waitFor(() => expect(puts).toHaveLength(2), { timeout: 1000 })
+
+    // Umgekehrte Antwortreihenfolge: erst der neuere PUT ...
+    puts[1].resolve(200, { ...GOLD_A, status: "in_progress", spans: puts[1].body.spans })
+    await waitFor(() => expect(result.current.saveState).toBe("saved"))
+
+    // ... dann der ältere. pendingRef ist zu diesem Zeitpunkt bereits leer,
+    // eine Prüfung nur gegen offene Änderungen greift also nicht mehr: Ohne
+    // Sequenznummer schreibt diese Antwort den alten Stand in den Cache und
+    // die Seite fällt still auf eine Fassung zurück, die niemand mehr wollte.
+    puts[0].resolve(200, { ...GOLD_A, status: "in_progress", spans: puts[0].body.spans })
+
+    await new Promise((r) => setTimeout(r, 30))
+    expect(result.current.spans).toEqual([
+      { start: 0, end: 1, label: "PRODUCT" },
+      { start: 1, end: 2, label: "BRAND" },
+    ])
+    expect(result.current.saveState).toBe("saved")
+  })
+
+  it("lässt einen vor dem Speichern losgelaufenen Refetch die gesicherte Arbeit nicht zurückdrehen", async () => {
+    const { puts, gets } = stubFetch({ "/api/gold/462828_p1": GOLD_A })
+    const { result, qc } = renderAnnotation("462828_p1")
+    await waitFor(() => expect(result.current.isPending).toBe(false))
+
+    act(() => result.current.setSpans([{ start: 0, end: 1, label: "PRODUCT" }]))
+    await waitFor(() => expect(puts).toHaveLength(1))
+
+    // Refetch der Seiten-Query, im Betrieb durch Fensterfokus ausgelöst. Er
+    // läuft los, solange der PUT noch unterwegs ist, trägt also den Stand von
+    // davor - und wäre damit dieselbe veraltete Antwort wie ein überholter PUT.
+    void qc.refetchQueries({ queryKey: ["gold", "462828_p1"], exact: true })
+    await waitFor(() => expect(gets).toHaveLength(1))
+
+    puts[0].resolve(200, { ...GOLD_A, status: "in_progress", spans: puts[0].body.spans })
+    await waitFor(() => expect(result.current.saveState).toBe("saved"))
+
+    gets[0].resolve(200, GOLD_A)
+
+    await new Promise((r) => setTimeout(r, 30))
+    expect(result.current.spans).toEqual([{ start: 0, end: 1, label: "PRODUCT" }])
   })
 
   it("sichert beim Seitenwechsel die alte Seite, die neue behält ihre eigene Bearbeitung", async () => {
