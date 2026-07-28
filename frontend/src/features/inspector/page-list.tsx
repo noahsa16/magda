@@ -33,8 +33,13 @@ export function PageList({ pages, selected, onSelect, goldStatus }: PageListProp
 
   // Der Knopf filtert nach derselben Bedeutung, die der Punkt daneben zeigt:
   // im Gold-Modus nach "noch nicht fertig", sonst nach "vom LLM gelabelt".
-  const matchesFilter = (p: PageSummary) =>
-    goldStatus ? goldById.get(p.page_id)?.status !== "done" : p.labeled
+  // Veraltete und kaputte Seiten zählen dabei nicht als fertig - sonst blendet
+  // die Offen-Liste genau die Seiten aus, die dringend nachzuarbeiten sind.
+  const matchesFilter = (p: PageSummary) => {
+    if (!goldStatus) return p.labeled
+    const g = goldById.get(p.page_id)
+    return !(g?.status === "done" && !g.stale)
+  }
 
   const byCatalog = useMemo(() => {
     const filtered = pages.filter(

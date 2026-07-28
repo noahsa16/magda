@@ -46,6 +46,26 @@ describe("PageList", () => {
     expect(screen.getByText("p2")).toBeInTheDocument()
   })
 
+  it("zählt veraltete und kaputte Seiten im Gold-Filter als offen", async () => {
+    const user = userEvent.setup()
+    render(
+      <PageList
+        pages={PAGES}
+        selected={null}
+        onSelect={vi.fn()}
+        goldStatus={gold([{ status: "done", stale: true }, { status: "broken" }])}
+      />,
+    )
+
+    // Beide Seiten sind nachzuarbeiten - der Punkt daneben sagt das bereits,
+    // und annotate-page zählt sie ebenso wenig als fertig.
+    const button = screen.getByRole("button", { name: "2 von 2 offen" })
+    await user.click(button)
+
+    expect(screen.getByText("p1")).toBeInTheDocument()
+    expect(screen.getByText("p2")).toBeInTheDocument()
+  })
+
   it("hebt Seiten mit veralteter Wortliste und kaputter Datei hervor", () => {
     render(
       <PageList
