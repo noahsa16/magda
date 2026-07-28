@@ -13,22 +13,51 @@ import re
 
 from openai import OpenAI
 
-from magda.labels import ENTITY_TYPES, spans_to_bio
+from magda.labels import spans_to_bio
 
+# Die Regeln unten sind nicht theoretisch, sondern die Fehler aus dem ersten
+# Durchlauf über einen echten Prospekt (siehe reports/woche-01.md):
+# Grundpreise landeten in QUANTITY, Angaben wurden in Einzelwörter zerrissen,
+# und "mit PENNY App" wurde als Marke gelabelt.
 _PROMPT = """\
 Du siehst eine Seite aus einem deutschen Supermarkt-Prospekt sowie die Liste
 aller Wörter auf der Seite, jeweils mit Index.
 
 Markiere alle Entitäten als Spans über die Wortindizes. Erlaubte Labels:
-{entity_types}
 
-PRODUCT = Produktbezeichnung, BRAND = Marke, PRICE = Aktionspreis,
-OLD_PRICE = durchgestrichener Originalpreis, QUANTITY = Menge/Gewicht/Inhalt,
-DISCOUNT = Rabattangabe, VALID = Gültigkeitszeitraum.
+PRODUCT     Produktbezeichnung inkl. Sortenangabe, z.B. "Löslicher Kaffee Classic"
+BRAND       Marke, z.B. "MAGICO", "COCA-COLA", "SAN FABIO"
+PRICE       Aktionspreis, z.B. "3.99"
+OLD_PRICE   durchgestrichener Originalpreis, z.B. "5.99"
+QUANTITY    Füllmenge des Produkts, z.B. "500 g", "je 200 g", "6 x 1,5 l"
+UNIT_PRICE  Grundpreis in Klammern, z.B. "(1 kg = 24.95)"
+DISCOUNT    Rabattangabe, z.B. "-33%"
+VALID       Gültigkeitszeitraum, z.B. "Gültig von Mo, 20.7. bis Sa, 25.7."
 
-Antworte ausschließlich mit einem JSON-Array dieser Form:
-[{{"start": 12, "end": 14, "label": "PRODUCT"}}, ...]
-"end" ist exklusiv. Wörter, die zu keiner Entität gehören, lässt du weg.
+Wichtige Regeln:
+
+1. Ein Span pro Angabe, zusammenhängend. "je 200 g" ist EIN QUANTITY-Span über
+   alle drei Wörter, nicht drei einzelne. Ebenso ist "Löslicher Kaffee Classic"
+   EIN PRODUCT-Span.
+2. Grundpreise gehören zu UNIT_PRICE, nicht zu QUANTITY. Der Span umfasst die
+   ganze Klammer inklusive "(" und ")".
+3. Aktions- und Werbetext ist keine Entität: "mit PENNY App", "ohne PENNY App",
+   "Nur mit App", "Aktion", Fußnotenzeichen, Aufzählungspunkte und einzelne
+   Buchstaben aus Grafiken bleiben ohne Label.
+4. Wörter wie "statt" vor einem Streichpreis gehören NICHT zum OLD_PRICE, der
+   Span umfasst nur die Zahl.
+5. Nutze das Bild, um zu erkennen, welche Angaben zu welchem Angebot gehören.
+   Preis und Produkt stehen räumlich beieinander.
+
+Beispiel für "MAGICO Löslicher Kaffee Classic, je 200 g (1 kg = 24.95) 4.99":
+[{{"start": 0, "end": 1, "label": "BRAND"}},
+ {{"start": 1, "end": 4, "label": "PRODUCT"}},
+ {{"start": 4, "end": 7, "label": "QUANTITY"}},
+ {{"start": 7, "end": 12, "label": "UNIT_PRICE"}},
+ {{"start": 12, "end": 13, "label": "PRICE"}}]
+
+Antworte ausschließlich mit einem JSON-Array dieser Form. "end" ist exklusiv.
+Wörter, die zu keiner Entität gehören, lässt du weg.
 Kein Markdown, keine Erklärungen.
 
 Wortliste:
@@ -76,10 +105,7 @@ def label_page(
 ) -> list[str]:
     """Labelt eine Seite und gibt die BIO-Tagfolge zurück (ein Tag pro Wort)."""
     word_list = "\n".join(f"{i}: {w['text']}" for i, w in enumerate(words))
-    prompt = _PROMPT.format(
-        entity_types=", ".join(ENTITY_TYPES),
-        word_list=word_list,
-    )
+    prompt = _PROMPT.format(word_list=word_list)
     b64 = base64.b64encode(page_png).decode("ascii")
 
     response = client.chat.completions.create(

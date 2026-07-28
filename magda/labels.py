@@ -7,13 +7,16 @@ sobald wir die ersten gelabelten Seiten gesichtet haben (Datenphase).
 # Reihenfolge ist fix, weil daraus die Label-IDs abgeleitet werden.
 # Nachträglich also nur hinten anfügen, sonst passen alte Checkpoints nicht mehr.
 ENTITY_TYPES = [
-    "PRODUCT",    # Produktbezeichnung, z.B. "Rinderhackfleisch"
-    "BRAND",      # Marke, z.B. "Coca-Cola"
-    "PRICE",      # Aktionspreis, z.B. "1.99"
-    "OLD_PRICE",  # durchgestrichener Originalpreis
-    "QUANTITY",   # Menge/Gewicht, z.B. "500 g" oder "6 x 1,5 l"
-    "DISCOUNT",   # Rabattangabe, z.B. "-33%"
-    "VALID",      # Gültigkeitszeitraum, z.B. "Mo, 9.3. bis Sa, 14.3."
+    "PRODUCT",     # Produktbezeichnung, z.B. "Rinderhackfleisch"
+    "BRAND",       # Marke, z.B. "Coca-Cola"
+    "PRICE",       # Aktionspreis, z.B. "1.99"
+    "OLD_PRICE",   # durchgestrichener Originalpreis
+    "QUANTITY",    # Menge/Gewicht, z.B. "500 g" oder "6 x 1,5 l"
+    "DISCOUNT",    # Rabattangabe, z.B. "-33%"
+    "VALID",       # Gültigkeitszeitraum, z.B. "Mo, 9.3. bis Sa, 14.3."
+    # Ab hier nachträglich ergänzt – nur anhängen, nie einschieben, sonst
+    # verschieben sich die Label-IDs und alte Checkpoints passen nicht mehr.
+    "UNIT_PRICE",  # Grundpreis, z.B. "(1 kg = 24.95)"
 ]
 
 # BIO-Schema: "O" + je ein B-/I-Tag pro Entity-Typ
