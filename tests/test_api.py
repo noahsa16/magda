@@ -466,3 +466,5 @@ def test_gold_schreiben_laesst_keinen_torso_zurueck(client, monkeypatch):
     body = client.get("/api/gold/462828_p1").json()
     assert body["spans"] == [{"start": 0, "end": 1, "label": "PRODUCT"}]
     assert [f.name for f in config.GOLD_DIR.iterdir()] == ["462828_p1.json"]
+    # Die Temp-Datei von mkstemp kommt mit 0600; gold/ wird aber geteilt.
+    assert (config.GOLD_DIR / "462828_p1.json").stat().st_mode & 0o777 == 0o644

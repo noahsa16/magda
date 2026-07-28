@@ -403,6 +403,9 @@ def put_gold(page_id: str, payload: GoldPayload):
     try:
         with os.fdopen(fd, "w") as f:
             json.dump(record, f, ensure_ascii=False, indent=1)
+        # mkstemp legt 0600 an, und os.replace nimmt den Modus mit. Die Dateien
+        # in gold/ werden aber geteilt und versioniert, also der übliche Modus.
+        os.chmod(tmp_path, 0o644)
         os.replace(tmp_path, config.GOLD_DIR / f"{page_id}.json")
     except Exception:
         os.unlink(tmp_path)
