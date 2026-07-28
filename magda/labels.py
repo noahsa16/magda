@@ -56,3 +56,38 @@ def spans_to_bio(num_words: int, spans: list[dict]) -> list[str]:
             tags[i] = f"I-{entity}"
 
     return tags
+
+
+def validate_spans(spans: list[dict], num_words: int) -> list[str]:
+    """Prüft handannotierte Spans und sammelt alle Fehler ein.
+
+    Gibt Meldungen zurück statt zu werfen, damit die API dem Frontend in einer
+    Antwort sagen kann, was alles nicht stimmt. Anders als spans_to_bio() wird
+    hier nichts stillschweigend verworfen: Bei Handarbeit ist ein ungültiger
+    Span ein Fehler, kein Rauschen.
+    """
+    errors = []
+    occupied: set[int] = set()
+
+    for span in spans:
+        start, end, entity = span.get("start"), span.get("end"), span.get("label")
+
+        if not isinstance(start, int) or not isinstance(end, int):
+            errors.append(f"Span {start}-{end}: start und end müssen Zahlen sein.")
+            continue
+        if start < 0 or end > num_words or start >= end:
+            errors.append(
+                f"Span {start}-{end} liegt außerhalb von 0-{num_words} oder ist leer."
+            )
+            continue
+        if entity not in ENTITY_TYPES:
+            errors.append(f"Span {start}-{end}: unbekanntes Label {entity!r}.")
+            continue
+
+        overlap = occupied & set(range(start, end))
+        if overlap:
+            errors.append(f"Span {start}-{end} überlappen mit einem anderen Span.")
+            continue
+        occupied |= set(range(start, end))
+
+    return errors

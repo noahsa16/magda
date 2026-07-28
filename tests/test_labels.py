@@ -47,3 +47,59 @@ def test_label_ids_sind_konsistent():
     # id2label/label2id müssen exakt invers sein, sonst knallt es erst beim Training
     assert len(LABELS) == len(set(LABELS))
     assert all(label2id[label] == i for i, label in enumerate(LABELS))
+
+
+from magda.labels import validate_spans
+
+
+def test_validate_spans_akzeptiert_gueltige_spans():
+    spans = [
+        {"start": 0, "end": 1, "label": "BRAND"},
+        {"start": 1, "end": 4, "label": "PRODUCT"},
+    ]
+    assert validate_spans(spans, num_words=10) == []
+
+
+def test_validate_spans_meldet_index_ausserhalb():
+    errors = validate_spans([{"start": 8, "end": 12, "label": "PRICE"}], num_words=10)
+    assert len(errors) == 1
+    assert "8-12" in errors[0]
+
+
+def test_validate_spans_meldet_leeren_oder_verdrehten_span():
+    errors = validate_spans([{"start": 5, "end": 5, "label": "PRICE"}], num_words=10)
+    assert len(errors) == 1
+
+
+def test_validate_spans_meldet_unbekanntes_label():
+    errors = validate_spans([{"start": 0, "end": 1, "label": "FARBE"}], num_words=10)
+    assert len(errors) == 1
+    assert "FARBE" in errors[0]
+
+
+def test_validate_spans_meldet_ueberlappung():
+    # BIO kann Überlappungen nicht darstellen - was hier durchrutscht, ginge
+    # beim Konvertieren still verloren.
+    spans = [
+        {"start": 0, "end": 3, "label": "PRODUCT"},
+        {"start": 2, "end": 5, "label": "QUANTITY"},
+    ]
+    errors = validate_spans(spans, num_words=10)
+    assert len(errors) == 1
+    assert "berlappen" in errors[0]
+
+
+def test_validate_spans_erlaubt_direkt_angrenzende_spans():
+    spans = [
+        {"start": 0, "end": 2, "label": "BRAND"},
+        {"start": 2, "end": 4, "label": "PRODUCT"},
+    ]
+    assert validate_spans(spans, num_words=10) == []
+
+
+def test_validate_spans_sammelt_mehrere_fehler():
+    spans = [
+        {"start": -1, "end": 2, "label": "BRAND"},
+        {"start": 3, "end": 4, "label": "UNSINN"},
+    ]
+    assert len(validate_spans(spans, num_words=10)) == 2
