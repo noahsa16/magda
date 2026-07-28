@@ -10,7 +10,7 @@ vi.stubGlobal("fetch", vi.fn(async () => new Response("[]", {
 })))
 
 describe("App-Shell", () => {
-  it("zeigt die Navigation mit allen vier Bereichen", async () => {
+  it("zeigt die Navigation mit allen fünf Bereichen", async () => {
     const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
     const router = createMemoryRouter(routes, { initialEntries: ["/"] })
     render(
@@ -20,6 +20,7 @@ describe("App-Shell", () => {
     )
     expect(await screen.findByRole("link", { name: /Übersicht/ })).toBeInTheDocument()
     expect(screen.getByRole("link", { name: /Inspektor/ })).toBeInTheDocument()
+    expect(screen.getByRole("link", { name: /Annotieren/ })).toBeInTheDocument()
     expect(screen.getByRole("link", { name: /Evaluation/ })).toBeInTheDocument()
     expect(screen.getByRole("link", { name: /Demo/ })).toBeInTheDocument()
   })
