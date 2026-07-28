@@ -63,7 +63,12 @@ export function AnnotatePage() {
   const ann = useAnnotation(selected, annotator)
   const entityTypes = schema.data?.entity_types ?? []
   const ids = useMemo(() => catalogPages.map((p) => p.page_id), [catalogPages])
-  const goldRows = (gold.data ?? []).filter((g) => g.catalog === catalog)
+  // Referenziell stabil halten: PageList memoisiert seine Gruppierung über
+  // diese Liste. Eine neue Referenz je Render rechnet sie bei jedem Wortklick neu.
+  const goldRows = useMemo(
+    () => (gold.data ?? []).filter((g) => g.catalog === catalog),
+    [gold.data, catalog],
+  )
   const idx = selected ? ids.indexOf(selected) : -1
 
   useEffect(() => {
