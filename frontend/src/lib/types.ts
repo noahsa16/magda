@@ -71,3 +71,27 @@ export interface RunStatus {
   exit_code: number | null
   elapsed: number | null
 }
+
+/** Wort-Span einer Gold-Annotation. end ist exklusiv, wie bei range(). */
+export interface Span {
+  start: number
+  end: number
+  label: string
+}
+
+export interface GoldAnnotation {
+  page_id: string
+  words_hash: string
+  status: "untouched" | "in_progress" | "done"
+  annotator: string
+  updated: string | null
+  spans: Span[]
+}
+
+export interface GoldSummary {
+  page_id: string
+  catalog: string
+  status: "untouched" | "in_progress" | "done"
+  annotator: string
+  num_spans: number
+}

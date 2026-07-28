@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { groupEntities } from "./bio"
+import { groupEntities, spansToTags } from "./bio"
 
 const words = (...texts: string[]) => texts.map((text) => ({ text }))
 
@@ -26,5 +26,32 @@ describe("groupEntities", () => {
       ["B-PRICE", "O", "I-PRICE"],
     )
     expect(result).toEqual([{ type: "PRICE", text: "a", start: 0, end: 1 }])
+  })
+})
+
+describe("spansToTags", () => {
+  it("erzeugt B-/I-Folgen aus Spans", () => {
+    const tags = spansToTags(
+      [
+        { start: 0, end: 1, label: "BRAND" },
+        { start: 1, end: 3, label: "QUANTITY" },
+      ],
+      4,
+    )
+    expect(tags).toEqual(["B-BRAND", "B-QUANTITY", "I-QUANTITY", "O"])
+  })
+
+  it("füllt eine Seite ohne Spans komplett mit O", () => {
+    expect(spansToTags([], 3)).toEqual(["O", "O", "O"])
+  })
+
+  it("ist der Rundlauf zu groupEntities", () => {
+    const words = [{ text: "MAGICO" }, { text: "je" }, { text: "200" }, { text: "g" }]
+    const spans = [
+      { start: 0, end: 1, label: "BRAND" },
+      { start: 1, end: 4, label: "QUANTITY" },
+    ]
+    const entities = groupEntities(words, spansToTags(spans, words.length))
+    expect(entities.map((e) => ({ start: e.start, end: e.end, label: e.type }))).toEqual(spans)
   })
 })
