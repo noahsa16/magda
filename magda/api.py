@@ -13,6 +13,8 @@ importiert), damit die Tests sie auf ein Temp-Verzeichnis umbiegen können.
 import base64
 import hashlib
 import json
+import os
+import tempfile
 from datetime import datetime
 from typing import Literal
 
@@ -304,13 +306,28 @@ def list_gold():
             "status": "untouched",
             "annotator": "",
             "num_spans": 0,
+            "stale": False,
         }
         if gold_file.exists():
-            with open(gold_file) as f:
-                gold = json.load(f)
-            entry["status"] = gold.get("status", "in_progress")
-            entry["annotator"] = gold.get("annotator", "")
-            entry["num_spans"] = len(gold.get("spans", []))
+            try:
+                with open(gold_file) as f:
+                    gold = json.load(f)
+                with open(words_file) as f:
+                    current_hash = _words_hash(json.load(f)["words"])
+            except (json.JSONDecodeError, KeyError, TypeError):
+                # gold/ ist versioniert und wird gemergt - ein Konfliktmarker in
+                # einer Datei ist der wahrscheinlichste Fehlerfall überhaupt.
+                # Der darf nicht die ganze Übersicht mitreißen, sonst fällt das
+                # Werkzeug für alle 40 Seiten aus.
+                entry["status"] = "broken"
+            else:
+                entry["status"] = gold.get("status", "in_progress")
+                entry["annotator"] = gold.get("annotator", "")
+                entry["num_spans"] = len(gold.get("spans", []))
+                # Derselbe Vergleich wie in get_gold: Ohne ihn meldet die
+                # Übersicht nach einem erneuten Schritt 02 weiter "fertig",
+                # obwohl jede Seite auf die falschen Wörter zeigt.
+                entry["stale"] = gold.get("words_hash") != current_hash
         rows.append(entry)
 
     rows.sort(key=lambda r: (r["catalog"], _page_num(r["page_id"])))
@@ -339,10 +356,14 @@ def get_gold(page_id: str):
     # Der gespeicherte Hash wird mitgeliefert, nicht der aktuelle - nur so kann
     # das Frontend beim Speichern denselben Wert zurückschicken. stale sagt
     # ihm vorab, dass die Wortliste sich seither geändert hat.
+    # page_id steht bewusst hinter dem Splat: Eine kopierte Gold-Datei trägt die
+    # page_id ihrer Herkunft, maßgeblich ist die angefragte. "updated" dagegen
+    # davor - dort ist der Dateiinhalt maßgeblich und None nur der Default für
+    # eine von Hand angelegte Datei ohne Zeitstempel.
     return {
-        "page_id": page_id,
         "updated": None,
         **gold,
+        "page_id": page_id,
         "stale": gold.get("words_hash") != current_hash,
     }
 
@@ -372,7 +393,22 @@ def put_gold(page_id: str, payload: GoldPayload):
         "updated": datetime.now().isoformat(timespec="seconds"),
         "spans": spans,
     }
-    with open(config.GOLD_DIR / f"{page_id}.json", "w") as f:
-        json.dump(record, f, ensure_ascii=False, indent=1)
+    # Erst in eine Nachbardatei schreiben, dann per os.replace umhängen: Die
+    # Gold-Datei ist das einzige Artefakt, das sich nicht neu erzeugen lässt,
+    # und sie wird während einer Sitzung im Sekundentakt überschrieben. Ein
+    # Abbruch mitten im Schreiben hinterlässt sonst einen Torso statt der
+    # vorherigen Fassung. mkstemp statt festem Namen, damit zwei gleichzeitige
+    # Anfragen für dieselbe Seite sich nicht gegenseitig ins Temp schreiben.
+    fd, tmp_path = tempfile.mkstemp(dir=config.GOLD_DIR, prefix=f".{page_id}.", suffix=".tmp")
+    try:
+        with os.fdopen(fd, "w") as f:
+            json.dump(record, f, ensure_ascii=False, indent=1)
+        os.replace(tmp_path, config.GOLD_DIR / f"{page_id}.json")
+    except Exception:
+        os.unlink(tmp_path)
+        raise
 
-    return record
+    # stale gehört nicht in die Datei (abgeleiteter Zustand), aber in die
+    # Antwort: Erst damit ist sie formgleich mit der von GET und das Frontend
+    # kann sie ohne Nacharbeit in seinen Cache legen.
+    return {**record, "stale": False}

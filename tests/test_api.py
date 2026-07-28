@@ -368,7 +368,101 @@ def test_gold_uebersicht_listet_auch_unberuehrte_seiten(client):
 
     assert body == [
         {"page_id": "462828_p1", "catalog": "462828", "status": "untouched",
-         "annotator": "", "num_spans": 0},
+         "annotator": "", "num_spans": 0, "stale": False},
         {"page_id": "462828_p2", "catalog": "462828", "status": "done",
-         "annotator": "kjell", "num_spans": 1},
+         "annotator": "kjell", "num_spans": 1, "stale": False},
     ]
+
+
+def test_gold_uebersicht_meldet_veraltete_wortliste(client):
+    # Ohne diesen Vergleich meldet die Übersicht nach einem erneuten Schritt 02
+    # weiter "fertig" - der Schaden fiele genau dort zuerst auf, wo man ihn
+    # bisher nicht sah.
+    _write_words("462828_p1")
+    client.put("/api/gold/462828_p1", json={
+        "words_hash": _hash_of(client, "462828_p1"),
+        "status": "done",
+        "annotator": "noah",
+        "spans": [{"start": 0, "end": 1, "label": "PRODUCT"}],
+    })
+    assert client.get("/api/gold").json()[0]["stale"] is False
+
+    _write_words("462828_p1", {
+        "page_id": "462828_p1", "width": 595.28, "height": 841.89,
+        "words": [{"text": "Anders", "bbox": [1, 2, 3, 4]}],
+    })
+
+    row = client.get("/api/gold").json()[0]
+    assert row["status"] == "done"
+    assert row["stale"] is True
+
+
+def test_gold_uebersicht_ueberlebt_kaputte_datei(client):
+    # gold/ wird gemergt: ein Konfliktmarker in einer Datei darf nicht die
+    # Übersicht aller anderen Seiten mitnehmen.
+    _write_words("462828_p1")
+    _write_words("462828_p2")
+    with open(config.GOLD_DIR / "462828_p1.json", "w") as f:
+        f.write("<<<<<<< HEAD\n{}\n")
+
+    body = client.get("/api/gold").json()
+
+    assert body[0]["status"] == "broken"
+    assert body[1]["status"] == "untouched"
+
+
+def test_gold_antwortet_beim_speichern_formgleich_zum_lesen(client):
+    # Das Frontend legt die PUT-Antwort direkt in seinen Cache - fehlt dort
+    # stale, wandert ein undefined in den Konfliktzustand.
+    _write_words("462828_p1")
+    payload = {
+        "words_hash": _hash_of(client, "462828_p1"),
+        "status": "in_progress",
+        "annotator": "noah",
+        "spans": [{"start": 0, "end": 1, "label": "PRODUCT"}],
+    }
+
+    saved = client.put("/api/gold/462828_p1", json=payload).json()
+
+    assert saved["stale"] is False
+    assert set(saved) == set(client.get("/api/gold/462828_p1").json())
+    with open(config.GOLD_DIR / "462828_p1.json") as f:
+        assert "stale" not in json.load(f)
+
+
+def test_gold_antwortet_mit_der_angefragten_page_id(client):
+    # Kopierte Gold-Datei: maßgeblich ist die angefragte Seite, nicht der Inhalt.
+    _write_words("462828_p1")
+    with open(config.GOLD_DIR / "462828_p1.json", "w") as f:
+        json.dump({"page_id": "999999_p7", "words_hash": "x", "status": "done",
+                   "annotator": "", "spans": []}, f)
+
+    assert client.get("/api/gold/462828_p1").json()["page_id"] == "462828_p1"
+
+
+def test_gold_schreiben_laesst_keinen_torso_zurueck(client, monkeypatch):
+    # Die Gold-Datei ist das einzige Artefakt, das sich nicht neu erzeugen
+    # lässt. Bricht das Schreiben ab, muss die vorherige Fassung stehen bleiben.
+    _write_words("462828_p1")
+    hash_ = _hash_of(client, "462828_p1")
+    client.put("/api/gold/462828_p1", json={
+        "words_hash": hash_, "status": "in_progress", "annotator": "noah",
+        "spans": [{"start": 0, "end": 1, "label": "PRODUCT"}],
+    })
+
+    def boom(*args, **kwargs):
+        raise OSError("Platte voll")
+
+    # Eigener Kontext: monkeypatch.undo() würde auch die Pfade der Fixture
+    # zurückdrehen und den Rest des Tests gegen das echte gold/ laufen lassen.
+    with monkeypatch.context() as m:
+        m.setattr(api.json, "dump", boom)
+        with pytest.raises(OSError):
+            client.put("/api/gold/462828_p1", json={
+                "words_hash": hash_, "status": "done", "annotator": "noah",
+                "spans": [{"start": 1, "end": 2, "label": "PRICE"}],
+            })
+
+    body = client.get("/api/gold/462828_p1").json()
+    assert body["spans"] == [{"start": 0, "end": 1, "label": "PRODUCT"}]
+    assert [f.name for f in config.GOLD_DIR.iterdir()] == ["462828_p1.json"]
