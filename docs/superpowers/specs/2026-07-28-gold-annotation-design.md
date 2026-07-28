@@ -168,9 +168,11 @@ frontend/src/features/annotate/
 Funktionen ohne React (`applyLabel`, `removeAt`, `spansOverlapping`). Damit ist
 der fehleranfälligste Teil ohne Rendering testbar.
 
-`PageOverlay` bleibt unverändert. Der Annotator hält Spans als Zustand und
-rechnet sie über eine neue Funktion `spansToTags()` in `lib/bio.ts` in genau
-das Tag-Format um, das das Overlay bereits versteht. `spansToTags` ist damit
+`PageOverlay` bekommt keinen zweiten Datenpfad. Der Annotator hält Spans als
+Zustand und rechnet sie über eine neue Funktion `spansToTags()` in `lib/bio.ts`
+in genau das Tag-Format um, das das Overlay bereits versteht. Einzige Änderung
+am Overlay: `onWordClick` reicht das Maus-Event als zweiten Parameter durch,
+damit der Annotator die Shift-Taste sieht. Bestehende Aufrufer ignorieren ihn. `spansToTags` ist damit
 das Frontend-Gegenstück zu `spans_to_bio()` — die Richtung, die dort bisher
 fehlt. `groupEntities()` deckt die Gegenrichtung ab.
 

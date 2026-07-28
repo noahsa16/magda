@@ -39,6 +39,7 @@ Zugrundeliegende Spec: `docs/superpowers/specs/2026-07-28-gold-annotation-design
 | `frontend/src/features/annotate/label-legend.tsx` | Ziffernlegende + Fortschritt |
 | `frontend/src/features/annotate/annotate-page.tsx` | Layout, Auswahl, Tastaturbelegung |
 | `frontend/src/features/inspector/page-list.tsx` | ergänzt optionale Gold-Statusanzeige (Task 6) |
+| `frontend/src/components/page-overlay.tsx` | reicht das Klick-Event durch (Task 6) |
 | `frontend/src/app/router.tsx` | ergänzt Route `/annotate` |
 | `frontend/src/app/top-nav.tsx` | ergänzt Navigationspunkt |
 
@@ -943,13 +944,15 @@ Bei geänderter Wortliste (409) schaltet der Hook auf conflict."
 
 **Dateien:**
 - Ändern: `frontend/src/features/inspector/page-list.tsx`
+- Ändern: `frontend/src/components/page-overlay.tsx`
 - Erstellen: `frontend/src/features/annotate/label-legend.tsx`
 - Erstellen: `frontend/src/features/annotate/annotate-page.tsx`
 - Test: `frontend/src/features/annotate/annotate-page.test.tsx`
 
 **Schnittstellen:**
-- Verbraucht: `useAnnotation` (Task 5), `applyLabel`/`removeRange`/`spanAt` (Task 4), `spansToTags` und `GoldSummary` (Task 3), `PageOverlay`
+- Verbraucht: `useAnnotation` (Task 5), `applyLabel`/`removeRange`/`spanAt` (Task 4), `spansToTags` und `GoldSummary` (Task 3)
 - Erzeugt: `PageList` nimmt optional `goldStatus?: GoldSummary[]` entgegen; ohne die Prop verhält sie sich unverändert, der Inspektor bleibt also unberührt
+- Erzeugt: `PageOverlay.onWordClick` bekommt das Maus-Event als zweiten Parameter: `(index: number, event: React.MouseEvent) => void`. Abwärtskompatibel — bestehende Aufrufer ignorieren ihn.
 - Erzeugt: `AnnotatePage` — Export der Route `/annotate`
 
 - [ ] **Schritt 1: `PageList` um den Gold-Status erweitern**
@@ -1003,7 +1006,30 @@ Das `<span>` mit dem Statuspunkt (aktuell Zeile 72-78) ersetzen durch:
                     )}
 ```
 
-- [ ] **Schritt 2: Legende schreiben**
+- [ ] **Schritt 2: `PageOverlay` das Klick-Event durchreichen lassen**
+
+Der Annotator braucht die Shift-Taste, um die Auswahl zu erweitern. `PageOverlay`
+reicht bisher nur den Wortindex weiter. Ein optionaler zweiter Parameter löst
+das, ohne einen bestehenden Aufrufer zu brechen.
+
+In `frontend/src/components/page-overlay.tsx` die Prop-Deklaration (Zeile 18-19)
+ändern:
+
+```tsx
+  /** Klick auf eine Box, z. B. um sie in der Liste auszuwählen. */
+  onWordClick?: (index: number, event: React.MouseEvent) => void
+```
+
+Und den Handler (Zeile 84):
+
+```tsx
+              onClick={(e) => onWordClick?.(i, e)}
+```
+
+`inspector-page.tsx` bleibt unverändert — `selectWord(wordIdx)` nimmt nur einen
+Parameter und ignoriert den zweiten.
+
+- [ ] **Schritt 3: Legende schreiben**
 
 `frontend/src/features/annotate/label-legend.tsx` erstellen:
 
@@ -1064,7 +1090,7 @@ export function LabelLegend({ entityTypes, done, total }: LabelLegendProps) {
 }
 ```
 
-- [ ] **Schritt 3: Seite schreiben**
+- [ ] **Schritt 4: Seite schreiben**
 
 `frontend/src/features/annotate/annotate-page.tsx` erstellen:
 
@@ -1249,18 +1275,16 @@ export function AnnotatePage() {
                 </Button>
               </div>
 
-              <div onClickCapture={(e) => { if (e.shiftKey) e.preventDefault() }}>
-                <PageOverlay
-                  imageUrl={api.pageImageUrl(selected)}
-                  width={data.width}
-                  height={data.height}
-                  words={data.words}
-                  tags={tags}
-                  entityTypes={entityTypes}
-                  highlight={range}
-                  onWordClick={(i) => onWordClick(i, lastShift)}
-                />
-              </div>
+              <PageOverlay
+                imageUrl={api.pageImageUrl(selected)}
+                width={data.width}
+                height={data.height}
+                words={data.words}
+                tags={tags}
+                entityTypes={entityTypes}
+                highlight={range}
+                onWordClick={(i, e) => onWordClick(i, e.shiftKey)}
+              />
             </>
           )}
         </div>
@@ -1272,16 +1296,9 @@ export function AnnotatePage() {
     </div>
   )
 }
-
-// PageOverlay reicht den Klick ohne Event weiter; die Shift-Taste wird deshalb
-// global mitgeführt statt die Overlay-Signatur zu ändern.
-let lastShift = false
-if (typeof window !== "undefined") {
-  window.addEventListener("mousedown", (e) => { lastShift = e.shiftKey })
-}
 ```
 
-- [ ] **Schritt 4: Test schreiben**
+- [ ] **Schritt 5: Test schreiben**
 
 `frontend/src/features/annotate/annotate-page.test.tsx` erstellen:
 
@@ -1352,19 +1369,20 @@ describe("AnnotatePage", () => {
 })
 ```
 
-- [ ] **Schritt 5: Tests laufen lassen**
+- [ ] **Schritt 6: Tests laufen lassen**
 
 Ausführen: `cd frontend && npx vitest run src/features/annotate/`
 Erwartet: PASS, 14 Tests (10 aus span-editor, 4 aus annotate-page)
 
 Ausführen: `cd frontend && npm test`
-Erwartet: alle Tests grün — insbesondere `inspector-page.test.tsx`, das
-`PageList` ohne `goldStatus` nutzt und sich nicht verändert haben darf.
+Erwartet: alle Tests grün — insbesondere `inspector-page.test.tsx` und
+`page-overlay.test.tsx`, die `PageList` bzw. `PageOverlay` in der bisherigen
+Form nutzen und sich nicht verändert haben dürfen.
 
-- [ ] **Schritt 6: Committen**
+- [ ] **Schritt 7: Committen**
 
 ```bash
-git add frontend/src/features/annotate/ frontend/src/features/inspector/page-list.tsx
+git add frontend/src/features/annotate/ frontend/src/features/inspector/page-list.tsx frontend/src/components/page-overlay.tsx
 git commit -m "Ergänze Annotations-Oberfläche
 
 Klick wählt ein Wort oder den ganzen Span darunter, Shift-Klick erweitert,
