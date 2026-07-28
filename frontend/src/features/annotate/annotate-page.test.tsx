@@ -14,7 +14,7 @@ const PAGE = {
   ],
 }
 
-function setup(overrides: Record<string, unknown> = {}) {
+function setup({ route, ...overrides }: Record<string, unknown> & { route?: string } = {}) {
   mockFetch({
     "/api/schema": { entity_types: ["PRODUCT", "BRAND"] },
     "/api/pages/462828_p1": PAGE,
@@ -29,7 +29,9 @@ function setup(overrides: Record<string, unknown> = {}) {
     }],
     ...overrides,
   })
-  return renderWithProviders(<AnnotatePage />, { route: "/annotate?page=462828_p1" })
+  return renderWithProviders(<AnnotatePage />, {
+    route: (route as string | undefined) ?? "/annotate?catalog=462828&page=462828_p1",
+  })
 }
 
 afterEach(() => vi.unstubAllGlobals())
@@ -160,5 +162,33 @@ describe("AnnotatePage", () => {
 
     expect(puts).toEqual([])
     expect(screen.queryByText("Wortliste hat sich geändert")).not.toBeInTheDocument()
+  })
+})
+
+describe("AnnotatePage — Ebenen", () => {
+  it("zeigt ohne Parameter die Prospekt-Übersicht", async () => {
+    setup({ route: "/annotate" })
+    expect(await screen.findByText("462828")).toBeInTheDocument()
+    expect(screen.queryByLabelText("Annotator")).not.toBeInTheDocument()
+  })
+
+  it("öffnet per Klick auf eine Kachel die Seitenliste", async () => {
+    const user = userEvent.setup()
+    setup({ route: "/annotate" })
+    await user.click(await screen.findByRole("button", { name: /462828/ }))
+    expect(await screen.findByLabelText("Annotator")).toBeInTheDocument()
+  })
+
+  it("führt über den Brotkrumen zurück zur Übersicht", async () => {
+    const user = userEvent.setup()
+    setup({ route: "/annotate?catalog=462828" })
+    await user.click(await screen.findByRole("button", { name: "Prospekte" }))
+    expect(await screen.findByText(/Seiten/)).toBeInTheDocument()
+    expect(screen.queryByLabelText("Annotator")).not.toBeInTheDocument()
+  })
+
+  it("zeigt bei unbekanntem Katalog die Übersicht mit Hinweis", async () => {
+    setup({ route: "/annotate?catalog=gibtsnicht" })
+    expect(await screen.findByText(/nicht gefunden/i)).toBeInTheDocument()
   })
 })

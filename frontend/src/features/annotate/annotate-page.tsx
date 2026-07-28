@@ -2,12 +2,15 @@ import { useQuery } from "@tanstack/react-query"
 import { Check, ChevronLeft, ChevronRight } from "lucide-react"
 import { useEffect, useMemo, useState } from "react"
 import { useSearchParams } from "react-router-dom"
+import { CatalogGrid } from "@/components/catalog-grid"
+import { Crumbs } from "@/components/crumbs"
 import { PageOverlay } from "@/components/page-overlay"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
 import { spansToTags } from "@/lib/bio"
+import { groupGoldByCatalog } from "@/lib/catalogs"
 import { api } from "@/lib/api"
 import { cn } from "@/lib/utils"
 import { PageList } from "@/features/inspector/page-list"
@@ -24,6 +27,10 @@ const SAVE_LABEL = {
 export function AnnotatePage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const selected = searchParams.get("page")
+  // Die page_id enthält den Katalog bereits (1342881_p3); ein gesetzter
+  // ?page= impliziert ihn also. Eigenen Parameter braucht nur der Zustand
+  // "Prospekt offen, aber keine Seite gewählt".
+  const catalog = searchParams.get("catalog") ?? selected?.split("_p")[0] ?? null
   const [annotator, setAnnotator] = useState(
     () => localStorage.getItem("magda.annotator") ?? "",
   )
@@ -38,10 +45,21 @@ export function AnnotatePage() {
     queryFn: () => api.page(selected!),
     enabled: selected !== null,
   })
+  const status = useQuery({ queryKey: ["status"], queryFn: api.status })
+
+  const tiles = useMemo(
+    () => groupGoldByCatalog(gold.data ?? [], status.data?.catalogs ?? []),
+    [gold.data, status.data],
+  )
+  const catalogPages = useMemo(
+    () => (pages.data ?? []).filter((p) => p.catalog === catalog),
+    [pages.data, catalog],
+  )
 
   const ann = useAnnotation(selected, annotator)
   const entityTypes = schema.data?.entity_types ?? []
-  const ids = useMemo(() => (pages.data ?? []).map((p) => p.page_id), [pages.data])
+  const ids = useMemo(() => catalogPages.map((p) => p.page_id), [catalogPages])
+  const goldRows = (gold.data ?? []).filter((g) => g.catalog === catalog)
   const idx = selected ? ids.indexOf(selected) : -1
 
   useEffect(() => {
@@ -51,7 +69,7 @@ export function AnnotatePage() {
   function goto(i: number) {
     if (i < 0 || i >= ids.length) return
     setSel(null)
-    setSearchParams({ page: ids[i] })
+    setSearchParams({ catalog: catalog!, page: ids[i] })
   }
 
   const range = sel ? { start: Math.min(sel.anchor, sel.focus), end: Math.max(sel.anchor, sel.focus) + 1 } : null
@@ -94,8 +112,38 @@ export function AnnotatePage() {
 
   if (pages.isPending || schema.isPending) return <Skeleton className="h-40 w-full" />
 
+  if (catalog === null) {
+    return (
+      <div className="flex min-w-0 flex-col gap-4">
+        <h1 className="text-3xl font-extrabold tracking-tight">Annotieren</h1>
+        <CatalogGrid
+          tiles={tiles}
+          unit="fertig"
+          onSelect={(id) => setSearchParams({ catalog: id })}
+          emptyHint={
+            <>Noch keine Prospekte extrahiert. Auf der Übersicht <code>01_download_flyers</code> und <code>02_extract_words</code> starten.</>
+          }
+        />
+      </div>
+    )
+  }
+
+  if (tiles.length > 0 && !tiles.some((t) => t.id === catalog)) {
+    return (
+      <div className="flex min-w-0 flex-col gap-4">
+        <h1 className="text-3xl font-extrabold tracking-tight">Annotieren</h1>
+        <Alert variant="destructive">
+          <AlertTitle>Prospekt nicht gefunden</AlertTitle>
+          <AlertDescription>
+            Der Katalog <code>{catalog}</code> existiert nicht (mehr). Unten stehen die vorhandenen.
+          </AlertDescription>
+        </Alert>
+        <CatalogGrid tiles={tiles} unit="fertig" onSelect={(id) => setSearchParams({ catalog: id })} />
+      </div>
+    )
+  }
+
   const data = page.data
-  const goldRows = gold.data ?? []
   // Eine Seite mit veralteter Wortliste ist keine fertige Seite mehr, auch
   // wenn in der Datei "done" steht.
   const doneCount = goldRows.filter((g) => g.status === "done" && !g.stale).length
@@ -106,7 +154,15 @@ export function AnnotatePage() {
     <div className="flex min-w-0 flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-baseline gap-3">
-          <h1 className="text-3xl font-extrabold tracking-tight">Annotieren</h1>
+          <Crumbs
+            items={[
+              { label: "Prospekte", onClick: () => setSearchParams({}) },
+              selected
+                ? { label: catalog, onClick: () => setSearchParams({ catalog }) }
+                : { label: catalog },
+              ...(selected ? [{ label: selected.split("_").pop()! }] : []),
+            ]}
+          />
           <p className="font-mono text-xs text-muted-foreground">
             {idx >= 0 ? `${idx + 1} / ${ids.length}` : `${ids.length} Seiten`}
           </p>
@@ -145,10 +201,10 @@ export function AnnotatePage() {
 
       <div className="grid min-w-0 gap-5 lg:grid-cols-[240px_minmax(0,1fr)_260px]">
         <PageList
-          pages={pages.data ?? []}
+          pages={catalogPages}
           selected={selected}
-          onSelect={(id) => { setSel(null); setSearchParams({ page: id }) }}
-          goldStatus={gold.data}
+          onSelect={(id) => { setSel(null); setSearchParams({ catalog: catalog, page: id }) }}
+          goldStatus={goldRows}
         />
 
         <div className="min-w-0 space-y-3">
