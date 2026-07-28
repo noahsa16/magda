@@ -15,6 +15,10 @@ import { api } from "@/lib/api"
 import { cn } from "@/lib/utils"
 import { PageList } from "./page-list"
 
+const EMPTY_HINT = (
+  <>Noch keine Seiten extrahiert. Auf der Übersicht <code>02_extract_words</code> starten (davor <code>01_download_flyers</code>, falls data/raw/ leer ist).</>
+)
+
 function Metric({ label, value, tone }: { label: string; value: string; tone?: "warn" }) {
   return (
     <div>
@@ -114,15 +118,13 @@ export function InspectorPage() {
           tiles={tiles}
           unit="gelabelt"
           onSelect={(id) => setSearchParams({ catalog: id })}
-          emptyHint={
-            <>Noch keine Seiten extrahiert. Auf der Übersicht <code>02_extract_words</code> starten (davor <code>01_download_flyers</code>, falls data/raw/ leer ist).</>
-          }
+          emptyHint={EMPTY_HINT}
         />
       </div>
     )
   }
 
-  if (tiles.length > 0 && !tiles.some((t) => t.id === catalog)) {
+  if (!tiles.some((t) => t.id === catalog)) {
     return (
       <div className="flex min-w-0 flex-col gap-4">
         <h1 className="text-3xl font-extrabold tracking-tight">Label-Inspektor</h1>
@@ -132,7 +134,12 @@ export function InspectorPage() {
             Der Katalog <code>{catalog}</code> existiert nicht (mehr). Unten stehen die vorhandenen.
           </AlertDescription>
         </Alert>
-        <CatalogGrid tiles={tiles} unit="gelabelt" onSelect={(id) => setSearchParams({ catalog: id })} />
+        <CatalogGrid
+          tiles={tiles}
+          unit="gelabelt"
+          onSelect={(id) => setSearchParams({ catalog: id })}
+          emptyHint={EMPTY_HINT}
+        />
       </div>
     )
   }

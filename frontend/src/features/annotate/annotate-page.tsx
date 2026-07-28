@@ -24,6 +24,10 @@ const SAVE_LABEL = {
   error: "nicht gespeichert",
 } as const
 
+const EMPTY_HINT = (
+  <>Noch keine Prospekte extrahiert. Auf der Übersicht <code>01_download_flyers</code> und <code>02_extract_words</code> starten.</>
+)
+
 export function AnnotatePage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const selected = searchParams.get("page")
@@ -110,7 +114,10 @@ export function AnnotatePage() {
     setSel(existing ? { anchor: existing.start, focus: existing.end - 1 } : { anchor: i, focus: i })
   }
 
-  if (pages.isPending || schema.isPending) return <Skeleton className="h-40 w-full" />
+  // gold gehört in die Schranke, weil die Kacheln daraus entstehen: Löst pages
+  // zuerst auf, zeigt die Übersicht sonst kurz "noch keine Prospekte".
+  if (pages.isPending || schema.isPending || gold.isPending)
+    return <Skeleton className="h-40 w-full" />
 
   if (catalog === null) {
     return (
@@ -120,15 +127,13 @@ export function AnnotatePage() {
           tiles={tiles}
           unit="fertig"
           onSelect={(id) => setSearchParams({ catalog: id })}
-          emptyHint={
-            <>Noch keine Prospekte extrahiert. Auf der Übersicht <code>01_download_flyers</code> und <code>02_extract_words</code> starten.</>
-          }
+          emptyHint={EMPTY_HINT}
         />
       </div>
     )
   }
 
-  if (tiles.length > 0 && !tiles.some((t) => t.id === catalog)) {
+  if (!tiles.some((t) => t.id === catalog)) {
     return (
       <div className="flex min-w-0 flex-col gap-4">
         <h1 className="text-3xl font-extrabold tracking-tight">Annotieren</h1>
@@ -138,7 +143,12 @@ export function AnnotatePage() {
             Der Katalog <code>{catalog}</code> existiert nicht (mehr). Unten stehen die vorhandenen.
           </AlertDescription>
         </Alert>
-        <CatalogGrid tiles={tiles} unit="fertig" onSelect={(id) => setSearchParams({ catalog: id })} />
+        <CatalogGrid
+          tiles={tiles}
+          unit="fertig"
+          onSelect={(id) => setSearchParams({ catalog: id })}
+          emptyHint={EMPTY_HINT}
+        />
       </div>
     )
   }

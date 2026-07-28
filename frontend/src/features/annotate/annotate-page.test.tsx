@@ -129,7 +129,12 @@ describe("AnnotatePage", () => {
       "/api/schema": { entity_types: ["PRODUCT", "BRAND"] },
       "/api/pages/462828_p1": PAGE,
       "/api/pages": [{ page_id: "462828_p1", catalog: "462828", labeled: false }],
-      "/api/gold": [],
+      // /api/gold listet jede Seite aus data/words/, auch die unberührten -
+      // eine leere Liste bei vorhandenen Seiten gibt es serverseitig nicht.
+      "/api/gold": [{
+        page_id: "462828_p1", catalog: "462828", status: "untouched",
+        annotator: "", num_spans: 0, stale: false,
+      }],
     }
     const json = (data: unknown, status: number) =>
       new Response(JSON.stringify(data), {
