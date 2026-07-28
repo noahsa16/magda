@@ -1,22 +1,24 @@
-"""Read-only-API für das Frontend.
+"""API für das Frontend.
 
-Liest data/ direkt von der Platte – die Pipeline-Skripte bleiben die einzige
-Schreibquelle. Start: uvicorn magda.api:app --reload (Port 8000, das
+Liest data/ direkt von der Platte. Schreiben darf sie ausschließlich nach
+gold/ (handannotierte Referenz) - alles andere unter data/ erzeugen die
+Pipeline-Skripte. Dieselbe Beschränkung wie beim Runner: eng umrissen statt
+allgemein.  Start: uvicorn magda.api:app --reload (Port 8000, das
 Frontend-Dev-Setup proxied /api hierhin).
-
-Pfade werden bewusst als config.X-Attribute zur Laufzeit gelesen (nicht
-importiert), damit die Tests sie auf ein Temp-Verzeichnis umbiegen können.
 """
 
 import base64
+import hashlib
 import json
+from datetime import datetime
+from typing import Literal
 
 from fastapi import FastAPI, HTTPException, UploadFile
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
 from magda import config, runner
-from magda.labels import ENTITY_TYPES, id2label
+from magda.labels import ENTITY_TYPES, id2label, validate_spans
 from magda.ocr import extract_words, normalize_bbox, render_png
 
 app = FastAPI(title="Magda API")
@@ -249,3 +251,118 @@ def run_inference(file: UploadFile):
     page["tags"] = tags
     page["image_b64"] = base64.b64encode(render_png(pdf_bytes)).decode("ascii")
     return page
+
+
+# ---------------------------------------------------------------------------
+# Gold-Annotationen (handgelabelt, versioniert unter gold/)
+# ---------------------------------------------------------------------------
+
+
+class GoldSpan(BaseModel):
+    start: int
+    end: int
+    label: str
+
+
+class GoldPayload(BaseModel):
+    words_hash: str
+    status: Literal["in_progress", "done"]
+    annotator: str = ""
+    spans: list[GoldSpan]
+
+
+def _words_hash(words: list[dict]) -> str:
+    """Fingerabdruck der Wortliste, gegen stille Index-Verschiebung.
+
+    Nur die Texte in ihrer Reihenfolge - Koordinaten bleiben außen vor, damit
+    eine um einen Punkt verschobene Box die Annotation nicht entwertet.
+    """
+    payload = json.dumps([w["text"] for w in words], ensure_ascii=False, separators=(",", ":"))
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+
+def _load_words(page_id: str) -> dict:
+    words_file = config.WORDS_DIR / f"{page_id}.json"
+    if not words_file.exists():
+        raise HTTPException(404, f"Unbekannte Seite: {page_id}")
+    with open(words_file) as f:
+        return json.load(f)
+
+
+@app.get("/api/gold")
+def list_gold():
+    rows = []
+    for words_file in config.WORDS_DIR.glob("*.json"):
+        page_id = words_file.stem
+        gold_file = config.GOLD_DIR / f"{page_id}.json"
+        entry = {
+            "page_id": page_id,
+            "catalog": _catalog_of(page_id),
+            "status": "untouched",
+            "annotator": "",
+            "num_spans": 0,
+        }
+        if gold_file.exists():
+            with open(gold_file) as f:
+                gold = json.load(f)
+            entry["status"] = gold.get("status", "in_progress")
+            entry["annotator"] = gold.get("annotator", "")
+            entry["num_spans"] = len(gold.get("spans", []))
+        rows.append(entry)
+
+    rows.sort(key=lambda r: (r["catalog"], _page_num(r["page_id"])))
+    return rows
+
+
+@app.get("/api/gold/{page_id}")
+def get_gold(page_id: str):
+    page = _load_words(page_id)
+    current_hash = _words_hash(page["words"])
+
+    gold_file = config.GOLD_DIR / f"{page_id}.json"
+    if not gold_file.exists():
+        return {
+            "page_id": page_id,
+            "words_hash": current_hash,
+            "status": "untouched",
+            "annotator": "",
+            "updated": None,
+            "spans": [],
+        }
+
+    with open(gold_file) as f:
+        gold = json.load(f)
+    # Der gespeicherte Hash wird mitgeliefert, nicht der aktuelle: Nur so
+    # erkennt das Frontend, dass die Wortliste sich seither geändert hat.
+    return {"page_id": page_id, "updated": None, **gold}
+
+
+@app.put("/api/gold/{page_id}")
+def put_gold(page_id: str, payload: GoldPayload):
+    page = _load_words(page_id)
+
+    if payload.words_hash != _words_hash(page["words"]):
+        raise HTTPException(
+            409,
+            "Die Wortliste dieser Seite hat sich geändert. Die Annotation passt "
+            "nicht mehr zu den Wortindizes und wurde nicht gespeichert.",
+        )
+
+    spans = [s.model_dump() for s in payload.spans]
+    errors = validate_spans(spans, len(page["words"]))
+    if errors:
+        raise HTTPException(422, " ".join(errors))
+
+    config.GOLD_DIR.mkdir(parents=True, exist_ok=True)
+    record = {
+        "page_id": page_id,
+        "words_hash": payload.words_hash,
+        "status": payload.status,
+        "annotator": payload.annotator,
+        "updated": datetime.now().isoformat(timespec="seconds"),
+        "spans": spans,
+    }
+    with open(config.GOLD_DIR / f"{page_id}.json", "w") as f:
+        json.dump(record, f, ensure_ascii=False, indent=1)
+
+    return record

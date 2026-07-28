@@ -24,7 +24,7 @@ SAMPLE_PAGE = {
 
 @pytest.fixture
 def client(tmp_path, monkeypatch):
-    for name in ("RAW_DIR", "WORDS_DIR", "IMAGES_DIR", "LABELED_DIR", "EVAL_DIR", "CHECKPOINTS_DIR"):
+    for name in ("RAW_DIR", "WORDS_DIR", "IMAGES_DIR", "LABELED_DIR", "EVAL_DIR", "CHECKPOINTS_DIR", "GOLD_DIR"):
         d = tmp_path / name.lower()
         d.mkdir()
         monkeypatch.setattr(config, name, d)
@@ -225,3 +225,119 @@ def test_run_status_ist_leer_ohne_lauf(client, clean_runner):
     assert body["running"] is False
     assert body["job"] is None
     assert body["lines"] == []
+
+
+# --- Gold-Annotationen (handgelabelt) -----------------------------------------------
+
+
+def _hash_of(client, page_id: str) -> str:
+    return client.get(f"/api/gold/{page_id}").json()["words_hash"]
+
+
+def test_gold_unberuehrte_seite_liefert_leeren_entwurf(client):
+    _write_words("462828_p1")
+
+    body = client.get("/api/gold/462828_p1").json()
+
+    assert body["status"] == "untouched"
+    assert body["spans"] == []
+    assert body["updated"] is None
+    assert len(body["words_hash"]) == 64
+
+
+def test_gold_unbekannte_seite_gibt_404(client):
+    assert client.get("/api/gold/gibtsnicht_p1").status_code == 404
+
+
+def test_gold_speichern_und_wiederlesen(client):
+    _write_words("462828_p1")
+    payload = {
+        "words_hash": _hash_of(client, "462828_p1"),
+        "status": "in_progress",
+        "annotator": "noah",
+        "spans": [{"start": 0, "end": 1, "label": "PRODUCT"}],
+    }
+
+    assert client.put("/api/gold/462828_p1", json=payload).status_code == 200
+
+    body = client.get("/api/gold/462828_p1").json()
+    assert body["status"] == "in_progress"
+    assert body["annotator"] == "noah"
+    assert body["spans"] == [{"start": 0, "end": 1, "label": "PRODUCT"}]
+    assert body["updated"] is not None
+
+
+def test_gold_speichert_spans_nicht_als_tags(client):
+    # Das Speicherformat ist Teil des Vertrags: Spans sind git-diffbar,
+    # eine Liste aus 180 "O"-Einträgen ist es nicht.
+    _write_words("462828_p1")
+    client.put("/api/gold/462828_p1", json={
+        "words_hash": _hash_of(client, "462828_p1"),
+        "status": "done",
+        "annotator": "noah",
+        "spans": [{"start": 0, "end": 1, "label": "PRODUCT"}],
+    })
+
+    with open(config.GOLD_DIR / "462828_p1.json") as f:
+        stored = json.load(f)
+
+    assert "tags" not in stored
+    assert stored["spans"] == [{"start": 0, "end": 1, "label": "PRODUCT"}]
+
+
+def test_gold_lehnt_ueberlappende_spans_ab(client):
+    _write_words("462828_p1")
+    resp = client.put("/api/gold/462828_p1", json={
+        "words_hash": _hash_of(client, "462828_p1"),
+        "status": "in_progress",
+        "annotator": "noah",
+        "spans": [
+            {"start": 0, "end": 2, "label": "PRODUCT"},
+            {"start": 1, "end": 2, "label": "BRAND"},
+        ],
+    })
+    assert resp.status_code == 422
+
+
+def test_gold_lehnt_unbekanntes_label_ab(client):
+    _write_words("462828_p1")
+    resp = client.put("/api/gold/462828_p1", json={
+        "words_hash": _hash_of(client, "462828_p1"),
+        "status": "in_progress",
+        "annotator": "noah",
+        "spans": [{"start": 0, "end": 1, "label": "FARBE"}],
+    })
+    assert resp.status_code == 422
+
+
+def test_gold_lehnt_veralteten_hash_mit_409_ab(client):
+    # Ändert sich Schritt 02, zeigen die Indizes auf andere Wörter. Der Hash
+    # macht das laut, statt die Annotation still zu verfälschen.
+    _write_words("462828_p1")
+    resp = client.put("/api/gold/462828_p1", json={
+        "words_hash": "0" * 64,
+        "status": "in_progress",
+        "annotator": "noah",
+        "spans": [],
+    })
+    assert resp.status_code == 409
+
+
+def test_gold_uebersicht_listet_auch_unberuehrte_seiten(client):
+    _write_words("462828_p1")
+    _write_words("462828_p2")
+    client.put("/api/gold/462828_p2", json={
+        "words_hash": _hash_of(client, "462828_p2"),
+        "status": "done",
+        "annotator": "kjell",
+        "spans": [{"start": 0, "end": 1, "label": "PRICE"}],
+    })
+
+    body = client.get("/api/gold").json()
+
+    assert body == [
+        {"page_id": "462828_p1", "catalog": "462828", "status": "untouched",
+         "annotator": "", "num_spans": 0},
+        {"page_id": "462828_p2", "catalog": "462828", "status": "done",
+         "annotator": "kjell", "num_spans": 1},
+    ]
