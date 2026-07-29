@@ -1,6 +1,7 @@
 import type {
-  EvalReport, GoldAnnotation, GoldSummary, InferenceResult, ModelStatus, PageDetail, PageSummary,
-  PipelineStatus, RunStatus, Span,
+  CatalogEntry, CatalogRegistry, EvalReport, GoldAnnotation, GoldSummary, InferenceResult,
+  JobDef, LabelDistribution, ModelStatus, PageDetail, PageSummary, PipelineStatus, ProbeResult,
+  RunDetail, RunRecord, RunStatus, Span,
 } from "./types"
 
 async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
@@ -29,13 +30,32 @@ export const api = {
     return fetchJson<InferenceResult>("/api/inference", { method: "POST", body: form })
   },
   run: () => fetchJson<RunStatus>("/api/run"),
-  startRun: (job: string, variant?: string) =>
+  startRun: (job: string, args: Record<string, string> = {}) =>
     fetchJson<RunStatus>("/api/run", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ job, variant: variant ?? null }),
+      body: JSON.stringify({ job, args }),
     }),
   stopRun: () => fetchJson<RunStatus>("/api/run/stop", { method: "POST" }),
+  jobs: () => fetchJson<JobDef[]>("/api/jobs"),
+  runs: () => fetchJson<RunRecord[]>("/api/runs"),
+  runDetail: (id: string) => fetchJson<RunDetail>(`/api/runs/${id}`),
+  catalogs: () => fetchJson<CatalogRegistry>("/api/catalogs"),
+  addCatalog: (entry: Partial<CatalogEntry> & { id: string }) =>
+    fetchJson<CatalogEntry>("/api/catalogs", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(entry),
+    }),
+  removeCatalog: (id: string) =>
+    fetchJson<{ removed: string }>(`/api/catalogs/${id}`, { method: "DELETE" }),
+  probeCatalog: (url: string) =>
+    fetchJson<ProbeResult>("/api/catalogs/probe", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url }),
+    }),
+  labelDistribution: () => fetchJson<LabelDistribution>("/api/labels/distribution"),
   gold: () => fetchJson<GoldSummary[]>("/api/gold"),
   goldPage: (id: string) => fetchJson<GoldAnnotation>(`/api/gold/${id}`),
   saveGold: (
