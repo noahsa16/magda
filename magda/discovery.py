@@ -152,3 +152,65 @@ def fetch_page(catalog_id: str, page: int, session: requests.Session) -> bytes |
     except requests.RequestException:
         return None
     return resp.content if resp.status_code == 200 else None
+
+
+def market_metadata(session: requests.Session) -> dict[str, dict]:
+    """Zu jeder Katalog-ID der laufenden Woche: Verkaufsregion, Märkte, Orte.
+
+    Nur für die laufende Woche verfügbar – die Markt-API vergisst vergangene
+    Ausgaben. Deshalb wird das Ergebnis gespeichert (siehe catalog_meta), sonst
+    ist ein Katalog nach einer Woche nur noch eine nichtssagende Nummer.
+    """
+    resp = session.get(MARKET_API, headers={"Accept": "application/json"}, timeout=60)
+    resp.raise_for_status()
+
+    gruppen: dict[str, list[dict]] = defaultdict(list)
+    for market in resp.json():
+        match = re.search(r"catalogId=(\d+)", market.get("flippingBookURL") or "")
+        if match:
+            gruppen[match.group(1)].append(market)
+
+    meta = {}
+    for catalog_id, markets in gruppen.items():
+        staedte = sorted({m["city"] for m in markets if m.get("city")})
+        meta[catalog_id] = {
+            "selling_region": sorted({m["sellingRegion"] for m in markets})[0],
+            "markets": len(markets),
+            "states": sorted({m["state"] for m in markets if m.get("state")}),
+            "example_city": staedte[0] if staedte else "",
+            "confirmed": True,
+        }
+    return meta
+
+
+def infer_older_block(
+    known: dict[str, dict], catalog_ids: list[str], block_base: str
+) -> dict[str, dict]:
+    """Überträgt die Regionszuordnung einer Woche auf einen älteren Block.
+
+    Penny vergibt je Woche 44 IDs auf dem Dreiergitter, und die Reihenfolge der
+    Regionen ist über die Wochen dieselbe: der Katalog mit Gitterabstand n vom
+    Blockanfang gehört zur selben Region wie in der laufenden Woche.
+
+    Zugeordnet wird über den Abstand, nicht über die Listenposition – von einer
+    älteren Woche liegen nach dem Entdoppeln nur noch einzelne Kataloge auf der
+    Platte, eine Positionszählung ginge daneben.
+
+    Beweisen lässt sich die Annahme nicht mehr, sobald die Markt-API die alte
+    Woche vergessen hat. Das Ergebnis wird deshalb `confirmed: False` markiert
+    und in der Oberfläche als vermutet ausgewiesen.
+    """
+    referenz = sorted(known, key=int)
+    if not referenz:
+        return {}
+    basis = int(block_base)
+
+    ergebnis = {}
+    for catalog_id in catalog_ids:
+        if catalog_id in known:
+            continue
+        abstand = (int(catalog_id) - basis) // ID_STRIDE
+        if abstand < 0 or abstand >= len(referenz):
+            continue
+        ergebnis[catalog_id] = {**known[referenz[abstand]], "confirmed": False}
+    return ergebnis

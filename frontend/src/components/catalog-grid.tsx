@@ -38,9 +38,34 @@ export function CatalogGrid({ tiles, unit, onSelect, emptyHint }: CatalogGridPro
             onClick={() => onSelect(tile.id)}
             className="plate space-y-2 rounded-lg border-2 border-foreground bg-card p-4 text-left transition-colors hover:bg-accent"
           >
-            <p className="font-mono text-lg font-bold tracking-tight">{tile.id}</p>
+            <div className="flex items-baseline justify-between gap-2">
+              <p className="font-mono text-lg font-bold tracking-tight">{tile.id}</p>
+              {tile.pages === 1 && (
+                <span
+                  className="shrink-0 rounded-full border border-border px-2 py-0.5 font-mono text-[10px] uppercase tracking-widest text-muted-foreground"
+                  title="Diese Region unterscheidet sich bundesweit an genau einer Seite"
+                >
+                  1 Abweichung
+                </span>
+              )}
+            </div>
+            {tile.region ? (
+              <p className="text-sm font-semibold leading-tight">
+                {tile.region}
+                {tile.region_confirmed === false && (
+                  <span
+                    className="ml-1 font-normal text-muted-foreground"
+                    title="Aus der Regionsreihenfolge der laufenden Woche übertragen – Penny's Markt-API kennt vergangene Wochen nicht mehr"
+                  >
+                    (vermutet)
+                  </span>
+                )}
+              </p>
+            ) : (
+              <p className="text-sm text-muted-foreground">Region unbekannt</p>
+            )}
             <p className="font-mono text-[11px] text-muted-foreground">
-              {tile.pages} Seiten
+              {tile.pages} {tile.pages === 1 ? "Seite" : "Seiten"}
               {tile.downloaded && ` · geladen ${shortDate(tile.downloaded)}`}
             </p>
             <div className="flex items-center gap-2">

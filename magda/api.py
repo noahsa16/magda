@@ -22,7 +22,7 @@ from fastapi import FastAPI, HTTPException, UploadFile
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
-from magda import catalogs, config, jobs, runner, runs, scraping
+from magda import catalog_meta, catalogs, config, jobs, runner, runs, scraping
 from magda.gold import count_by_status, words_hash
 from magda.labels import ENTITY_TYPES, id2label, validate_spans
 from magda.ocr import extract_words, normalize_bbox, render_png
@@ -88,6 +88,15 @@ def get_status():
 
     for catalog, entry in by_catalog.items():
         entry["downloaded"] = _downloaded_at(catalog)
+
+    meta = catalog_meta.load()
+    for entry in by_catalog.values():
+        # Ohne die Region ist ein Katalog nur eine sechsstellige Nummer - und
+        # eine Kachel mit "1 Seite" wirkt wie ein Fehler statt wie das, was sie
+        # ist: eine Region, die sich an genau einer Seite unterscheidet.
+        info = meta.get(entry["id"], {})
+        entry["region"] = catalog_meta.label(entry["id"], meta)
+        entry["region_confirmed"] = bool(info.get("confirmed", False)) if info else None
 
     rows = sorted(by_catalog.values(), key=lambda c: c["id"])
     totals = {k: sum(c[k] for c in rows) for k in ("raw", "words", "images", "labeled")}

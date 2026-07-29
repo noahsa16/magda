@@ -194,7 +194,7 @@ describe("AnnotatePage — Ebenen", () => {
     const user = userEvent.setup()
     setup({ route: "/annotate?catalog=462828" })
     await user.click(await screen.findByRole("button", { name: "Prospekte" }))
-    expect(await screen.findByText(/Seiten/)).toBeInTheDocument()
+    expect(await screen.findByText(/Seiten?/)).toBeInTheDocument()
     expect(screen.queryByLabelText("Annotator")).not.toBeInTheDocument()
   })
 

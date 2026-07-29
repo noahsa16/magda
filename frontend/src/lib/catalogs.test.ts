@@ -3,8 +3,8 @@ import { groupGoldByCatalog, groupPagesByCatalog } from "./catalogs"
 import type { CatalogStatus, GoldSummary, PageSummary } from "./types"
 
 const status: CatalogStatus[] = [
-  { id: "111", raw: 2, words: 2, images: 2, labeled: 1, downloaded: "2026-07-23" },
-  { id: "222", raw: 1, words: 1, images: 1, labeled: 0, downloaded: null },
+  { id: "111", raw: 2, words: 2, images: 2, labeled: 1, downloaded: "2026-07-23", region: "Bayern · 12 Märkte", region_confirmed: true },
+  { id: "222", raw: 1, words: 1, images: 1, labeled: 0, downloaded: null, region: "", region_confirmed: null },
 ]
 
 const gold = (page_id: string, s: GoldSummary["status"], stale = false): GoldSummary => ({
@@ -22,8 +22,8 @@ describe("groupGoldByCatalog", () => {
       status,
     )
     expect(tiles).toEqual([
-      { id: "111", pages: 2, done: 1, downloaded: "2026-07-23", stale: 0, broken: 0 },
-      { id: "222", pages: 1, done: 1, downloaded: null, stale: 0, broken: 0 },
+      { id: "111", pages: 2, done: 1, downloaded: "2026-07-23", stale: 0, broken: 0, region: "Bayern · 12 Märkte", region_confirmed: true },
+      { id: "222", pages: 1, done: 1, downloaded: null, stale: 0, broken: 0, region: "", region_confirmed: null },
     ])
   })
 
@@ -49,7 +49,7 @@ describe("groupGoldByCatalog", () => {
   it("kommt ohne Statuseintrag aus", () => {
     const tiles = groupGoldByCatalog([gold("999_p1", "done")], status)
     expect(tiles).toEqual([
-      { id: "999", pages: 1, done: 1, downloaded: null, stale: 0, broken: 0 },
+      { id: "999", pages: 1, done: 1, downloaded: null, stale: 0, broken: 0, region: "", region_confirmed: null },
     ])
   })
 
@@ -65,8 +65,8 @@ describe("groupPagesByCatalog", () => {
       status,
     )
     expect(tiles).toEqual([
-      { id: "111", pages: 2, done: 1, downloaded: "2026-07-23", stale: 0, broken: 0 },
-      { id: "222", pages: 1, done: 0, downloaded: null, stale: 0, broken: 0 },
+      { id: "111", pages: 2, done: 1, downloaded: "2026-07-23", stale: 0, broken: 0, region: "Bayern · 12 Märkte", region_confirmed: true },
+      { id: "222", pages: 1, done: 0, downloaded: null, stale: 0, broken: 0, region: "", region_confirmed: null },
     ])
   })
 })

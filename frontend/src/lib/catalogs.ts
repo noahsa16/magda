@@ -4,13 +4,16 @@
 import type { CatalogStatus, CatalogTile, GoldSummary, PageSummary } from "./types"
 
 function emptyTile(id: string, status: CatalogStatus[]): CatalogTile {
+  const entry = status.find((s) => s.id === id)
   return {
     id,
     pages: 0,
     done: 0,
-    downloaded: status.find((s) => s.id === id)?.downloaded ?? null,
+    downloaded: entry?.downloaded ?? null,
     stale: 0,
     broken: 0,
+    region: entry?.region ?? "",
+    region_confirmed: entry?.region_confirmed ?? null,
   }
 }
 

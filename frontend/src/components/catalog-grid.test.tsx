@@ -6,7 +6,8 @@ import { CatalogGrid } from "./catalog-grid"
 import type { CatalogTile } from "@/lib/types"
 
 const tile = (over: Partial<CatalogTile> = {}): CatalogTile => ({
-  id: "1342881", pages: 40, done: 18, downloaded: "2026-07-23", stale: 0, broken: 0, ...over,
+  id: "1342881", pages: 40, done: 18, downloaded: "2026-07-23", stale: 0, broken: 0,
+  region: "Bayern · 153 Märkte", region_confirmed: true, ...over,
 })
 
 describe("CatalogGrid", () => {

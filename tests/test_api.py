@@ -30,6 +30,7 @@ def client(tmp_path, monkeypatch):
         monkeypatch.setattr(config, name, d)
     # Ohne das schreiben die Tests das echte catalogs.json im Repo um.
     monkeypatch.setattr(config, "CATALOGS_FILE", tmp_path / "catalogs.json")
+    monkeypatch.setattr(config, "CATALOG_META_FILE", tmp_path / "catalog_meta.json")
     return TestClient(api.app)
 
 
@@ -71,7 +72,10 @@ def test_status_zaehlt_pro_katalog(client):
     # und wird in test_status_liefert_ladedatum_je_katalog eigens geprüft.
     entry = dict(body["catalogs"][0])
     assert entry.pop("downloaded") is not None
-    assert entry == {"id": "462828", "raw": 2, "words": 1, "images": 0, "labeled": 0}
+    assert entry == {
+        "id": "462828", "raw": 2, "words": 1, "images": 0, "labeled": 0,
+        "region": "", "region_confirmed": None,
+    }
     assert body["totals"]["raw"] == 2
 
 

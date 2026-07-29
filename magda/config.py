@@ -47,6 +47,9 @@ GOLD_DIR = PROJECT_ROOT / "gold"
 # Katalog-Verzeichnis: gefundene Blätterkatalog-IDs. Versioniert wie gold/ –
 # eine ID lässt sich nicht reproduzieren, nur wiederfinden.
 CATALOGS_FILE = PROJECT_ROOT / "catalogs.json"
+# Katalog -> Verkaufsregion. Penny's Markt-API kennt nur die laufende Woche;
+# ungespeichert ist die Zuordnung nach sieben Tagen unwiederbringlich weg.
+CATALOG_META_FILE = PROJECT_ROOT / "catalog_meta.json"
 CHECKPOINTS_DIR = PROJECT_ROOT / "checkpoints"
 
 # ---------------------------------------------------------------------------

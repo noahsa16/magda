@@ -27,6 +27,10 @@ export interface CatalogStatus {
   labeled: number
   /** Ladedatum als YYYY-MM-DD; null, wenn data/raw/<id> fehlt. */
   downloaded: string | null
+  /** "Bayern · 153 Märkte"; leer, wenn die Zuordnung fehlt. */
+  region: string
+  /** false: aus der Reihenfolge der Vorwoche übertragen, nicht belegt. */
+  region_confirmed: boolean | null
 }
 
 export interface PipelineStatus {
@@ -196,4 +200,7 @@ export interface CatalogTile {
   stale: number
   /** Nur im Annotator > 0: Gold-Datei nicht lesbar. */
   broken: number
+  /** Verkaufsregion, z.B. "Bayern · 153 Märkte". */
+  region: string
+  region_confirmed: boolean | null
 }
