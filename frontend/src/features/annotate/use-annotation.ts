@@ -17,20 +17,23 @@ interface Pending {
   status: PageStatus
 }
 
-/** Reihenfolge über die *abgeschlossenen* Speicherungen: Jeder Flush bekommt
- * eine monoton steigende Nummer, pro Seite steht hier die höchste, deren
- * Antwort schon übernommen wurde. Eine Prüfung nur gegen noch offene
- * Änderungen reicht dafür grundsätzlich nicht - zwei PUTs derselben Seite
- * können in umgekehrter Reihenfolge antworten, und die verspätete ältere
- * fände nichts Offenes mehr vor.
+/** Pro Seite die laufende Speicherkette. Ein neuer Speichervorgang hängt sich
+ * hinten an, statt sich neben den laufenden zu stellen.
+ *
+ * Zwei gleichzeitige PUTs derselben Seite kommen beim Server in beliebiger
+ * Reihenfolge an, und `os.replace` macht den *letzten* zum Gewinner: Der ältere
+ * Stand überschreibt dann den neueren, während die Oberfläche "gespeichert"
+ * meldet. Ein Lock im Backend hilft dagegen nicht - es macht den ohnehin
+ * atomaren Schreibvorgang nicht eindeutiger. Die Reihenfolge kennt nur der
+ * Client; der Server sieht zwei gültige PUTs mit demselben words_hash und
+ * keinen Grund, einen davon abzulehnen.
  *
  * Bewusst außerhalb des Hooks: Der Unmount-Cleanup sichert noch, seine Antwort
  * trifft also erst ein, wenn längst eine neue Hook-Instanz läuft. An Refs
- * gebunden wäre die Ordnung genau in dem Fall verloren, für den sie existiert.
- * Der Zähler steigt global, deshalb bleibt jede spätere Speicherung auch über
- * Instanzgrenzen hinweg die jüngere. */
-let saveSeq = 0
-const appliedSeq = new Map<string, number>()
+ * gebunden wäre die Kette genau in dem Fall verloren, für den sie existiert.
+ * Der Schlüssel ist die Seite, nicht der Hook - verschiedene Seiten sind
+ * verschiedene Dateien und dürfen weiter nebeneinander laufen. */
+const chains = new Map<string, Promise<void>>()
 
 /** Annotation einer Seite: laden, im Speicher halten, verzögert sichern.
  *
@@ -100,70 +103,82 @@ export function useAnnotation(pageId: string | null, annotator: string) {
     setConflict(query.data.stale)
   }, [query.data, pageId])
 
+  // Die eigentliche Speicherung. Wirft nie: Ein Fehler gehört in den sichtbaren
+  // Zustand, nicht in die Kette - die stünde sonst für diese Seite still.
+  const save = useCallback(
+    async (pending: Pending) => {
+      // Gehört diese Änderung noch zur gerade angezeigten Seite? Nur dann darf
+      // dieser Flush ihren Speicherzustand anzeigen - sonst landet ein Fehler
+      // oder ein "gespeichert" einer längst verlassenen Seite auf der falschen.
+      const isCurrentPage = () => pending.pageId === pageIdRef.current
+      if (mountedRef.current && isCurrentPage()) setSaveState("saving")
+      try {
+        const saved = await api.saveGold(pending.pageId, {
+          words_hash: pending.hash,
+          // "untouched" ist ein Anzeigezustand, kein speicherbarer.
+          status: pending.status === "done" ? "done" : "in_progress",
+          annotator,
+          spans: pending.spans,
+        })
+        // Nur wenn seither keine neuere Änderung geplant wurde, darf diese
+        // Speicherung pendingRef zurücksetzen UND "gespeichert" anzeigen -
+        // sonst gälte eine bereits wartende neuere Bearbeitung als gesichert,
+        // obwohl ihr eigener Timer noch gar nicht gefeuert hat.
+        const isLatest = pendingRef.current === pending
+        if (isLatest) pendingRef.current = null
+        // Ein Refetch dieser Seite, der vor diesem Speichern losgelaufen ist,
+        // trägt den Stand von davor und gewinnt bei React Query gegen unser
+        // setQueryData, weil er später eintrifft. Abbrechen statt zusehen.
+        await queryClient.cancelQueries({ queryKey: ["gold", pending.pageId], exact: true })
+        // Den Cache dieser Seite mit dem Gespeicherten füllen. Ohne das bleibt
+        // ["gold", pageId] für immer auf dem Stand der Erstladung: Wer die Seite
+        // später wieder aufschlägt, sieht kurz eine leere Seite und verliert
+        // seine Arbeit, sobald er in diesem Fenster ein Label setzt.
+        // Übersprungen, wenn für dieselbe Seite bereits etwas Neueres aussteht -
+        // dann beschreibt diese Antwort nicht mehr den Stand im Speicher.
+        if (pendingRef.current?.pageId !== pending.pageId) {
+          queryClient.setQueryData(["gold", pending.pageId], saved)
+        }
+        // Exaktes Match trifft nur die Übersichts-Query ["gold"], nicht
+        // ["gold", pageId] der gerade offenen Seite - die wird oben gezielt
+        // gesetzt. Ein Refetch stattdessen würde eine zwischen Flush-Ende und
+        // Refetch-Antwort weiterlaufende Bearbeitung überschreiben.
+        queryClient.invalidateQueries({ queryKey: ["gold"], exact: true })
+        if (isLatest && mountedRef.current && isCurrentPage()) setSaveState("saved")
+      } catch (err) {
+        if (mountedRef.current && isCurrentPage()) {
+          if (err instanceof Error && err.message.includes("Wortliste")) setConflict(true)
+          setSaveState("error")
+        }
+      }
+    },
+    [annotator, queryClient],
+  )
+
   // Hängt bewusst nicht an pageId: pendingRef trägt die Zielseite selbst mit,
   // damit ein bereits laufender Timer beim Seitenwechsel weiter die richtige
   // Seite sichert, statt auf die neu ausgewählte umzuspringen.
-  const flush = useCallback(async () => {
+  const flush = useCallback(() => {
+    // Der Schnappschuss entsteht beim Einreihen, nicht beim Ausführen: In
+    // schedule() wird für die verlassene Seite geflusht und pendingRef direkt
+    // danach mit der neuen überschrieben. Erst beim Ausführen gelesen, sicherte
+    // dieser Aufruf den Stand der neuen Seite unter der Kette der alten.
     const pending = pendingRef.current
-    if (!pending) return
-    // Gehört diese Änderung noch zur gerade angezeigten Seite? Nur dann darf
-    // dieser Flush ihren Speicherzustand anzeigen - sonst landet ein Fehler
-    // oder ein "gespeichert" einer längst verlassenen Seite auf der falschen.
-    const isCurrentPage = () => pending.pageId === pageIdRef.current
-    const seq = ++saveSeq
-    // Ist zu dieser Seite bereits eine neuere Antwort verarbeitet worden? Dann
-    // ist diese hier überholt und darf weder Cache noch Anzeige anfassen.
-    const outdated = () => (appliedSeq.get(pending.pageId) ?? 0) > seq
-    if (mountedRef.current && isCurrentPage()) setSaveState("saving")
-    try {
-      const saved = await api.saveGold(pending.pageId, {
-        words_hash: pending.hash,
-        // "untouched" ist ein Anzeigezustand, kein speicherbarer.
-        status: pending.status === "done" ? "done" : "in_progress",
-        annotator,
-        spans: pending.spans,
+    if (!pending) return Promise.resolve()
+    const key = pending.pageId
+    const run = (chains.get(key) ?? Promise.resolve())
+      .then(() => save(pending))
+      // save() fängt selbst ab; dies ist die Absicherung, dass ein unerwarteter
+      // Wurf die Kette dieser Seite nicht für den Rest der Sitzung vergiftet.
+      .catch(() => {})
+      // Nur den eigenen Eintrag räumen: Hat sich inzwischen ein weiterer
+      // angehängt, ist er das Ende der Kette und muss dort stehen bleiben.
+      .finally(() => {
+        if (chains.get(key) === run) chains.delete(key)
       })
-      // Nur wenn seither keine neuere Änderung geplant wurde, darf dieser
-      // Flush pendingRef zurücksetzen UND "gespeichert" anzeigen - sonst
-      // gälte eine bereits wartende neuere Bearbeitung als gesichert, obwohl
-      // ihr eigener Timer noch gar nicht gefeuert hat (zwei überlappende
-      // Flushes, deren älterer nach dem neueren aufloest, z. B. durch
-      // retry() parallel zu einem Timer).
-      const isLatest = pendingRef.current === pending
-      if (isLatest) pendingRef.current = null
-      // Ein Refetch dieser Seite, der vor diesem Speichern losgelaufen ist,
-      // trägt den Stand von davor und gewinnt bei React Query gegen unser
-      // setQueryData, weil er später eintrifft. Abbrechen statt zusehen.
-      await queryClient.cancelQueries({ queryKey: ["gold", pending.pageId], exact: true })
-      // Den Cache dieser Seite mit dem Gespeicherten füllen. Ohne das bleibt
-      // ["gold", pageId] für immer auf dem Stand der Erstladung: Wer die Seite
-      // später wieder aufschlägt, sieht kurz eine leere Seite und verliert
-      // seine Arbeit, sobald er in diesem Fenster ein Label setzt.
-      // Übersprungen, wenn für dieselbe Seite etwas Neueres aussteht oder
-      // bereits angekommen ist - dann ist diese Antwort schon veraltet.
-      const superseded = pendingRef.current?.pageId === pending.pageId || outdated()
-      if (!superseded) {
-        appliedSeq.set(pending.pageId, seq)
-        queryClient.setQueryData(["gold", pending.pageId], saved)
-      }
-      // Exaktes Match trifft nur die Übersichts-Query ["gold"], nicht
-      // ["gold", pageId] der gerade offenen Seite - die wird oben gezielt
-      // gesetzt. Ein Refetch stattdessen würde eine zwischen Flush-Ende und
-      // Refetch-Antwort weiterlaufende Bearbeitung überschreiben.
-      queryClient.invalidateQueries({ queryKey: ["gold"], exact: true })
-      if (isLatest && mountedRef.current && isCurrentPage()) setSaveState("saved")
-    } catch (err) {
-      // Eine neuere Antwort derselben Seite ist bereits übernommen: Ihr Stand
-      // liegt auf dem Server, dieser ältere Versuch ist bedeutungslos. Ohne
-      // die Prüfung bliebe eine rote Fehlanzeige stehen, die der
-      // Wiederholen-Knopf nicht mehr auflösen kann - pendingRef ist leer.
-      if (outdated()) return
-      if (mountedRef.current && isCurrentPage()) {
-        if (err instanceof Error && err.message.includes("Wortliste")) setConflict(true)
-        setSaveState("error")
-      }
-    }
-  }, [annotator, queryClient])
+    chains.set(key, run)
+    return run
+  }, [save])
 
   // Immer die jüngste flush-Fassung griffbereit, damit der Unmount-Cleanup
   // unten (der nur einmal eingerichtet wird) nicht mit veraltetem annotator

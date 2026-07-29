@@ -82,6 +82,16 @@ Das hat sich gelohnt, aber anders als erwartet: Die meisten Fehler steckten
   eingeschleppt: Gold-Dateien wären nur für die Person lesbar gewesen, die sie
   geschrieben hat — in einem per Git geteilten Verzeichnis ein Problem, das
   niemand mit dem Annotationswerkzeug in Verbindung gebracht hätte.
+- **Der fünfte Nebenläufigkeitsfehler lag unter den anderen vier.** Alle vier
+  Runden hatten *Antworten* geordnet; keine hatte verhindert, dass zwei PUTs
+  derselben Seite überhaupt gleichzeitig fliegen. Beim Server kommen sie in
+  beliebiger Reihenfolge an, und `os.replace` macht den letzten zum Gewinner —
+  die Oberfläche meldet dann „gespeichert" mit dem neueren Stand, während auf
+  der Platte der ältere liegt. Auslöser ist kein Sonderfall, sondern zügiges
+  Annotieren an einem trägen Server: Debounce 300 ms, Serverlatenz darüber.
+  Speichervorgänge stehen jetzt pro Seite in einer Warteschlange. Das ersetzt
+  die Sequenznummer-Buchhaltung der vierten Runde — sie ordnete Symptome, die
+  jetzt nicht mehr entstehen.
 
 ## Offen
 
@@ -99,15 +109,12 @@ Das hat sich gelohnt, aber anders als erwartet: Die meisten Fehler steckten
 
 **Technisch offen:**
 
-- **Speichervorgänge pro Seite serialisieren.** `put_gold` ist ein `def`, kein
-  `async def`, läuft also im FastAPI-Threadpool. Zwei gleichzeitige PUTs für
-  dieselbe Seite können in beliebiger Reihenfolge bei `os.replace` ankommen;
-  der `words_hash` schützt nicht, weil er für beide identisch ist. Der Client
-  zeigt dann „gespeichert" mit dem neueren Stand, auf der Platte liegt der
-  ältere. Braucht Serverlatenz über 300 ms, ist lokal also selten — aber es ist
-  wieder still verlorene Handarbeit. Die saubere Lösung wäre, auf den laufenden
-  PUT zu warten statt einen zweiten danebenzustellen; das macht auch die
-  aktuelle Sequenznummer-Buchhaltung im Hook überflüssig.
+- **Gleichzeitiges Annotieren derselben Seite** aus zwei Tabs oder von zwei
+  Personen bleibt Last-Write-Wins. Die Warteschlange sitzt im Client und ordnet
+  nur dessen eigene Speicherungen; der `words_hash` greift nicht, weil er für
+  beide Seiten identisch ist. Eine Lösung bräuchte optimistisches Locking über
+  `updated`. Praktisch relevant erst, wenn jemand zwei Fenster offen hat —
+  bei „ein Prospekt pro Person" also kaum.
 - **Endgültig fehlgeschlagene Datenabfrage** zeigt in beiden Werkzeugen den
   Leerhinweis statt einer Fehlermeldung („noch nichts extrahiert", obwohl die
   Daten da sind).
@@ -117,4 +124,4 @@ Das hat sich gelohnt, aber anders als erwartet: Die meisten Fehler steckten
 
 ## Zahlen
 
-62 Python-Tests, 93 Frontend-Tests, TypeScript sauber. 38 Commits.
+62 Python-Tests, 93 Frontend-Tests, TypeScript sauber. 39 Commits.

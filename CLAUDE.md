@@ -87,6 +87,14 @@ Skripte immer aus dem Projektroot starten – sie hängen den Root selbst an
   auf andere Wörter, ohne dass etwas kaputtgeht. Die API lehnt dann mit 409 ab.
 - **Die API ist nicht mehr read-only**, schreibt aber ausschließlich nach
   `gold/` – dieselbe enge Beschränkung wie beim Runner.
+- **Speichervorgänge im Annotator sind pro Seite serialisiert**, und zwar im
+  Frontend (`use-annotation.ts`). Zwei gleichzeitige PUTs derselben Gold-Seite
+  erreichen den Server in beliebiger Reihenfolge; `os.replace` macht den
+  letzten zum Gewinner, der ältere Stand überschreibt also still den neueren.
+  Ein Lock in `put_gold` hilft dagegen nicht – der Schreibvorgang ist ohnehin
+  atomar, ihm fehlt nur die Reihenfolge, und die kennt allein der Client.
+  Nicht abgedeckt: zwei Tabs oder zwei Personen auf derselben Seite. Dafür
+  bräuchte es optimistisches Locking, nicht Serialisierung.
 
 ## Offene Entscheidungen (nicht eigenmächtig festlegen)
 

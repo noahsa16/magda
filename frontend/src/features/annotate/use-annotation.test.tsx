@@ -32,10 +32,14 @@ interface PendingGet {
  * Refetches (durch invalidateQueries ausgelöst) müssen sich von der ersten
  * Ladung derselben URL unterscheiden lassen, um "Bearbeitung während eines
  * laufenden Refetch" gezielt zu simulieren. */
+/** PUTs des laufenden Tests, für das Aufräumen unten. */
+let openPuts: PendingPut[] = []
+
 function stubFetch(getRoutes: Record<string, unknown>) {
   const puts: PendingPut[] = []
   const gets: PendingGet[] = []
   const getCounts: Record<string, number> = {}
+  openPuts = puts
   vi.stubGlobal(
     "fetch",
     vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
@@ -106,7 +110,16 @@ function renderAnnotation(initialPageId: string, client?: QueryClient) {
   return { ...rendered, qc }
 }
 
-afterEach(() => vi.unstubAllGlobals())
+// Die Speicherkette je Seite lebt modulweit und überdauert den Test. Ein nie
+// beantworteter PUT ließe sie stehen, und der nächste Test mit derselben
+// page_id wartete auf eine Antwort aus einem längst beendeten - ein Timeout,
+// dessen Ursache im Test davor liegt. Beantwortet räumt sich die Kette selbst.
+afterEach(async () => {
+  openPuts.forEach((p) => p.resolve(200, { ...GOLD_A, spans: p.body.spans }))
+  openPuts = []
+  await new Promise((r) => setTimeout(r, 10))
+  vi.unstubAllGlobals()
+})
 
 describe("useAnnotation", () => {
   it("verliert die neuere Änderung nicht, wenn der ältere Flush später aufloest", async () => {
@@ -145,7 +158,7 @@ describe("useAnnotation", () => {
     await waitFor(() => expect(result.current.saveState).toBe("saved"))
   })
 
-  it("verwirft die verspätete ältere Antwort, wenn die neuere schon übernommen ist", async () => {
+  it("stellt keinen zweiten PUT neben den laufenden derselben Seite", async () => {
     const { puts } = stubFetch({ "/api/gold/462828_p1": GOLD_A })
     const { result } = renderAnnotation("462828_p1")
     await waitFor(() => expect(result.current.isPending).toBe(false))
@@ -153,36 +166,38 @@ describe("useAnnotation", () => {
     act(() => result.current.setSpans([{ start: 0, end: 1, label: "PRODUCT" }]))
     await waitFor(() => expect(puts).toHaveLength(1))
 
-    // Zweite Bearbeitung nach dem Debounce: Sie geht als eigener PUT ab,
-    // während der erste noch unterwegs ist - jede Serverlatenz über 300 ms
-    // genügt dafür, etwa Plattenlast durch einen parallelen Trainingslauf.
+    // Zweite Bearbeitung, während der erste PUT noch unterwegs ist. Dafür
+    // genügt jede Serverlatenz über dem Debounce von 300 ms - beim zügigen
+    // Annotieren also der Normalfall, nicht der Ausnahmefall.
     act(() =>
       result.current.setSpans([
         { start: 0, end: 1, label: "PRODUCT" },
         { start: 1, end: 2, label: "BRAND" },
       ]),
     )
-    await waitFor(() => expect(puts).toHaveLength(2), { timeout: 1000 })
 
-    // Umgekehrte Antwortreihenfolge: erst der neuere PUT ...
+    // Weit über den Debounce hinaus warten: Der zweite PUT darf trotzdem nicht
+    // abgehen. Zwei gleichzeitige PUTs derselben Seite kommen beim Server in
+    // beliebiger Reihenfolge an, und os.replace macht den *letzten* zum
+    // Gewinner - der ältere Stand überschriebe dann den neueren, während die
+    // Oberfläche "gespeichert" meldet. Auf der Platte fehlt die Arbeit.
+    await new Promise((r) => setTimeout(r, 400))
+    expect(puts).toHaveLength(1)
+
+    // Erst wenn der laufende PUT beantwortet ist, geht der nächste los.
+    puts[0].resolve(200, { ...GOLD_A, status: "in_progress", spans: puts[0].body.spans })
+    await waitFor(() => expect(puts).toHaveLength(2), { timeout: 1000 })
+    expect(puts[1].body.spans).toHaveLength(2)
+
     puts[1].resolve(200, { ...GOLD_A, status: "in_progress", spans: puts[1].body.spans })
     await waitFor(() => expect(result.current.saveState).toBe("saved"))
-
-    // ... dann der ältere. pendingRef ist zu diesem Zeitpunkt bereits leer,
-    // eine Prüfung nur gegen offene Änderungen greift also nicht mehr: Ohne
-    // Sequenznummer schreibt diese Antwort den alten Stand in den Cache und
-    // die Seite fällt still auf eine Fassung zurück, die niemand mehr wollte.
-    puts[0].resolve(200, { ...GOLD_A, status: "in_progress", spans: puts[0].body.spans })
-
-    await new Promise((r) => setTimeout(r, 30))
     expect(result.current.spans).toEqual([
       { start: 0, end: 1, label: "PRODUCT" },
       { start: 1, end: 2, label: "BRAND" },
     ])
-    expect(result.current.saveState).toBe("saved")
   })
 
-  it("lässt die verspätete Antwort einer verlassenen Hook-Instanz die neue nicht zurückdrehen", async () => {
+  it("stellt die Speicherung einer neuen Hook-Instanz hinter die noch laufende der alten", async () => {
     const { puts } = stubFetch({ "/api/gold/462828_p1": GOLD_A })
     const first = renderAnnotation("462828_p1")
     await waitFor(() => expect(first.result.current.isPending).toBe(false))
@@ -194,24 +209,33 @@ describe("useAnnotation", () => {
     // der Unmount-Cleanup sichert die Änderung noch einmal. Danach kehrt man
     // zurück - eine neue Hook-Instanz, deren Zustand die alte nicht kennt.
     first.unmount()
-    const stale = puts.length
+    const before = puts.length
     const second = renderAnnotation("462828_p1", first.qc)
     await waitFor(() => expect(second.result.current.isPending).toBe(false))
 
     act(() => second.result.current.setSpans([{ start: 2, end: 3, label: "PRICE" }]))
-    await waitFor(() => expect(puts.length).toBeGreaterThan(stale), { timeout: 1000 })
+
+    // Auch die neue Instanz stellt sich an: Die Warteschlange hängt an der
+    // Seite, nicht am Hook. An Refs gebunden wäre sie mit der alten Instanz
+    // verschwunden - und beide Stände lägen gleichzeitig beim Server.
+    await new Promise((r) => setTimeout(r, 400))
+    expect(puts).toHaveLength(before)
+
+    // Ausstehendes der alten Instanz beantworten, bis die Kette beim neuen
+    // Stand ankommt. Wie viele PUTs sie hinterlässt (der laufende, dazu der
+    // des Unmount-Cleanups), ist nicht Teil ihres Vertrags - deshalb die
+    // Schleife statt einer festen Zahl.
+    const isNew = (p: PendingPut) =>
+      p.body.spans.length === 1 && (p.body.spans[0] as { start: number }).start === 2
+    for (let i = 0; i < 5 && !puts.some(isNew); i++) {
+      puts.forEach((p) => p.resolve(200, { ...GOLD_A, status: "in_progress", spans: p.body.spans }))
+      await new Promise((r) => setTimeout(r, 20))
+    }
+
     const latest = puts[puts.length - 1]
     expect(latest.body.spans).toEqual([{ start: 2, end: 3, label: "PRICE" }])
     latest.resolve(200, { ...GOLD_A, status: "in_progress", spans: latest.body.spans })
     await waitFor(() => expect(second.result.current.saveState).toBe("saved"))
-
-    // Erst jetzt antworten die PUTs der alten Instanz, mit deren altem Stand.
-    // An Refs gebundene Reihenfolge wäre mit der alten Instanz verschwunden.
-    for (const p of puts.slice(0, stale)) {
-      p.resolve(200, { ...GOLD_A, status: "in_progress", spans: p.body.spans })
-    }
-
-    await new Promise((r) => setTimeout(r, 30))
     expect(second.result.current.spans).toEqual([{ start: 2, end: 3, label: "PRICE" }])
   })
 
