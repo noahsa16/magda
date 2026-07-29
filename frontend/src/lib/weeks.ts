@@ -12,6 +12,25 @@ import type { CatalogStatus } from "./types"
  */
 const WEEK_GAP = 500
 
+/**
+ * Zerlegt alles mit einer Katalog-ID in Blöcke einer Prospektwoche,
+ * neueste zuerst. Grundlage für die Wochenliste *und* für die Kachelraster.
+ */
+export function chunkByWeek<T extends { id: string }>(items: T[]): T[][] {
+  const sorted = [...items].sort((a, b) => Number(a.id) - Number(b.id))
+  const blocks: T[][] = []
+  for (const item of sorted) {
+    const current = blocks[blocks.length - 1]
+    const previous = current?.[current.length - 1]
+    if (previous && Number(item.id) - Number(previous.id) <= WEEK_GAP) {
+      current.push(item)
+    } else {
+      blocks.push([item])
+    }
+  }
+  return blocks.reverse()
+}
+
 export interface CatalogWeek {
   /** Kleinste Katalog-ID des Blocks – stabil und als Schlüssel brauchbar. */
   id: string
@@ -26,20 +45,7 @@ export interface CatalogWeek {
 }
 
 export function groupByWeek(catalogs: CatalogStatus[]): CatalogWeek[] {
-  const sorted = [...catalogs].sort((a, b) => Number(a.id) - Number(b.id))
-  const blocks: CatalogStatus[][] = []
-
-  for (const entry of sorted) {
-    const current = blocks[blocks.length - 1]
-    const previous = current?.[current.length - 1]
-    if (previous && Number(entry.id) - Number(previous.id) <= WEEK_GAP) {
-      current.push(entry)
-    } else {
-      blocks.push([entry])
-    }
-  }
-
-  return blocks
+  return chunkByWeek(catalogs)
     .map((block) => ({
       id: block[0].id,
       catalogs: block,
@@ -53,5 +59,4 @@ export function groupByWeek(catalogs: CatalogStatus[]): CatalogWeek[] {
         ...new Set(block.map((c) => (c.region ?? "").split(" · ")[0]).filter(Boolean)),
       ].sort(),
     }))
-    .reverse()
 }

@@ -22,12 +22,14 @@ checkpoints/ lokal, gitignored
 docs/        Proposal
 ```
 
-Pipeline: `01_download_flyers` → `02_extract_words` → `03_label_words` →
-`04_train` → `05_evaluate`, dazu `06_check_duplicates` und `07_flair_baseline`. Jeder Schritt liest vom Vorgänger über die Platte,
-nichts läuft im Speicher durch.
+Pipeline: `00_harvest_week` → `02_extract_words` → `06_check_duplicates` →
+`03_label_words` → `04_train` → `05_evaluate`, dazu `07_flair_baseline` als
+Vergleichsarm. `01_download_flyers` holt einen einzelnen Katalog über seine
+URL, `00_harvest_week` eine ganze Woche über alle 44 Regionen. Jeder Schritt
+liest vom Vorgänger über die Platte, nichts läuft im Speicher durch.
 
-Die Schritte lassen sich auch aus dem Frontend starten – im Tab
-*Steuerzentrale* (`/control`), nicht mehr auf der Übersicht. `magda/runner.py`
+Die Schritte lassen sich auch aus dem Frontend starten – im Tab *Pipeline*
+(`/pipeline`), nicht mehr auf der Übersicht. `magda/runner.py`
 startet sie als Subprozess und streamt die Ausgabe an `/api/run`. *Was*
 startbar ist und mit welchen Parametern, steht deklarativ in `magda/jobs.py`;
 `build_command` validiert und baut argv und ist die einzige Stelle, an der aus
@@ -43,6 +45,9 @@ seine Formulare: ein neuer Parameter wird nur im Backend gepflegt.
                                          # auf sys.path (ModuleNotFoundError)
 python scripts/02_extract_words.py       # Schritt ausführen (aus dem Projektroot)
 python scripts/04_train.py layoutxlm     # bzw. gbert
+python scripts/00_harvest_week.py        # laufende Prospektwoche, alle Regionen
+python scripts/00_harvest_week.py --seed 1342881   # ältere Woche über bekannte ID
+python scripts/06_check_duplicates.py    # Dubletten berichten (--apply entfernt sie)
 python scripts/07_flair_baseline.py --reference gold   # Flair-Vergleichsarm
 uvicorn magda.api:app --reload           # Frontend-API (Port 8000)
 cd frontend && npm run dev               # Frontend-Dev-Server (proxied /api)
