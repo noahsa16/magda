@@ -10,6 +10,7 @@ notfalls einzeln verwerfen (passiert in labels.spans_to_bio).
 import base64
 import json
 import re
+import time
 
 from openai import OpenAI
 
@@ -97,6 +98,55 @@ def _extract_json_array(text: str) -> str:
     raise ValueError(f"JSON-Array nicht geschlossen (abgeschnitten?): {text[:150]}")
 
 
+def is_retryable(exc: Exception) -> bool:
+    """Ist der Fehler ein Schluckauf oder ein echtes Problem?
+
+    Die GWDG lädt Modelle bei Bedarf und antwortet währenddessen mit 503 oder
+    schlicht gar nicht. Ohne diese Unterscheidung landet ein Lauf über 196
+    Seiten mit lauter "fehlgeschlagen" im Protokoll, obwohl nur das Modell
+    kalt war – und ein abgeschnittenes JSON (ValueError) würde umgekehrt
+    dreimal wiederholt, ohne dass sich etwas ändert.
+    """
+    from openai import APIConnectionError, APITimeoutError, RateLimitError
+
+    if isinstance(exc, (APITimeoutError, APIConnectionError, RateLimitError)):
+        return True
+    status = getattr(exc, "status_code", None)
+    if status in {408, 409, 425, 429, 500, 502, 503, 504}:
+        return True
+    return any(
+        marker in str(exc).lower()
+        for marker in ("rate limit", "timeout", "timed out", "temporarily unavailable",
+                       "service unavailable", "connection reset", "overloaded")
+    )
+
+
+def label_page_with_retry(
+    words: list[dict],
+    page_png: bytes,
+    client: OpenAI,
+    model: str,
+    max_retries: int = 3,
+) -> list[str]:
+    """label_page mit Backoff für vorübergehende Fehler.
+
+    Ein Format- oder Parse-Fehler wird nicht wiederholt: das Modell hat
+    geantwortet, die Antwort war nur unbrauchbar. Ein zweiter Versuch mit
+    identischer Eingabe kostet nur Zeit. Die Seite bleibt ungelabelt und
+    kommt beim nächsten Lauf erneut dran – die Skripte sind idempotent.
+    """
+    last: Exception | None = None
+    for attempt in range(max_retries):
+        try:
+            return label_page(words, page_png, client, model)
+        except Exception as exc:
+            last = exc
+            if not is_retryable(exc) or attempt == max_retries - 1:
+                raise
+            time.sleep(min(30.0, 2.0 * (2**attempt)))
+    raise last  # unerreichbar, aber macht den Rückgabetyp eindeutig
+
+
 def label_page(
     words: list[dict],
     page_png: bytes,
@@ -131,9 +181,14 @@ def label_page(
         # Ohne Limit greift das Server-Default und schneidet die Antwort mitten
         # im JSON ab. Gemessen an echten Seiten braucht Mistral rund 25 Zeichen
         # JSON pro Wort, und JSON ist tokendicht (~2 Zeichen pro Token) – also
-        # etwa 13 Token pro Wort. Mit Faktor 30 liegt genug Puffer drauf, falls
-        # ein Modell geschwätziger antwortet.
-        max_tokens=max(2048, len(words) * 30),
+        # etwa 13 Token pro Wort.
+        #
+        # Der Faktor 40 statt 30 ist für die Qwen-Modelle: die denken vor der
+        # Antwort, und diese Token zählen mit. Beim Vision-Test brauchte
+        # qwen3.5-397b 124 Token für das Wort "Rot" – auf einer Prospektseite
+        # ginge ein knappes Budget komplett fürs Nachdenken drauf und die
+        # Antwort käme abgeschnitten zurück.
+        max_tokens=max(4096, len(words) * 40),
     )
 
     choice = response.choices[0]

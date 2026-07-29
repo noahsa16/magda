@@ -13,7 +13,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from tqdm import tqdm
 
-from magda.config import GOLD_DIR, IMAGES_DIR, LABELED_DIR, RAW_DIR, WORDS_DIR
+from magda.config import GOLD_DIR, IMAGES_DIR, RAW_DIR, WORDS_DIR, labeled_page_ids
 from magda.dedupe import load_excluded, save_excluded
 from magda.gold import words_hash
 from magda.ocr import extract_words, render_png
@@ -31,7 +31,7 @@ def main():
     # wer zuerst drankommt. In reiner Sortierreihenfolge gewönne der Katalog
     # mit der kleineren Nummer – und die vorhandenen Labels zeigten danach auf
     # eine Seite, die es nicht mehr gibt.
-    worked_on = {f.stem for f in LABELED_DIR.glob("*.json")} | {f.stem for f in GOLD_DIR.glob("*.json")}
+    worked_on = labeled_page_ids() | {f.stem for f in GOLD_DIR.glob("*.json")}
 
     def priority(pdf_path):
         page_id = f"{pdf_path.parent.name}_p{pdf_path.stem.removeprefix('bk_')}"

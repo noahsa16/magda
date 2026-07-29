@@ -77,6 +77,19 @@ JOBS: dict[str, Job] = {
         script="03_label_words",
         title="LLM-Labeling",
         what="Ein Vision-Modell markiert Spans auf dem Seitenbild, daraus werden BIO-Tags.",
+        params=(
+            # choices statt Freitext: der Wert wird zum Ordnernamen unter
+            # data/labeled/. Eine Auswahlliste ist hier nicht nur bequemer,
+            # sie hält auch Modelle draußen, die gar keine Bilder annehmen –
+            # die labelten sonst einen ganzen Ordner blind voll.
+            Param(
+                "--model", "choice", "Vision-Modell",
+                choices=tuple(config.VISION_MODELS), default=config.CHAT_AI_VISION_MODEL,
+            ),
+            Param("--workers", "int", "Parallele Anfragen", default=6),
+            Param("--limit", "int", "Nur so viele Seiten (Probelauf)"),
+            Param("--only-gold", "flag", "Nur Gold-Seiten"),
+        ),
     ),
     "04_train": Job(
         script="04_train",
@@ -87,6 +100,7 @@ JOBS: dict[str, Job] = {
             Param("--epochs", "int", "Epochen", default=10),
             Param("--batch-size", "int", "Batch-Größe", default=8),
             Param("--lr", "float", "Lernrate", default=5e-5),
+            Param("--labels-from", "str", "Labels von Modell"),
         ),
     ),
     "05_evaluate": Job(

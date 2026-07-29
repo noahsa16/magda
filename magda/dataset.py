@@ -1,11 +1,12 @@
 """Laden der gelabelten Seiten und Aufbau der PyTorch-Datasets.
 
-Eine gelabelte Seite (data/labeled/*.json) sieht so aus:
+Eine gelabelte Seite (data/labeled/<modell>/*.json) sieht so aus:
     {
       "page_id": "462828_p3",
       "width": 595.28, "height": 841.89,
       "words": [{"text": "Rinderhackfleisch", "bbox": [x0, y0, x1, y1]}, ...],
-      "tags":  ["B-PRODUCT", ...]          # ein BIO-Tag pro Wort
+      "tags":  ["B-PRODUCT", ...],         # ein BIO-Tag pro Wort
+      "model": "mistral-medium-3.5-128b"   # wer die Tags erzeugt hat
     }
 """
 
@@ -16,13 +17,23 @@ import torch
 from torch.utils.data import Dataset
 
 from magda.alignment import align_word_labels
-from magda.config import LABELED_DIR, SEED, SPLITS_DIR
+from magda.config import SEED, SPLITS_DIR, default_labeled_model, labeled_dir
 from magda.ocr import normalize_bbox
 
 
-def load_labeled_pages() -> list[dict]:
+def load_labeled_pages(model: str | None = None) -> list[dict]:
+    """Lädt die Labels genau eines Modells.
+
+    Bewusst nicht "alle Ordner einsammeln": derselbe page_id liegt in jedem
+    Modellordner, und eine Mischung daraus wäre ein Trainingssatz, dessen
+    Labelqualität von Seite zu Seite springt. Welches Modell trainiert wird,
+    ist eine Entscheidung und keine Nebenwirkung des Dateisystems.
+    """
+    model = model or default_labeled_model()
+    if model is None:
+        return []
     pages = []
-    for path in sorted(LABELED_DIR.glob("*.json")):
+    for path in sorted(labeled_dir(model).glob("*.json")):
         with open(path) as f:
             pages.append(json.load(f))
     return pages

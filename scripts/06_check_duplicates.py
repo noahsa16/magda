@@ -22,7 +22,14 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from magda import catalog_meta, dedupe
-from magda.config import GOLD_DIR, IMAGES_DIR, LABELED_DIR, WORDS_DIR
+from magda.config import (
+    GOLD_DIR,
+    IMAGES_DIR,
+    WORDS_DIR,
+    labeled_dir,
+    labeled_models,
+    labeled_page_ids,
+)
 
 
 def _catalog_of(page_id: str) -> str:
@@ -53,7 +60,7 @@ def main():
     #
     # Beides gleichzusetzen war ein Fehler: sobald auch die Duplikate gelabelt
     # waren, schützte sich der Datensatz gegen seine eigene Bereinigung.
-    preferred = {f.stem for f in LABELED_DIR.glob("*.json")} | {f.stem for f in GOLD_DIR.glob("*.json")}
+    preferred = labeled_page_ids() | {f.stem for f in GOLD_DIR.glob("*.json")}
     protected = {f.stem for f in GOLD_DIR.glob("*.json")}
     groups = dedupe.group(pages, args.threshold)
     duplicates = [g for g in groups if len(g) > 1]
@@ -98,8 +105,10 @@ def main():
             (WORDS_DIR / f"{pid}.json").unlink(missing_ok=True)
             (IMAGES_DIR / f"{pid}.png").unlink(missing_ok=True)
             # Das Label gehört zur Seite. Es stehen zu lassen hieße, eine
-            # ausgeschlossene Seite weiter im Trainingssatz zu führen.
-            (LABELED_DIR / f"{pid}.json").unlink(missing_ok=True)
+            # ausgeschlossene Seite weiter im Trainingssatz zu führen – und
+            # zwar in jedem Modellordner, nicht nur im gerade aktiven.
+            for labeler in labeled_models():
+                (labeled_dir(labeler) / f"{pid}.json").unlink(missing_ok=True)
             removed += 1
     dedupe.save_excluded(excluded)
 

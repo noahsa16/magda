@@ -42,6 +42,18 @@ def _write_words(page_id: str, page: dict | None = None):
         json.dump(page, f)
 
 
+# Fester Modellname statt CHAT_AI_VISION_MODEL: sonst hinge das Ergebnis daran,
+# was in der .env des Ausführenden steht.
+LABELER = "testmodell"
+
+
+def _write_labeled(page_id: str, page: dict, model: str = LABELER):
+    directory = config.labeled_dir(model)
+    directory.mkdir(parents=True, exist_ok=True)
+    with open(directory / f"{page_id}.json", "w") as f:
+        json.dump(page, f)
+
+
 def test_schema_liefert_entity_typen(client):
     body = client.get("/api/schema").json()
     assert body["entity_types"][0] == "PRODUCT"
@@ -56,6 +68,7 @@ def test_status_mit_leeren_verzeichnissen(client):
             "raw": 0, "words": 0, "images": 0, "labeled": 0,
             "excluded": 0, "pending": 0,
             "gold_done": 0, "gold_in_progress": 0,
+            "labeled_by_model": {},
         },
     }
 
@@ -107,8 +120,7 @@ def test_status_rechnet_duplikate_gegen_die_rohseiten_auf(client):
 def test_pages_sortiert_numerisch_und_markiert_gelabelte(client):
     _write_words("462828_p10")
     _write_words("462828_p2")
-    with open(config.LABELED_DIR / "462828_p2.json", "w") as f:
-        json.dump({**SAMPLE_PAGE, "tags": ["B-PRODUCT", "B-PRICE"]}, f)
+    _write_labeled("462828_p2", {**SAMPLE_PAGE, "tags": ["B-PRODUCT", "B-PRICE"]})
 
     body = client.get("/api/pages").json()
 
@@ -120,8 +132,7 @@ def test_pages_sortiert_numerisch_und_markiert_gelabelte(client):
 
 def test_page_detail_mit_tags(client):
     _write_words("462828_p3")
-    with open(config.LABELED_DIR / "462828_p3.json", "w") as f:
-        json.dump({**SAMPLE_PAGE, "tags": ["B-PRODUCT", "B-PRICE"]}, f)
+    _write_labeled("462828_p3", {**SAMPLE_PAGE, "tags": ["B-PRODUCT", "B-PRICE"]})
 
     body = client.get("/api/pages/462828_p3").json()
 
@@ -558,7 +569,7 @@ def test_status_totals_enthalten_kein_ladedatum(client):
 
     assert set(totals) == {
         "raw", "words", "images", "labeled", "excluded", "pending",
-        "gold_done", "gold_in_progress",
+        "gold_done", "gold_in_progress", "labeled_by_model",
     }
 
 
@@ -656,8 +667,7 @@ def test_status_zaehlt_gold(client):
 
 
 def test_label_verteilung_zaehlt_entities(client):
-    with open(config.LABELED_DIR / "462828_p1.json", "w") as f:
-        json.dump({"tags": ["B-PRODUCT", "I-PRODUCT", "B-PRICE", "O", "B-PRODUCT"]}, f)
+    _write_labeled("462828_p1", {"tags": ["B-PRODUCT", "I-PRODUCT", "B-PRICE", "O", "B-PRODUCT"]})
 
     body = client.get("/api/labels/distribution").json()
 
@@ -665,3 +675,83 @@ def test_label_verteilung_zaehlt_entities(client):
     assert body["counts"]["PRODUCT"] == 2
     assert body["counts"]["PRICE"] == 1
     assert body["total"] == 3
+
+
+# ---------------------------------------------------------------------------
+# Labels je Modell
+# ---------------------------------------------------------------------------
+
+
+def test_modellname_kann_nicht_aus_dem_datenordner_ausbrechen():
+    """Der Modellname wird zum Ordnernamen – und kommt aus einer Nutzereingabe.
+
+    Ohne Filter wäre "../../gold" ein gültiger Wert und der Labeling-Lauf
+    schriebe in die handannotierte Referenz.
+    """
+    # Echte Modell-IDs bleiben unangetastet – sonst wäre der Ordnername nicht
+    # mehr der Modellname und niemand fände die Labels wieder.
+    assert config.model_slug("qwen3.5-397b-a17b") == "qwen3.5-397b-a17b"
+    assert config.model_slug("mistral-medium-3.5-128b") == "mistral-medium-3.5-128b"
+
+    # Die Eigenschaft, auf die es ankommt: entweder fliegt der Name raus, oder
+    # das Ergebnis liegt direkt unter data/labeled/. Ein Ausbruch ist keine
+    # der beiden Möglichkeiten.
+    for hostile in ("../../gold", "..", ".", "../catalogs.json", "a/b/c", "/etc/passwd"):
+        try:
+            target = config.labeled_dir(hostile).resolve()
+        except ValueError:
+            continue
+        assert target.parent == config.LABELED_DIR.resolve(), hostile
+
+    with pytest.raises(ValueError):
+        config.model_slug("   ")
+    with pytest.raises(ValueError):
+        config.model_slug("...")
+
+
+def test_labels_verschiedener_modelle_vermischen_sich_nicht(client):
+    _write_words("462828_p1")
+    _write_labeled("462828_p1", {**SAMPLE_PAGE, "tags": ["B-PRODUCT", "B-PRICE"]}, model="alpha")
+    _write_labeled("462828_p1", {**SAMPLE_PAGE, "tags": ["B-BRAND", "O"]}, model="beta")
+
+    alpha = client.get("/api/pages/462828_p1?model=alpha").json()
+    beta = client.get("/api/pages/462828_p1?model=beta").json()
+
+    assert alpha["tags"] == ["B-PRODUCT", "B-PRICE"]
+    assert alpha["model"] == "alpha"
+    assert beta["tags"] == ["B-BRAND", "O"]
+    assert beta["model"] == "beta"
+
+
+def test_status_zaehlt_eine_seite_einmal_und_schluesselt_nach_modell_auf(client):
+    """Zwei Modelle auf derselben Seite sind ein Vergleich, kein Fortschritt."""
+    _write_words("462828_p1")
+    _write_labeled("462828_p1", {"tags": ["O"]}, model="alpha")
+    _write_labeled("462828_p1", {"tags": ["O"]}, model="beta")
+    _write_labeled("462828_p2", {"tags": ["O"]}, model="alpha")
+
+    totals = client.get("/api/status").json()["totals"]
+
+    assert totals["labeled"] == 2
+    assert totals["labeled_by_model"] == {"alpha": 2, "beta": 1}
+
+
+def test_labelers_listet_modelle_mit_seitenzahl(client):
+    _write_labeled("462828_p1", {"tags": ["O"]}, model="alpha")
+    _write_labeled("462828_p2", {"tags": ["O"]}, model="alpha")
+    _write_labeled("462828_p1", {"tags": ["O"]}, model="beta")
+
+    body = client.get("/api/labelers").json()
+
+    assert body == [{"model": "alpha", "pages": 2}, {"model": "beta", "pages": 1}]
+
+
+def test_labelverteilung_trennt_nach_modell(client):
+    _write_labeled("462828_p1", {"tags": ["B-PRODUCT", "B-PRODUCT"]}, model="alpha")
+    _write_labeled("462828_p1", {"tags": ["B-BRAND"]}, model="beta")
+
+    alpha = client.get("/api/labels/distribution?model=alpha").json()
+    beta = client.get("/api/labels/distribution?model=beta").json()
+
+    assert alpha["counts"]["PRODUCT"] == 2 and alpha["counts"]["BRAND"] == 0
+    assert beta["counts"]["BRAND"] == 1 and beta["counts"]["PRODUCT"] == 0

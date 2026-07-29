@@ -83,8 +83,11 @@ def get_status():
         bump(_catalog_of(f.stem), "words")
     for f in config.IMAGES_DIR.glob("*.png"):
         bump(_catalog_of(f.stem), "images")
-    for f in config.LABELED_DIR.glob("*.json"):
-        bump(_catalog_of(f.stem), "labeled")
+    # Eine Seite gilt als gelabelt, sobald *ein* Modell sie gelabelt hat. Für
+    # den Pipeline-Fortschritt zählt, ob die Arbeit getan ist – nicht von wem.
+    # Die Aufschlüsselung je Modell steht darunter in labeled_by_model.
+    for page_id in config.labeled_page_ids():
+        bump(_catalog_of(page_id), "labeled")
     # Ohne diese Zeile klafft in der Übersicht eine Lücke: 327 geladen, 196
     # extrahiert – als hätte die Pipeline ein Drittel liegen lassen. Die
     # Differenz sind Duplikate, und wer das nicht sieht, sucht einen Fehler,
@@ -120,12 +123,29 @@ def get_status():
     gold_counts = count_by_status()
     totals["gold_done"] = gold_counts["done"]
     totals["gold_in_progress"] = gold_counts["in_progress"]
+    # Wer hat wie viel gelabelt? Ohne diese Aufschlüsselung sieht ein Lauf mit
+    # drei Modellen genauso aus wie einer mit einem, und ein abgebrochener
+    # Vergleichslauf fällt niemandem auf.
+    totals["labeled_by_model"] = {
+        model: len(list(config.labeled_dir(model).glob("*.json")))
+        for model in config.labeled_models()
+    }
     return {"catalogs": rows, "totals": totals}
 
 
 @app.get("/api/pages")
-def list_pages():
-    labeled_ids = {f.stem for f in config.LABELED_DIR.glob("*.json")}
+def list_pages(model: str | None = None):
+    """Seitenliste für den Inspektor.
+
+    Ohne ?model zeigt "labeled" an, ob irgendein Modell die Seite gelabelt hat;
+    mit ?model, ob genau dieses es getan hat. Der Inspektor braucht beides: die
+    Übersicht will den Fortschritt, der Vergleich einen bestimmten Lauf.
+    """
+    labeled_ids = (
+        {f.stem for f in config.labeled_dir(model).glob("*.json")}
+        if model
+        else config.labeled_page_ids()
+    )
     pages = [
         {"page_id": f.stem, "catalog": _catalog_of(f.stem), "labeled": f.stem in labeled_ids}
         for f in config.WORDS_DIR.glob("*.json")
@@ -134,20 +154,34 @@ def list_pages():
     return pages
 
 
+@app.get("/api/labelers")
+def list_labelers():
+    """Welche Modelle haben gelabelt, und wie viele Seiten? Füttert die Auswahl."""
+    return [
+        {"model": model, "pages": len(list(config.labeled_dir(model).glob("*.json")))}
+        for model in config.labeled_models()
+    ]
+
+
 @app.get("/api/pages/{page_id}")
-def get_page(page_id: str):
+def get_page(page_id: str, model: str | None = None):
     words_file = config.WORDS_DIR / f"{page_id}.json"
     if not words_file.exists():
         raise HTTPException(404, f"Unbekannte Seite: {page_id}")
     with open(words_file) as f:
         page = json.load(f)
 
-    labeled_file = config.LABELED_DIR / f"{page_id}.json"
-    if labeled_file.exists():
-        with open(labeled_file) as f:
-            tags = json.load(f).get("tags")
-        if tags is not None:
-            page["tags"] = tags
+    labeler = model or config.default_labeled_model()
+    if labeler:
+        labeled_file = config.labeled_dir(labeler) / f"{page_id}.json"
+        if labeled_file.exists():
+            with open(labeled_file) as f:
+                tags = json.load(f).get("tags")
+            if tags is not None:
+                page["tags"] = tags
+                # Ohne dieses Feld weiß das Frontend nicht, wessen Labels es
+                # gerade anzeigt – bei mehreren Modellen ist das der halbe Sinn.
+                page["model"] = labeler
     return page
 
 
@@ -550,15 +584,22 @@ def probe_catalog(req: ProbeRequest):
 
 
 @app.get("/api/labels/distribution")
-def get_label_distribution():
-    """Wie oft kommt welcher Entity-Typ in data/labeled/ vor?
+def get_label_distribution(model: str | None = None):
+    """Wie oft kommt welcher Entity-Typ in den Labels eines Modells vor?
 
     Gezählt werden B-Tags, also Entities statt Wörter - ein sechswortiger
     Produktname soll nicht sechsmal zählen.
+
+    Bewusst je Modell und nicht über alle: die Verteilung ist der schnellste
+    Blick auf die Labelqualität ("Marken fast nie erkannt"), und summiert über
+    mehrere Modelle mittelt sich genau der Unterschied weg, den man sehen will.
     """
     counts = {entity: 0 for entity in ENTITY_TYPES}
     pages = 0
-    for labeled_file in config.LABELED_DIR.glob("*.json"):
+    labeler = model or config.default_labeled_model()
+    if labeler is None:
+        return {"pages": 0, "counts": counts, "total": 0, "model": None}
+    for labeled_file in config.labeled_dir(labeler).glob("*.json"):
         try:
             with open(labeled_file) as f:
                 tags = json.load(f).get("tags") or []
@@ -568,4 +609,9 @@ def get_label_distribution():
         for tag in tags:
             if tag.startswith("B-") and tag[2:] in counts:
                 counts[tag[2:]] += 1
-    return {"pages": pages, "counts": counts, "total": sum(counts.values())}
+    return {
+        "pages": pages,
+        "counts": counts,
+        "total": sum(counts.values()),
+        "model": labeler,
+    }

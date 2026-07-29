@@ -34,6 +34,8 @@ from magda.config import (
     MAX_SEQ_LENGTH,
     SEED,
     TEXT_MODEL,
+    default_labeled_model,
+    labeled_models,
 )
 from magda.dataset import (
     LayoutDataset,
@@ -46,14 +48,24 @@ from magda.evaluation import compute_metrics
 from magda.labels import LABELS, id2label, label2id
 
 
-def build_datasets(variant: str):
-    pages = load_labeled_pages()
-    if not pages:
+def build_datasets(variant: str, labels_from: str | None):
+    model = labels_from or default_labeled_model()
+    if model is None:
         sys.exit("Keine gelabelten Seiten in data/labeled/. Erst 03_label_words.py laufen lassen.")
 
+    pages = load_labeled_pages(model)
+    if not pages:
+        sys.exit(
+            f"Keine gelabelten Seiten in data/labeled/{model}/. "
+            f"Vorhanden: {', '.join(labeled_models()) or 'nichts'}"
+        )
+
     splits = get_or_create_splits(pages)
+    # Welches Modell die Labels geliefert hat, gehört in die Ausgabe: sonst
+    # steht am Ende ein F1-Wert im Bericht, dessen Trainingsdaten niemand mehr
+    # zuordnen kann, sobald mehr als ein Ordner existiert.
     print(
-        f"{len(pages)} Seiten geladen "
+        f"{len(pages)} Seiten geladen, Labels von {model} "
         f"(train={len(splits['train'])}, dev={len(splits['dev'])}, test={len(splits['test'])})"
     )
 
@@ -74,9 +86,14 @@ def main():
     parser.add_argument("--epochs", type=int, default=10)
     parser.add_argument("--batch-size", type=int, default=8)
     parser.add_argument("--lr", type=float, default=5e-5)
+    parser.add_argument(
+        "--labels-from",
+        help="Modellordner unter data/labeled/, dessen Labels trainiert werden. "
+        "Ohne Angabe das konfigurierte Vision-Modell, sonst der größte Ordner.",
+    )
     args = parser.parse_args()
 
-    model_name, train_ds, dev_ds = build_datasets(args.variant)
+    model_name, train_ds, dev_ds = build_datasets(args.variant, args.labels_from)
 
     model = AutoModelForTokenClassification.from_pretrained(
         model_name,
