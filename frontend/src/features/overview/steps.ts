@@ -39,6 +39,12 @@ export const STEPS: StepDef[] = [
     what: "Entity-Level-F1 auf dem eingefrorenen Test-Split, als Report nach data/eval.",
     variants: ["layoutxlm", "gbert"],
   },
+  {
+    job: "07_flair_baseline",
+    title: "Flair-Vergleichsarm",
+    what: "Fertiges deutsches NER-Modell ohne Anpassung – misst nur BRAND.",
+    variants: [],
+  },
 ]
 
 export type StepState = "done" | "ready" | "blocked"
@@ -74,6 +80,9 @@ export function stepStates(
           : "blocked",
     "04_train": bothTrained ? "done" : totals.labeled > 0 ? "ready" : "blocked",
     "05_evaluate": bothEvaluated ? "done" : totals.labeled > 0 ? "ready" : "blocked",
+    // Kein "done": der Arm hat keine Varianten, an denen sich Vollständigkeit
+    // ablesen ließe, und er wird gegen Gold erneut gefahren, sobald Gold wächst.
+    "07_flair_baseline": totals.labeled > 0 ? "ready" : "blocked",
   }
 }
 

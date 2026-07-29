@@ -16,6 +16,10 @@ Object.defineProperty(window, "matchMedia", {
   }),
 })
 
+// jsdom implementiert scrollIntoView nicht. Die Konsole der Steuerzentrale
+// scrollt nach jeder Ausgabezeile ans Ende und riss sonst die ganze Seite mit.
+Element.prototype.scrollIntoView = Element.prototype.scrollIntoView ?? (() => {})
+
 class ResizeObserverStub {
   observe() {}
   unobserve() {}

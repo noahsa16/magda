@@ -1,4 +1,5 @@
 import type { RouteObject } from "react-router-dom"
+import { ControlPage } from "@/features/control/control-page"
 import { DemoPage } from "@/features/demo/demo-page"
 import { EvaluationPage } from "@/features/evaluation/evaluation-page"
 import { InspectorPage } from "@/features/inspector/inspector-page"
@@ -11,6 +12,7 @@ export const routes: RouteObject[] = [
     element: <Layout />,
     children: [
       { path: "/", element: <OverviewPage /> },
+      { path: "/control", element: <ControlPage /> },
       { path: "/inspector", element: <InspectorPage /> },
       { path: "/annotate", element: <AnnotatePage /> },
       { path: "/evaluation", element: <EvaluationPage /> },
