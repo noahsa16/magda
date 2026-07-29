@@ -39,22 +39,35 @@ def compute_metrics(eval_pred):
     }
 
 
-def full_report(predictions: np.ndarray, label_ids: np.ndarray) -> str:
-    """Ausführlicher Report pro Entity-Typ, für die Fehleranalyse in Phase 3."""
-    true_tags, pred_tags = _decode(predictions, label_ids)
+def word_level_report(true_tags: list[list[str]], pred_tags: list[list[str]]) -> str:
+    """Report über zwei Wort-Tag-Listen statt über Subword-Arrays.
+
+    Modelle ohne HF-Trainer – der Flair-Vergleichsarm, später der Vergleich
+    von Gold gegen die LLM-Labels – liefern Tags pro Wort. Die Metrik ist
+    dieselbe, nur die Eingabe kommt nicht aus einem maskierten Tensor.
+    """
     return classification_report(true_tags, pred_tags, digits=3)
 
 
-def report_dict(predictions: np.ndarray, label_ids: np.ndarray) -> dict:
-    """Wie full_report, aber als Dict – für den JSON-Export ans Frontend.
+def word_level_report_dict(true_tags: list[list[str]], pred_tags: list[list[str]]) -> dict:
+    """Wie word_level_report, aber als Dict – für den JSON-Export.
 
     seqeval gibt "support" als numpy.int64 zurück, worüber json.dump stolpert.
     Deshalb hier gleich in native Python-Typen umwandeln.
     """
-    true_tags, pred_tags = _decode(predictions, label_ids)
     report = classification_report(true_tags, pred_tags, digits=3, output_dict=True)
     return {
         entity: {metric: value.item() if hasattr(value, "item") else value
                  for metric, value in scores.items()}
         for entity, scores in report.items()
     }
+
+
+def full_report(predictions: np.ndarray, label_ids: np.ndarray) -> str:
+    """Ausführlicher Report pro Entity-Typ, für die Fehleranalyse in Phase 3."""
+    return word_level_report(*_decode(predictions, label_ids))
+
+
+def report_dict(predictions: np.ndarray, label_ids: np.ndarray) -> dict:
+    """Wie full_report, aber als Dict – für den JSON-Export ans Frontend."""
+    return word_level_report_dict(*_decode(predictions, label_ids))
