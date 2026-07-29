@@ -23,7 +23,7 @@ docs/        Proposal
 ```
 
 Pipeline: `01_download_flyers` → `02_extract_words` → `03_label_words` →
-`04_train` → `05_evaluate`. Jeder Schritt liest vom Vorgänger über die Platte,
+`04_train` → `05_evaluate`, dazu `06_check_duplicates` und `07_flair_baseline`. Jeder Schritt liest vom Vorgänger über die Platte,
 nichts läuft im Speicher durch.
 
 Die Schritte lassen sich auch aus dem Frontend starten – im Tab
@@ -86,6 +86,22 @@ Skripte immer aus dem Projektroot starten – sie hängen den Root selbst an
 - **Der Trainingsverlauf steht nicht in `checkpoints/{variant}/best`.**
   `trainer.save_model()` schreibt dort kein `trainer_state.json`; `/api/model`
   liest deshalb den `checkpoint-N`-Ordner mit der höchsten Schrittzahl.
+- **Penny gibt je Woche 44 Regionalausgaben heraus, und sie sind fast gleich.**
+  Über alle 44 liegen ~2000 Seiten, davon exakt verschieden nur ~170, und bei
+  Jaccard 0.95 bleiben ~130. Die Unterschiede sind echt, aber winzig: eine
+  Herkunftsangabe („NRW" statt „Deutschland"), ein ausgetauschter Artikel.
+  Ungefiltert bläht das den Datensatz auf, kostet LLM-Zeit und lässt dieselbe
+  Seite in Train- *und* Testsplit landen.
+- **Am rechten Seitenrand steht eine Druckkennung** der Form `25_02-09-10` —
+  Seite 25, gedruckt für die Regionen 02, 09 und 10. Sie steht im Textlayer,
+  gehört aber nicht zum Prospekt: ohne sie zu entfernen gilt jede geteilte
+  Seite als vielfach verschieden. Als Herkunftsangabe ist sie dafür die
+  genaueste, die eine einzelne Seite hergibt (`dedupe.print_marker`).
+- **`catalog_meta.json` hält fest, zu welcher Region ein Katalog gehört.**
+  Penny's Markt-API kennt nur die laufende Woche; ungespeichert ist die
+  Zuordnung nach sieben Tagen weg und ein Katalog nur noch eine sechsstellige
+  Nummer. Für vergangene Wochen wird sie über den Gitterabstand übertragen und
+  als `confirmed: false` ausgewiesen — vermutet, nicht belegt.
 - **`gold/` ist versioniert, `data/` nicht.** Handannotierte Referenzlabels
   sind nicht reproduzierbar – ein verlorenes `data/labeled/` kostet API-Zeit,
   ein verlorenes `gold/` kostet Arbeitstage. Gespeichert werden Spans, nicht

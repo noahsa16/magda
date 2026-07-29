@@ -81,7 +81,7 @@ export interface ModelStatus {
 export interface JobParam {
   key: string
   label: string
-  kind: "str" | "int" | "float" | "choice"
+  kind: "str" | "int" | "float" | "choice" | "flag"
   /** Nur zum Vorbelegen des Feldes – nicht gesetzte Werte landen nicht im argv. */
   default: string | number | null
   choices: string[]

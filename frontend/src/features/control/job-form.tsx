@@ -12,7 +12,12 @@ import type { JobDef } from "@/lib/types"
  */
 export function defaultValues(job: JobDef): Record<string, string> {
   return Object.fromEntries(
-    job.params.map((p) => [p.key, p.default == null ? "" : String(p.default)]),
+    job.params.map((p) => [
+      p.key,
+      // Ein Schalter startet immer aus. Ein Default "an" hiesse, dass ein
+      // unbedachter Klick loeschen koennte.
+      p.kind === "flag" ? "" : p.default == null ? "" : String(p.default),
+    ]),
   )
 }
 
@@ -49,7 +54,18 @@ export function JobForm({ job, values, onChange, onStart, disabled }: JobFormPro
                   {param.label}
                   {param.required && <span className="text-destructive"> *</span>}
                 </label>
-                {param.kind === "choice" ? (
+                {param.kind === "flag" ? (
+                  <label className="flex h-9 items-center gap-2 text-sm">
+                    <input
+                      id={id}
+                      type="checkbox"
+                      checked={values[param.key] === "true"}
+                      onChange={(e) => onChange(param.key, e.target.checked ? "true" : "")}
+                      className="size-4 accent-[var(--riso-blue)]"
+                    />
+                    <span className="text-muted-foreground">{param.help || "aktivieren"}</span>
+                  </label>
+                ) : param.kind === "choice" ? (
                   <select
                     id={id}
                     value={values[param.key] ?? ""}

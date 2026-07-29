@@ -88,6 +88,17 @@ JOBS: dict[str, Job] = {
             Param("--split", "choice", "Split", choices=("dev", "test"), default="test"),
         ),
     ),
+    "06_check_duplicates": Job(
+        script="06_check_duplicates",
+        title="Dubletten prüfen",
+        what="Findet Seiten, die sich nur in der Druckkennung oder in Kleinigkeiten "
+             "unterscheiden. Ohne Häkchen wird nur berichtet, nichts gelöscht.",
+        params=(
+            Param("--threshold", "float", "Ähnlichkeit ab", default=0.95,
+                  help="0.98 streng, 0.90 großzügig"),
+            Param("--apply", "flag", "Dubletten entfernen"),
+        ),
+    ),
     "07_flair_baseline": Job(
         script="07_flair_baseline",
         title="Flair-Vergleichsarm",
@@ -144,6 +155,13 @@ def build_command(job: str, values: dict) -> list[str]:
         # ohnehin, und zwei Quellen für denselben Wert driften auseinander.
         # `default` dient nur dem Frontend zum Vorbelegen des Feldes.
         raw = values.get(param.key)
+
+        # Ein Schalter trägt keinen Wert: gesetzt heißt, der Name steht im argv.
+        if param.kind == "flag":
+            if raw in (True, "true", "True", "1", "on", "yes"):
+                options.append(param.name)
+            continue
+
         # Ein leeres Formularfeld ist keine Eingabe, sondern eine ausgelassene.
         if raw is None or raw == "":
             if param.required:

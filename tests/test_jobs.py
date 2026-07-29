@@ -24,7 +24,7 @@ def test_build_command_laesst_optionale_parameter_weg():
 def test_build_command_kennt_alle_pipeline_schritte():
     assert set(jobs.JOBS) == {
         "01_download_flyers", "02_extract_words", "03_label_words",
-        "04_train", "05_evaluate", "07_flair_baseline",
+        "04_train", "05_evaluate", "06_check_duplicates", "07_flair_baseline",
     }
 
 
@@ -77,3 +77,17 @@ def test_describe_liefert_json_faehigen_katalog():
     epochs = next(p for p in entry["params"] if p["key"] == "epochs")
     assert epochs["default"] == 10
     assert epochs["kind"] == "int"
+
+
+def test_flag_wird_ohne_wert_gesetzt():
+    cmd = jobs.build_command("06_check_duplicates", {"apply": True})
+
+    assert cmd[-1] == "--apply"
+
+
+def test_flag_bleibt_ohne_zustimmung_weg():
+    """Ein nicht gesetzter Schalter darf nichts loeschen."""
+    cmd = jobs.build_command("06_check_duplicates", {"apply": False, "threshold": 0.9})
+
+    assert "--apply" not in cmd
+    assert cmd[-2:] == ["--threshold", "0.9"]
