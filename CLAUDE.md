@@ -15,6 +15,7 @@ Ausführliche Erklärung der Pipeline: `EXPLANATION.md` (lokal, nicht im Repo).
 magda/       Kern-Package – hier liegt die Logik (inkl. api.py, FastAPI fürs Frontend)
 scripts/     nummerierte Pipeline-Schritte, dünne CLI-Wrapper um magda/
 frontend/    React-SPA (Vite, Tailwind, shadcn) – liest data/ über magda/api.py
+catalogs.json Verzeichnis gefundener Blätterkatalog-IDs (versioniert)
 tests/       pytest (Labels, Alignment, API)
 data/        lokal, gitignored (nur .gitkeep versioniert)
 checkpoints/ lokal, gitignored
@@ -25,15 +26,21 @@ Pipeline: `01_download_flyers` → `02_extract_words` → `03_label_words` →
 `04_train` → `05_evaluate`. Jeder Schritt liest vom Vorgänger über die Platte,
 nichts läuft im Speicher durch.
 
-Die Schritte lassen sich auch aus dem Frontend starten (`magda/runner.py`
-startet sie als Subprozess und streamt die Ausgabe an `/api/run`). Der Runner
-kennt nur die fünf Skripte und ihre erlaubten Varianten – kein Durchreichen
-beliebiger Kommandos.
+Die Schritte lassen sich auch aus dem Frontend starten – im Tab
+*Steuerzentrale* (`/control`), nicht mehr auf der Übersicht. `magda/runner.py`
+startet sie als Subprozess und streamt die Ausgabe an `/api/run`. *Was*
+startbar ist und mit welchen Parametern, steht deklarativ in `magda/jobs.py`;
+`build_command` validiert und baut argv und ist die einzige Stelle, an der aus
+einer Nutzereingabe ein Kommando wird – kein Durchreichen beliebiger
+Kommandos. Das Frontend liest den Katalog über `/api/jobs` und baut daraus
+seine Formulare: ein neuer Parameter wird nur im Backend gepflegt.
 
 ## Kommandos
 
 ```bash
-pytest                                   # Tests
+.venv/bin/python -m pytest               # Tests – nicht .venv/bin/pytest, das
+                                         # bringt den Projektwurzelpfad nicht
+                                         # auf sys.path (ModuleNotFoundError)
 python scripts/02_extract_words.py       # Schritt ausführen (aus dem Projektroot)
 python scripts/04_train.py layoutxlm     # bzw. gbert
 python scripts/07_flair_baseline.py --reference gold   # Flair-Vergleichsarm
@@ -86,8 +93,46 @@ Skripte immer aus dem Projektroot starten – sie hängen den Root selbst an
 - **Der `words_hash` in Gold-Dateien** ist die Absicherung des
   Wortreihenfolge-Vertrags. Ändert sich Schritt 02, zeigen die Span-Indizes
   auf andere Wörter, ohne dass etwas kaputtgeht. Die API lehnt dann mit 409 ab.
-- **Die API ist nicht mehr read-only**, schreibt aber ausschließlich nach
-  `gold/` – dieselbe enge Beschränkung wie beim Runner.
+- **Die API ist nicht mehr read-only.** Geschrieben wird an drei aufgezählten
+  Stellen: `gold/` (handannotierte Referenz), `catalogs.json`
+  (Katalog-Verzeichnis) und `data/runs/` (Lauf-Historie). Eine Erlaubnisliste,
+  kein freier Schreibzugriff – dieselbe enge Beschränkung wie beim Runner.
+- **Der Runner-Vertrag lautet „nur deklarierte Parameter", nicht „nur
+  Varianten".** `jobs.build_command` lehnt unbekannte Jobs, unbekannte
+  Parameternamen, nicht konvertierbare Werte und Werte außerhalb von `choices`
+  ab. Werte werden typkonvertiert und als eigene argv-Elemente übergeben, es
+  gibt keine Shell. Ein freies Argument-Textfeld im Frontend wäre effektiv eine
+  Remote-Shell und ist deshalb ausdrücklich nicht vorgesehen.
+- **Defaults aus `jobs.py` landen nicht im argv.** Sie dienen nur dem Frontend
+  zum Vorbelegen des Feldes; den echten Default kennt argparse im Skript. Zwei
+  Quellen für denselben Wert driften auseinander.
+- **Positionale Werte dürfen nicht mit `-` beginnen.** argparse liest `--help`
+  als Option, nicht als URL – der Lauf täte dann etwas anderes als eingegeben.
+- **`runner.status()` hängt nicht an `poll()`.** Der Prozess ist eher fertig als
+  der Pump-Thread, der den letzten Ausgabeblock schreibt. Über `poll()` meldete
+  der Lauf kurz „beendet, Exit-Code unbekannt", und das Frontend zeigte einen
+  Abbruch, den es nie gab. Maßgeblich ist der eingetragene Exit-Code. Tests, die
+  einen Lauf starten, müssen auf den Pump-Thread warten, bevor sie `RUNS_DIR`
+  zurückdrehen – sonst landet der Testlauf im echten `data/runs/`.
+- **`data/runs/` ist die einzige Spur eines Laufs nach dem Backend-Neustart.**
+  Der Ringpuffer in `runner.py` hält nur 400 Zeilen für die Live-Ansicht. Wer
+  einen Fehlschlag untersucht, liest den Log auf der Platte. Aufgeräumt wird
+  bei 100 Läufen.
+- **`getcatalog.do` läuft früher ab als die PDFs.** Geprüft am 29.07.2026: für
+  Katalog 1342881 liefert die Metadatenseite 404, während `bk_1.pdf` weiter mit
+  200 antwortet. `scraping.fetch_catalog_meta` fängt den 404 ab und nutzt den
+  Fallback `"1"`; bei 5xx wird weiterhin geworfen. Vorher lief das in
+  `raise_for_status()` – ein erneuter Download des eigenen Katalogs wäre
+  gecrasht.
+- **Katalog-IDs lassen sich nicht erraten.** 14 Proben rund um eine gültige ID
+  ergaben 0 Treffer; der ID-Raum ist dünn besetzt. Deshalb `catalogs.json`:
+  gefundene IDs werden geteilt, nicht wiedergefunden. Versioniert aus demselben
+  Grund wie `gold/`.
+- **`probe_catalog` ruft die übergebene URL nie ab.** Aus der Eingabe wird per
+  Regex nur `catalogId=(\d+)` gelesen; die Ziffern landen in zwei fest
+  verdrahteten Basis-URLs. Wer daraus ein direktes `session.get(url)` macht,
+  baut einen Proxy in fremde Netze – `test_probe_ruft_niemals_die_uebergebene_url_ab`
+  hält das fest.
 - **Speichervorgänge im Annotator sind pro Seite serialisiert**, und zwar im
   Frontend (`use-annotation.ts`). Zwei gleichzeitige PUTs derselben Gold-Seite
   erreichen den Server in beliebiger Reihenfolge; `os.replace` macht den
