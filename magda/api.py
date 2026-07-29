@@ -188,13 +188,13 @@ def get_model_status():
 
 class RunRequest(BaseModel):
     job: str
-    variant: str | None = None
+    args: dict = {}
 
 
 @app.post("/api/run")
 def start_run(req: RunRequest):
     try:
-        runner.start(req.job, req.variant)
+        runner.start(req.job, req.args)
     except ValueError as e:
         raise HTTPException(400, str(e))
     except RuntimeError as e:

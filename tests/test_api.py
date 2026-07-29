@@ -214,16 +214,25 @@ def test_run_lehnt_unbekannten_schritt_ab(client, clean_runner):
 
 
 def test_run_lehnt_ungueltige_variante_ab(client, clean_runner):
-    resp = client.post("/api/run", json={"job": "04_train", "variant": "bash"})
+    resp = client.post("/api/run", json={"job": "04_train", "args": {"variant": "bash"}})
 
     assert resp.status_code == 400
-    assert "Ungültige Variante" in resp.json()["detail"]
+    assert "nicht erlaubt" in resp.json()["detail"]
 
 
 def test_run_verlangt_variante_wo_noetig(client, clean_runner):
-    resp = client.post("/api/run", json={"job": "05_evaluate"})
+    resp = client.post("/api/run", json={"job": "05_evaluate", "args": {}})
 
     assert resp.status_code == 400
+
+
+def test_run_lehnt_unbekannten_parameter_ab(client, clean_runner):
+    resp = client.post(
+        "/api/run", json={"job": "02_extract_words", "args": {"outfile": "/etc/passwd"}}
+    )
+
+    assert resp.status_code == 400
+    assert "Unbekannter Parameter" in resp.json()["detail"]
 
 
 def test_run_status_ist_leer_ohne_lauf(client, clean_runner):
