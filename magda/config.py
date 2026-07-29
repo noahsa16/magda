@@ -5,6 +5,7 @@ keine Keys im Repo landen. Alles andere (Pfade, Modellnamen) steht direkt hier.
 """
 
 import os
+import sys
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -15,6 +16,22 @@ load_dotenv()
 # Pfade
 # ---------------------------------------------------------------------------
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
+
+
+def _project_python() -> str:
+    """Der Interpreter, mit dem Pipeline-Schritte laufen sollen.
+
+    Nicht sys.executable: die API wird oft aus einem anderen Env gestartet
+    (`which python` zeigt hier auf Anaconda), und dort fehlen openai,
+    transformers und seqeval. Schritt 02 lief trotzdem durch, weil PyMuPDF
+    zufällig vorhanden war – die Schritte 03 bis 07 starben an Importfehlern,
+    die wie Codefehler aussehen. Das .venv des Projekts hat Vorrang.
+    """
+    candidate = PROJECT_ROOT / ".venv" / "bin" / "python"
+    return str(candidate) if candidate.exists() else sys.executable
+
+
+PYTHON = _project_python()
 
 DATA_DIR = PROJECT_ROOT / "data"
 RAW_DIR = DATA_DIR / "raw"          # heruntergeladene Flyer-PDFs (eine Seite pro Datei)

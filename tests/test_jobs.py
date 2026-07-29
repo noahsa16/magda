@@ -1,6 +1,5 @@
 """Der Job-Katalog ist die Sicherheitsgrenze zwischen Frontend und Subprozess."""
 
-import sys
 
 import pytest
 
@@ -10,7 +9,7 @@ from magda import jobs
 def test_build_command_setzt_positional_und_option():
     cmd = jobs.build_command("01_download_flyers", {"url": "https://x/?catalogId=1", "max_pages": 5})
 
-    assert cmd[0] == sys.executable
+    assert cmd[0].endswith("python")
     assert cmd[1] == "-u"
     assert cmd[2].endswith("scripts/01_download_flyers.py")
     assert cmd[3:] == ["https://x/?catalogId=1", "--max-pages", "5"]

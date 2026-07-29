@@ -11,7 +11,7 @@ könnte.
 Pfade als config.X zur Laufzeit, damit Tests sie umbiegen können.
 """
 
-import sys
+
 from dataclasses import dataclass, field
 
 from magda import config
@@ -156,7 +156,7 @@ def build_command(job: str, values: dict) -> list[str]:
             options += [param.name, value]
 
     script = config.PROJECT_ROOT / "scripts" / f"{spec.script}.py"
-    return [sys.executable, "-u", str(script), *positional, *options]
+    return [config.PYTHON, "-u", str(script), *positional, *options]
 
 
 def describe() -> list[dict]:

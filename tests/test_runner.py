@@ -23,7 +23,11 @@ def isolated(tmp_path, monkeypatch):
     runner.reset()
 
 
-def _wait_until_done(timeout: float = 10.0):
+def _wait_until_done(timeout: float = 180.0):
+    """Großzügig: der Subprozess sieht die Monkeypatches nicht und arbeitet
+    deshalb gegen das echte data/. Wie lange 02_extract_words dort braucht,
+    hängt daran, wie viele Prospekte gerade geladen sind – mit 10 Sekunden war
+    der Test grün bei 40 Seiten und rot bei 300."""
     deadline = time.time() + timeout
     while time.time() < deadline:
         if not runner.status()["running"]:

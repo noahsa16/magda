@@ -24,19 +24,34 @@ def main():
     args = parser.parse_args()
 
     session = requests.Session()
-    catalog_id = scraping.extract_catalog_id(args.url)
-    out_dir = RAW_DIR / catalog_id
-    out_dir.mkdir(parents=True, exist_ok=True)
+    try:
+        catalog_id = scraping.extract_catalog_id(args.url)
+    except ValueError:
+        # Ein Traceback im Konsolenfenster der Steuerzentrale sieht aus wie ein
+        # Programmfehler, ist aber ein Tippfehler in der Eingabe.
+        sys.exit(
+            f"In dieser Adresse steckt keine catalogId: {args.url}\n"
+            "Gebraucht wird die Blätterkatalog-Adresse, nicht die Prospektseite von "
+            "penny.de. Sie sieht so aus:\n"
+            "  https://penny-publish.blaetterkatalog.de/frontend/getcatalog.do?catalogId=1347375"
+        )
 
+    out_dir = RAW_DIR / catalog_id
     count = 0
     for page, pdf_bytes in tqdm(
         scraping.download_catalog(args.url, session, args.max_pages),
         desc=f"Katalog {catalog_id}",
         unit="Seite",
     ):
+        # Verzeichnis erst anlegen, wenn wirklich etwas kommt. Sonst bleibt
+        # nach einem Fehlschlag ein leerer Ordner zurück, den die Übersicht
+        # als Katalog mit null Seiten zeigt.
+        out_dir.mkdir(parents=True, exist_ok=True)
         (out_dir / f"bk_{page}.pdf").write_bytes(pdf_bytes)
         count += 1
 
+    if count == 0:
+        sys.exit(f"Katalog {catalog_id} hat keine abrufbare Seite geliefert.")
     print(f"{count} Seiten gespeichert unter {out_dir}")
 
 

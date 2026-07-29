@@ -14,6 +14,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from tqdm import tqdm
 
 from magda.config import IMAGES_DIR, RAW_DIR, WORDS_DIR
+from magda.gold import words_hash
 from magda.ocr import extract_words, render_png
 
 
@@ -25,7 +26,13 @@ def main():
     if not pdfs:
         sys.exit("Keine PDFs in data/raw/ gefunden. Erst 01_download_flyers.py laufen lassen.")
 
-    done = skipped = 0
+    # Wortlisten, die schon vorliegen – gegen sie wird entdoppelt.
+    gesehen = {}
+    for f in sorted(WORDS_DIR.glob("*.json")):
+        with open(f) as fh:
+            gesehen.setdefault(words_hash(json.load(fh)["words"]), f.stem)
+
+    done = skipped = doppelt = leer = 0
     for pdf_path in tqdm(pdfs, desc="Extrahiere Wörter", unit="Seite"):
         catalog_id = pdf_path.parent.name
         page_num = pdf_path.stem.removeprefix("bk_")
@@ -40,12 +47,29 @@ def main():
         page = extract_words(pdf_bytes)
         page["page_id"] = page_id
 
+        if not page["words"]:
+            leer += 1
+            continue
+
+        # Penny gibt je Woche 44 Regionalausgaben heraus, die zu über 90 %
+        # identisch sind. Wer die Dublette durchlässt, zahlt sie zweimal: in
+        # Schritt 03 mit LLM-Zeit, und im Ergebnis mit einem Testsplit, der
+        # Seiten aus dem Trainingssplit enthält.
+        h = words_hash(page["words"])
+        if h in gesehen:
+            doppelt += 1
+            continue
+        gesehen[h] = page_id
+
         (IMAGES_DIR / f"{page_id}.png").write_bytes(render_png(pdf_bytes))
         with open(out_json, "w") as f:
             json.dump(page, f, ensure_ascii=False)
         done += 1
 
-    print(f"{done} Seiten verarbeitet, {skipped} übersprungen (schon vorhanden).")
+    print(
+        f"{done} Seiten verarbeitet, {skipped} schon vorhanden, "
+        f"{doppelt} als Dublette verworfen, {leer} ohne Textlayer."
+    )
 
 
 if __name__ == "__main__":
