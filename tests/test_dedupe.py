@@ -24,10 +24,10 @@ def test_preise_werden_nicht_faelschlich_als_kennung_erkannt():
 
 
 def test_gleiche_seite_mit_anderer_kennung_faellt_zusammen():
-    gruppen = dedupe.group({"a": SEITE_A, "b": SEITE_B, "c": SEITE_C})
+    groups = dedupe.group({"a": SEITE_A, "b": SEITE_B, "c": SEITE_C})
 
-    assert ["a", "b"] in gruppen
-    assert ["c"] in gruppen
+    assert ["a", "b"] in groups
+    assert ["c"] in groups
 
 
 def test_schwelle_entscheidet():
@@ -43,12 +43,12 @@ def test_schwelle_entscheidet():
 def test_gruppierung_ist_transitiv():
     """A~B und B~C legt alle drei zusammen, auch wenn A und C auseinanderliegen.
     Eine Kette beinahe gleicher Regionalfassungen ist eine Seite, keine drei."""
-    kette = {
+    chain = {
         "a": ["w1", "w2", "w3", "w4", "w5", "w6", "w7", "w8", "w9", "x"],
         "b": ["w1", "w2", "w3", "w4", "w5", "w6", "w7", "w8", "w9", "y"],
         "c": ["w1", "w2", "w3", "w4", "w5", "w6", "w7", "w8", "w9", "z"],
     }
-    assert dedupe.group(kette, threshold=0.8) == [["a", "b", "c"]]
+    assert dedupe.group(chain, threshold=0.8) == [["a", "b", "c"]]
 
 
 def test_choose_bevorzugt_bearbeitete_seiten():

@@ -61,26 +61,26 @@ def main():
         ids = discovery.expand_block(args.seed, session)
         if not ids:
             sys.exit(f"Katalog {args.seed} ist nicht mehr abrufbar – die Woche ist gelöscht.")
-        herkunft = f"Gitterlauf ab {args.seed}"
+        origin = f"Gitterlauf ab {args.seed}"
     else:
         ids = discovery.current_week_ids(session)
         if not ids:
             sys.exit("Penny's Markt-API liefert gerade keine Katalog-URLs.")
-        herkunft = "Markt-API"
+        origin = "Markt-API"
 
-    print(f"{len(ids)} Regionen ({herkunft}): {ids[0]}..{ids[-1]}")
+    print(f"{len(ids)} Regionen ({origin}): {ids[0]}..{ids[-1]}")
 
     # Regionszuordnung festhalten, solange sie abrufbar ist. Nach einer Woche
     # kennt die Markt-API diese Kataloge nicht mehr.
-    aktuell = discovery.market_metadata(session)
-    vermutet = discovery.infer_older_block(aktuell, ids, ids[0]) if args.seed else {}
-    catalog_meta.merge({**aktuell, **vermutet})
-    print(f"Regionen notiert: {len(aktuell)} bestätigt, {len(vermutet)} vermutet")
+    current = discovery.market_metadata(session)
+    inferred = discovery.infer_older_block(current, ids, ids[0]) if args.seed else {}
+    catalog_meta.merge({**current, **inferred})
+    print(f"Regionen notiert: {len(current)} bestätigt, {len(inferred)} vermutet")
 
     seen = _known_hashes()
     print(f"schon vorhanden: {len(seen)} verschiedene Seiten\n")
 
-    neu = doppelt = leer = 0
+    added = duplicate_count = empty_count = 0
     for catalog_id in tqdm(ids, desc="Regionen", unit="Katalog"):
         for page in range(1, args.max_pages + 1):
             pdf_bytes = discovery.fetch_page(catalog_id, page, session)
@@ -89,21 +89,21 @@ def main():
             try:
                 h = _word_hash(pdf_bytes)
             except Exception:
-                leer += 1
+                empty_count += 1
                 continue
             if h is None:
-                leer += 1
+                empty_count += 1
                 continue
             if h in seen:
-                doppelt += 1
+                duplicate_count += 1
                 continue
             seen[h] = f"{catalog_id}/bk_{page}.pdf"
             out_dir = RAW_DIR / catalog_id
             out_dir.mkdir(parents=True, exist_ok=True)
             (out_dir / f"bk_{page}.pdf").write_bytes(pdf_bytes)
-            neu += 1
+            added += 1
 
-    print(f"\n{neu} neue Seiten, {doppelt} Dubletten verworfen, {leer} ohne Textlayer")
+    print(f"\n{added} neue Seiten, {duplicate_count} Duplikate verworfen, {empty_count} ohne Textlayer")
     print(f"{len(seen)} verschiedene Seiten in data/raw/")
     print("Weiter mit: python scripts/02_extract_words.py")
 

@@ -97,22 +97,22 @@ export function CatalogGrid({ tiles, unit, onSelect, emptyHint }: CatalogGridPro
 
   // Nach Prospektwochen bündeln: Dutzende namenloser Kacheln in einem Raster
   // sind unlesbar, mit einer Überschrift je Woche findet man sich zurecht.
-  const wochen = chunkByWeek(tiles)
+  const weeks = chunkByWeek(tiles)
 
   return (
     <div className="space-y-6">
-      {wochen.map((woche) => (
-        <section key={woche[0].id} className="space-y-3">
-          {wochen.length > 1 && (
+      {weeks.map((week) => (
+        <section key={week[0].id} className="space-y-3">
+          {weeks.length > 1 && (
             <div className="flex flex-wrap items-baseline gap-2 border-b-2 border-foreground pb-1.5">
-              <h3 className="text-sm font-bold tracking-tight">Prospektwoche {woche[0].id}</h3>
+              <h3 className="text-sm font-bold tracking-tight">Prospektwoche {week[0].id}</h3>
               <span className="font-mono text-[11px] text-muted-foreground tabular-nums">
-                {woche.length} Ausgaben · {woche.reduce((sum, t) => sum + t.pages, 0)} Seiten
+                {week.length} Ausgaben · {week.reduce((sum, t) => sum + t.pages, 0)} Seiten
               </span>
             </div>
           )}
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {woche.map((tile) => (
+            {week.map((tile) => (
               <Tile key={tile.id} tile={tile} unit={unit} onSelect={onSelect} />
             ))}
           </div>

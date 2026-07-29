@@ -127,23 +127,23 @@ def dedupe_plan(
     extrahierten Wortliste, wo sie exakt ist. Diese Vorauswahl spart nur den
     Download.
     """
-    gruppen: dict[tuple[int, int], list[tuple[str, int]]] = defaultdict(list)
-    seiten_gesamt = 0
+    groups: dict[tuple[int, int], list[tuple[str, int]]] = defaultdict(list)
+    total_pages = 0
     for catalog_id in catalog_ids:
         for position, size in enumerate(page_sizes(catalog_id, session), start=1):
-            gruppen[(position, size)].append((catalog_id, position))
-            seiten_gesamt += 1
+            groups[(position, size)].append((catalog_id, position))
+            total_pages += 1
         if pause:
             time.sleep(pause)
 
-    plan = sorted((eintraege[0] for eintraege in gruppen.values()), key=lambda x: (int(x[0]), x[1]))
-    statistik = {
+    plan = sorted((entries[0] for entries in groups.values()), key=lambda x: (int(x[0]), x[1]))
+    statistics = {
         "kataloge": len(catalog_ids),
-        "seiten_gesamt": seiten_gesamt,
+        "seiten_gesamt": total_pages,
         "seiten_verschieden": len(plan),
-        "dubletten": seiten_gesamt - len(plan),
+        "duplikate": total_pages - len(plan),
     }
-    return plan, statistik
+    return plan, statistics
 
 
 def fetch_page(catalog_id: str, page: int, session: requests.Session) -> bytes | None:
@@ -164,20 +164,20 @@ def market_metadata(session: requests.Session) -> dict[str, dict]:
     resp = session.get(MARKET_API, headers={"Accept": "application/json"}, timeout=60)
     resp.raise_for_status()
 
-    gruppen: dict[str, list[dict]] = defaultdict(list)
+    groups: dict[str, list[dict]] = defaultdict(list)
     for market in resp.json():
         match = re.search(r"catalogId=(\d+)", market.get("flippingBookURL") or "")
         if match:
-            gruppen[match.group(1)].append(market)
+            groups[match.group(1)].append(market)
 
     meta = {}
-    for catalog_id, markets in gruppen.items():
-        staedte = sorted({m["city"] for m in markets if m.get("city")})
+    for catalog_id, markets in groups.items():
+        cities = sorted({m["city"] for m in markets if m.get("city")})
         meta[catalog_id] = {
             "selling_region": sorted({m["sellingRegion"] for m in markets})[0],
             "markets": len(markets),
             "states": sorted({m["state"] for m in markets if m.get("state")}),
-            "example_city": staedte[0] if staedte else "",
+            "example_city": cities[0] if cities else "",
             "confirmed": True,
         }
     return meta
@@ -200,17 +200,17 @@ def infer_older_block(
     Woche vergessen hat. Das Ergebnis wird deshalb `confirmed: False` markiert
     und in der Oberfläche als vermutet ausgewiesen.
     """
-    referenz = sorted(known, key=int)
-    if not referenz:
+    reference = sorted(known, key=int)
+    if not reference:
         return {}
-    basis = int(block_base)
+    base = int(block_base)
 
-    ergebnis = {}
+    result = {}
     for catalog_id in catalog_ids:
         if catalog_id in known:
             continue
-        abstand = (int(catalog_id) - basis) // ID_STRIDE
-        if abstand < 0 or abstand >= len(referenz):
+        offset = (int(catalog_id) - base) // ID_STRIDE
+        if offset < 0 or offset >= len(reference):
             continue
-        ergebnis[catalog_id] = {**known[referenz[abstand]], "confirmed": False}
-    return ergebnis
+        result[catalog_id] = {**known[reference[offset]], "confirmed": False}
+    return result

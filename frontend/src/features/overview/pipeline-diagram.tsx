@@ -20,7 +20,7 @@ export function PipelineDiagram({
   states: Record<string, StepState>
   totals: PipelineStatus["totals"]
 }) {
-  const erledigt = STEPS.filter((s) => states[s.job] === "done").length
+  const done = STEPS.filter((s) => states[s.job] === "done").length
 
   return (
     <section className="space-y-3">
@@ -28,7 +28,7 @@ export function PipelineDiagram({
         <h2 className="text-lg font-bold tracking-tight">
           Pipeline
           <span className="ml-2 font-mono text-[11px] font-normal text-muted-foreground tabular-nums">
-            {erledigt}/{STEPS.length}
+            {done}/{STEPS.length}
           </span>
         </h2>
         <Link
@@ -42,7 +42,7 @@ export function PipelineDiagram({
       <ol className="flex flex-wrap items-stretch gap-1.5">
         {STEPS.map((step, i) => {
           const state = states[step.job] ?? "blocked"
-          const fortschritt = stepProgress(step.job, totals)
+          const progressText = stepProgress(step.job, totals)
           return (
             <li key={step.job} className="min-w-0 flex-1 basis-28">
               <Tooltip>
@@ -67,7 +67,7 @@ export function PipelineDiagram({
                     </span>
                     <span className="truncate text-xs font-semibold">{step.title}</span>
                     <span className="font-mono text-[10px] text-muted-foreground tabular-nums">
-                      {fortschritt ?? " "}
+                      {progressText ?? " "}
                     </span>
                   </Link>
                 </TooltipTrigger>

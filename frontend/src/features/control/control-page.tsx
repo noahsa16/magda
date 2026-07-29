@@ -24,8 +24,8 @@ export function ControlPage() {
   const run = useRun()
 
   const [values, setValues] = useState<Record<string, Record<string, string>>>({})
-  const [offen, setOffen] = useState<string | undefined>(undefined)
-  const [katalogeOffen, setKatalogeOffen] = useState(false)
+  const [open, setOpen] = useState<string | undefined>(undefined)
+  const [catalogsOpen, setCatalogsOpen] = useState(false)
 
   if (jobsQ.isPending) return <Skeleton className="h-96 w-full" />
   if (jobsQ.isError) {
@@ -45,10 +45,10 @@ export function ControlPage() {
   const states = totals ? stepStates(totals, evalQ.data ?? [], trained) : {}
 
   // Aufgeklappt ist standardmäßig der Schritt, der als Nächstes dran ist.
-  const naechster = jobs.find((j) => states[j.job] === "ready")?.job
-  const aktiv = offen ?? run.status?.job ?? naechster
+  const next = jobs.find((j) => states[j.job] === "ready")?.job
+  const active = open ?? run.status?.job ?? next
 
-  const erledigt = jobs.filter((j) => states[j.job] === "done").length
+  const done = jobs.filter((j) => states[j.job] === "done").length
 
   const valuesFor = (jobName: string) => {
     const job = jobs.find((j) => j.job === jobName)
@@ -68,10 +68,10 @@ export function ControlPage() {
             </p>
           </div>
           <p className="font-mono text-[11px] uppercase tracking-widest text-muted-foreground tabular-nums">
-            {erledigt} / {jobs.length} erledigt
+            {done} / {jobs.length} erledigt
           </p>
         </div>
-        <Progress value={(erledigt / jobs.length) * 100} />
+        <Progress value={(done / jobs.length) * 100} />
       </header>
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
@@ -79,8 +79,8 @@ export function ControlPage() {
           <StepAccordion
             jobs={jobs}
             states={states}
-            open={aktiv}
-            onOpenChange={setOffen}
+            open={active}
+            onOpenChange={setOpen}
             runningJob={run.status?.job ?? null}
             valuesFor={valuesFor}
             onChange={setValue}
@@ -97,11 +97,11 @@ export function ControlPage() {
             </Alert>
           )}
 
-          <Collapsible open={katalogeOffen} onOpenChange={setKatalogeOffen}>
+          <Collapsible open={catalogsOpen} onOpenChange={setCatalogsOpen}>
             <CollapsibleTrigger className="flex w-full items-center justify-between rounded-xl border-2 border-foreground bg-card px-4 py-3 text-left">
               <span className="font-semibold">Kataloge verwalten</span>
               <ChevronDown
-                className={cn("size-4 transition-transform", katalogeOffen && "rotate-180")}
+                className={cn("size-4 transition-transform", catalogsOpen && "rotate-180")}
               />
             </CollapsibleTrigger>
             <CollapsibleContent className="pt-4">

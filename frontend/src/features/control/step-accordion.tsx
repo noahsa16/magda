@@ -53,7 +53,7 @@ export function StepAccordion({
       {jobs.map((job, index) => {
         const state = states[job.job]
         const running = runningJob === job.job
-        const fortschritt = progress(job.job)
+        const progressText = progress(job.job)
         return (
           <AccordionItem
             key={job.job}
@@ -75,9 +75,9 @@ export function StepAccordion({
                   <span className={cn("font-semibold", state === "blocked" && "text-muted-foreground")}>
                     {job.title}
                   </span>
-                  {fortschritt && (
+                  {progressText && (
                     <span className="ml-2 font-mono text-[11px] text-muted-foreground tabular-nums">
-                      {fortschritt}
+                      {progressText}
                     </span>
                   )}
                 </span>

@@ -46,16 +46,16 @@ def save(meta: dict[str, dict]) -> None:
         raise
 
 
-def merge(neu: dict[str, dict]) -> dict[str, dict]:
+def merge(fresh: dict[str, dict]) -> dict[str, dict]:
     """Nimmt neue Einträge auf, ohne bestätigte durch vermutete zu ersetzen."""
-    bestand = load()
-    for catalog_id, eintrag in neu.items():
-        vorhanden = bestand.get(catalog_id)
-        if vorhanden and vorhanden.get("confirmed") and not eintrag.get("confirmed"):
+    existing = load()
+    for catalog_id, entry in fresh.items():
+        existing_entry = existing.get(catalog_id)
+        if existing_entry and existing_entry.get("confirmed") and not entry.get("confirmed"):
             continue
-        bestand[catalog_id] = eintrag
-    save(bestand)
-    return bestand
+        existing[catalog_id] = entry
+    save(existing)
+    return existing
 
 
 def label(catalog_id: str, meta: dict[str, dict] | None = None) -> str:
@@ -63,9 +63,9 @@ def label(catalog_id: str, meta: dict[str, dict] | None = None) -> str:
     entry = (meta if meta is not None else load()).get(catalog_id)
     if not entry:
         return ""
-    laender = entry.get("states") or []
-    kopf = ", ".join(laender[:2]) if laender else entry.get("example_city", "")
-    if len(laender) > 2:
-        kopf += f" +{len(laender) - 2}"
-    teile = [t for t in (kopf, f"{entry.get('markets', 0)} Märkte") if t]
-    return " · ".join(teile)
+    states = entry.get("states") or []
+    head = ", ".join(states[:2]) if states else entry.get("example_city", "")
+    if len(states) > 2:
+        head += f" +{len(states) - 2}"
+    parts = [t for t in (head, f"{entry.get('markets', 0)} Märkte") if t]
+    return " · ".join(parts)

@@ -100,13 +100,13 @@ JOBS: dict[str, Job] = {
     ),
     "06_check_duplicates": Job(
         script="06_check_duplicates",
-        title="Dubletten prüfen",
+        title="Duplikate prüfen",
         what="Findet Seiten, die sich nur in der Druckkennung oder in Kleinigkeiten "
              "unterscheiden. Ohne Häkchen wird nur berichtet, nichts gelöscht.",
         params=(
             Param("--threshold", "float", "Ähnlichkeit ab", default=0.95,
                   help="0.98 streng, 0.90 großzügig"),
-            Param("--apply", "flag", "Dubletten entfernen"),
+            Param("--apply", "flag", "Duplikate entfernen"),
         ),
     ),
     "07_flair_baseline": Job(
