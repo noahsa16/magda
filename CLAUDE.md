@@ -106,6 +106,12 @@ Skripte immer aus dem Projektroot starten – sie hängen den Root selbst an
   So sitzt jede Vorhersage auf genau einem Wortindex, und Flair sieht exakt
   dieselbe Eingabe wie GBERT. Eine eigene Tokenisierung würde `(1 kg = 24.95)`
   anders zerlegen und die beiden Zahlen unvergleichbar machen.
+- **Flair kürzt lange Seiten nicht, GBERT schon.** Flairs
+  `TransformerWordEmbeddings` schiebt ein Fenster über Sequenzen über 512
+  Subwords; `dataset.py` schneidet mit `truncation=True` ab. Auf Seite
+  `1342881_p22` (602 Subwords) sieht Flair die ganze Seite, GBERT zwei Drittel.
+  Beim Berichten des Vergleichs mitnennen – und es ist das erste Argument in
+  der offenen Sliding-Window-Frage.
 - **`flair` steht nicht in `requirements.txt`.** Es bringt zwei Dutzend Pakete
   mit, die für Pipeline und Training keine Rolle spielen. Wer nur trainiert,
   soll sie nicht installieren müssen.
