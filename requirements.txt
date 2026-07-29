@@ -15,6 +15,9 @@ sentencepiece
 numpy
 seqeval
 
+# Vergleichsarm mit fertigem deutschen NER-Modell (scripts/07_flair_baseline.py):
+# separat installieren, siehe requirements-flair.txt
+
 # LayoutXLM (LayoutLMv2-Architektur) braucht zusätzlich detectron2 für den
 # visuellen Backbone. Installation ist plattformabhängig, siehe:
 # https://detectron2.readthedocs.io/en/latest/tutorials/install.html

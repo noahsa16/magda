@@ -36,6 +36,7 @@ beliebiger Kommandos.
 pytest                                   # Tests
 python scripts/02_extract_words.py       # Schritt ausführen (aus dem Projektroot)
 python scripts/04_train.py layoutxlm     # bzw. gbert
+python scripts/07_flair_baseline.py --reference gold   # Flair-Vergleichsarm
 uvicorn magda.api:app --reload           # Frontend-API (Port 8000)
 cd frontend && npm run dev               # Frontend-Dev-Server (proxied /api)
 cd frontend && npm test                  # Frontend-Tests (Vitest)
@@ -95,6 +96,22 @@ Skripte immer aus dem Projektroot starten – sie hängen den Root selbst an
   atomar, ihm fehlt nur die Reihenfolge, und die kennt allein der Client.
   Nicht abgedeckt: zwei Tabs oder zwei Personen auf derselben Seite. Dafür
   bräuchte es optimistisches Locking, nicht Serialisierung.
+
+- **Der Flair-Arm misst nur BRAND.** `flair/ner-german-large` kennt
+  PER/LOC/ORG/MISC; von unseren acht Labels hat nur BRAND eine Entsprechung
+  (`ORG`). Deshalb werden Referenz *und* Vorhersage auf BRAND eingeschränkt –
+  ohne das zählte jeder Preis in der Referenz als Falsch-Negativ. Jede
+  berichtete Zahl aus diesem Arm muss die Einschränkung mitnennen.
+- **Flair bekommt die Wortliste vorsegmentiert.** Nicht aus Bequemlichkeit:
+  So sitzt jede Vorhersage auf genau einem Wortindex, und Flair sieht exakt
+  dieselbe Eingabe wie GBERT. Eine eigene Tokenisierung würde `(1 kg = 24.95)`
+  anders zerlegen und die beiden Zahlen unvergleichbar machen.
+- **`flair` steht nicht in `requirements.txt`.** Es bringt zwei Dutzend Pakete
+  mit, die für Pipeline und Training keine Rolle spielen. Wer nur trainiert,
+  soll sie nicht installieren müssen.
+- **Das Projekt-Env ist `.venv`, nicht die Anaconda-Basis.** `which python`
+  zeigt auf Anaconda; dort fehlt `seqeval`, und Tests brechen beim Import ab.
+  Immer `.venv/bin/python` benutzen.
 
 ## Offene Entscheidungen (nicht eigenmächtig festlegen)
 

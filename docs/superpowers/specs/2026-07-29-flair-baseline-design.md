@@ -159,7 +159,7 @@ einen Arm riskiert, den man zweimal startet. Separate Datei, Hinweis in
 | Kein Gold mit `status == "done"` | Abbruch mit Hinweis auf `--reference llm` |
 | Gold-Seite stale | Überspringen, Warnung, Anzahl im Report vermerken |
 | Modell-Tagset ohne `ORG` | Abbruch — das Mapping wäre still leer, das Ergebnis 0.000 ohne erkennbaren Grund |
-| Seite > 512 Subwords | Flairs `allow_long_sentences` greift; falls nicht verfügbar, wird die Kürzung gezählt und im Report ausgewiesen |
+| Seite > 512 Subwords | Flairs `TransformerWordEmbeddings` schiebt standardmäßig ein Fenster über lange Sequenzen (`allow_long_sentences`), kürzt also nicht. Wird beim Bauen am geladenen Modell geprüft; trifft es nicht zu, zählt das Skript betroffene Seiten und weist sie im Report aus, statt still Entities zu verlieren |
 
 ## Tests
 
