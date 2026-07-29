@@ -147,3 +147,29 @@ def test_schreiben_ist_atomar(registry_file):
         assert len(json.load(f)) == 2
     # Keine Temp-Reste neben der Datei.
     assert list(registry_file.parent.glob(".catalogs*")) == []
+
+
+def test_probe_ruft_niemals_die_uebergebene_url_ab():
+    """Kein SSRF: Aus der Eingabe wird nur die catalogId gelesen.
+
+    Die Ziffern landen in zwei fest verdrahteten Basis-URLs, der Rest der
+    Eingabe wird verworfen. Wer hier künftig direkt `session.get(url)` einbaut,
+    macht aus dem Prüf-Knopf einen Proxy in fremde Netze – dieser Test fällt
+    dann um.
+    """
+    for angriff in (
+        "http://169.254.169.254/latest/meta-data/?catalogId=1",
+        "file:///etc/passwd?catalogId=1",
+        "http://localhost:8000/api/run?catalogId=1",
+        "https://evil.example/?catalogId=1%2F..%2F..%2Fetc",
+    ):
+        session = _FakeSession({})
+        scraping.probe_catalog(angriff, session)
+
+        assert all(url.startswith(scraping.CATALOG_BASE) or url.startswith(scraping.PDF_BASE)
+                   for url in session.seen), session.seen
+
+
+def test_probe_lehnt_url_ohne_catalog_id_ab():
+    with pytest.raises(ValueError, match="Keine catalogId"):
+        scraping.probe_catalog("http://169.254.169.254/latest/meta-data/", _FakeSession({}))
