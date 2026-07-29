@@ -27,6 +27,9 @@ RUNS_DIR = DATA_DIR / "runs"        # Lauf-Historie: je Lauf Metadaten-JSON + Lo
 # Handannotierte Referenz. Liegt bewusst außerhalb von data/ und wird
 # versioniert: generierte Artefakte sind reproduzierbar, Handarbeit nicht.
 GOLD_DIR = PROJECT_ROOT / "gold"
+# Katalog-Verzeichnis: gefundene Blätterkatalog-IDs. Versioniert wie gold/ –
+# eine ID lässt sich nicht reproduzieren, nur wiederfinden.
+CATALOGS_FILE = PROJECT_ROOT / "catalogs.json"
 CHECKPOINTS_DIR = PROJECT_ROOT / "checkpoints"
 
 # ---------------------------------------------------------------------------
