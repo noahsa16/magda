@@ -43,7 +43,7 @@ def test_start_lehnt_unbekannten_job_ab():
 
 def test_start_lehnt_unbekannten_parameter_ab():
     with pytest.raises(ValueError, match="Unbekannter Parameter"):
-        runner.start("02_extract_words", {"outfile": "/etc/passwd"})
+        runner.start("06_check_duplicates", {"outfile": "/etc/passwd"})
 
 
 def test_start_verlangt_pflichtparameter():
@@ -59,31 +59,35 @@ def test_status_ist_leer_ohne_lauf():
 
 
 def test_lauf_landet_in_der_historie():
-    """02_extract_words bricht ohne data/raw sofort ab – genau deshalb taugt es
-    als schneller Testlauf: echter Subprozess, echter Exit-Code, kein Netz."""
-    runner.start("02_extract_words")
+    """06_check_duplicates berichtet ohne --apply nur – deshalb taugt es als
+    Testlauf: echter Subprozess, echter Exit-Code, kein Netz und vor allem
+    keine Veränderung an data/. Mit 02_extract_words schrieb dieser Test in den
+    echten Datenbestand und machte eine vorher gelaufene Entdopplung rückgängig
+    (der Subprozess sieht die Monkeypatches nicht).
+    """
+    runner.start("06_check_duplicates")
     state = _wait_until_done()
 
     assert state["exit_code"] is not None
     history = runs.list_runs()
     assert len(history) == 1
-    assert history[0]["job"] == "02_extract_words"
-    assert history[0]["command"][-1].endswith("02_extract_words.py")
+    assert history[0]["job"] == "06_check_duplicates"
+    assert history[0]["command"][-1].endswith("06_check_duplicates.py")
     assert history[0]["exit_code"] == state["exit_code"]
     assert runs.read_run(history[0]["run_id"])["log"] != ""
 
 
 def test_zweiter_lauf_waehrend_eines_laufs_wird_abgelehnt():
-    runner.start("02_extract_words")
+    runner.start("06_check_duplicates")
     try:
         with pytest.raises(RuntimeError, match="läuft bereits"):
-            runner.start("02_extract_words")
+            runner.start("06_check_duplicates")
     finally:
         _wait_until_done()
 
 
 def test_args_stehen_im_status_und_in_der_historie():
-    runner.start("02_extract_words")
+    runner.start("06_check_duplicates")
     _wait_until_done()
 
     assert runs.list_runs()[0]["args"] == {}

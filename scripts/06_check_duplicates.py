@@ -3,7 +3,7 @@
 Aufruf:
     python scripts/06_check_duplicates.py                  # nur berichten
     python scripts/06_check_duplicates.py --threshold 0.98 # strenger
-    python scripts/06_check_duplicates.py --apply          # Dubletten entfernen
+    python scripts/06_check_duplicates.py --apply          # Duplikate entfernen
 
 Ohne --apply wird nichts verändert. Der Bericht sagt, wie viele Seiten der
 Datensatz *wirklich* hat – und das ist die Zahl, die in den Projektbericht
@@ -34,7 +34,7 @@ def main():
     parser.add_argument("--threshold", type=float, default=0.95,
                         help="Ab welcher Jaccard-Ähnlichkeit zwei Seiten dieselbe sind")
     parser.add_argument("--apply", action="store_true",
-                        help="Dubletten wirklich entfernen (sonst nur berichten)")
+                        help="Duplikate wirklich entfernen (sonst nur berichten)")
     args = parser.parse_args()
 
     pages = {}
@@ -44,47 +44,69 @@ def main():
     if not pages:
         sys.exit("Keine Seiten in data/words/. Erst 02_extract_words.py laufen lassen.")
 
-    geschuetzt = {f.stem for f in LABELED_DIR.glob("*.json")} | {f.stem for f in GOLD_DIR.glob("*.json")}
-    gruppen = dedupe.group(pages, args.threshold)
-    mehrfach = [g for g in gruppen if len(g) > 1]
+    # Zwei verschiedene Begriffe, die man leicht verwechselt:
+    #
+    #   bevorzugt  – wer eine Gruppe vertreten darf. Eine gelabelte Seite zu
+    #                behalten spart einen LLM-Aufruf.
+    #   unantastbar – wer auf keinen Fall verschwindet. Das ist nur Gold:
+    #                Handarbeit ist nicht reproduzierbar, LLM-Labels schon.
+    #
+    # Beides gleichzusetzen war ein Fehler: sobald auch die Duplikate gelabelt
+    # waren, schützte sich der Datensatz gegen seine eigene Bereinigung.
+    preferred = {f.stem for f in LABELED_DIR.glob("*.json")} | {f.stem for f in GOLD_DIR.glob("*.json")}
+    protected = {f.stem for f in GOLD_DIR.glob("*.json")}
+    groups = dedupe.group(pages, args.threshold)
+    duplicates = [g for g in groups if len(g) > 1]
 
     print(f"{len(pages)} Seiten in data/words/")
-    print(f"{len(gruppen)} verschiedene Seiten bei Jaccard >= {args.threshold}")
-    print(f"{len(pages) - len(gruppen)} redundant, verteilt auf {len(mehrfach)} Gruppen\n")
+    print(f"{len(groups)} verschiedene Seiten bei Jaccard >= {args.threshold}")
+    print(f"{len(pages) - len(groups)} redundant, verteilt auf {len(duplicates)} Gruppen\n")
 
     meta = catalog_meta.load()
-    for gruppe in mehrfach[:15]:
-        vertreter = dedupe.choose(gruppe, geschuetzt)
-        print(f"  behalten: {vertreter}  ({catalog_meta.label(_catalog_of(vertreter), meta) or 'Region unbekannt'})")
-        for pid in gruppe:
-            if pid == vertreter:
+    for group in duplicates[:15]:
+        representative = dedupe.choose(group, preferred)
+        print(f"  behalten: {representative}  ({catalog_meta.label(_catalog_of(representative), meta) or 'Region unbekannt'})")
+        for pid in group:
+            if pid == representative:
                 continue
             marker = dedupe.print_marker(pages[pid]) or "–"
-            print(f"     dublett: {pid:22} Druckkennung {marker}")
-    if len(mehrfach) > 15:
-        print(f"  … und {len(mehrfach) - 15} weitere Gruppen")
+            print(f"     duplikat: {pid:22} Druckkennung {marker}")
+    if len(duplicates) > 15:
+        print(f"  … und {len(duplicates) - 15} weitere Gruppen")
 
     if not args.apply:
         print("\nNichts verändert. Mit --apply entfernen.")
         return
 
-    entfernt = 0
-    for gruppe in mehrfach:
-        vertreter = dedupe.choose(gruppe, geschuetzt)
-        for pid in gruppe:
-            if pid == vertreter:
+    # Die Ausschlussliste ist der eigentliche Wirkmechanismus. Nur zu löschen
+    # genügt nicht: Schritt 02 baut data/words aus data/raw wieder auf und
+    # erkennt dabei nur exakt gleiche Wortlisten – die Beinah-Duplikate kämen
+    # beim nächsten Lauf zurück und würden beim übernächsten gelabelt.
+    excluded = dedupe.load_excluded()
+    removed = 0
+    for group in duplicates:
+        representative = dedupe.choose(group, preferred)
+        for pid in group:
+            if pid == representative:
                 continue
-            if pid in geschuetzt:
-                # Sollte durch choose() nicht vorkommen; wenn doch, ist Handarbeit
-                # dahin – lieber die Dublette behalten als ein Label verlieren.
-                print(f"  übersprungen (gelabelt/Gold): {pid}")
+            if pid in protected:
+                # Zwei Gold-Seiten in einer Gruppe: beide behalten. Handarbeit
+                # wegzuwerfen wäre schlimmer als ein Duplikat im Datensatz.
+                print(f"  übersprungen (Gold): {pid}")
                 continue
+            excluded[pid] = representative
             (WORDS_DIR / f"{pid}.json").unlink(missing_ok=True)
             (IMAGES_DIR / f"{pid}.png").unlink(missing_ok=True)
-            entfernt += 1
+            # Das Label gehört zur Seite. Es stehen zu lassen hieße, eine
+            # ausgeschlossene Seite weiter im Trainingssatz zu führen.
+            (LABELED_DIR / f"{pid}.json").unlink(missing_ok=True)
+            removed += 1
+    dedupe.save_excluded(excluded)
 
-    print(f"\n{entfernt} Seiten entfernt, {len(list(WORDS_DIR.glob('*.json')))} bleiben.")
-    print("data/raw/ ist unberührt – Schritt 02 stellt jederzeit alles wieder her.")
+    print(f"\n{removed} Seiten entfernt, {len(list(WORDS_DIR.glob('*.json')))} bleiben.")
+    print(f"{len(excluded)} Seiten stehen jetzt in data/excluded.json – Schritt 02 "
+          "überspringt sie künftig.")
+    print("data/raw/ ist unberührt: die Ausschlussliste löschen stellt alles wieder her.")
 
 
 if __name__ == "__main__":

@@ -70,8 +70,11 @@ export function stepStates(
   const bothEvaluated = VARIANTS.every((v) => evaluated.has(v))
   return {
     "01_download_flyers": totals.raw > 0 ? "done" : "ready",
+    // Nicht words >= raw: die Entdopplung sortiert Seiten aus, damit bleibt
+    // words dauerhaft kleiner als raw und der Schritt sähe nie erledigt aus.
+    // Erledigt heißt: keine Seite mehr offen – weder extrahiert noch verworfen.
     "02_extract_words":
-      totals.raw > 0 && totals.words >= totals.raw ? "done" : totals.raw > 0 ? "ready" : "blocked",
+      totals.raw > 0 && totals.pending === 0 ? "done" : totals.raw > 0 ? "ready" : "blocked",
     "03_label_words":
       totals.words > 0 && totals.labeled >= totals.words
         ? "done"
@@ -100,7 +103,14 @@ export function doneVariants(
 /** Fortschrittstext pro Schritt, z. B. "37 / 40 Seiten". */
 export function stepProgress(job: string, totals: PipelineStatus["totals"]): string | null {
   if (job === "01_download_flyers") return `${totals.raw} Seiten`
-  if (job === "02_extract_words") return `${totals.words} / ${totals.raw} Seiten`
+  if (job === "02_extract_words") {
+    // Nenner ist, was übrig bleibt, nachdem die Duplikate abgezogen sind.
+    // Gegen raw gerechnet stünde hier ewig "196 / 327", und das liest sich wie
+    // ein abgebrochener Lauf statt wie eine erfolgreiche Entdopplung.
+    const target = totals.raw - totals.excluded
+    const dupes = totals.excluded > 0 ? ` · ${totals.excluded} Duplikate` : ""
+    return `${totals.words} / ${target} Seiten${dupes}`
+  }
   if (job === "03_label_words") return `${totals.labeled} / ${totals.words} Seiten`
   return null
 }

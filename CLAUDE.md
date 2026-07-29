@@ -47,7 +47,7 @@ python scripts/02_extract_words.py       # Schritt ausführen (aus dem Projektro
 python scripts/04_train.py layoutxlm     # bzw. gbert
 python scripts/00_harvest_week.py        # laufende Prospektwoche, alle Regionen
 python scripts/00_harvest_week.py --seed 1342881   # ältere Woche über bekannte ID
-python scripts/06_check_duplicates.py    # Dubletten berichten (--apply entfernt sie)
+python scripts/06_check_duplicates.py    # Duplikate berichten (--apply entfernt sie)
 python scripts/07_flair_baseline.py --reference gold   # Flair-Vergleichsarm
 uvicorn magda.api:app --reload           # Frontend-API (Port 8000)
 cd frontend && npm run dev               # Frontend-Dev-Server (proxied /api)
@@ -102,6 +102,15 @@ Skripte immer aus dem Projektroot starten – sie hängen den Root selbst an
   gehört aber nicht zum Prospekt: ohne sie zu entfernen gilt jede geteilte
   Seite als vielfach verschieden. Als Herkunftsangabe ist sie dafür die
   genaueste, die eine einzelne Seite hergibt (`dedupe.print_marker`).
+- **`data/excluded.json` ist der Wirkmechanismus der Entdopplung, nicht das
+  Löschen.** Schritt 02 baut `data/words` aus `data/raw` jederzeit neu auf;
+  wer nur Dateien entfernt, hat sie beim nächsten Lauf zurück und zahlt sie
+  beim übernächsten mit LLM-Zeit. Die Datei bildet ausgeschlossene `page_id`
+  auf die Seite ab, die sie vertritt — geschrieben von `06 --apply` *und* von
+  Schritt 02 für exakt gleiche Wortlisten. Deshalb gilt
+  `raw = words + excluded + pending`, und `pending > 0` ist echte offene
+  Arbeit. Ohne diese Buchführung sieht die Übersicht aus, als hätte die
+  Pipeline ein Drittel der Seiten liegen lassen (327 geladen, 196 extrahiert).
 - **`catalog_meta.json` hält fest, zu welcher Region ein Katalog gehört.**
   Penny's Markt-API kennt nur die laufende Woche; ungespeichert ist die
   Zuordnung nach sieben Tagen weg und ein Katalog nur noch eine sechsstellige

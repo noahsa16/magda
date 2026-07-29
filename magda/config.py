@@ -41,6 +41,10 @@ LABELED_DIR = DATA_DIR / "labeled"  # vom LLM gelabelte Seiten (BIO-Tags)
 SPLITS_DIR = DATA_DIR / "splits"    # train/dev/test-Aufteilung
 EVAL_DIR = DATA_DIR / "eval"        # Evaluations-Reports als JSON (fürs Frontend)
 RUNS_DIR = DATA_DIR / "runs"        # Lauf-Historie: je Lauf Metadaten-JSON + Log
+# Seiten, die 06_check_duplicates als Beinah-Duplikat aussortiert hat. Löschen
+# allein genügt nicht: Schritt 02 erzeugt sie aus data/raw jederzeit neu, weil
+# sein eigener Filter nur exakt gleiche Wortlisten erkennt.
+EXCLUDED_FILE = DATA_DIR / "excluded.json"
 # Handannotierte Referenz. Liegt bewusst außerhalb von data/ und wird
 # versioniert: generierte Artefakte sind reproduzierbar, Handarbeit nicht.
 GOLD_DIR = PROJECT_ROOT / "gold"

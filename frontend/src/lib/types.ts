@@ -25,6 +25,10 @@ export interface CatalogStatus {
   words: number
   images: number
   labeled: number
+  /** Als Duplikat aussortiert – steht in data/excluded.json. */
+  excluded: number
+  /** Weder extrahiert noch aussortiert. Im Normalfall 0. */
+  pending: number
   /** Ladedatum als YYYY-MM-DD; null, wenn data/raw/<id> fehlt. */
   downloaded: string | null
   /** "Bayern · 153 Märkte"; leer, wenn die Zuordnung fehlt. */
@@ -40,6 +44,8 @@ export interface PipelineStatus {
     words: number
     images: number
     labeled: number
+    excluded: number
+    pending: number
     /** Gold zählt quer über Kataloge, deshalb nur in den Summen. */
     gold_done: number
     gold_in_progress: number

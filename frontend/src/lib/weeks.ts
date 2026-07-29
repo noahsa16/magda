@@ -38,6 +38,8 @@ export interface CatalogWeek {
   raw: number
   words: number
   labeled: number
+  /** Als Duplikat aussortiert – zählt zum Fortschritt, nicht zum Rückstand. */
+  excluded: number
   /** Ladedatum der ersten Ausgabe, als grobe Einordnung. */
   downloaded: string | null
   /** Bundesländer, die in diesem Block vorkommen. */
@@ -52,6 +54,7 @@ export function groupByWeek(catalogs: CatalogStatus[]): CatalogWeek[] {
       raw: block.reduce((sum, c) => sum + c.raw, 0),
       words: block.reduce((sum, c) => sum + c.words, 0),
       labeled: block.reduce((sum, c) => sum + c.labeled, 0),
+      excluded: block.reduce((sum, c) => sum + (c.excluded ?? 0), 0),
       downloaded: block.find((c) => c.downloaded)?.downloaded ?? null,
       // Defensiv: eine API-Antwort ohne region darf die Übersicht nicht in
       // eine weiße Seite verwandeln.

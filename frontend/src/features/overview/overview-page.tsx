@@ -14,7 +14,18 @@ import { LabelDistribution } from "./label-distribution"
 import { PipelineDiagram } from "./pipeline-diagram"
 import { stepStates } from "./steps"
 
-function StatCard({ label, value, hint }: { label: string; value: number; hint?: string }) {
+function StatCard({
+  label,
+  value,
+  hint,
+  alert,
+}: {
+  label: string
+  value: number
+  hint?: string
+  /** Hebt den Hinweis hervor, wenn er auf offene Arbeit zeigt. */
+  alert?: boolean
+}) {
   const shown = useCountUp(value)
   return (
     <div className="plate rounded-xl border-2 border-foreground bg-card p-3.5">
@@ -22,7 +33,11 @@ function StatCard({ label, value, hint }: { label: string; value: number; hint?:
         {label}
       </p>
       <p className="mt-0.5 text-3xl font-extrabold tracking-tight tabular-nums">{shown}</p>
-      {hint && <p className="text-[11px] text-muted-foreground">{hint}</p>}
+      {hint && (
+        <p className={cn("text-[11px]", alert ? "font-medium text-destructive" : "text-muted-foreground")}>
+          {hint}
+        </p>
+      )}
     </div>
   )
 }
@@ -71,7 +86,7 @@ function ModelSummary({ models, reports }: { models: ModelStatus[]; reports: Eva
 }
 
 export function OverviewPage() {
-  const [faktenOffen, setFaktenOffen] = useState(false)
+  const [factsOpen, setFactsOpen] = useState(false)
   const { data, isPending, isError, error } = useQuery({ queryKey: ["status"], queryFn: api.status })
   const evalQ = useQuery({ queryKey: ["evaluation"], queryFn: api.evaluation })
   const modelQ = useQuery({ queryKey: ["model"], queryFn: api.model })
@@ -89,9 +104,11 @@ export function OverviewPage() {
   }
 
   const t = data.totals
-  const labeledPct = t.raw > 0 ? Math.round((t.labeled / t.raw) * 100) : 0
+  // Gegen die verschiedenen Seiten gerechnet, nicht gegen data/raw: dort
+  // stehen auch die aussortierten Duplikate, und die werden nie gelabelt.
+  const labeledPct = t.words > 0 ? Math.round((t.labeled / t.words) * 100) : 0
   const trainedVariants = (modelQ.data ?? []).filter((m) => m.trained).map((m) => m.variant)
-  const wochen = groupByWeek(data.catalogs)
+  const weeks = groupByWeek(data.catalogs)
 
   return (
     <div className="mx-auto max-w-6xl space-y-8">
@@ -109,11 +126,11 @@ export function OverviewPage() {
 
         {/* Die Projektfakten ändern sich nie. Sie gehören auf die Seite, aber
             nicht in den Weg – eingeklappt sind sie eine Zeile statt vier. */}
-        <Collapsible open={faktenOffen} onOpenChange={setFaktenOffen}>
+        <Collapsible open={factsOpen} onOpenChange={setFactsOpen}>
           <CollapsibleTrigger className="flex items-center gap-1 font-mono text-[11px] uppercase tracking-widest text-muted-foreground hover:text-foreground">
             Projektfakten
             <ChevronDown
-              className={cn("size-3 transition-transform", faktenOffen && "rotate-180")}
+              className={cn("size-3 transition-transform", factsOpen && "rotate-180")}
             />
           </CollapsibleTrigger>
           <CollapsibleContent>
@@ -133,9 +150,28 @@ export function OverviewPage() {
       </section>
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard label="Heruntergeladen" value={t.raw} hint="Seiten in data/raw" />
-        <StatCard label="Extrahiert" value={t.words} hint="mit Wörtern und Koordinaten" />
-        <StatCard label="Gelabelt" value={t.labeled} hint={`${labeledPct}% aller Seiten`} />
+        <StatCard
+          label="Heruntergeladen"
+          value={t.raw}
+          hint={
+            t.excluded > 0
+              ? `${t.words} verschieden · ${t.excluded} Duplikate`
+              : "Seiten in data/raw"
+          }
+        />
+        {/* „196 von 327" sah nach Ausfall aus. Der Nenner sind die Seiten, die
+            überhaupt extrahiert werden sollen – Duplikate gehören nicht dazu. */}
+        <StatCard
+          label="Extrahiert"
+          value={t.words}
+          hint={
+            t.pending > 0
+              ? `${t.pending} Seiten offen – Schritt 02 lief nicht durch`
+              : "alle Seiten verarbeitet"
+          }
+          alert={t.pending > 0}
+        />
+        <StatCard label="Gelabelt" value={t.labeled} hint={`${labeledPct}% der Seiten`} />
         <StatCard
           label="Von Hand annotiert"
           value={t.gold_done}
@@ -154,34 +190,42 @@ export function OverviewPage() {
         <ModelSummary models={modelQ.data ?? []} reports={evalQ.data ?? []} />
       </div>
 
-      {wochen.length > 0 && (
+      {weeks.length > 0 && (
         <section className="space-y-3">
           <h2 className="text-lg font-bold tracking-tight">
             Prospektwochen
             <span className="ml-2 font-mono text-[11px] font-normal text-muted-foreground">
-              {wochen.length} Wochen · {data.catalogs.length} Regionalausgaben
+              {weeks.length} Wochen · {data.catalogs.length} Regionalausgaben
             </span>
           </h2>
           {/* Vorher eine Tabelle mit einer Zeile je Regionalausgabe – 54 Zeilen
               für zwei Prospekte. Gebündelt sind es zwei. */}
           <ul className="divide-y divide-border overflow-hidden rounded-xl border-2 border-foreground bg-card">
-            {wochen.map((woche) => {
-              const pct = woche.raw > 0 ? (woche.labeled / woche.raw) * 100 : 0
+            {weeks.map((week) => {
+              // Der Balken misst den Fortschritt an den verschiedenen Seiten.
+              // Gegen week.raw stünde eine gründlich entdoppelte Woche bei 60 %
+              // fest, obwohl nichts mehr zu tun ist.
+              const pct = week.words > 0 ? (week.labeled / week.words) * 100 : 0
               return (
-                <li key={woche.id} className="flex flex-wrap items-center gap-x-4 gap-y-2 p-3.5">
+                <li key={week.id} className="flex flex-wrap items-center gap-x-4 gap-y-2 p-3.5">
                   <div className="min-w-0 flex-1">
-                    <p className="font-mono text-sm font-bold">{woche.id}</p>
+                    <p className="font-mono text-sm font-bold">{week.id}</p>
                     <p className="truncate text-[11px] text-muted-foreground">
-                      {woche.catalogs.length} Ausgaben
-                      {woche.downloaded &&
-                        ` · geladen ${woche.downloaded.slice(8)}.${woche.downloaded.slice(5, 7)}.`}
-                      {woche.regions.length > 0 && ` · ${woche.regions.slice(0, 3).join(", ")}`}
-                      {woche.regions.length > 3 && ` +${woche.regions.length - 3}`}
+                      {week.catalogs.length} Ausgaben
+                      {week.downloaded &&
+                        ` · geladen ${week.downloaded.slice(8)}.${week.downloaded.slice(5, 7)}.`}
+                      {week.regions.length > 0 && ` · ${week.regions.slice(0, 3).join(", ")}`}
+                      {week.regions.length > 3 && ` +${week.regions.length - 3}`}
                     </p>
                   </div>
                   <div className="flex shrink-0 items-center gap-3 font-mono text-[11px] tabular-nums">
-                    <span>{woche.raw} S.</span>
-                    <span className="text-muted-foreground">{woche.labeled} gelabelt</span>
+                    <span>{week.words} S.</span>
+                    {week.excluded > 0 && (
+                      <span className="text-muted-foreground">
+                        +{week.excluded} Duplikate
+                      </span>
+                    )}
+                    <span className="text-muted-foreground">{week.labeled} gelabelt</span>
                   </div>
                   <div className="flex w-full items-center gap-2 sm:w-48">
                     <Progress value={pct} />

@@ -22,7 +22,7 @@ from fastapi import FastAPI, HTTPException, UploadFile
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
-from magda import catalog_meta, catalogs, config, jobs, runner, runs, scraping
+from magda import catalog_meta, catalogs, config, dedupe, jobs, runner, runs, scraping
 from magda.gold import count_by_status, words_hash
 from magda.labels import ENTITY_TYPES, id2label, validate_spans
 from magda.ocr import extract_words, normalize_bbox, render_png
@@ -73,7 +73,7 @@ def get_status():
     def bump(catalog: str, key: str):
         entry = by_catalog.setdefault(
             catalog, {"id": catalog, "raw": 0, "words": 0, "images": 0, "labeled": 0,
-             "downloaded": None}
+             "excluded": 0, "pending": 0, "downloaded": None}
         )
         entry[key] += 1
 
@@ -85,6 +85,12 @@ def get_status():
         bump(_catalog_of(f.stem), "images")
     for f in config.LABELED_DIR.glob("*.json"):
         bump(_catalog_of(f.stem), "labeled")
+    # Ohne diese Zeile klafft in der Übersicht eine Lücke: 327 geladen, 196
+    # extrahiert – als hätte die Pipeline ein Drittel liegen lassen. Die
+    # Differenz sind Duplikate, und wer das nicht sieht, sucht einen Fehler,
+    # den es nicht gibt.
+    for page_id in dedupe.load_excluded():
+        bump(_catalog_of(page_id), "excluded")
 
     for catalog, entry in by_catalog.items():
         entry["downloaded"] = _downloaded_at(catalog)
@@ -98,8 +104,17 @@ def get_status():
         entry["region"] = catalog_meta.label(entry["id"], meta)
         entry["region_confirmed"] = bool(info.get("confirmed", False)) if info else None
 
+    for entry in by_catalog.values():
+        # Was übrig bleibt, wenn man Verarbeitetes und Aussortiertes abzieht.
+        # Im Normalfall 0. Bleibt hier etwas stehen, ist es echte Arbeit:
+        # Schritt 02 lief nicht durch, oder die Seite hat keinen Textlayer.
+        entry["pending"] = max(0, entry["raw"] - entry["words"] - entry["excluded"])
+
     rows = sorted(by_catalog.values(), key=lambda c: c["id"])
-    totals = {k: sum(c[k] for c in rows) for k in ("raw", "words", "images", "labeled")}
+    totals = {
+        k: sum(c[k] for c in rows)
+        for k in ("raw", "words", "images", "labeled", "excluded", "pending")
+    }
     # Gold zählt nicht je Katalog: die Handannotation läuft quer über Kataloge,
     # und die Übersicht braucht davon nur die Gesamtzahl.
     gold_counts = count_by_status()

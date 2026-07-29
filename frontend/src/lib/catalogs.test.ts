@@ -3,8 +3,8 @@ import { groupGoldByCatalog, groupPagesByCatalog } from "./catalogs"
 import type { CatalogStatus, GoldSummary, PageSummary } from "./types"
 
 const status: CatalogStatus[] = [
-  { id: "111", raw: 2, words: 2, images: 2, labeled: 1, downloaded: "2026-07-23", region: "Bayern · 12 Märkte", region_confirmed: true },
-  { id: "222", raw: 1, words: 1, images: 1, labeled: 0, downloaded: null, region: "", region_confirmed: null },
+  { id: "111", raw: 2, words: 2, images: 2, labeled: 1, excluded: 0, pending: 0, downloaded: "2026-07-23", region: "Bayern · 12 Märkte", region_confirmed: true },
+  { id: "222", raw: 1, words: 1, images: 1, labeled: 0, excluded: 0, pending: 0, downloaded: null, region: "", region_confirmed: null },
 ]
 
 const gold = (page_id: string, s: GoldSummary["status"], stale = false): GoldSummary => ({

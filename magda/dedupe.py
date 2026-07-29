@@ -28,6 +28,7 @@ gemessen am 29.07.2026 über 269 Seiten:
 ======  ===================
 """
 
+import json
 import re
 
 # Senkrechter Code in der Beschnittzone: "<Seite>_<Region>-<Region>-…".
@@ -66,34 +67,34 @@ def group(pages: dict[str, list[str]], threshold: float = 0.95) -> list[list[str
 
     Gruppen sind nach der ersten ID sortiert, innerhalb nach ID.
     """
-    mengen = {pid: set(normalize(words)) for pid, words in pages.items()}
-    eltern = {pid: pid for pid in mengen}
+    sets = {pid: set(normalize(words)) for pid, words in pages.items()}
+    parent = {pid: pid for pid in sets}
 
     def find(x: str) -> str:
-        while eltern[x] != x:
-            eltern[x] = eltern[eltern[x]]
-            x = eltern[x]
+        while parent[x] != x:
+            parent[x] = parent[parent[x]]
+            x = parent[x]
         return x
 
-    ids = sorted(mengen)
+    ids = sorted(sets)
     for i, a in enumerate(ids):
         for b in ids[i + 1:]:
-            mengen_a, mengen_b = mengen[a], mengen[b]
-            if not mengen_a or not mengen_b:
+            sets_a, sets_b = sets[a], sets[b]
+            if not sets_a or not sets_b:
                 continue
             # Vorfilter: bei sehr verschiedener Wortzahl kann die Jaccard-Ähnlichkeit
             # die Schwelle nicht mehr erreichen. Spart den teuren Mengenschnitt.
-            if min(len(mengen_a), len(mengen_b)) / max(len(mengen_a), len(mengen_b)) < threshold:
+            if min(len(sets_a), len(sets_b)) / max(len(sets_a), len(sets_b)) < threshold:
                 continue
-            if similarity(mengen_a, mengen_b) >= threshold:
-                wurzel_a, wurzel_b = find(a), find(b)
-                if wurzel_a != wurzel_b:
-                    eltern[wurzel_b] = wurzel_a
+            if similarity(sets_a, sets_b) >= threshold:
+                root_a, root_b = find(a), find(b)
+                if root_a != root_b:
+                    parent[root_b] = root_a
 
-    gruppen: dict[str, list[str]] = {}
+    groups: dict[str, list[str]] = {}
     for pid in ids:
-        gruppen.setdefault(find(pid), []).append(pid)
-    return sorted((sorted(g) for g in gruppen.values()), key=lambda g: g[0])
+        groups.setdefault(find(pid), []).append(pid)
+    return sorted((sorted(g) for g in groups.values()), key=lambda g: g[0])
 
 
 def choose(group_ids: list[str], preferred: set[str]) -> str:
@@ -102,5 +103,35 @@ def choose(group_ids: list[str], preferred: set[str]) -> str:
     Bevorzugt wird, woran schon Arbeit hängt – eine gelabelte oder von Hand
     annotierte Seite. Sie wegzuwerfen hieße, diese Arbeit wegzuwerfen.
     """
-    treffer = [pid for pid in group_ids if pid in preferred]
-    return sorted(treffer)[0] if treffer else group_ids[0]
+    hits = [pid for pid in group_ids if pid in preferred]
+    return sorted(hits)[0] if hits else group_ids[0]
+
+
+# --- Ausschlussliste --------------------------------------------------------
+#
+# Löschen allein reicht nicht: Schritt 02 baut data/words aus data/raw wieder
+# auf und erkennt dabei nur exakt gleiche Wortlisten. Ohne diese Liste kommt
+# jedes Beinah-Duplikat beim nächsten Lauf zurück – und wird beim übernächsten
+# gelabelt, also mit LLM-Zeit bezahlt.
+
+
+def load_excluded() -> dict[str, str]:
+    """Ausgeschlossene page_id -> die Seite, die sie vertritt."""
+    from magda import config
+
+    if not config.EXCLUDED_FILE.exists():
+        return {}
+    try:
+        with open(config.EXCLUDED_FILE) as f:
+            data = json.load(f)
+    except (json.JSONDecodeError, OSError):
+        return {}
+    return data if isinstance(data, dict) else {}
+
+
+def save_excluded(excluded: dict[str, str]) -> None:
+    from magda import config
+
+    config.EXCLUDED_FILE.parent.mkdir(parents=True, exist_ok=True)
+    with open(config.EXCLUDED_FILE, "w") as f:
+        json.dump(dict(sorted(excluded.items())), f, ensure_ascii=False, indent=1)

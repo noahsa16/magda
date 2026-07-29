@@ -31,6 +31,8 @@ def client(tmp_path, monkeypatch):
     # Ohne das schreiben die Tests das echte catalogs.json im Repo um.
     monkeypatch.setattr(config, "CATALOGS_FILE", tmp_path / "catalogs.json")
     monkeypatch.setattr(config, "CATALOG_META_FILE", tmp_path / "catalog_meta.json")
+    # Sonst zählt der Status die echte Ausschlussliste des Projekts mit.
+    monkeypatch.setattr(config, "EXCLUDED_FILE", tmp_path / "excluded.json")
     return TestClient(api.app)
 
 
@@ -52,6 +54,7 @@ def test_status_mit_leeren_verzeichnissen(client):
         "catalogs": [],
         "totals": {
             "raw": 0, "words": 0, "images": 0, "labeled": 0,
+            "excluded": 0, "pending": 0,
             "gold_done": 0, "gold_in_progress": 0,
         },
     }
@@ -74,9 +77,31 @@ def test_status_zaehlt_pro_katalog(client):
     assert entry.pop("downloaded") is not None
     assert entry == {
         "id": "462828", "raw": 2, "words": 1, "images": 0, "labeled": 0,
+        "excluded": 0, "pending": 1,
         "region": "", "region_confirmed": None,
     }
     assert body["totals"]["raw"] == 2
+
+
+def test_status_rechnet_duplikate_gegen_die_rohseiten_auf(client):
+    """327 geladen, 196 extrahiert – das sah nach Ausfall aus, war aber die
+    Entdopplung. Wer eine Seite aussortiert, muss sie in der Bilanz behalten,
+    sonst sucht jemand einen Fehler, den es nicht gibt."""
+    (config.RAW_DIR / "462828").mkdir()
+    for page in (1, 2, 3):
+        (config.RAW_DIR / "462828" / f"bk_{page}.pdf").write_bytes(b"x")
+    _write_words("462828_p1")
+    with open(config.EXCLUDED_FILE, "w") as f:
+        json.dump({"462828_p2": "462828_p1", "462828_p3": "462828_p1"}, f)
+
+    totals = client.get("/api/status").json()["totals"]
+
+    assert totals["raw"] == 3
+    assert totals["words"] == 1
+    assert totals["excluded"] == 2
+    # Die eigentliche Aussage: nichts liegt unbearbeitet herum.
+    assert totals["pending"] == 0
+    assert totals["raw"] == totals["words"] + totals["excluded"] + totals["pending"]
 
 
 def test_pages_sortiert_numerisch_und_markiert_gelabelte(client):
@@ -532,7 +557,8 @@ def test_status_totals_enthalten_kein_ladedatum(client):
     totals = client.get("/api/status").json()["totals"]
 
     assert set(totals) == {
-        "raw", "words", "images", "labeled", "gold_done", "gold_in_progress",
+        "raw", "words", "images", "labeled", "excluded", "pending",
+        "gold_done", "gold_in_progress",
     }
 
 
