@@ -10,14 +10,14 @@
 
 ## Global Constraints
 
-- **Python immer `.venv/bin/python`, nie `python`.** `which python` zeigt auf Anaconda; dort fehlt `seqeval` und Tests brechen beim Import ab. Tests: `.venv/bin/pytest`.
+- **Python immer `.venv/bin/python`, nie `python`.** `which python` zeigt auf Anaconda; dort fehlt `seqeval` und Tests brechen beim Import ab. Tests: `.venv/bin/python -m pytest`.
 - **Kommentare und Docstrings auf Deutsch, Code-Identifier auf Englisch.** Docstrings erklären *warum*, nicht *was*.
 - **Neue Pipeline-Logik gehört ins Package `magda/`, nicht in die Skripte.**
 - **Pfade werden als `config.X`-Attribute zur Laufzeit gelesen, nie importiert** (`from magda import config` + `config.RUNS_DIR`). Nur so biegen die Tests sie auf ein Temp-Verzeichnis um. Gilt für `api.py`, `runs.py`, `catalogs.py`, `jobs.py`.
 - **Kein Durchreichen beliebiger Kommandos.** Nur deklarierte Jobs, nur deklarierte Parameter, nur deklarierte Typen. Kein `shell=True`, kein freies Argument-Textfeld.
 - **Skripte bleiben idempotent.** Ein Abbruch darf keinen Lauf von vorn beginnen lassen.
 - **`ENTITY_TYPES` nur hinten erweitern** — dieser Plan fasst die Liste nicht an.
-- Frontend-Tests: `cd frontend && npm test`. Backend-Tests: `.venv/bin/pytest`.
+- Frontend-Tests: `cd frontend && npm test`. Backend-Tests: `.venv/bin/python -m pytest`.
 
 ## Dateistruktur
 
@@ -140,7 +140,7 @@ def test_describe_liefert_json_faehigen_katalog():
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `.venv/bin/pytest tests/test_jobs.py -v`
+Run: `.venv/bin/python -m pytest tests/test_jobs.py -v`
 Expected: FAIL — `ModuleNotFoundError: No module named 'magda.jobs'`
 
 - [ ] **Step 3: Write the implementation**
@@ -331,7 +331,7 @@ def describe() -> list[dict]:
 
 - [ ] **Step 4: Run tests to verify they pass**
 
-Run: `.venv/bin/pytest tests/test_jobs.py -v`
+Run: `.venv/bin/python -m pytest tests/test_jobs.py -v`
 Expected: PASS, 11 Tests
 
 - [ ] **Step 5: Commit**
@@ -463,7 +463,7 @@ def test_prune_behaelt_die_juengsten():
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `.venv/bin/pytest tests/test_runs.py -v`
+Run: `.venv/bin/python -m pytest tests/test_runs.py -v`
 Expected: FAIL — `ModuleNotFoundError: No module named 'magda.runs'`
 
 - [ ] **Step 3: Add the config path**
@@ -566,7 +566,7 @@ def prune(keep: int = 100) -> None:
 
 - [ ] **Step 5: Run tests to verify they pass**
 
-Run: `.venv/bin/pytest tests/test_runs.py -v`
+Run: `.venv/bin/python -m pytest tests/test_runs.py -v`
 Expected: PASS, 9 Tests
 
 - [ ] **Step 6: Commit**
@@ -679,7 +679,7 @@ def test_args_stehen_im_status_und_in_der_historie():
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `.venv/bin/pytest tests/test_runner.py -v`
+Run: `.venv/bin/python -m pytest tests/test_runner.py -v`
 Expected: FAIL — `TypeError: start() takes ... ` beziehungsweise `KeyError: 'args'` im Status
 
 - [ ] **Step 3: Rewrite the runner**
@@ -831,12 +831,12 @@ def reset() -> None:
 
 - [ ] **Step 4: Run tests to verify they pass**
 
-Run: `.venv/bin/pytest tests/test_runner.py -v`
+Run: `.venv/bin/python -m pytest tests/test_runner.py -v`
 Expected: PASS, 7 Tests
 
 - [ ] **Step 5: Run the whole backend suite**
 
-Run: `.venv/bin/pytest`
+Run: `.venv/bin/python -m pytest`
 Expected: PASS — aber aus dem falschen Grund. `api.py` ruft bis Task 5 noch
 `runner.start(req.job, req.variant)` auf; ein String statt eines Dicts scheitert
 in `dict("bash")` mit `ValueError` und die API antwortet zufällig mit demselben
@@ -1026,7 +1026,7 @@ def test_schreiben_ist_atomar(registry_file):
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `.venv/bin/pytest tests/test_catalogs.py -v`
+Run: `.venv/bin/python -m pytest tests/test_catalogs.py -v`
 Expected: FAIL — `ModuleNotFoundError: No module named 'magda.catalogs'`
 
 - [ ] **Step 3: Add the config path**
@@ -1204,7 +1204,7 @@ def remove(catalog_id: str) -> bool:
 
 - [ ] **Step 6: Run tests to verify they pass**
 
-Run: `.venv/bin/pytest tests/test_catalogs.py -v`
+Run: `.venv/bin/python -m pytest tests/test_catalogs.py -v`
 Expected: PASS, 12 Tests
 
 - [ ] **Step 7: Commit**
@@ -1362,7 +1362,7 @@ def test_label_verteilung_zaehlt_entities(client):
 
 - [ ] **Step 2: Run tests to verify they fail**
 
-Run: `.venv/bin/pytest tests/test_api.py -v`
+Run: `.venv/bin/python -m pytest tests/test_api.py -v`
 Expected: FAIL — 404 für `/api/jobs`, `/api/runs`, `/api/catalogs`, `/api/labels/distribution`; `KeyError: 'gold_done'`
 
 - [ ] **Step 3: Add the gold counter**
@@ -1545,7 +1545,7 @@ def get_label_distribution():
 
 - [ ] **Step 5: Run the whole backend suite**
 
-Run: `.venv/bin/pytest`
+Run: `.venv/bin/python -m pytest`
 Expected: PASS, alle Tests grün
 
 - [ ] **Step 6: Commit**
@@ -2928,7 +2928,7 @@ Im Abschnitt **Projektwissen** die Zeile zur API-Schreibbeschränkung ersetzen u
 
 - [ ] **Step 3: Run both suites one last time**
 
-Run: `.venv/bin/pytest && cd frontend && npm test`
+Run: `.venv/bin/python -m pytest && cd frontend && npm test`
 Expected: PASS
 
 - [ ] **Step 4: Commit**
