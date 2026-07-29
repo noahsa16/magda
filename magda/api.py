@@ -11,7 +11,6 @@ importiert), damit die Tests sie auf ein Temp-Verzeichnis umbiegen können.
 """
 
 import base64
-import hashlib
 import json
 import os
 import tempfile
@@ -23,6 +22,7 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
 from magda import config, runner
+from magda.gold import words_hash
 from magda.labels import ENTITY_TYPES, id2label, validate_spans
 from magda.ocr import extract_words, normalize_bbox, render_png
 
@@ -298,16 +298,6 @@ class GoldPayload(BaseModel):
     spans: list[GoldSpan]
 
 
-def _words_hash(words: list[dict]) -> str:
-    """Fingerabdruck der Wortliste, gegen stille Index-Verschiebung.
-
-    Nur die Texte in ihrer Reihenfolge - Koordinaten bleiben außen vor, damit
-    eine um einen Punkt verschobene Box die Annotation nicht entwertet.
-    """
-    payload = json.dumps([w["text"] for w in words], ensure_ascii=False, separators=(",", ":"))
-    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
-
-
 def _load_words(page_id: str) -> dict:
     words_file = config.WORDS_DIR / f"{page_id}.json"
     if not words_file.exists():
@@ -335,7 +325,7 @@ def list_gold():
                 with open(gold_file) as f:
                     gold = json.load(f)
                 with open(words_file) as f:
-                    current_hash = _words_hash(json.load(f)["words"])
+                    current_hash = words_hash(json.load(f)["words"])
             except (json.JSONDecodeError, KeyError, TypeError):
                 # gold/ ist versioniert und wird gemergt - ein Konfliktmarker in
                 # einer Datei ist der wahrscheinlichste Fehlerfall überhaupt.
@@ -359,7 +349,7 @@ def list_gold():
 @app.get("/api/gold/{page_id}")
 def get_gold(page_id: str):
     page = _load_words(page_id)
-    current_hash = _words_hash(page["words"])
+    current_hash = words_hash(page["words"])
 
     gold_file = config.GOLD_DIR / f"{page_id}.json"
     if not gold_file.exists():
@@ -394,7 +384,7 @@ def get_gold(page_id: str):
 def put_gold(page_id: str, payload: GoldPayload):
     page = _load_words(page_id)
 
-    if payload.words_hash != _words_hash(page["words"]):
+    if payload.words_hash != words_hash(page["words"]):
         raise HTTPException(
             409,
             "Die Wortliste dieser Seite hat sich geändert. Die Annotation passt "
