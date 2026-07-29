@@ -24,10 +24,12 @@ SAMPLE_PAGE = {
 
 @pytest.fixture
 def client(tmp_path, monkeypatch):
-    for name in ("RAW_DIR", "WORDS_DIR", "IMAGES_DIR", "LABELED_DIR", "EVAL_DIR", "CHECKPOINTS_DIR", "GOLD_DIR"):
+    for name in ("RAW_DIR", "WORDS_DIR", "IMAGES_DIR", "LABELED_DIR", "EVAL_DIR", "CHECKPOINTS_DIR", "GOLD_DIR", "RUNS_DIR"):
         d = tmp_path / name.lower()
         d.mkdir()
         monkeypatch.setattr(config, name, d)
+    # Ohne das schreiben die Tests das echte catalogs.json im Repo um.
+    monkeypatch.setattr(config, "CATALOGS_FILE", tmp_path / "catalogs.json")
     return TestClient(api.app)
 
 
@@ -45,7 +47,13 @@ def test_schema_liefert_entity_typen(client):
 
 def test_status_mit_leeren_verzeichnissen(client):
     body = client.get("/api/status").json()
-    assert body == {"catalogs": [], "totals": {"raw": 0, "words": 0, "images": 0, "labeled": 0}}
+    assert body == {
+        "catalogs": [],
+        "totals": {
+            "raw": 0, "words": 0, "images": 0, "labeled": 0,
+            "gold_done": 0, "gold_in_progress": 0,
+        },
+    }
 
 
 def test_status_zaehlt_pro_katalog(client):
@@ -512,4 +520,111 @@ def test_status_totals_enthalten_kein_ladedatum(client):
 
     totals = client.get("/api/status").json()["totals"]
 
-    assert set(totals) == {"raw", "words", "images", "labeled"}
+    assert set(totals) == {
+        "raw", "words", "images", "labeled", "gold_done", "gold_in_progress",
+    }
+
+
+# ---------------------------------------------------------------------------
+# Job-Katalog, Lauf-Historie, Katalog-Verzeichnis
+# ---------------------------------------------------------------------------
+
+
+def test_jobs_liefert_den_katalog(client):
+    body = client.get("/api/jobs").json()
+
+    jobs_by_name = {j["job"]: j for j in body}
+    assert "07_flair_baseline" in jobs_by_name
+    url_param = next(p for p in jobs_by_name["01_download_flyers"]["params"] if p["key"] == "url")
+    assert url_param["required"] is True
+
+
+def test_runs_ist_leer_ohne_laeufe(client):
+    assert client.get("/api/runs").json() == []
+
+
+def test_runs_liefert_historie_und_detail(client):
+    from magda import runs
+
+    runs.write_meta("20260729-120000_04_train", {
+        "run_id": "20260729-120000_04_train", "job": "04_train", "args": {"variant": "gbert"},
+        "command": ["python", "04_train.py"], "started": "2026-07-29T12:00:00",
+        "finished": "2026-07-29T12:08:00", "exit_code": 0, "duration": 480.0,
+    })
+    runs.log_path("20260729-120000_04_train").write_text("Epoch 1/10")
+
+    listing = client.get("/api/runs").json()
+    assert listing[0]["job"] == "04_train"
+
+    detail = client.get("/api/runs/20260729-120000_04_train").json()
+    assert detail["log"] == "Epoch 1/10"
+
+
+def test_run_detail_lehnt_pfadangabe_ab(client):
+    assert client.get("/api/runs/..%2F..%2Fetc%2Fpasswd").status_code == 404
+
+
+def test_catalogs_anlegen_listen_entfernen(client):
+    created = client.post("/api/catalogs", json={
+        "id": "1342881", "url": "https://x/?catalogId=1342881", "title": "KW30", "version": "1",
+    })
+    assert created.status_code == 200
+
+    body = client.get("/api/catalogs").json()
+    assert body["error"] is None
+    assert body["entries"][0]["id"] == "1342881"
+
+    assert client.delete("/api/catalogs/1342881").status_code == 200
+    assert client.get("/api/catalogs").json()["entries"] == []
+
+
+def test_catalogs_lehnt_duplikat_ab(client):
+    payload = {"id": "1342881", "url": "https://x", "title": "KW30", "version": "1"}
+    client.post("/api/catalogs", json=payload)
+
+    assert client.post("/api/catalogs", json=payload).status_code == 409
+
+
+def test_catalogs_zaehlt_lokale_seiten(client):
+    (config.RAW_DIR / "1342881").mkdir()
+    (config.RAW_DIR / "1342881" / "bk_1.pdf").write_bytes(b"x")
+    client.post("/api/catalogs", json={"id": "1342881", "url": "https://x", "title": "KW30"})
+
+    assert client.get("/api/catalogs").json()["entries"][0]["local_pages"] == 1
+
+
+def test_probe_meldet_fehler_lesbar(client, monkeypatch):
+    def boom(url, session):
+        raise ValueError("Keine catalogId in URL gefunden: kaputt")
+
+    monkeypatch.setattr(api.scraping, "probe_catalog", boom)
+
+    resp = client.post("/api/catalogs/probe", json={"url": "kaputt"})
+
+    assert resp.status_code == 400
+    assert "catalogId" in resp.json()["detail"]
+
+
+def test_status_zaehlt_gold(client):
+    _write_words("462828_p1")
+    with open(config.GOLD_DIR / "462828_p1.json", "w") as f:
+        json.dump({"page_id": "462828_p1", "status": "done", "spans": []}, f)
+    with open(config.GOLD_DIR / "462828_p2.json", "w") as f:
+        json.dump({"page_id": "462828_p2", "status": "in_progress", "spans": []}, f)
+
+    totals = client.get("/api/status").json()["totals"]
+
+    assert totals["gold_done"] == 1
+    assert totals["gold_in_progress"] == 1
+
+
+def test_label_verteilung_zaehlt_entities(client):
+    with open(config.LABELED_DIR / "462828_p1.json", "w") as f:
+        json.dump({"tags": ["B-PRODUCT", "I-PRODUCT", "B-PRICE", "O", "B-PRODUCT"]}, f)
+
+    body = client.get("/api/labels/distribution").json()
+
+    assert body["pages"] == 1
+    assert body["counts"]["PRODUCT"] == 2
+    assert body["counts"]["PRICE"] == 1
+    assert body["total"] == 3

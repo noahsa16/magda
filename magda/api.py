@@ -1,10 +1,11 @@
 """API für das Frontend.
 
-Liest data/ direkt von der Platte. Schreiben darf sie ausschließlich nach
-gold/ (handannotierte Referenz) - alles andere unter data/ erzeugen die
-Pipeline-Skripte. Dieselbe Beschränkung wie beim Runner: eng umrissen statt
-allgemein. Start: uvicorn magda.api:app --reload (Port 8000, das
-Frontend-Dev-Setup proxied /api hierhin).
+Liest data/ direkt von der Platte. Geschrieben wird nur an drei aufgezählten
+Stellen: gold/ (handannotierte Referenz), catalogs.json (Katalog-Verzeichnis)
+und data/runs/ (Lauf-Historie). Alles andere unter data/ erzeugen die
+Pipeline-Skripte. Dieselbe Beschränkung wie beim Runner: eine Erlaubnisliste
+statt eines allgemeinen Schreibzugriffs. Start: uvicorn magda.api:app --reload
+(Port 8000, das Frontend-Dev-Setup proxied /api hierhin).
 
 Pfade werden bewusst als config.X-Attribute zur Laufzeit gelesen (nicht
 importiert), damit die Tests sie auf ein Temp-Verzeichnis umbiegen können.
@@ -21,8 +22,8 @@ from fastapi import FastAPI, HTTPException, UploadFile
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
-from magda import config, runner
-from magda.gold import words_hash
+from magda import catalogs, config, jobs, runner, runs, scraping
+from magda.gold import count_by_status, words_hash
 from magda.labels import ENTITY_TYPES, id2label, validate_spans
 from magda.ocr import extract_words, normalize_bbox, render_png
 
@@ -66,10 +67,11 @@ def get_schema():
 
 @app.get("/api/status")
 def get_status():
-    catalogs: dict[str, dict] = {}
+    # Nicht "catalogs": das verdeckte hier das gleichnamige Modul.
+    by_catalog: dict[str, dict] = {}
 
     def bump(catalog: str, key: str):
-        entry = catalogs.setdefault(
+        entry = by_catalog.setdefault(
             catalog, {"id": catalog, "raw": 0, "words": 0, "images": 0, "labeled": 0,
              "downloaded": None}
         )
@@ -84,11 +86,16 @@ def get_status():
     for f in config.LABELED_DIR.glob("*.json"):
         bump(_catalog_of(f.stem), "labeled")
 
-    for catalog, entry in catalogs.items():
+    for catalog, entry in by_catalog.items():
         entry["downloaded"] = _downloaded_at(catalog)
 
-    rows = sorted(catalogs.values(), key=lambda c: c["id"])
+    rows = sorted(by_catalog.values(), key=lambda c: c["id"])
     totals = {k: sum(c[k] for c in rows) for k in ("raw", "words", "images", "labeled")}
+    # Gold zählt nicht je Katalog: die Handannotation läuft quer über Kataloge,
+    # und die Übersicht braucht davon nur die Gesamtzahl.
+    gold_counts = count_by_status()
+    totals["gold_done"] = gold_counts["done"]
+    totals["gold_in_progress"] = gold_counts["in_progress"]
     return {"catalogs": rows, "totals": totals}
 
 
@@ -211,6 +218,26 @@ def get_run():
 def stop_run():
     runner.stop()
     return runner.status()
+
+
+@app.get("/api/jobs")
+def get_jobs():
+    """Der Job-Katalog. Das Frontend baut seine Formulare daraus, damit ein
+    neuer Parameter nicht an zwei Stellen gepflegt werden muss."""
+    return jobs.describe()
+
+
+@app.get("/api/runs")
+def list_runs():
+    return runs.list_runs()
+
+
+@app.get("/api/runs/{run_id}")
+def get_run_detail(run_id: str):
+    entry = runs.read_run(run_id)
+    if entry is None:
+        raise HTTPException(404, f"Unbekannter Lauf: {run_id}")
+    return entry
 
 
 # Modell + Tokenizer sind teuer zu laden – einmal laden, dann wiederverwenden.
@@ -427,3 +454,94 @@ def put_gold(page_id: str, payload: GoldPayload):
     # Antwort: Erst damit ist sie formgleich mit der von GET und das Frontend
     # kann sie ohne Nacharbeit in seinen Cache legen.
     return {**record, "stale": False}
+
+
+# ---------------------------------------------------------------------------
+# Katalog-Verzeichnis (versioniert, catalogs.json)
+# ---------------------------------------------------------------------------
+
+
+class CatalogEntry(BaseModel):
+    id: str
+    url: str = ""
+    title: str = ""
+    version: str = "1"
+    pages: int | None = None
+    added_by: str = ""
+    note: str = ""
+
+
+class ProbeRequest(BaseModel):
+    url: str
+
+
+@app.get("/api/catalogs")
+def list_catalogs():
+    """Verzeichnis samt lokal vorhandener Seitenzahl - erst damit sieht man,
+    welcher eingetragene Katalog auch heruntergeladen ist."""
+    registry = catalogs.load()
+    entries = [
+        {**entry, "local_pages": len(list((config.RAW_DIR / entry["id"]).glob("bk_*.pdf")))}
+        for entry in registry.entries
+    ]
+    return {"entries": entries, "error": registry.error}
+
+
+@app.post("/api/catalogs")
+def add_catalog(entry: CatalogEntry):
+    try:
+        return catalogs.add(entry.model_dump())
+    except KeyError as e:
+        raise HTTPException(409, str(e.args[0]))
+    except ValueError as e:
+        raise HTTPException(409, str(e))
+
+
+@app.delete("/api/catalogs/{catalog_id}")
+def delete_catalog(catalog_id: str):
+    try:
+        removed = catalogs.remove(catalog_id)
+    except ValueError as e:
+        raise HTTPException(409, str(e))
+    if not removed:
+        raise HTTPException(404, f"Unbekannter Katalog: {catalog_id}")
+    return {"removed": catalog_id}
+
+
+@app.post("/api/catalogs/probe")
+def probe_catalog(req: ProbeRequest):
+    """Prüft eine Katalog-URL, ohne etwas zu laden.
+
+    Netzfehler werden zu 400: für den Nutzer ist eine unerreichbare URL eine
+    fehlerhafte Eingabe, kein Serverfehler.
+    """
+    import requests
+
+    try:
+        return scraping.probe_catalog(req.url, requests.Session())
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+    except Exception as e:
+        raise HTTPException(400, f"Katalog nicht erreichbar: {e}")
+
+
+@app.get("/api/labels/distribution")
+def get_label_distribution():
+    """Wie oft kommt welcher Entity-Typ in data/labeled/ vor?
+
+    Gezählt werden B-Tags, also Entities statt Wörter - ein sechswortiger
+    Produktname soll nicht sechsmal zählen.
+    """
+    counts = {entity: 0 for entity in ENTITY_TYPES}
+    pages = 0
+    for labeled_file in config.LABELED_DIR.glob("*.json"):
+        try:
+            with open(labeled_file) as f:
+                tags = json.load(f).get("tags") or []
+        except (json.JSONDecodeError, OSError):
+            continue
+        pages += 1
+        for tag in tags:
+            if tag.startswith("B-") and tag[2:] in counts:
+                counts[tag[2:]] += 1
+    return {"pages": pages, "counts": counts, "total": sum(counts.values())}

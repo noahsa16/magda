@@ -82,3 +82,24 @@ def load_gold_pages() -> GoldPages:
         )
 
     return GoldPages(pages=pages, stale=stale, in_progress=in_progress)
+
+
+def count_by_status() -> dict[str, int]:
+    """Wie viele Gold-Dateien in welchem Zustand? Für die Kennzahlkarte.
+
+    Zählt nur die Statusfelder, ohne die Wortlisten zu laden – load_gold_pages
+    wäre für eine Zahl auf der Startseite zu teuer.
+    """
+    counts = {"done": 0, "in_progress": 0, "broken": 0}
+    if not config.GOLD_DIR.exists():
+        return counts
+    for gold_file in config.GOLD_DIR.glob("*.json"):
+        try:
+            with open(gold_file) as f:
+                status = json.load(f).get("status", "in_progress")
+        except (json.JSONDecodeError, OSError):
+            counts["broken"] += 1
+            continue
+        if status in counts:
+            counts[status] += 1
+    return counts
