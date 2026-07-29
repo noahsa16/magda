@@ -1,9 +1,13 @@
 import { Outlet, useLocation } from "react-router-dom"
+import { TooltipProvider } from "@/components/ui/tooltip"
 import { TopNav } from "./top-nav"
 
 export function Layout() {
   const location = useLocation()
   return (
+    // Der Tooltip-Provider steht einmal hier statt in jeder Seite. Ohne ihn
+    // wirft Radix beim ersten Tooltip und reißt die ganze Seite mit.
+    <TooltipProvider delayDuration={200}>
     <div className="flex min-h-svh flex-col">
       <TopNav />
       {/* Breiter Rahmen; schmalere Seiten zentrieren sich selbst, der
@@ -18,5 +22,6 @@ export function Layout() {
         Magda · Information Extraction · Leuphana Universität Lüneburg
       </footer>
     </div>
+    </TooltipProvider>
   )
 }

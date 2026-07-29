@@ -18,7 +18,7 @@ export function LabelDistribution() {
       <section className="space-y-2">
         <h2 className="text-xl font-bold tracking-tight">Labelverteilung</h2>
         <p className="text-sm text-muted-foreground">
-          Noch keine gelabelten Seiten. Schritt 03 in der Steuerzentrale starten.
+          Noch keine gelabelten Seiten. Schritt 03 auf der Pipeline-Seite starten.
         </p>
       </section>
     )

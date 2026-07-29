@@ -23,7 +23,7 @@ def test_build_command_laesst_optionale_parameter_weg():
 
 def test_build_command_kennt_alle_pipeline_schritte():
     assert set(jobs.JOBS) == {
-        "01_download_flyers", "02_extract_words", "03_label_words",
+        "00_harvest_week", "01_download_flyers", "02_extract_words", "03_label_words",
         "04_train", "05_evaluate", "06_check_duplicates", "07_flair_baseline",
     }
 

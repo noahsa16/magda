@@ -1,4 +1,5 @@
 import { fireEvent, screen, waitFor } from "@testing-library/react"
+import userEvent from "@testing-library/user-event"
 import { describe, expect, it, vi } from "vitest"
 import { mockFetch, renderWithProviders } from "@/test/utils"
 import { ControlPage } from "./control-page"
@@ -76,6 +77,10 @@ describe("ControlPage", () => {
     }))
     renderWithProviders(<ControlPage />)
 
+    // Die Historie liegt hinter dem Reiter "Läufe" – Live und Vergangenheit
+    // teilen sich eine Spalte, weil man immer nur eins davon ansieht.
+    // userEvent statt fireEvent: Radix-Tabs reagieren auf Pointer-Ereignisse.
+    await userEvent.click(await screen.findByRole("tab", { name: /Läufe/ }))
     expect(await screen.findByText(/Abbruch \(2\)/)).toBeInTheDocument()
   })
 
@@ -85,6 +90,8 @@ describe("ControlPage", () => {
     }))
     renderWithProviders(<ControlPage />)
 
+    // Die Katalogverwaltung ist eingeklappt, damit die Seite nicht überläuft.
+    fireEvent.click(await screen.findByText("Kataloge verwalten"))
     expect(await screen.findByText(/Merge-Konflikt/)).toBeInTheDocument()
     expect(screen.getByLabelText(/Katalog-URL/)).toBeInTheDocument()
   })

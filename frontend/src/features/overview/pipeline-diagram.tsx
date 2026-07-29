@@ -1,16 +1,17 @@
 import { Check } from "lucide-react"
 import { Link } from "react-router-dom"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import type { PipelineStatus } from "@/lib/types"
 import { cn } from "@/lib/utils"
 import { STEPS, type StepState, stepProgress } from "./steps"
 
 /**
- * Die Pipeline als Zustandsbild – ohne Knöpfe. Ausgeführt wird in der
- * Steuerzentrale; hier steht nur, wie weit die Daten sind.
+ * Die Pipeline als schmaler Fortschrittsstreifen – ohne Knöpfe.
  *
- * Die Ziffer im Kreis ist die Position in der Liste, nicht die Dateinummer:
- * Schritt 06 ist noch frei, der Flair-Arm heißt 07. Maßgeblich ist der
- * Skriptname darunter.
+ * Vorher waren das sieben große Kacheln, die eine halbe Bildschirmhöhe
+ * einnahmen, um eine Zahl je Schritt zu zeigen. Der Streifen sagt dasselbe in
+ * einer Zeile; Einzelheiten hängen im Tooltip, ausgeführt wird auf der
+ * Pipeline-Seite.
  */
 export function PipelineDiagram({
   states,
@@ -19,53 +20,62 @@ export function PipelineDiagram({
   states: Record<string, StepState>
   totals: PipelineStatus["totals"]
 }) {
+  const erledigt = STEPS.filter((s) => states[s.job] === "done").length
+
   return (
-    <section className="space-y-4">
+    <section className="space-y-3">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h2 className="text-xl font-bold tracking-tight">Pipeline</h2>
+        <h2 className="text-lg font-bold tracking-tight">
+          Pipeline
+          <span className="ml-2 font-mono text-[11px] font-normal text-muted-foreground tabular-nums">
+            {erledigt}/{STEPS.length}
+          </span>
+        </h2>
         <Link
-          to="/control"
+          to="/pipeline"
           className="font-mono text-[11px] uppercase tracking-widest text-primary underline-offset-4 hover:underline"
         >
-          In der Steuerzentrale ausführen →
+          Ausführen →
         </Link>
       </div>
 
-      <ol className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+      <ol className="flex flex-wrap items-stretch gap-1.5">
         {STEPS.map((step, i) => {
           const state = states[step.job] ?? "blocked"
-          const progress = stepProgress(step.job, totals)
+          const fortschritt = stepProgress(step.job, totals)
           return (
-            <li
-              key={step.job}
-              className={cn(
-                "flex items-start gap-3 rounded-lg border-2 p-3",
-                state === "done" && "border-[var(--riso-blue)] bg-card",
-                state === "ready" && "border-foreground bg-card",
-                state === "blocked" && "border-border text-muted-foreground",
-              )}
-            >
-              <span
-                className={cn(
-                  "flex size-8 shrink-0 items-center justify-center rounded-full border-2 font-mono text-xs font-bold",
-                  state === "done" && "border-[var(--riso-blue)] bg-[var(--riso-blue)] text-white",
-                  state === "ready" && "border-foreground",
-                  state === "blocked" && "border-border",
-                )}
-              >
-                {state === "done" ? <Check className="size-4" /> : `0${i + 1}`}
-              </span>
-              <div className="min-w-0">
-                <h3 className="text-sm font-semibold">{step.title}</h3>
-                <code className="block font-mono text-[11px] text-muted-foreground">
-                  scripts/{step.job}.py
-                </code>
-                {progress && (
-                  <span className="font-mono text-[11px] text-muted-foreground tabular-nums">
-                    {progress}
-                  </span>
-                )}
-              </div>
+            <li key={step.job} className="min-w-0 flex-1 basis-28">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Link
+                    to="/pipeline"
+                    className={cn(
+                      "flex h-full flex-col gap-1 rounded-lg border-2 px-2.5 py-2 transition-colors",
+                      state === "done" &&
+                        "border-[var(--riso-blue)] bg-[var(--riso-blue)]/10 hover:bg-[var(--riso-blue)]/20",
+                      state === "ready" && "border-foreground bg-card hover:bg-accent",
+                      state === "blocked" && "border-border text-muted-foreground",
+                    )}
+                  >
+                    <span className="flex items-center gap-1.5">
+                      <span className="font-mono text-[10px] tabular-nums">
+                        {String(i).padStart(2, "0")}
+                      </span>
+                      {state === "done" && (
+                        <Check className="size-3 text-[var(--riso-blue)]" />
+                      )}
+                    </span>
+                    <span className="truncate text-xs font-semibold">{step.title}</span>
+                    <span className="font-mono text-[10px] text-muted-foreground tabular-nums">
+                      {fortschritt ?? " "}
+                    </span>
+                  </Link>
+                </TooltipTrigger>
+                <TooltipContent className="max-w-xs">
+                  <p className="font-mono text-[11px]">scripts/{step.job}.py</p>
+                  <p>{step.what}</p>
+                </TooltipContent>
+              </Tooltip>
             </li>
           )
         })}

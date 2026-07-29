@@ -2,13 +2,19 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { render } from "@testing-library/react"
 import type { ReactElement } from "react"
 import { MemoryRouter } from "react-router-dom"
+import { TooltipProvider } from "@/components/ui/tooltip"
 import { vi } from "vitest"
 
 export function renderWithProviders(ui: ReactElement, opts: { route?: string } = {}) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   return render(
+    // Spiegelt den echten Baum: das App-Layout stellt den Tooltip-Provider
+    // bereit. Ohne ihn wirft Radix beim ersten Tooltip und der Test sieht eine
+    // leere Seite statt der Komponente.
     <QueryClientProvider client={qc}>
-      <MemoryRouter initialEntries={[opts.route ?? "/"]}>{ui}</MemoryRouter>
+      <TooltipProvider>
+        <MemoryRouter initialEntries={[opts.route ?? "/"]}>{ui}</MemoryRouter>
+      </TooltipProvider>
     </QueryClientProvider>,
   )
 }

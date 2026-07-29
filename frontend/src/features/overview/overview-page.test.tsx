@@ -19,21 +19,22 @@ function base(extra: Record<string, unknown> = {}) {
 }
 
 describe("OverviewPage", () => {
-  it("zeigt die Pipeline als Diagramm mit Skriptnamen", async () => {
+  it("zeigt jeden Pipeline-Schritt im Fortschrittsstreifen", async () => {
     mockFetch(base())
     renderWithProviders(<OverviewPage />)
 
-    expect(await screen.findByText(/01_download_flyers/)).toBeInTheDocument()
-    expect(screen.getByText(/05_evaluate/)).toBeInTheDocument()
+    // Der Skriptname hängt im Tooltip; sichtbar ist der Titel des Schritts.
+    expect(await screen.findByText("Prospekte laden")).toBeInTheDocument()
+    expect(screen.getByText("Evaluation")).toBeInTheDocument()
   })
 
-  it("fuehrt nichts aus, sondern verlinkt in die Steuerzentrale", async () => {
+  it("fuehrt nichts aus, sondern verlinkt auf die Pipeline-Seite", async () => {
     mockFetch(base())
     renderWithProviders(<OverviewPage />)
 
-    await screen.findByText(/01_download_flyers/)
+    await screen.findByText("Prospekte laden")
     expect(screen.queryByRole("button", { name: /starten/i })).not.toBeInTheDocument()
-    expect(screen.getByRole("link", { name: /Steuerzentrale/ })).toHaveAttribute("href", "/control")
+    expect(screen.getByRole("link", { name: /Ausführen/ })).toHaveAttribute("href", "/pipeline")
   })
 
   it("zeigt die Zahl handannotierter Seiten als eigene Kennzahl", async () => {
@@ -52,7 +53,10 @@ describe("OverviewPage", () => {
   it("zeigt Kataloge und die Label-Verteilung", async () => {
     mockFetch(base({
       "/api/status": {
-        catalogs: [{ id: "462828", raw: 10, words: 8, images: 8, labeled: 4, downloaded: "2026-07-23" }],
+        catalogs: [{
+          id: "462828", raw: 10, words: 8, images: 8, labeled: 4,
+          downloaded: "2026-07-23", region: "Niedersachsen · 81 Märkte", region_confirmed: true,
+        }],
         totals: { ...EMPTY_TOTALS, raw: 10, words: 8, images: 8, labeled: 4 },
       },
       "/api/labels/distribution": {
@@ -61,7 +65,7 @@ describe("OverviewPage", () => {
     }))
     renderWithProviders(<OverviewPage />)
 
-    expect(await screen.findByText("462828")).toBeInTheDocument()
+    expect(await screen.findByText("462828")).toBeInTheDocument()  // Prospektwoche
     expect(await screen.findByText("PRODUCT")).toBeInTheDocument()
     expect(screen.getByText("120")).toBeInTheDocument()
   })

@@ -1,16 +1,19 @@
 import { useQuery } from "@tanstack/react-query"
-import { Loader2, Square } from "lucide-react"
+import { ChevronDown, Loader2 } from "lucide-react"
 import { useState } from "react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { Button } from "@/components/ui/button"
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
+import { Progress } from "@/components/ui/progress"
 import { Skeleton } from "@/components/ui/skeleton"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { api } from "@/lib/api"
 import { cn } from "@/lib/utils"
-import { stepStates } from "../overview/steps"
+import { stepProgress, stepStates } from "../overview/steps"
 import { CatalogManager } from "./catalog-manager"
 import { Console } from "./console"
-import { JobForm, defaultValues } from "./job-form"
+import { defaultValues } from "./job-form"
 import { RunHistory } from "./run-history"
+import { StepAccordion } from "./step-accordion"
 import { useRun } from "./use-run"
 
 export function ControlPage() {
@@ -20,9 +23,9 @@ export function ControlPage() {
   const modelQ = useQuery({ queryKey: ["model"], queryFn: api.model })
   const run = useRun()
 
-  // Ein Wertesatz je Schritt. Was hier nicht steht, kommt aus dem Katalog –
-  // so überlebt eine Eingabe den Wechsel zwischen den Schritten.
   const [values, setValues] = useState<Record<string, Record<string, string>>>({})
+  const [offen, setOffen] = useState<string | undefined>(undefined)
+  const [katalogeOffen, setKatalogeOffen] = useState(false)
 
   if (jobsQ.isPending) return <Skeleton className="h-96 w-full" />
   if (jobsQ.isError) {
@@ -41,97 +44,103 @@ export function ControlPage() {
   const trained = (modelQ.data ?? []).filter((m) => m.trained).map((m) => m.variant)
   const states = totals ? stepStates(totals, evalQ.data ?? [], trained) : {}
 
+  // Aufgeklappt ist standardmäßig der Schritt, der als Nächstes dran ist.
+  const naechster = jobs.find((j) => states[j.job] === "ready")?.job
+  const aktiv = offen ?? run.status?.job ?? naechster
+
+  const erledigt = jobs.filter((j) => states[j.job] === "done").length
+
   const valuesFor = (jobName: string) => {
     const job = jobs.find((j) => j.job === jobName)
     return values[jobName] ?? (job ? defaultValues(job) : {})
   }
-
   const setValue = (jobName: string, key: string, value: string) =>
     setValues((prev) => ({ ...prev, [jobName]: { ...valuesFor(jobName), [key]: value } }))
 
-  const useCatalogUrl = (url: string) =>
-    setValues((prev) => ({
-      ...prev,
-      "01_download_flyers": { ...valuesFor("01_download_flyers"), url },
-    }))
-
   return (
-    <div className="space-y-8">
-      <div className="space-y-2">
-        <h1 className="text-3xl font-extrabold tracking-tight">Steuerzentrale</h1>
-        <p className="max-w-3xl text-muted-foreground">
-          Jeder Schritt liest vom Vorgänger über die Platte. Parameter, laufender Job und
-          vergangene Läufe stehen hier; die Übersicht zeigt nur den Stand.
-        </p>
-      </div>
+    <div className="mx-auto max-w-6xl space-y-6">
+      <header className="space-y-3">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <h1 className="text-3xl font-extrabold tracking-tight">Pipeline</h1>
+            <p className="text-sm text-muted-foreground">
+              Jeder Schritt liest vom Vorgänger über die Platte.
+            </p>
+          </div>
+          <p className="font-mono text-[11px] uppercase tracking-widest text-muted-foreground tabular-nums">
+            {erledigt} / {jobs.length} erledigt
+          </p>
+        </div>
+        <Progress value={(erledigt / jobs.length) * 100} />
+      </header>
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,7fr)_minmax(0,5fr)]">
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
         <div className="space-y-4">
-          {jobs.map((job) => {
-            const state = states[job.job]
-            const isRunning = run.running && run.status?.job === job.job
-            return (
-              <section
-                key={job.job}
-                className={cn(
-                  "space-y-3 rounded-lg border-2 border-foreground bg-card p-4 transition-colors",
-                  isRunning && "bg-primary/10",
-                )}
-              >
-                <div className="flex flex-wrap items-baseline gap-x-2">
-                  <h2 className="font-semibold">{job.title}</h2>
-                  <code className="font-mono text-[11px] text-muted-foreground">
-                    scripts/{job.job}.py
-                  </code>
-                  {state === "done" && (
-                    <span className="font-mono text-[11px] text-[var(--riso-blue)]">
-                      · erledigt
-                    </span>
-                  )}
-                  {state === "blocked" && (
-                    <span className="font-mono text-[11px] text-muted-foreground">
-                      · Vorgänger fehlt
-                    </span>
-                  )}
-                </div>
-                <p className="text-sm text-muted-foreground">{job.what}</p>
+          <StepAccordion
+            jobs={jobs}
+            states={states}
+            open={aktiv}
+            onOpenChange={setOffen}
+            runningJob={run.status?.job ?? null}
+            valuesFor={valuesFor}
+            onChange={setValue}
+            onStart={(job, v) => run.start(job, v)}
+            onStop={run.stop}
+            busy={run.busy}
+            progress={(job) => (totals ? stepProgress(job, totals) : null)}
+          />
 
-                {isRunning ? (
-                  <Button variant="outline" size="sm" onClick={run.stop}>
-                    <Square className="size-3.5" /> Stoppen
-                  </Button>
-                ) : (
-                  <JobForm
-                    job={job}
-                    values={valuesFor(job.job)}
-                    onChange={(key, value) => setValue(job.job, key, value)}
-                    onStart={(v) => run.start(job.job, v)}
-                    disabled={run.busy}
-                  />
-                )}
-              </section>
-            )
-          })}
+          {run.startError && (
+            <Alert variant="destructive">
+              <AlertTitle>Start abgelehnt</AlertTitle>
+              <AlertDescription>{run.startError}</AlertDescription>
+            </Alert>
+          )}
 
-          <CatalogManager onUse={useCatalogUrl} />
+          <Collapsible open={katalogeOffen} onOpenChange={setKatalogeOffen}>
+            <CollapsibleTrigger className="flex w-full items-center justify-between rounded-xl border-2 border-foreground bg-card px-4 py-3 text-left">
+              <span className="font-semibold">Kataloge verwalten</span>
+              <ChevronDown
+                className={cn("size-4 transition-transform", katalogeOffen && "rotate-180")}
+              />
+            </CollapsibleTrigger>
+            <CollapsibleContent className="pt-4">
+              <CatalogManager
+                onUse={(url) =>
+                  setValues((prev) => ({
+                    ...prev,
+                    "01_download_flyers": { ...valuesFor("01_download_flyers"), url },
+                  }))
+                }
+              />
+            </CollapsibleContent>
+          </Collapsible>
         </div>
 
-        <div className="space-y-6">
-          <section className="space-y-2">
-            <div className="flex flex-wrap items-baseline justify-between gap-2">
-              <h2 className="text-lg font-bold tracking-tight">Live</h2>
-              <p className="font-mono text-[11px] uppercase tracking-widest text-muted-foreground">
-                {run.status?.job ?? "kein Lauf"}
-                {run.status?.elapsed != null && ` · ${run.status.elapsed}s`}
-                {run.running && <Loader2 className="ml-1 inline size-3 animate-spin" />}
-              </p>
-            </div>
-            {run.startError && <p className="text-sm text-destructive">{run.startError}</p>}
+        {/* Live und Historie teilen sich eine Spalte: man schaut entweder dem
+            laufenden Schritt zu oder untersucht einen vergangenen, nie beides. */}
+        <Tabs defaultValue="live" className="lg:sticky lg:top-24 lg:self-start">
+          <div className="flex items-center justify-between gap-2">
+            <TabsList>
+              <TabsTrigger value="live">
+                Live
+                {run.running && <Loader2 className="ml-1.5 size-3 animate-spin" />}
+              </TabsTrigger>
+              <TabsTrigger value="history">Läufe</TabsTrigger>
+            </TabsList>
+            {run.status?.elapsed != null && run.running && (
+              <span className="font-mono text-[11px] text-muted-foreground tabular-nums">
+                {run.status.elapsed}s
+              </span>
+            )}
+          </div>
+          <TabsContent value="live" className="mt-3">
             <Console lines={run.status?.lines ?? []} running={run.running} />
-          </section>
-
-          <RunHistory />
-        </div>
+          </TabsContent>
+          <TabsContent value="history" className="mt-3">
+            <RunHistory />
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   )

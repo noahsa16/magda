@@ -13,7 +13,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from tqdm import tqdm
 
-from magda.config import IMAGES_DIR, RAW_DIR, WORDS_DIR
+from magda.config import GOLD_DIR, IMAGES_DIR, LABELED_DIR, RAW_DIR, WORDS_DIR
 from magda.gold import words_hash
 from magda.ocr import extract_words, render_png
 
@@ -25,6 +25,18 @@ def main():
     pdfs = sorted(RAW_DIR.glob("*/bk_*.pdf"))
     if not pdfs:
         sys.exit("Keine PDFs in data/raw/ gefunden. Erst 01_download_flyers.py laufen lassen.")
+
+    # Seiten, an denen schon Arbeit hängt, zuerst: bei einer Dublette gewinnt,
+    # wer zuerst drankommt. In reiner Sortierreihenfolge gewönne der Katalog
+    # mit der kleineren Nummer – und die vorhandenen Labels zeigten danach auf
+    # eine Seite, die es nicht mehr gibt.
+    bearbeitet = {f.stem for f in LABELED_DIR.glob("*.json")} | {f.stem for f in GOLD_DIR.glob("*.json")}
+
+    def vorrang(pdf_path):
+        page_id = f"{pdf_path.parent.name}_p{pdf_path.stem.removeprefix('bk_')}"
+        return (0 if page_id in bearbeitet else 1, pdf_path.parent.name, int(pdf_path.stem.removeprefix("bk_")))
+
+    pdfs.sort(key=vorrang)
 
     # Wortlisten, die schon vorliegen – gegen sie wird entdoppelt.
     gesehen = {}

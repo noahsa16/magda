@@ -3,12 +3,14 @@ import { NavLink } from "react-router-dom"
 import { api } from "@/lib/api"
 import { cn } from "@/lib/utils"
 
+// Reihenfolge entlang des Arbeitsflusses: Stand ansehen, Daten erzeugen,
+// Daten prüfen, von Hand annotieren, Ergebnis lesen, Modell ausprobieren.
 const items = [
   { title: "Übersicht", url: "/" },
-  { title: "Steuerzentrale", url: "/control" },
-  { title: "Inspektor", url: "/inspector" },
+  { title: "Pipeline", url: "/pipeline" },
+  { title: "Daten", url: "/inspector" },
   { title: "Annotieren", url: "/annotate" },
-  { title: "Evaluation", url: "/evaluation" },
+  { title: "Ergebnis", url: "/evaluation" },
   { title: "Demo", url: "/demo" },
 ]
 
@@ -35,23 +37,23 @@ function BackendStatus() {
 export function TopNav() {
   return (
     <header className="sticky top-0 z-40 border-b-2 border-foreground bg-background/90 backdrop-blur">
-      <div className="mx-auto grid h-20 max-w-[1600px] grid-cols-[1fr_auto_1fr] items-center gap-4 px-4 sm:px-6">
+      <div className="mx-auto grid h-16 max-w-[1600px] grid-cols-[1fr_auto_1fr] items-center gap-4 px-4 sm:px-6">
         <NavLink to="/" className="flex shrink-0 items-center gap-2.5">
           {/* Funke als Wortmarke, im Pink des zweiten Druckgangs */}
-          <svg viewBox="0 0 24 24" aria-hidden className="size-8 text-primary">
+          <svg viewBox="0 0 24 24" aria-hidden className="size-7 text-primary">
             <path
               fill="currentColor"
               d="M12 2c.6 4.9 3.1 7.4 8 8-4.9.6-7.4 3.1-8 8-.6-4.9-3.1-7.4-8-8 4.9-.6 7.4-3.1 8-8Z"
             />
           </svg>
-          <span className="misprint text-3xl font-extrabold uppercase leading-none tracking-tight">
+          <span className="misprint text-2xl font-extrabold uppercase leading-none tracking-tight">
             Magda
           </span>
         </NavLink>
 
         <nav
           aria-label="Hauptnavigation"
-          className="flex min-w-0 items-center gap-1 overflow-x-auto rounded-full border-2 border-foreground bg-card p-1.5"
+          className="flex min-w-0 items-center gap-0.5 overflow-x-auto rounded-full border-2 border-foreground bg-card p-1"
         >
           {items.map((item) => (
             <NavLink
@@ -60,7 +62,7 @@ export function TopNav() {
               end={item.url === "/"}
               className={({ isActive }) =>
                 cn(
-                  "whitespace-nowrap rounded-full px-6 py-2.5 text-[15px] font-semibold transition-colors",
+                  "whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-semibold transition-colors",
                   isActive
                     ? "bg-primary text-primary-foreground"
                     : "text-muted-foreground hover:bg-accent hover:text-foreground",

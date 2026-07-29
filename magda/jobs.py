@@ -48,6 +48,16 @@ class Job:
 VARIANTS = ("gbert", "layoutxlm")
 
 JOBS: dict[str, Job] = {
+    "00_harvest_week": Job(
+        script="00_harvest_week",
+        title="Woche ernten",
+        what="Holt alle 44 Regionalausgaben einer Woche und behält nur die Seiten, "
+             "die es noch nicht gibt. Ohne Angabe die laufende Woche.",
+        params=(
+            Param("--seed", "str", "Bekannte ID einer älteren Woche",
+                  help="leer lassen für die laufende Woche"),
+        ),
+    ),
     "01_download_flyers": Job(
         script="01_download_flyers",
         title="Prospekte laden",
