@@ -13,6 +13,13 @@ def isolated(tmp_path, monkeypatch):
     runner.reset()
     yield
     runner.stop()
+    # Erst warten, dann aufräumen: der Pump-Thread schreibt die Metadaten
+    # nachträglich und löst config.RUNS_DIR dabei erneut auf. Endet der Test
+    # vorher, ist das Monkeypatch schon zurückgenommen und der Lauf landet im
+    # echten data/runs/.
+    deadline = time.time() + 10
+    while runner.status()["running"] and time.time() < deadline:
+        time.sleep(0.05)
     runner.reset()
 
 

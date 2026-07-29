@@ -206,11 +206,18 @@ def test_model_status_liest_trainingsverlauf(client):
 
 @pytest.fixture
 def clean_runner():
+    import time
+
     from magda import runner
 
     runner.reset()
     yield
     runner.stop()
+    # Auf den Pump-Thread warten, bevor die Fixture die Pfade zurückdreht -
+    # sonst schreibt er die Metadaten ins echte data/runs/.
+    deadline = time.time() + 10
+    while runner.status()["running"] and time.time() < deadline:
+        time.sleep(0.05)
     runner.reset()
 
 
