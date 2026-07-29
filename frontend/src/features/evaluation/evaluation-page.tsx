@@ -30,7 +30,7 @@ export function EvaluationPage() {
 
   if (!data || data.length === 0) {
     return (
-      <div className="mx-auto max-w-5xl space-y-6">
+      <div className="space-y-6">
         <h1 className="text-3xl font-extrabold tracking-tight">Evaluation</h1>
         <EvaluationEmptyState />
       </div>
@@ -45,7 +45,7 @@ export function EvaluationPage() {
   const missing = layoutxlm == null || gbert == null
 
   return (
-    <div className="mx-auto max-w-5xl space-y-6">
+    <div className="space-y-6">
       <h1 className="text-3xl font-extrabold tracking-tight">Evaluation</h1>
 
       <div className="grid gap-4 sm:grid-cols-3">

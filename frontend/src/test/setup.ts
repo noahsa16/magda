@@ -2,10 +2,15 @@ import "@testing-library/jest-dom/vitest"
 
 // jsdom kennt weder matchMedia noch ResizeObserver – beides brauchen die
 // shadcn-Sidebar (use-mobile-Hook) und Radix ScrollArea.
+//
+// prefers-reduced-motion meldet true: jsdom feuert kein requestAnimationFrame,
+// eine laufende Animation bliebe also für immer beim Startwert stehen. Über den
+// Reduced-Motion-Pfad setzt useCountUp den Zielwert sofort – die Kennzahlen
+// sind damit prüfbar, ohne rAF zu fälschen.
 Object.defineProperty(window, "matchMedia", {
   writable: true,
   value: (query: string) => ({
-    matches: false,
+    matches: query.includes("prefers-reduced-motion"),
     media: query,
     onchange: null,
     addListener: () => {},

@@ -3,34 +3,66 @@ import { describe, expect, it } from "vitest"
 import { mockFetch, renderWithProviders } from "@/test/utils"
 import { OverviewPage } from "./overview-page"
 
-const IDLE_RUN = { running: false, job: null, lines: [], exit_code: null, elapsed: null }
+const EMPTY_TOTALS = {
+  raw: 0, words: 0, images: 0, labeled: 0, gold_done: 0, gold_in_progress: 0,
+}
+
+function base(extra: Record<string, unknown> = {}) {
+  return {
+    "/api/status": { catalogs: [], totals: EMPTY_TOTALS },
+    "/api/evaluation": [],
+    "/api/model": [],
+    "/api/schema": { entity_types: ["PRODUCT", "BRAND", "PRICE"] },
+    "/api/labels/distribution": { pages: 0, counts: {}, total: 0 },
+    ...extra,
+  }
+}
 
 describe("OverviewPage", () => {
-  it("zeigt die Pipeline-Schritte mit Skriptnamen", async () => {
-    mockFetch({
-      "/api/status": { catalogs: [], totals: { raw: 0, words: 0, images: 0, labeled: 0 } },
-      "/api/evaluation": [],
-      "/api/run": IDLE_RUN,
-    })
+  it("zeigt die Pipeline als Diagramm mit Skriptnamen", async () => {
+    mockFetch(base())
     renderWithProviders(<OverviewPage />)
+
     expect(await screen.findByText(/01_download_flyers/)).toBeInTheDocument()
     expect(screen.getByText(/05_evaluate/)).toBeInTheDocument()
   })
 
-  it("zeigt Kennzahlen und Kataloge", async () => {
-    mockFetch({
-      "/api/status": {
-        catalogs: [{ id: "462828", raw: 10, words: 8, images: 8, labeled: 4 }],
-        totals: { raw: 10, words: 8, images: 8, labeled: 4 },
-      },
-      "/api/evaluation": [],
-      "/api/run": IDLE_RUN,
-    })
+  it("fuehrt nichts aus, sondern verlinkt in die Steuerzentrale", async () => {
+    mockFetch(base())
     renderWithProviders(<OverviewPage />)
+
+    await screen.findByText(/01_download_flyers/)
+    expect(screen.queryByRole("button", { name: /starten/i })).not.toBeInTheDocument()
+    expect(screen.getByRole("link", { name: /Steuerzentrale/ })).toHaveAttribute("href", "/control")
+  })
+
+  it("zeigt die Zahl handannotierter Seiten als eigene Kennzahl", async () => {
+    mockFetch(base({
+      "/api/status": {
+        catalogs: [],
+        totals: { ...EMPTY_TOTALS, raw: 40, words: 40, labeled: 40, gold_done: 7 },
+      },
+    }))
+    renderWithProviders(<OverviewPage />)
+
+    expect(await screen.findByText("Von Hand annotiert")).toBeInTheDocument()
+    expect((await screen.findAllByText("7")).length).toBeGreaterThanOrEqual(1)
+  })
+
+  it("zeigt Kataloge und die Label-Verteilung", async () => {
+    mockFetch(base({
+      "/api/status": {
+        catalogs: [{ id: "462828", raw: 10, words: 8, images: 8, labeled: 4, downloaded: "2026-07-23" }],
+        totals: { ...EMPTY_TOTALS, raw: 10, words: 8, images: 8, labeled: 4 },
+      },
+      "/api/labels/distribution": {
+        pages: 4, counts: { PRODUCT: 120, PRICE: 89, BRAND: 0 }, total: 209,
+      },
+    }))
+    renderWithProviders(<OverviewPage />)
+
     expect(await screen.findByText("462828")).toBeInTheDocument()
-    expect(screen.getAllByText("Gelabelt").length).toBeGreaterThanOrEqual(1)
-    // findAll: die Kennzahlen zählen animiert hoch und erreichen den Endwert
-    // erst nach ein paar Frames.
-    expect((await screen.findAllByText("4")).length).toBeGreaterThanOrEqual(1)
+    expect(await screen.findByText("PRODUCT")).toBeInTheDocument()
+    expect(screen.getByText("120")).toBeInTheDocument()
   })
 })

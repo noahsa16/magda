@@ -7,8 +7,11 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table"
 import { api } from "@/lib/api"
+import type { EvalReport, ModelStatus } from "@/lib/types"
 import { useCountUp } from "@/lib/use-count-up"
-import { PipelineRunner } from "./pipeline-runner"
+import { LabelDistribution } from "./label-distribution"
+import { PipelineDiagram } from "./pipeline-diagram"
+import { stepStates } from "./steps"
 
 function StatCard({ label, value, hint }: { label: string; value: number; hint?: string }) {
   const shown = useCountUp(value)
@@ -34,6 +37,39 @@ function Fact({ label, children }: { label: string; children: React.ReactNode })
   )
 }
 
+function ModelSummary({ models, reports }: { models: ModelStatus[]; reports: EvalReport[] }) {
+  const best = (variant: string) =>
+    reports.find((r) => r.variant === variant)?.report["micro avg"]?.["f1-score"] ?? null
+
+  return (
+    <section className="space-y-3">
+      <h2 className="text-xl font-bold tracking-tight">Modellstand</h2>
+      <ul className="space-y-1.5 text-sm">
+        {models.map((model) => {
+          const f1 = best(model.variant)
+          return (
+            <li key={model.variant} className="flex items-baseline gap-3">
+              <span className="w-24 shrink-0 font-mono text-xs">{model.variant}</span>
+              <span className="min-w-0 flex-1 text-muted-foreground">
+                {model.trained
+                  ? `trainiert, ${model.epoch?.toFixed(0) ?? "?"} Epochen`
+                  : "noch nicht trainiert"}
+              </span>
+              <span className="shrink-0 font-mono tabular-nums">
+                {f1 == null ? "–" : `F1 ${f1.toFixed(3)}`}
+              </span>
+            </li>
+          )
+        })}
+      </ul>
+      <p className="text-xs text-muted-foreground">
+        Der Flair-Arm misst nur BRAND und ist deshalb nicht mit diesen Zahlen vergleichbar –
+        er steht auf der Evaluationsseite.
+      </p>
+    </section>
+  )
+}
+
 export function OverviewPage() {
   const { data, isPending, isError, error } = useQuery({ queryKey: ["status"], queryFn: api.status })
   const evalQ = useQuery({ queryKey: ["evaluation"], queryFn: api.evaluation })
@@ -53,9 +89,10 @@ export function OverviewPage() {
 
   const t = data.totals
   const labeledPct = t.raw > 0 ? Math.round((t.labeled / t.raw) * 100) : 0
+  const trainedVariants = (modelQ.data ?? []).filter((m) => m.trained).map((m) => m.variant)
 
   return (
-    <div className="mx-auto max-w-5xl space-y-10">
+    <div className="space-y-10">
       <section className="space-y-5 pt-2">
         <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-primary">
           Semesterprojekt Information Extraction · SoSe 2026
@@ -83,13 +120,27 @@ export function OverviewPage() {
         </dl>
       </section>
 
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard label="Heruntergeladen" value={t.raw} hint="Seiten in data/raw" />
         <StatCard label="Extrahiert" value={t.words} hint="mit Wörtern und Koordinaten" />
         <StatCard label="Gelabelt" value={t.labeled} hint={`${labeledPct}% aller Seiten`} />
+        <StatCard
+          label="Von Hand annotiert"
+          value={t.gold_done}
+          hint={
+            t.gold_in_progress > 0
+              ? `${t.gold_in_progress} angefangen · gold/`
+              : "fertige Gold-Seiten"
+          }
+        />
       </div>
 
-      <PipelineRunner totals={t} reports={evalQ.data ?? []} models={modelQ.data ?? []} />
+      <PipelineDiagram states={stepStates(t, evalQ.data ?? [], trainedVariants)} totals={t} />
+
+      <div className="grid gap-8 lg:grid-cols-2">
+        <LabelDistribution />
+        <ModelSummary models={modelQ.data ?? []} reports={evalQ.data ?? []} />
+      </div>
 
       {data.catalogs.length > 0 && (
         <Card className="border-2 border-foreground">
