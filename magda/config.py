@@ -23,6 +23,7 @@ IMAGES_DIR = DATA_DIR / "images"    # gerenderte Seitenbilder (PNG)
 LABELED_DIR = DATA_DIR / "labeled"  # vom LLM gelabelte Seiten (BIO-Tags)
 SPLITS_DIR = DATA_DIR / "splits"    # train/dev/test-Aufteilung
 EVAL_DIR = DATA_DIR / "eval"        # Evaluations-Reports als JSON (fürs Frontend)
+RUNS_DIR = DATA_DIR / "runs"        # Lauf-Historie: je Lauf Metadaten-JSON + Log
 # Handannotierte Referenz. Liegt bewusst außerhalb von data/ und wird
 # versioniert: generierte Artefakte sind reproduzierbar, Handarbeit nicht.
 GOLD_DIR = PROJECT_ROOT / "gold"
