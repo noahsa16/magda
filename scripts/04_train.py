@@ -61,12 +61,19 @@ def build_datasets(variant: str, labels_from: str | None):
         )
 
     splits = get_or_create_splits(pages)
+    train_pages = select_split(pages, splits, "train")
+    dev_pages = select_split(pages, splits, "dev")
+
     # Welches Modell die Labels geliefert hat, gehört in die Ausgabe: sonst
     # steht am Ende ein F1-Wert im Bericht, dessen Trainingsdaten niemand mehr
-    # zuordnen kann, sobald mehr als ein Ordner existiert.
+    # zuordnen kann, sobald mehr als ein Ordner existiert. Gezählt wird, was
+    # wirklich geladen wurde, nicht wie groß der Split ist – der deckt alle
+    # extrahierten Seiten ab, auch die noch ungelabelten.
     print(
         f"{len(pages)} Seiten geladen, Labels von {model} "
-        f"(train={len(splits['train'])}, dev={len(splits['dev'])}, test={len(splits['test'])})"
+        f"(train={len(train_pages)}/{len(splits['train'])}, "
+        f"dev={len(dev_pages)}/{len(splits['dev'])}, "
+        f"test={len(select_split(pages, splits, 'test'))}/{len(splits['test'])})"
     )
 
     if variant == "gbert":
@@ -75,8 +82,8 @@ def build_datasets(variant: str, labels_from: str | None):
         model_name, dataset_cls = LAYOUT_MODEL, LayoutDataset
 
     tokenizer = AutoTokenizer.from_pretrained(model_name)
-    train_ds = dataset_cls(select_split(pages, splits, "train"), tokenizer, MAX_SEQ_LENGTH)
-    dev_ds = dataset_cls(select_split(pages, splits, "dev"), tokenizer, MAX_SEQ_LENGTH)
+    train_ds = dataset_cls(train_pages, tokenizer, MAX_SEQ_LENGTH)
+    dev_ds = dataset_cls(dev_pages, tokenizer, MAX_SEQ_LENGTH)
     return model_name, train_ds, dev_ds
 
 

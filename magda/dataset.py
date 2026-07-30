@@ -17,7 +17,7 @@ import torch
 from torch.utils.data import Dataset
 
 from magda.alignment import align_word_labels
-from magda.config import SEED, SPLITS_DIR, default_labeled_model, labeled_dir
+from magda.config import SEED, SPLITS_DIR, WORDS_DIR, default_labeled_model, labeled_dir
 from magda.ocr import normalize_bbox
 
 
@@ -45,6 +45,12 @@ def get_or_create_splits(pages: list[dict]) -> dict[str, list[str]]:
     Der Split liegt als Datei in data/splits/, damit alle im Team (und alle
     Trainingsläufe) dieselbe Aufteilung benutzen. Neu würfeln = Datei löschen.
 
+    Gewürfelt wird über *alle* extrahierten Seiten, nicht über die gerade
+    gelabelten. Sonst hinge die Aufteilung am Fortschritt des Labelings: wer
+    bei 141 von 196 Seiten trainiert, fröre einen Split ein, dem 55 Seiten
+    fehlen, und die nachgelieferten landeten sämtlich im Training. Seiten ohne
+    Labels tauchen in `select_split` schlicht nicht auf.
+
     TODO: aktuell wird über Seiten gesplittet. Diskutieren, ob wir stattdessen
     über Kataloge splitten sollten, damit kein Prospekt gleichzeitig in Train
     und Test landet (Angebote wiederholen sich zwischen Wochen).
@@ -54,7 +60,8 @@ def get_or_create_splits(pages: list[dict]) -> dict[str, list[str]]:
         with open(split_file) as f:
             return json.load(f)
 
-    page_ids = [p["page_id"] for p in pages]
+    extracted = sorted(p.stem for p in WORDS_DIR.glob("*.json"))
+    page_ids = extracted or [p["page_id"] for p in pages]
     rng = random.Random(SEED)
     rng.shuffle(page_ids)
 
