@@ -17,9 +17,6 @@ alles neu auf.
 import argparse
 import json
 import sys
-from pathlib import Path
-
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from magda import catalog_meta, dedupe
 from magda.config import (

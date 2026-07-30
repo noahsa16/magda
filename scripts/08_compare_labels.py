@@ -17,9 +17,6 @@ Schnitt zu verbessern.
 import argparse
 import json
 import sys
-from pathlib import Path
-
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from magda.config import EVAL_DIR, labeled_dir, labeled_models
 from magda.evaluation import word_level_report, word_level_report_dict

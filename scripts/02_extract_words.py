@@ -7,9 +7,6 @@ das Skript lässt sich also jederzeit erneut laufen lassen.
 
 import json
 import sys
-from pathlib import Path
-
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from tqdm import tqdm
 

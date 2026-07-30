@@ -12,15 +12,20 @@ Ausführliche Erklärung der Pipeline: `EXPLANATION.md` (lokal, nicht im Repo).
 ## Struktur
 
 ```
-magda/       Kern-Package – hier liegt die Logik (inkl. api.py, FastAPI fürs Frontend)
+src/magda/   Kern-Package – hier liegt die Logik (inkl. api.py, FastAPI fürs Frontend)
 scripts/     nummerierte Pipeline-Schritte, dünne CLI-Wrapper um magda/
-frontend/    React-SPA (Vite, Tailwind, shadcn) – liest data/ über magda/api.py
-catalogs.json Verzeichnis gefundener Blätterkatalog-IDs (versioniert)
+frontend/    React-SPA (Vite, Tailwind, shadcn) – liest data/ über src/magda/api.py
 tests/       pytest (Labels, Alignment, API)
+gold/        handannotierte Referenz (versioniert)
 data/        lokal, gitignored (nur .gitkeep versioniert)
 checkpoints/ lokal, gitignored
-docs/        Proposal
+docs/        Proposal, RunPod-Anleitung, Ursprungs-Prototyp
+reports/     Wochenberichte
 ```
+
+`catalogs.json` und `catalog_meta.json` liegen in der Wurzel und sind
+versioniert: gefundene Katalog-IDs und ihre Region lassen sich nicht
+reproduzieren, nur wiederfinden.
 
 Pipeline: `00_harvest_week` → `02_extract_words` → `06_check_duplicates` →
 `03_label_words` → `04_train` → `05_evaluate`, dazu `07_flair_baseline` als
@@ -29,9 +34,9 @@ URL, `00_harvest_week` eine ganze Woche über alle 44 Regionen. Jeder Schritt
 liest vom Vorgänger über die Platte, nichts läuft im Speicher durch.
 
 Die Schritte lassen sich auch aus dem Frontend starten – im Tab *Pipeline*
-(`/pipeline`), nicht mehr auf der Übersicht. `magda/runner.py`
+(`/pipeline`), nicht mehr auf der Übersicht. `src/magda/runner.py`
 startet sie als Subprozess und streamt die Ausgabe an `/api/run`. *Was*
-startbar ist und mit welchen Parametern, steht deklarativ in `magda/jobs.py`;
+startbar ist und mit welchen Parametern, steht deklarativ in `src/magda/jobs.py`;
 `build_command` validiert und baut argv und ist die einzige Stelle, an der aus
 einer Nutzereingabe ein Kommando wird – kein Durchreichen beliebiger
 Kommandos. Das Frontend liest den Katalog über `/api/jobs` und baut daraus
@@ -40,9 +45,8 @@ seine Formulare: ein neuer Parameter wird nur im Backend gepflegt.
 ## Kommandos
 
 ```bash
-.venv/bin/python -m pytest               # Tests – nicht .venv/bin/pytest, das
-                                         # bringt den Projektwurzelpfad nicht
-                                         # auf sys.path (ModuleNotFoundError)
+.venv/bin/pip install -e '.[dev]'        # einmalig – danach ist magda importierbar
+.venv/bin/python -m pytest               # Tests
 python scripts/02_extract_words.py       # Schritt ausführen (aus dem Projektroot)
 python scripts/04_train.py layoutxlm     # bzw. gbert
 python scripts/00_harvest_week.py        # laufende Prospektwoche, alle Regionen
@@ -59,8 +63,9 @@ cd frontend && npm run dev               # Frontend-Dev-Server (proxied /api)
 cd frontend && npm test                  # Frontend-Tests (Vitest)
 ```
 
-Skripte immer aus dem Projektroot starten – sie hängen den Root selbst an
-`sys.path`, damit `from magda import ...` ohne Installation funktioniert.
+Skripte immer aus dem Projektroot starten: sie lesen und schreiben relativ zu
+`config.PROJECT_ROOT`. Importierbar ist `magda` über die editierbare
+Installation – ohne die brechen alle Skripte mit `ModuleNotFoundError` ab.
 
 ## Konventionen
 
@@ -91,7 +96,7 @@ Skripte immer aus dem Projektroot starten – sie hängen den Root selbst an
   Reihenfolge abgeleitet; Einfügen in der Mitte macht alte Checkpoints ungültig.
 - **`data/splits/split.json` ist eingefroren.** Einmal gewürfelt, dann fest,
   damit alle im Team auf denselben Testseiten evaluieren. Neu würfeln = löschen.
-- **`magda/blackbox.py` ist kein toter Code**, sondern der alte Prototyp. Er
+- **`src/magda/blackbox.py` ist kein toter Code**, sondern der alte Prototyp. Er
   bleibt als Vergleichssystem für die Requirements-Stufe „Excellent".
 - **Der Trainingsverlauf steht nicht in `checkpoints/{variant}/best`.**
   `trainer.save_model()` schreibt dort kein `trainer_state.json`; `/api/model`
@@ -241,7 +246,7 @@ Skripte immer aus dem Projektroot starten – sie hängen den Root selbst an
   deshalb die *Form* (`variant` + `report`), nicht den Dateinamen – vorher
   reichte es alles durch und die Evaluationsseite starb an
   `Object.entries(undefined)`.
-- **Übereinstimmung ist keine Richtigkeit.** `magda/agreement.py` misst, wo
+- **Übereinstimmung ist keine Richtigkeit.** `src/magda/agreement.py` misst, wo
   sich zwei Labeling-Modelle widersprechen – über alle 196 Seiten statt über
   die drei annotierten. Nützlich ist vor allem die Rangfolge: die uneinigsten
   Seiten bringen pro Annotationsstunde am meisten. Aber zwei Modelle können
@@ -352,7 +357,7 @@ das Labeling in Schritt 03 braucht zwingend Bild-Input.
 
 Getestet am 23.07.2026: von 16 Modellen nehmen nur `mistral-medium-3.5-128b`,
 `gemma-4-31b-it` und `qwen3-omni-30b-a3b-instruct` Bilder an. Default ist
-`mistral-medium-3.5-128b` (Begründung im Kommentar in `magda/config.py`).
+`mistral-medium-3.5-128b` (Begründung im Kommentar in `src/magda/config.py`).
 Modelle starten kalt und brauchen beim ersten Request teils Minuten.
 
 ## Erster kompletter Durchlauf (23.07.2026)

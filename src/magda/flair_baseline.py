@@ -104,7 +104,7 @@ def load_tagger(model_name: str = FLAIR_MODEL):
         from flair.models import SequenceTagger
     except ImportError as exc:
         raise RuntimeError(
-            "flair ist nicht installiert: pip install -r requirements-flair.txt"
+            "flair ist nicht installiert: pip install '.[flair]'"
         ) from exc
 
     tagger = SequenceTagger.load(model_name)

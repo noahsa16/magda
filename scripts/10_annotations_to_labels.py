@@ -20,8 +20,6 @@ import json
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-
 from magda.config import GOLD_DIR, WORDS_DIR, labeled_dir
 from magda.gold import words_hash
 from magda.labels import spans_to_bio

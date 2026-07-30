@@ -15,8 +15,6 @@ import argparse
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-
 from magda import bundle
 from magda.config import DATA_DIR, labeled_models
 

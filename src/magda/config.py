@@ -16,7 +16,10 @@ load_dotenv()
 # ---------------------------------------------------------------------------
 # Pfade
 # ---------------------------------------------------------------------------
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
+# src/magda/config.py -> src/magda -> src -> Projektwurzel. Die Daten liegen
+# neben dem Paket, nicht darin: data/ und checkpoints/ sind Arbeitsstände, die
+# beim Installieren nichts zu suchen haben.
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
 
 def _project_python() -> str:

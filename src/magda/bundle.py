@@ -36,7 +36,9 @@ echo "########## Abhaengigkeiten ##########"
 # einem Wegwerf-Container ist genau das die falsche Vorsicht - torch liegt
 # ohnehin in derselben Umgebung, ein eigenes venv wuerde es abschneiden.
 export PIP_BREAK_SYSTEM_PACKAGES=1
-pip install -q -r requirements.txt
+# Editierbar, damit `from magda import ...` in den Skripten aufgeht, ohne dass
+# jemand PYTHONPATH setzen muss.
+pip install -q -e .
 # Der visuelle Backbone von LayoutLMv2/LayoutXLM. Wird uebersetzt, dauert
 # einige Minuten. Ohne ihn laeuft nur die GBERT-Variante.
 #
