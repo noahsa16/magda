@@ -44,8 +44,9 @@ Markiere Entitäten als Spans über die Wortindizes. Erlaubte Labels:
 
 PRODUCT     Produktbezeichnung inkl. Sortenangabe, ohne Menge und Preis
 BRAND       Markenname
-PRICE       Aktionspreis (der Preis, den man zahlt)
+PRICE       Aktionspreis (der Preis, den man ohne Bedingung zahlt)
 OLD_PRICE   Durchgestrichener oder höherer Vergleichspreis
+APP_PRICE   Preis, den nur App-Nutzer zahlen ("mit PENNY App 1.59")
 QUANTITY    Füllmenge: Zahl + Einheit
 UNIT_PRICE  Grundpreis in runden Klammern
 DISCOUNT    Rabattangabe, z.B. "-33%"
@@ -114,6 +115,20 @@ zuerst steht oder größer gedruckt ist. Rechne nach, bevor du antwortest.
   "3.49  2.29"  ->  OLD_PRICE="3.49"  PRICE="2.29"       (2.29 < 3.49)
 
 Steht nur ein Preis ohne Partner, ist er PRICE.
+
+**Der App-Preis ist ein dritter Fall.** Penny bewirbt viele Angebote mit einem
+zusätzlichen, niedrigeren Preis, den nur App-Nutzer bekommen. Erkennbar an
+"mit PENNY App", "Nur mit der App" oder einem App-Symbol daneben. Dieser Preis
+ist APP_PRICE, nicht PRICE. Der Preis ohne App bleibt PRICE, auch wenn er
+höher ist – die Ziffernregel oben gilt nur zwischen PRICE und OLD_PRICE.
+
+  "2.99 mit PENNY App 1.99 ohne PENNY App 2.99"
+      ->  APP_PRICE="1.99"   PRICE="2.99"
+  "-18% 2.99 3.69 ohne PENNY App 3.69"
+      ->  PRICE="2.99"  OLD_PRICE="3.69"     (kein App-Preis im Spiel)
+
+Steht derselbe Zahlenwert zweimal auf der Seite (einmal im Badge, einmal im
+Fließtext), labelst du nur das Vorkommen im Angebotstext.
 
 ═══════════════════════════════════════════════════════════════════════
 REGEL 5 — PRODUCT: Name mit Sorte, aber ohne Menge, Preis und "oder"

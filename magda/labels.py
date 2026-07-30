@@ -17,6 +17,13 @@ ENTITY_TYPES = [
     # Ab hier nachträglich ergänzt – nur anhängen, nie einschieben, sonst
     # verschieben sich die Label-IDs und alte Checkpoints passen nicht mehr.
     "UNIT_PRICE",  # Grundpreis, z.B. "(1 kg = 24.95)"
+    # Penny bewirbt viele Angebote mit einem zweiten, niedrigeren Preis, den
+    # nur App-Nutzer zahlen ("mit PENNY App 1.59"). Ohne eigenes Label ist er
+    # nicht unterzubringen: Als PRICE stünden zwei Aktionspreise nebeneinander,
+    # als OLD_PRICE wäre der günstigste Preis der Seite als Streichpreis
+    # markiert. Beides haben die Annotatoren unabhängig voneinander als
+    # Problem gemeldet, jeweils anders gelöst.
+    "APP_PRICE",   # nur mit PENNY App, z.B. "mit PENNY App 1.59"
 ]
 
 # BIO-Schema: "O" + je ein B-/I-Tag pro Entity-Typ
