@@ -134,6 +134,30 @@ JOBS: dict[str, Job] = {
             Param("--model", "str", "Modell", default="flair/ner-german-large"),
         ),
     ),
+    "08_compare_labels": Job(
+        script="08_compare_labels",
+        title="Labels gegen Gold",
+        what="Misst jeden Modellordner unter data/labeled/ gegen die handannotierte "
+             "Referenz – die Entscheidungsgrundlage für die Modellwahl.",
+        params=(
+            Param("--per-label", "flag", "Aufschlüsselung je Entity-Typ"),
+        ),
+    ),
+    "09_agreement": Job(
+        script="09_agreement",
+        title="Modelle gegeneinander",
+        what="Wo widersprechen sich zwei Labeling-Modelle? Misst über alle Seiten "
+             "statt nur über die annotierten und sortiert nach Annotationsnutzen.",
+        params=(
+            # Freitext statt choices: die Modellordner entstehen zur Laufzeit,
+            # eine feste Liste wäre bei jedem neuen Lauf veraltet. build_command
+            # prüft weiterhin Typ und führendes "-"; die Skripte lehnen
+            # unbekannte Ordner selbst ab.
+            Param("model_a", "str", "Modell A", required=True),
+            Param("model_b", "str", "Modell B", required=True),
+            Param("--top", "int", "Wie viele Seiten auflisten", default=20),
+        ),
+    ),
 }
 
 

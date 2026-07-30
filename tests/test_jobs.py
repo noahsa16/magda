@@ -25,7 +25,16 @@ def test_build_command_kennt_alle_pipeline_schritte():
     assert set(jobs.JOBS) == {
         "00_harvest_week", "01_download_flyers", "02_extract_words", "03_label_words",
         "04_train", "05_evaluate", "06_check_duplicates", "07_flair_baseline",
+        "08_compare_labels", "09_agreement",
     }
+
+
+def test_freie_modellnamen_duerfen_keine_optionen_sein():
+    """09_agreement nimmt Modellnamen als Freitext, weil die Ordner zur
+    Laufzeit entstehen. Dann muss der Bindestrich-Schutz greifen – sonst
+    liest argparse "--help" als Option und der Lauf tut etwas anderes."""
+    with pytest.raises(ValueError, match="Bindestrich"):
+        jobs.build_command("09_agreement", {"model_a": "--help", "model_b": "x"})
 
 
 def test_build_command_lehnt_unbekannten_job_ab():
