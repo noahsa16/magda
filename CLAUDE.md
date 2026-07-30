@@ -255,6 +255,39 @@ Skripte immer aus dem Projektroot starten – sie hängen den Root selbst an
 - **Das Projekt-Env ist `.venv`, nicht die Anaconda-Basis.** `which python`
   zeigt auf Anaconda; dort fehlt `seqeval`, und Tests brechen beim Import ab.
   Immer `.venv/bin/python` benutzen.
+- **LayoutXLM braucht das Seitenbild, nicht nur Wörter und Boxen.** Es ist eine
+  LayoutLMv2-Architektur; der visuelle Backbone ist Teil des
+  Vorwärtsdurchlaufs. Fehlt `image`, stirbt der Lauf an einem nichtssagenden
+  `'NoneType' object has no attribute 'tensor'` tief im Backbone. Ein
+  Forward-Pass mit Batch-Größe 1 findet so etwas in 40 Sekunden – vor dem
+  Mieten einer GPU, nicht danach.
+- **Der Split wird über alle extrahierten Seiten gezogen, nicht über die
+  gelabelten.** Sonst hängt eine dauerhaft eingefrorene Aufteilung am
+  Zufall des Labeling-Fortschritts: wer bei 141 von 196 Seiten trainiert,
+  friert einen Split ohne die restlichen 55 ein, und die landen später
+  sämtlich im Training.
+- **Layout hat bisher nichts gebracht.** Test-F1 0.929 (GBERT) gegen 0.930
+  (LayoutXLM) über 712 Entitäten. BRAND, das Label, für das LayoutXLM
+  angetreten ist, erreicht auch ohne jede Positionsinformation 0.951 – in
+  Woche 1 waren es 0.10. Der Unterschied lag nie am Layout, sondern an den
+  Labels. Einzig OLD_PRICE gewinnt spürbar (+0.056), was zur Sache passt:
+  ob eine Zahl der Streichpreis ist, zeigt sich an Position und Größe.
+- **Zahlen aus dem Training gegen `sonnet-5` messen Konsistenz, nicht
+  Richtigkeit.** Trainiert und getestet wird gegen dieselbe Label-Quelle, und
+  die ist noch `in_progress`. Jede Nennung von 0.929 muss das mittragen.
+- **Anweisung für die Handannotation und Prompt in `labeling.py` sind
+  auseinandergelaufen.** Qwen labelt `je`, `ca.`, Abmessungen als QUANTITY und
+  `Kl. I`/`Haltungsform` als PRODUCT – alles Dinge, die nur in der
+  Annotationsanweisung ausgeschlossen sind. 82.2 % Wortübereinstimmung
+  zwischen den Armen, und die Abweichung hat fast nur diese eine Ursache.
+- **Training gehört auf eine fremde GPU, wegen RAM statt Rechenzeit.** GBERT
+  braucht 96 Sekunden, LayoutXLM 254; auf einem 8-GB-Mac füllt LayoutXLM den
+  Swap und die Maschine steht (Load 67 bei 100 MB freiem RAM).
+  `scripts/11_export_bundle.py` packt Code (per `git ls-files`, also inklusive
+  nicht gepushter Commits), Labels, Split und auf 224 px verkleinerte Bilder in
+  17 MB. Ohne `split.json` bricht der Export ab – sonst würfelt die fremde
+  Maschine klaglos einen eigenen und die Zahlen sind unvergleichbar.
+  Anleitung: `docs/runpod.md`.
 
 ## Offene Entscheidungen (nicht eigenmächtig festlegen)
 
