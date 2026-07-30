@@ -39,6 +39,47 @@ Nach der Überarbeitung liegt dasselbe Modell bei **F1 0.752** statt 0.306.
 VALID und DISCOUNT haben 1 bzw. 3 Instanzen – diese Zahlen sind Rauschen und
 dürfen nicht einzeln berichtet werden.
 
+## Modellvergleich
+
+Alle Modelle mit demselben Prompt (v4) über dieselben drei Gold-Seiten:
+
+| Modell | micro-F1 | Precision | Recall |
+|---|---|---|---|
+| **qwen3.5-397b-a17b** | **0.836** | 0.803 | 0.870 |
+| mistral-medium-3.5-128b | 0.788 | 0.740 | 0.843 |
+| qwen3.6-35b-a3b | 0.624 | 0.591 | 0.661 |
+| qwen3.5-122b-a10b | 0.332 | 0.232 | 0.583 |
+| *mistral, alter Prompt* | *0.306* | *0.265* | *0.361* |
+
+Der Sieger je Label-Typ (qwen3.5-397b, nach dem Reparaturlauf):
+
+| Label | F1 | Precision | Recall |
+|---|---|---|---|
+| BRAND | **1.000** | 1.000 | 1.000 |
+| QUANTITY | 0.947 | 0.900 | 1.000 |
+| UNIT_PRICE | 0.947 | 0.900 | 1.000 |
+| PRICE | 0.872 | 0.810 | 0.944 |
+| OLD_PRICE | 0.857 | 0.857 | 0.857 |
+| DISCOUNT | 0.667 | 0.500 | 1.000 |
+| PRODUCT | 0.537 | 0.550 | 0.524 |
+| VALID | 0.000 | – | – |
+
+VALID hat genau eine Instanz und DISCOUNT drei – beide Zahlen sind Rauschen.
+
+**Der Span-Guard wirkt, und zwar messbar.** Über alle 196 Seiten, verglichen
+mit dem alten Datensatz:
+
+| | alter Lauf | qwen3.5-397b |
+|---|---|---|
+| `oder` innerhalb eines Spans | 179 | **0** |
+| Grundpreis-Klammer im falschen Span | 322 | **0** |
+| einzelne Werbewörter gelabelt | 478 (2,4/Seite) | 12 (0,06/Seite) |
+
+Die ersten beiden Zeilen sind der Guard aus Regel „oder"/Klammer, die dritte
+die Ziffernregel. Der Reparaturlauf (`03_label_words.py --repair`) hat dafür
+nachträglich 602 Spans auf 106 Seiten entfernt – ohne einen einzigen
+API-Aufruf.
+
 ## Die gefundenen Fehlerklassen
 
 Alle Beispiele stammen aus dem Span-Vergleich gegen Gold, nicht aus Schätzung.
