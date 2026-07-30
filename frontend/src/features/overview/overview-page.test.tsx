@@ -13,30 +13,11 @@ function base(extra: Record<string, unknown> = {}) {
     "/api/evaluation": [],
     "/api/model": [],
     "/api/schema": { entity_types: ["PRODUCT", "BRAND", "PRICE"] },
-    "/api/labels/distribution": { pages: 0, counts: {}, total: 0 },
     ...extra,
   }
 }
 
 describe("OverviewPage", () => {
-  it("zeigt jeden Pipeline-Schritt im Fortschrittsstreifen", async () => {
-    mockFetch(base())
-    renderWithProviders(<OverviewPage />)
-
-    // Der Skriptname hängt im Tooltip; sichtbar ist der Titel des Schritts.
-    expect(await screen.findByText("Prospekte laden")).toBeInTheDocument()
-    expect(screen.getByText("Evaluation")).toBeInTheDocument()
-  })
-
-  it("fuehrt nichts aus, sondern verlinkt auf die Pipeline-Seite", async () => {
-    mockFetch(base())
-    renderWithProviders(<OverviewPage />)
-
-    await screen.findByText("Prospekte laden")
-    expect(screen.queryByRole("button", { name: /starten/i })).not.toBeInTheDocument()
-    expect(screen.getByRole("link", { name: /Ausführen/ })).toHaveAttribute("href", "/pipeline")
-  })
-
   it("zeigt die Zahl handannotierter Seiten als eigene Kennzahl", async () => {
     mockFetch(base({
       "/api/status": {
@@ -50,23 +31,28 @@ describe("OverviewPage", () => {
     expect((await screen.findAllByText("7")).length).toBeGreaterThanOrEqual(1)
   })
 
-  it("zeigt Kataloge und die Label-Verteilung", async () => {
+  it("zeigt je Variante den F1-Wert aus dem Evaluationsreport", async () => {
     mockFetch(base({
-      "/api/status": {
-        catalogs: [{
-          id: "462828", raw: 10, words: 8, images: 8, labeled: 4,
-          downloaded: "2026-07-23", region: "Niedersachsen · 81 Märkte", region_confirmed: true,
-        }],
-        totals: { ...EMPTY_TOTALS, raw: 10, words: 8, images: 8, labeled: 4 },
-      },
-      "/api/labels/distribution": {
-        pages: 4, counts: { PRODUCT: 120, PRICE: 89, BRAND: 0 }, total: 209,
-      },
+      "/api/model": [{ variant: "gbert", trained: true, epoch: 10 }],
+      "/api/evaluation": [{
+        variant: "gbert",
+        report: { "micro avg": { "f1-score": 0.908, precision: 0.889, recall: 0.927, support: 3901 } },
+      }],
     }))
     renderWithProviders(<OverviewPage />)
 
-    expect(await screen.findByText("462828")).toBeInTheDocument()  // Prospektwoche
-    expect(await screen.findByText("PRODUCT")).toBeInTheDocument()
-    expect(screen.getByText("120")).toBeInTheDocument()
+    expect(await screen.findByText("F1 0.908")).toBeInTheDocument()
+    expect(screen.getByText(/trainiert, 10 Epochen/)).toBeInTheDocument()
+  })
+
+  // Die Übersicht ist bewusst auf Datenstand und Ergebnis reduziert: alles
+  // Weitere hat eine eigene Seite und stand hier doppelt.
+  it("zeigt weder Pipeline-Schritte noch Label-Verteilung", async () => {
+    mockFetch(base())
+    renderWithProviders(<OverviewPage />)
+
+    await screen.findByText("Modellstand")
+    expect(screen.queryByText("Prospekte laden")).not.toBeInTheDocument()
+    expect(screen.queryByText("PRODUCT")).not.toBeInTheDocument()
   })
 })

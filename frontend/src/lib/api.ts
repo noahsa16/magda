@@ -1,5 +1,5 @@
 import type {
-  Agreement, CatalogEntry, CatalogRegistry, EvalReport, GoldAnnotation, GoldSummary, InferenceResult,
+  Agreement, CatalogEntry, CatalogRegistry, EvalReport, GoldAnnotation, GoldSummary,
   JobDef, LabelDistribution, Labeler, LabelSource, LabelsVsGold, ModelStatus, PageDetail, PageSummary,
   PipelineStatus,
   ProbeResult,
@@ -40,11 +40,6 @@ export const api = {
   pageImageUrl: (id: string) => `/api/pages/${id}/image`,
   evaluation: () => fetchJson<EvalReport[]>("/api/evaluation"),
   model: () => fetchJson<ModelStatus[]>("/api/model"),
-  inference: (file: File) => {
-    const form = new FormData()
-    form.append("file", file)
-    return fetchJson<InferenceResult>("/api/inference", { method: "POST", body: form })
-  },
   run: () => fetchJson<RunStatus>("/api/run"),
   startRun: (job: string, args: Record<string, string> = {}) =>
     fetchJson<RunStatus>("/api/run", {

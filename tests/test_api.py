@@ -182,27 +182,6 @@ def test_evaluation_liefert_reports(client):
     assert body[0]["variant"] == "layoutxlm"
 
 
-@pytest.fixture
-def clean_model_cache(monkeypatch):
-    monkeypatch.setattr(api, "_MODEL_CACHE", {})
-
-
-def test_inference_ohne_checkpoint_ist_503(client, clean_model_cache):
-    resp = client.post(
-        "/api/inference",
-        files={"file": ("seite.pdf", b"%PDF-fake", "application/pdf")},
-    )
-    assert resp.status_code == 503
-    assert "04_train" in resp.json()["detail"]
-
-
-def test_inference_lehnt_nicht_pdf_ab(client, clean_model_cache):
-    resp = client.post(
-        "/api/inference",
-        files={"file": ("bild.png", b"\x89PNG", "image/png")},
-    )
-    assert resp.status_code == 400
-
 
 # --- Modellstatus ----------------------------------------------------------
 

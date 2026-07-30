@@ -138,11 +138,6 @@ export interface EvalReport {
   report: Record<string, EntityMetrics>
 }
 
-export interface InferenceResult extends PageDetail {
-  tags: string[]
-  image_b64: string
-}
-
 export interface ModelStatus {
   variant: "layoutxlm" | "gbert"
   trained: boolean

@@ -4,7 +4,7 @@ import { api } from "@/lib/api"
 import { cn } from "@/lib/utils"
 
 // Reihenfolge entlang des Arbeitsflusses: Stand ansehen, Daten erzeugen,
-// Daten prüfen und annotieren, Ergebnis lesen, Modell ausprobieren.
+// Daten prüfen und annotieren, Ergebnis lesen.
 const items = [
   { title: "Übersicht", url: "/" },
   { title: "Pipeline", url: "/pipeline" },
@@ -13,7 +13,6 @@ const items = [
   // beantwortet sich in einer Ordnerebene besser als in zwei Menüpunkten.
   { title: "Daten", url: "/labels" },
   { title: "Ergebnis", url: "/evaluation" },
-  { title: "Demo", url: "/demo" },
 ]
 
 function BackendStatus() {

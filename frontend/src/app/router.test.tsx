@@ -10,7 +10,7 @@ vi.stubGlobal("fetch", vi.fn(async () => new Response("[]", {
 })))
 
 describe("App-Shell", () => {
-  it("zeigt die Navigation mit allen fünf Bereichen", async () => {
+  it("zeigt die Navigation mit allen vier Bereichen", async () => {
     const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
     const router = createMemoryRouter(routes, { initialEntries: ["/"] })
     render(
@@ -24,6 +24,6 @@ describe("App-Shell", () => {
     // gemeinsamen Einstieg: "wessen Labels?" ist die erste Frage.
     expect(screen.getByRole("link", { name: /Daten/ })).toHaveAttribute("href", "/labels")
     expect(screen.getByRole("link", { name: /Ergebnis/ })).toBeInTheDocument()
-    expect(screen.getByRole("link", { name: /Demo/ })).toBeInTheDocument()
+    expect(screen.queryByRole("link", { name: /Demo/ })).not.toBeInTheDocument()
   })
 })
