@@ -19,6 +19,11 @@ vollständig trainiert und evaluiert.
 
 Der Sprung kommt nicht vom Modell. Er kommt von den Labels.
 
+Diese Zahlen stehen über einem Zufallssplit, und der leckt (Abschnitt 6). Nach
+dem Wechsel auf einen **Wochen-Split** — KW30 lernen, KW31 testen, kein
+gemeinsamer Katalog — bleibt GBERT bei **0.908** und LayoutXLM fällt auf
+**0.895** (Abschnitt 7). Das ist die Zahl, die wir berichten.
+
 ---
 
 ## 1. Von drei annotierten Seiten auf 196
@@ -327,14 +332,126 @@ Cluster geschlossen einer Seite zuordnen. Bleibt Teamentscheidung.
 
 ---
 
-## 7. Infrastruktur: vier Fehler auf dem Weg zur fremden GPU
+## 7. Der Wochen-Split: dieselbe Messung ohne Leck
 
-Trainiert wurde auf einem gemieteten Pod (NVIDIA L4, 23 GB, 0,39 $/h). Nicht
-wegen der Rechenzeit — GBERT braucht **96 Sekunden**, LayoutXLM **254** —
-sondern wegen des Arbeitsspeichers: auf einem 8-GB-Mac füllt LayoutXLM den
-Swap, und die Maschine wird unbenutzbar (Load 67 bei 100 MB freiem RAM).
+Auf die Leckmessung aus Abschnitt 6 folgte die naheliegende Konsequenz: nicht
+Seiten trennen, sondern **Erscheinungswochen**. Der Korpus enthält zwei —
+KW30 (Kataloge 1342812–1342929) und KW31 (1347375–1347504). KW30 lernt, KW31
+testet. Keine Seite aus KW31 hat einen Katalog im Training.
 
-Vier Fehler standen dazwischen, alle vier inzwischen im Repository behoben:
+Die Woche steht nirgends in den Daten. Ableitbar ist sie aus dem Abstand der
+Katalog-IDs: innerhalb einer Woche liegen sie höchstens 24 auseinander,
+zwischen den Wochen klaffen 4446. `dataset.group_by_week()` schneidet bei
+einer Lücke über 200 — großzügig, aber ohne feste Nummern, die beim nächsten
+Erntelauf veraltet wären.
+
+Erzeugt wird die Aufteilung mit `scripts/12_make_split.py --strategy week`.
+Das Skript weigert sich, einen bestehenden Split zu überschreiben, und legt
+beim erzwungenen Ersetzen eine Sicherung daneben.
+
+### Wie sauber ist es jetzt?
+
+| | Seiten-Split | Wochen-Split |
+|---|---:|---:|
+| Aufteilung train / dev / test | 158 / 19 / 19 | **81 / 8 / 107** |
+| Median-Ähnlichkeit Test ↔ Lernmenge | 0.851 | **0.257** |
+| Testseiten mit Zwilling ≥ 0.9 | 6 von 19 | **0 von 107** |
+| ≥ 0.8 | — | 1 von 107 |
+| ≥ 0.7 | 12 von 19 | 3 von 107 |
+| ≥ 0.5 | — | 5 von 107 |
+
+Die drei Restfälle liegen bei höchstens 0.824. Das sind keine Regionalzwillinge,
+sondern wiederkehrende Seitentypen — die Obst-und-Gemüse-Seite sieht jede Woche
+ähnlich aus. Das ist kein Leck, das ist die Aufgabe.
+
+### Ergebnis auf 107 Testseiten
+
+| Label | GBERT | LayoutXLM | Δ | n |
+|---|---:|---:|---:|---:|
+| DISCOUNT | 0.998 | 1.000 | +0.002 | 321 |
+| UNIT_PRICE | 0.985 | 1.000 | +0.015 | 514 |
+| QUANTITY | 0.951 | 0.933 | −0.018 | 606 |
+| BRAND | 0.938 | 0.939 | +0.001 | 508 |
+| OLD_PRICE | 0.924 | 0.874 | −0.050 | 292 |
+| PRICE | 0.899 | 0.882 | −0.017 | 724 |
+| VALID | 0.885 | 0.905 | +0.020 | 93 |
+| PRODUCT | 0.807 | 0.783 | −0.024 | 786 |
+| APP_PRICE | 0.000 | 0.000 | ±0 | 57 |
+| **micro avg** | **0.908** | **0.895** | **−0.013** | 3901 |
+| macro avg | 0.821 | 0.813 | −0.008 | 3901 |
+
+**Der Befund hält.** Mit 45 % weniger Trainingsdaten *und* ohne Leck fällt
+GBERT von 0.929 auf 0.908 — nicht auf 0.85, wie die Leckmessung als Untergrenze
+nahegelegt hatte. Auswendiggelernt war hier nichts. Der Testsatz ist zugleich
+von 19 auf 107 Seiten gewachsen, die Zahl also erheblich besser abgestützt.
+
+Auseinanderhalten lassen sich die beiden Effekte nicht: weniger Daten drückt,
+kein Leck drückt, und beide wirken gleichzeitig. Die 2,1 Punkte sind die Summe.
+
+### APP_PRICE bricht auf 0.000 ein — und das ist der interessanteste Befund
+
+Nicht Rauschen, sondern ein **Verteilungsunterschied zwischen den Wochen**:
+
+| | KW30 (train) | KW31 (test) |
+|---|---:|---:|
+| APP_PRICE-Spans | **2** | **57** |
+| davon auf … Seiten | 1 | 46 |
+
+Penny hat den App-Preis in KW31 breit ausgerollt. Das Modell hat ihn nie
+gesehen und sagt ihn folgerichtig kein einziges Mal voraus (seqeval: „no
+predicted samples"). Ohne APP_PRICE läge GBERT bei **0.914**, LayoutXLM bei
+**0.902**.
+
+Der Zufallssplit hätte diesen Fall verdeckt — er hätte die 57 Spans über Train
+und Test verteilt und eine passable Zahl geliefert. Genau dafür ist ein
+zeitlicher Split da: Er misst nicht nur Generalisierung über Seiten, sondern
+über die Zeit, und das ist der Einsatzfall. Prospekte ändern ihr Format.
+
+### LayoutXLM verliert jetzt sichtbar
+
+Im Zufallssplit lagen die beiden gleichauf (0.929 / 0.930). Über Wochen
+getrennt liegt GBERT **1,3 Punkte vorn**, und OLD_PRICE — das einzige Label,
+bei dem LayoutXLM zuvor deutlich gewann (+0.056) — dreht auf **−0.050**.
+
+Das ist mit Vorsicht zu lesen: 81 Trainingsseiten sind für ein Modell mit
+zusätzlichem visuellen Backbone knapp, und LayoutXLM hat mehr Parameter zu
+füllen. Aber die These „Layout hilft" wird davon nicht gestützt, sondern
+weiter geschwächt.
+
+### Was auch der Wochen-Split nicht behebt
+
+**Der Testsatz ist in sich redundant.** Die 107 Seiten bilden bei Jaccard 0.7
+nur **66 Cluster**; der größte umfasst 11 Seiten. Nichts davon steckt im
+Training — es ist kein Leck. Aber eine Seite aus dem 11er-Cluster zählt elffach
+ins Ergebnis. Die effektive Stichprobe sind **~66 unabhängige Seiten, nicht
+107**, und das Konfidenzintervall ist entsprechend breiter, als n = 3901
+Entitäten suggeriert.
+
+**Der Dev-Split ist mit 8 Seiten zu klein.** Modellauswahl über
+`load_best_model_at_end` entscheidet damit auf dünner Basis. Bei zwei Wochen
+ist das der Preis dafür, dass Dev aus den Trainingswochen kommen muss — aus der
+Testwoche gezogen wäre es Auswahl auf der Messmenge.
+
+**Wiederkehrende Produkte sind kein Leck.** MÜHLENHOF und Coca-Cola stehen in
+beiden Wochen, und das soll so sein: ein produktiv eingesetztes Modell hätte
+diese Marken auch schon gesehen.
+
+**Die Grenze aus Abschnitt 6 gilt unverändert.** Train- und Testlabels kommen
+aus derselben Quelle mit denselben Konventionen. Gemessen wird weiterhin
+„reproduziert Claude", nicht „versteht Prospekte". Kein Split der Welt behebt
+das — nur die menschliche Freigabe der Vorannotation.
+
+---
+
+## 8. Infrastruktur: fünf Fehler auf dem Weg zur fremden GPU
+
+Trainiert wurde auf gemieteten Pods (erst NVIDIA L4, 23 GB, 0,39 $/h; für den
+Wochen-Split eine RTX A5000 für 0,27 $/h). Nicht wegen der Rechenzeit — GBERT
+braucht **96 Sekunden**, LayoutXLM **254** — sondern wegen des
+Arbeitsspeichers: auf einem 8-GB-Mac füllt LayoutXLM den Swap, und die Maschine
+wird unbenutzbar (Load 67 bei 100 MB freiem RAM).
+
+Fünf Fehler standen dazwischen, alle fünf inzwischen im Repository behoben:
 
 **1. Der eingefrorene Split hing am Labeling-Fortschritt.**
 `get_or_create_splits()` würfelte über die Seiten, für die es *gerade* Labels
@@ -363,6 +480,20 @@ in seiner `setup.py`, um gegen die richtige CUDA-Version zu übersetzen. In
 pips Build-Sandbox gibt es kein torch — auf einer Maschine, auf der torch
 längst installiert ist. `--no-build-isolation` behebt es.
 
+**5. Eine gemeldete GPU ist keine benutzbare GPU.** Der zweite Pod meldete
+`torch.cuda.is_available() == True`, brach aber bei der ersten Allokation ab:
+„CUDA-capable device(s) is/are busy or unavailable". `nvidia-smi` zeigte
+gleichzeitig **0 MiB belegt, keine Prozesse und 100 % Auslastung** — die Karte
+war von einem Nachbarcontainer beschlagnahmt, für uns unsichtbar. Der dritte
+Pod landete auf **demselben Host** (66.92.198.138) und scheiterte identisch;
+erst der vierte, auf anderer Hardware, lief.
+
+Die Prüfung im Bootstrap fasst die Karte deshalb jetzt wirklich an
+(`torch.zeros(8, device="cuda").sum()`), statt sie nur zu fragen. Ohne das
+wäre der Fehler nach der zehnminütigen detectron2-Übersetzung mitten im
+HF-Trainer aufgeschlagen. **Verfügbarkeit abfragen und Verfügbarkeit benutzen
+sind zwei verschiedene Dinge** — der Unterschied kostete hier zwei Pods.
+
 ### Das Trainingsbündel
 
 `scripts/11_export_bundle.py` packt Code, Labels, Split und Seitenbilder in ein
@@ -379,17 +510,18 @@ Tar (16,7 MB). Drei Entscheidungen darin:
   den `LayoutLMv2ImageProcessor` ohnehin anwendet. Aus 390 MB werden 17 MB,
   ohne dass sich am Modelleingang ein Pixel ändert.
 
-Das Bootstrap bricht ab, wenn `torch.cuda.is_available()` falsch ist. Der
-teuerste denkbare Fehler auf einem Mietpod ist ein Training, das
+Das Bootstrap bricht ab, wenn die GPU fehlt *oder* nichts annimmt (Fehler 5).
+Der teuerste denkbare Fehler auf einem Mietpod ist ein Training, das
 stillschweigend auf der CPU läuft, während die bezahlte Karte danebensteht.
 
-Gesamtkosten des Trainings: **rund 0,20 $.**
+Gesamtkosten beider Trainingsläufe (Zufalls- und Wochen-Split, je zwei
+Varianten): **rund 0,45 $.**
 
 ---
 
-## 8. Offen
+## 9. Offen
 
-- **Vorannotation freigeben.** Bis dahin ist 0.929 eine Zahl über Konsistenz,
+- **Vorannotation freigeben.** Bis dahin ist 0.908 eine Zahl über Konsistenz,
   nicht über Richtigkeit. Priorität eins.
 - **PRODUCT-Konvention schärfen.** Sorte gegen Beschreibungstext, mit
   Beispielliste. Es ist das einzige Label unter 0.9 und die häufigste
@@ -398,8 +530,15 @@ Gesamtkosten des Trainings: **rund 0,20 $.**
   `trim_spans()`.
 - **Den einen bestätigten Annotationsfehler korrigieren**
   (`1347411_p42`, `1-l-Sonderedition`).
-- **Team-Entscheidungen unverändert offen:** Split über Kataloge statt Seiten,
-  Sliding Window für Seiten über 512 Subwords, endgültiges Label-Set.
+- **APP_PRICE in KW30 nachtragen?** 2 Spans gegen 57 — zu prüfen wäre, ob der
+  App-Preis in KW30 wirklich fehlte oder ob die Annotation ihn dort übersehen
+  hat. Das entscheidet, ob 0.000 ein Verteilungsbefund oder ein Datenfehler ist.
+- **Dritte Woche ernten.** Acht Dev-Seiten sind zu wenig für Modellauswahl, und
+  der Testsatz aus 107 Seiten enthält nur 66 unabhängige Cluster.
+- **Team-Entscheidungen unverändert offen:** Sliding Window für Seiten über 512
+  Subwords, endgültiges Label-Set. *Erledigt:* Split über Kataloge statt Seiten
+  — der Wochen-Split (Abschnitt 7) beantwortet die Frage schärfer, als sie
+  gestellt war.
 - **Marken ohne Textlayer.** Prinzipielle Grenze des reinen Textlayer-Ansatzes.
   Wenn wir sie erfassen wollen, führt kein Weg an echtem OCR auf dem
   Seitenbild vorbei.

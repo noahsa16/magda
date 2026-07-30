@@ -266,23 +266,51 @@ Skripte immer aus dem Projektroot starten – sie hängen den Root selbst an
   Zufall des Labeling-Fortschritts: wer bei 141 von 196 Seiten trainiert,
   friert einen Split ohne die restlichen 55 ein, und die landen später
   sämtlich im Training.
-- **Layout hat bisher nichts gebracht.** Test-F1 0.929 (GBERT) gegen 0.930
-  (LayoutXLM) über 712 Entitäten. BRAND, das Label, für das LayoutXLM
-  angetreten ist, erreicht auch ohne jede Positionsinformation 0.951 – in
-  Woche 1 waren es 0.10. Der Unterschied lag nie am Layout, sondern an den
-  Labels. Einzig OLD_PRICE gewinnt spürbar (+0.056), was zur Sache passt:
-  ob eine Zahl der Streichpreis ist, zeigt sich an Position und Größe.
-- **Der Seiten-Split leckt: 12 von 19 Testseiten haben einen Trainingszwilling
+- **Layout hat bisher nichts gebracht.** Test-F1 0.908 (GBERT) gegen 0.895
+  (LayoutXLM) über 3901 Entitäten im Wochen-Split; im alten Zufallssplit
+  0.929 gegen 0.930. BRAND, das Label, für das LayoutXLM angetreten ist,
+  erreicht auch ohne jede Positionsinformation 0.938 – in Woche 1 waren es
+  0.10. Der Unterschied lag nie am Layout, sondern an den Labels. OLD_PRICE
+  gewann im Zufallssplit noch (+0.056), im Wochen-Split verliert es (−0.050);
+  die These trägt also nicht einmal dort.
+- **Der Seiten-Split leckt: 12 von 19 Testseiten hatten einen Trainingszwilling
   mit Jaccard ≥ 0.7**, Median 0.851. Die Entdopplung greift erst ab 0.95,
   Seiten bei 0.949 überleben sie und landen dann auf verschiedenen Seiten des
   Splits. Gemessener Effekt: F1 0.944 auf Seiten mit nahem Zwilling gegen
-  0.886 ohne — die ehrliche Schätzung ist ~0.89 statt 0.929. Ein Split über
-  *Kataloge* behebt das nicht (`1347375_p30` und `1347396_p34` sind
-  verschiedene Kataloge mit Jaccard 0.939, zwei Regionalausgaben derselben
-  Woche). Nötig wäre ein Gruppen-Split über die Duplikat-Cluster.
+  0.886 ohne. Behoben durch den **Wochen-Split**
+  (`scripts/12_make_split.py --strategy week`): KW30 lernt, KW31 testet,
+  81/8/107 Seiten. Median-Ähnlichkeit fällt auf 0.257, keine Testseite hat
+  noch einen Zwilling ≥ 0.9. Ein Split über *Kataloge* hätte das nicht
+  behoben – `1347375_p30` und `1347396_p34` sind verschiedene Kataloge mit
+  Jaccard 0.939, zwei Regionalausgaben derselben Woche.
+- **Die Woche steht nirgends in den Daten, nur im Abstand der Katalog-IDs.**
+  Innerhalb einer Woche liegen sie höchstens 24 auseinander, zwischen zwei
+  Wochen 4446. `dataset.WEEK_GAP = 200` schneidet großzügig dazwischen. Feste
+  ID-Bereiche wären beim nächsten Erntelauf veraltet.
+- **Der Wochen-Split misst Generalisierung über die Zeit – und deckt damit
+  Verteilungsverschiebungen auf.** APP_PRICE hat 2 Spans in KW30 und 57 in
+  KW31 (auf 46 von 107 Testseiten): Penny hat den App-Preis dazwischen breit
+  ausgerollt. Das Modell sagt ihn kein einziges Mal voraus, F1 0.000. Ohne
+  APP_PRICE läge GBERT bei 0.914 statt 0.908. Ein Zufallssplit hätte die 57
+  Spans verteilt und eine passable Zahl geliefert – der Befund wäre unsichtbar
+  geblieben.
+- **Auch ohne Leck bleibt der Testsatz redundant.** Die 107 Testseiten bilden
+  bei Jaccard 0.7 nur 66 Cluster, der größte umfasst 11 Seiten. Kein Leck (im
+  Training steckt nichts davon), aber die effektive Stichprobe ist ~66, nicht
+  107. Und Dev hat nur 8 Seiten – für Modellauswahl zu dünn. Beides löst erst
+  eine dritte Erntewoche.
 - **Zahlen aus dem Training gegen `sonnet-5` messen Konsistenz, nicht
   Richtigkeit.** Trainiert und getestet wird gegen dieselbe Label-Quelle, und
-  die ist noch `in_progress`. Jede Nennung von 0.929 muss das mittragen.
+  die ist noch `in_progress`. Jede Nennung von 0.908 muss das mittragen – kein
+  Split der Welt behebt es, nur die menschliche Freigabe.
+- **`torch.cuda.is_available()` ist keine Prüfung.** Zwei RunPod-Instanzen
+  meldeten die GPU als verfügbar und brachen bei der ersten Allokation ab
+  („CUDA-capable device(s) is/are busy or unavailable"); `nvidia-smi` zeigte
+  0 MiB belegt, keine Prozesse, 100 % Auslastung – ein Nachbarcontainer hielt
+  die Karte. Das Bootstrap in `bundle.py` fasst sie deshalb wirklich an
+  (`torch.zeros(8, device="cuda")`). Sonst schlägt der Fehler erst nach der
+  zehnminütigen detectron2-Übersetzung mitten im Trainer auf. Zweiter Pod auf
+  demselben Host scheitert identisch – bei diesem Fehler die Hardware wechseln.
 - **Anweisung für die Handannotation und Prompt in `labeling.py` sind
   auseinandergelaufen.** Qwen labelt `je`, `ca.`, Abmessungen als QUANTITY und
   `Kl. I`/`Haltungsform` als PRODUCT – alles Dinge, die nur in der

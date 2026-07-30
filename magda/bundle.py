@@ -58,6 +58,16 @@ if not torch.cuda.is_available():
     sys.exit("ABBRUCH: torch.cuda.is_available() ist False. Ohne GPU zahlst du "
              "GPU-Stunden fuer CPU-Training. Falsches Image, oder pip hat das "
              "CUDA-Torch durch ein CPU-Rad ersetzt.")
+# is_available() reicht nicht: eine von einem Nachbarcontainer belegte Karte
+# meldet sich als verfuegbar und scheitert erst bei der ersten Allokation -
+# mitten im Training, nach der Installation, mit einem CUDA-Fehler tief im
+# HF-Trainer. Einmal wirklich anfassen ist die ehrliche Pruefung.
+try:
+    torch.zeros(8, device="cuda").sum().item()
+except Exception as fehler:
+    sys.exit(f"ABBRUCH: GPU meldet sich verfuegbar, laesst aber nichts zu "
+             f"({type(fehler).__name__}: {fehler}). Karte ist belegt oder defekt "
+             f"- diesen Pod terminieren und einen neuen nehmen.")
 print(f"GPU: {torch.cuda.get_device_name(0)}, torch {torch.__version__}")
 PRUEFUNG
 
