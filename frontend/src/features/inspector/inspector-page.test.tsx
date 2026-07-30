@@ -75,7 +75,7 @@ describe("InspectorPage — Ebenen", () => {
   it("führt über den Brotkrumen zurück zur Übersicht", async () => {
     const user = userEvent.setup()
     setup({ route: "/inspector?catalog=462828" })
-    await user.click(await screen.findByRole("button", { name: "Prospekte" }))
+    await user.click(await screen.findByRole("button", { name: "Quellen" }))
     expect(await screen.findByRole("button", { name: /462828/ })).toBeInTheDocument()
     expect(screen.queryByPlaceholderText("Seite suchen…")).not.toBeInTheDocument()
   })

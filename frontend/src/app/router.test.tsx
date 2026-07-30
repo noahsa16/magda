@@ -10,7 +10,7 @@ vi.stubGlobal("fetch", vi.fn(async () => new Response("[]", {
 })))
 
 describe("App-Shell", () => {
-  it("zeigt die Navigation mit allen sechs Bereichen", async () => {
+  it("zeigt die Navigation mit allen fünf Bereichen", async () => {
     const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
     const router = createMemoryRouter(routes, { initialEntries: ["/"] })
     render(
@@ -20,8 +20,9 @@ describe("App-Shell", () => {
     )
     expect(await screen.findByRole("link", { name: /Übersicht/ })).toBeInTheDocument()
     expect(screen.getByRole("link", { name: /Pipeline/ })).toHaveAttribute("href", "/pipeline")
-    expect(screen.getByRole("link", { name: /Daten/ })).toBeInTheDocument()
-    expect(screen.getByRole("link", { name: /Annotieren/ })).toBeInTheDocument()
+    // Inspektor und Annotator liegen seit dem Ordner-Umbau hinter einem
+    // gemeinsamen Einstieg: "wessen Labels?" ist die erste Frage.
+    expect(screen.getByRole("link", { name: /Daten/ })).toHaveAttribute("href", "/labels")
     expect(screen.getByRole("link", { name: /Ergebnis/ })).toBeInTheDocument()
     expect(screen.getByRole("link", { name: /Demo/ })).toBeInTheDocument()
   })

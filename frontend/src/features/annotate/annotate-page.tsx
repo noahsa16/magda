@@ -44,6 +44,9 @@ export function AnnotatePage() {
   const schema = useQuery({ queryKey: ["schema"], queryFn: api.schema })
   const pages = useQuery({ queryKey: ["pages"], queryFn: () => api.pages() })
   const gold = useQuery({ queryKey: ["gold"], queryFn: api.gold })
+  // Wer hat annotiert? Beim Durchsehen ist das die erste Frage: eigene
+  // Seiten bestätigen heißt etwas anderes als Vorannotation prüfen.
+  const annotatorFilter = searchParams.get("annotator") ?? undefined
   const page = useQuery({
     queryKey: ["page", selected],
     queryFn: () => api.page(selected!),
@@ -51,9 +54,19 @@ export function AnnotatePage() {
   })
   const status = useQuery({ queryKey: ["status"], queryFn: api.status })
 
+  const visibleGold = useMemo(
+    () =>
+      annotatorFilter === undefined
+        ? (gold.data ?? [])
+        // Unangetastete Seiten bleiben sichtbar: sonst verschwindet aus einem
+        // Urheber-Ordner genau die Arbeit, die dort noch zu tun ist.
+        : (gold.data ?? []).filter((g) => g.annotator === annotatorFilter || g.status === "untouched"),
+    [gold.data, annotatorFilter],
+  )
+
   const tiles = useMemo(
-    () => groupGoldByCatalog(gold.data ?? [], status.data?.catalogs ?? []),
-    [gold.data, status.data],
+    () => groupGoldByCatalog(visibleGold, status.data?.catalogs ?? []),
+    [visibleGold, status.data],
   )
   const catalogPages = useMemo(
     () => (pages.data ?? []).filter((p) => p.catalog === catalog),
@@ -66,8 +79,8 @@ export function AnnotatePage() {
   // Referenziell stabil halten: PageList memoisiert seine Gruppierung über
   // diese Liste. Eine neue Referenz je Render rechnet sie bei jedem Wortklick neu.
   const goldRows = useMemo(
-    () => (gold.data ?? []).filter((g) => g.catalog === catalog),
-    [gold.data, catalog],
+    () => visibleGold.filter((g) => g.catalog === catalog),
+    [visibleGold, catalog],
   )
   const idx = selected ? ids.indexOf(selected) : -1
 
@@ -127,11 +140,23 @@ export function AnnotatePage() {
   if (catalog === null) {
     return (
       <div className="flex min-w-0 flex-col gap-4">
-        <h1 className="text-3xl font-extrabold tracking-tight">Annotieren</h1>
+        <div className="flex items-baseline gap-3">
+          <h1 className="text-3xl font-extrabold tracking-tight">Annotieren</h1>
+          <Crumbs
+            items={[
+              { label: "Quellen", onClick: () => setSearchParams({}) },
+              { label: annotatorFilter ?? "alle" },
+            ]}
+          />
+        </div>
         <CatalogGrid
           tiles={tiles}
           unit="fertig"
-          onSelect={(id) => setSearchParams({ catalog: id })}
+          onSelect={(id) =>
+            setSearchParams(
+              annotatorFilter ? { annotator: annotatorFilter, catalog: id } : { catalog: id },
+            )
+          }
           emptyHint={EMPTY_HINT}
         />
       </div>

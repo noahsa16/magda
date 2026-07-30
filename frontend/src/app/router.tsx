@@ -2,6 +2,7 @@ import type { RouteObject } from "react-router-dom"
 import { ControlPage } from "@/features/control/control-page"
 import { DemoPage } from "@/features/demo/demo-page"
 import { EvaluationPage } from "@/features/evaluation/evaluation-page"
+import { BrowsePage } from "@/features/browse/browse-page"
 import { InspectorPage } from "@/features/inspector/inspector-page"
 import { OverviewPage } from "@/features/overview/overview-page"
 import { AnnotatePage } from "@/features/annotate/annotate-page"
@@ -13,6 +14,9 @@ export const routes: RouteObject[] = [
     children: [
       { path: "/", element: <OverviewPage /> },
       { path: "/pipeline", element: <ControlPage /> },
+      // Ein Einstieg für beides. /inspector und /annotate bleiben als
+      // direkte Wege bestehen – die Agreement-Karte verlinkt dorthin.
+      { path: "/labels", element: <BrowsePage /> },
       { path: "/inspector", element: <InspectorPage /> },
       { path: "/annotate", element: <AnnotatePage /> },
       { path: "/evaluation", element: <EvaluationPage /> },

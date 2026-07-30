@@ -830,3 +830,35 @@ def test_evaluation_ignoriert_fremde_dateien_im_eval_ordner(client):
     body = client.get("/api/evaluation").json()
 
     assert [r["variant"] for r in body] == ["layoutxlm"]
+
+
+def test_sources_trennt_modelle_von_handannotation(client):
+    _write_labeled("462828_p1", {"tags": ["O"]}, model="alpha")
+    _write_labeled("462828_p2", {"tags": ["O"]}, model="alpha")
+    with open(config.GOLD_DIR / "462828_p1.json", "w") as f:
+        json.dump({"page_id": "462828_p1", "status": "done", "annotator": "Noah", "spans": []}, f)
+    with open(config.GOLD_DIR / "462828_p2.json", "w") as f:
+        json.dump({"page_id": "462828_p2", "status": "in_progress",
+                   "annotator": "sonnet-5 (vorannotiert)", "spans": []}, f)
+
+    body = client.get("/api/sources").json()
+
+    assert body[0] == {"kind": "model", "id": "alpha", "name": "alpha", "pages": 2, "done": 2}
+    # Gold nach Urheber getrennt: geprüfte Handarbeit und ungeprüfte
+    # Vorannotation sind nicht dasselbe und gehören nicht in einen Topf.
+    gold = {s["name"]: s for s in body if s["kind"] == "gold"}
+    assert gold["Noah"]["done"] == 1
+    assert gold["sonnet-5 (vorannotiert)"]["pages"] == 1
+    assert gold["sonnet-5 (vorannotiert)"]["done"] == 0
+
+
+def test_sources_ueberlebt_eine_kaputte_gold_datei(client):
+    """gold/ ist versioniert – ein Merge-Konfliktmarker ist der häufigste
+    Fehlerfall und darf die Ordnerliste nicht leeren."""
+    (config.GOLD_DIR / "462828_p1.json").write_text("<<<<<<< HEAD")
+    with open(config.GOLD_DIR / "462828_p2.json", "w") as f:
+        json.dump({"page_id": "462828_p2", "status": "done", "annotator": "Noah", "spans": []}, f)
+
+    body = client.get("/api/sources").json()
+
+    assert [s["name"] for s in body] == ["Noah"]

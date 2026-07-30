@@ -21,6 +21,21 @@ export interface PageDetail {
   model?: string
 }
 
+/**
+ * Eine Label-Quelle als Ordner – aus /api/sources.
+ *
+ * "model": ein LLM-Lauf unter data/labeled/<modell>/.
+ * "gold": Handannotation aus gold/, gruppiert nach Urheber. Geprüfte Arbeit
+ * und ungeprüfte Vorannotation stehen dort nebeneinander, deshalb `done`.
+ */
+export interface LabelSource {
+  kind: "model" | "gold"
+  id: string
+  name: string
+  pages: number
+  done: number
+}
+
 /** Ein Modell, das gelabelt hat – aus /api/labelers. */
 export interface Labeler {
   model: string

@@ -1,6 +1,6 @@
 import type {
   Agreement, CatalogEntry, CatalogRegistry, EvalReport, GoldAnnotation, GoldSummary, InferenceResult,
-  JobDef, LabelDistribution, Labeler, LabelsVsGold, ModelStatus, PageDetail, PageSummary,
+  JobDef, LabelDistribution, Labeler, LabelSource, LabelsVsGold, ModelStatus, PageDetail, PageSummary,
   PipelineStatus,
   ProbeResult,
   RunDetail, RunRecord, RunStatus, Span,
@@ -31,6 +31,7 @@ export const api = {
       `/api/pages/${id}${model ? `?model=${encodeURIComponent(model)}` : ""}`,
     ),
   labelers: () => fetchJson<Labeler[]>("/api/labelers"),
+  sources: () => fetchJson<LabelSource[]>("/api/sources"),
   labelsVsGold: () => fetchJson<LabelsVsGold>("/api/labels/vs-gold"),
   agreement: (a: string, b: string) =>
     fetchJson<Agreement>(

@@ -127,7 +127,15 @@ export function InspectorPage() {
   if (catalog === null) {
     return (
       <div className="flex min-w-0 flex-col gap-4">
-        <h1 className="text-3xl font-extrabold tracking-tight">Label-Inspektor</h1>
+        <div className="flex items-baseline gap-3">
+          <h1 className="text-3xl font-extrabold tracking-tight">Label-Inspektor</h1>
+          <Crumbs
+            items={[
+              { label: "Quellen", onClick: () => setSearchParams({}) },
+              { label: model ?? "" },
+            ]}
+          />
+        </div>
         <CatalogGrid
           tiles={tiles}
           unit="gelabelt"
@@ -170,7 +178,8 @@ export function InspectorPage() {
           <h1 className="text-3xl font-extrabold tracking-tight">Label-Inspektor</h1>
           <Crumbs
             items={[
-              { label: "Prospekte", onClick: () => navigate({}) },
+              { label: "Quellen", onClick: () => setSearchParams({}) },
+              { label: model ?? "alle", onClick: () => navigate({}) },
               selected
                 ? { label: catalog, onClick: () => navigate({ catalog }) }
                 : { label: catalog },

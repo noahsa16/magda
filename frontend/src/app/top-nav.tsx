@@ -4,12 +4,14 @@ import { api } from "@/lib/api"
 import { cn } from "@/lib/utils"
 
 // Reihenfolge entlang des Arbeitsflusses: Stand ansehen, Daten erzeugen,
-// Daten prüfen, von Hand annotieren, Ergebnis lesen, Modell ausprobieren.
+// Daten prüfen und annotieren, Ergebnis lesen, Modell ausprobieren.
 const items = [
   { title: "Übersicht", url: "/" },
   { title: "Pipeline", url: "/pipeline" },
-  { title: "Daten", url: "/inspector" },
-  { title: "Annotieren", url: "/annotate" },
+  // Ein Einstieg für Modell-Labels und Handannotation: seit es mehrere
+  // Labeling-Läufe gibt, ist "wessen Labels?" die erste Frage, und die
+  // beantwortet sich in einer Ordnerebene besser als in zwei Menüpunkten.
+  { title: "Daten", url: "/labels" },
   { title: "Ergebnis", url: "/evaluation" },
   { title: "Demo", url: "/demo" },
 ]

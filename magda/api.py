@@ -156,6 +156,51 @@ def list_pages(model: str | None = None):
     return pages
 
 
+@app.get("/api/sources")
+def list_label_sources():
+    """Die Label-Quellen als Ordner-Ebene für Inspektor und Annotator.
+
+    Zwei Sorten, die sich grundsätzlich unterscheiden und deshalb getrennt
+    gehören: was ein LLM erzeugt hat (reproduzierbar, liegt unter
+    data/labeled/<modell>/) und was ein Mensch oder eine Vorannotation in
+    gold/ hinterlassen hat.
+
+    Gold wird nach `annotator` gruppiert, nicht als ein Topf ausgeliefert.
+    Seit Seiten vorannotiert werden, stehen dort zwei verschiedene Dinge
+    nebeneinander: geprüfte Handarbeit und ungeprüfte Vorschläge. Wer die
+    zusammenwirft, weiß hinterher nicht mehr, worauf er sich verlassen kann.
+    """
+    sources = [
+        {
+            "kind": "model",
+            "id": model,
+            "name": model,
+            "pages": len(list(config.labeled_dir(model).glob("*.json"))),
+            "done": len(list(config.labeled_dir(model).glob("*.json"))),
+        }
+        for model in config.labeled_models()
+    ]
+
+    by_annotator: dict[str, dict] = {}
+    for gold_file in config.GOLD_DIR.glob("*.json"):
+        try:
+            with open(gold_file) as f:
+                gold = json.load(f)
+        except (json.JSONDecodeError, OSError):
+            # Eine kaputte Gold-Datei darf die Ordnerliste nicht leeren –
+            # gold/ ist versioniert, ein Merge-Konflikt ist der häufigste Fall.
+            continue
+        name = (gold.get("annotator") or "").strip() or "ohne Namen"
+        entry = by_annotator.setdefault(
+            name, {"kind": "gold", "id": name, "name": name, "pages": 0, "done": 0}
+        )
+        entry["pages"] += 1
+        if gold.get("status") == "done":
+            entry["done"] += 1
+
+    return sources + sorted(by_annotator.values(), key=lambda s: s["name"])
+
+
 @app.get("/api/labelers")
 def list_labelers():
     """Welche Modelle haben gelabelt, und wie viele Seiten? Füttert die Auswahl."""
