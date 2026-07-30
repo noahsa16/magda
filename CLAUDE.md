@@ -272,6 +272,14 @@ Skripte immer aus dem Projektroot starten – sie hängen den Root selbst an
   Woche 1 waren es 0.10. Der Unterschied lag nie am Layout, sondern an den
   Labels. Einzig OLD_PRICE gewinnt spürbar (+0.056), was zur Sache passt:
   ob eine Zahl der Streichpreis ist, zeigt sich an Position und Größe.
+- **Der Seiten-Split leckt: 12 von 19 Testseiten haben einen Trainingszwilling
+  mit Jaccard ≥ 0.7**, Median 0.851. Die Entdopplung greift erst ab 0.95,
+  Seiten bei 0.949 überleben sie und landen dann auf verschiedenen Seiten des
+  Splits. Gemessener Effekt: F1 0.944 auf Seiten mit nahem Zwilling gegen
+  0.886 ohne — die ehrliche Schätzung ist ~0.89 statt 0.929. Ein Split über
+  *Kataloge* behebt das nicht (`1347375_p30` und `1347396_p34` sind
+  verschiedene Kataloge mit Jaccard 0.939, zwei Regionalausgaben derselben
+  Woche). Nötig wäre ein Gruppen-Split über die Duplikat-Cluster.
 - **Zahlen aus dem Training gegen `sonnet-5` messen Konsistenz, nicht
   Richtigkeit.** Trainiert und getestet wird gegen dieselbe Label-Quelle, und
   die ist noch `in_progress`. Jede Nennung von 0.929 muss das mittragen.

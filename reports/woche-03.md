@@ -277,13 +277,53 @@ Das ist übliches Vorgehen und kein Fehler, aber jede Nennung der Zahl muss die
 Einschränkung mittragen. Belastbar wird sie erst, wenn ein Teil der 193 Seiten
 im Annotator durchgesehen und auf `done` gesetzt ist.
 
-Weiter gilt:
+### Nahezu doppelte Seiten lecken vom Train- in den Testsplit
+
+Der Split trennt Seiten, nicht Kataloge — und Penny gibt je Woche 44 fast
+identische Regionalausgaben heraus. Für jede Testseite wurde die ähnlichste
+Trainingsseite gesucht (Jaccard über normalisierte Wortmengen):
+
+| | |
+|---|---|
+| Median-Ähnlichkeit der ähnlichsten Trainingsseite | **0.851** |
+| Testseiten mit Zwilling ≥ 0.9 | 6 von 19 (max. 0.949) |
+| Testseiten mit Zwilling ≥ 0.7 | 12 von 19 |
+| Kataloge in Train *und* Test | 9 von 11 |
+
+Die Entdopplung greift erst ab Jaccard 0.95. Seiten bei 0.939 oder 0.949
+überleben sie um Haaresbreite und landen dann auf verschiedenen Seiten des
+Splits.
+
+**Wie groß ist der Effekt?** Dasselbe Modell, getrennt nach Nähe ausgewertet:
+
+| Testseiten | Anzahl | F1 | Entitäten |
+|---|---:|---:|---:|
+| alle | 19 | 0.929 | 712 |
+| mit nahem Zwilling (≥ 0.7) | 12 | **0.944** | 529 |
+| ohne nahen Zwilling (< 0.7) | 7 | **0.886** | 183 |
+
+**Das Leck schönt die Zahl, erklärt sie aber nicht.** Auswendiggelernt sähe
+anders aus — eher 0.99 gegen 0.55. Der Aufschlag beträgt fünf bis sechs
+Punkte; die ehrliche Schätzung für unbekannte Seiten ist **~0.89**. Auf den
+sauberen sieben Seiten bleiben UNIT_PRICE 0.98, QUANTITY 0.95 und BRAND 0.91;
+es fallen PRICE (0.79) und PRODUCT (0.76) — dieselben Labels wie überall, nur
+deutlicher.
+
+Einschränkung: die sieben sauberen Seiten sind auch inhaltlich die
+ungewöhnlicheren (überwiegend Non-Food), der Unterschied ist also nicht rein
+ein Duplikat-Effekt. Und 183 Entitäten sind eine schmale Basis.
+
+**Ein Split über Kataloge würde das nicht beheben.** `1347375_p30` und
+`1347396_p34` sind verschiedene Kataloge mit Jaccard 0.939 — zwei
+Regionalausgaben derselben Woche. Sauber wäre ein Gruppen-Split über die
+Duplikat-Cluster: `dedupe.group()` mit Schwelle um 0.7 laufen lassen und ganze
+Cluster geschlossen einer Seite zuordnen. Bleibt Teamentscheidung.
+
+### Weiter gilt
+
 - 19 Testseiten sind wenig. Labels mit n < 20 (VALID, APP_PRICE) sind Rauschen.
-- Der Split trennt Seiten, nicht Kataloge. Angebote wiederholen sich zwischen
-  Regionalausgaben; ein Leck vom Train- in den Testsplit ist nicht
-  ausgeschlossen. Das steht weiter als offene Entscheidung im Team.
-- Seiten über 512 Subwords werden abgeschnitten. Ob dabei messbar Entitäten
-  verlorengehen, ist nicht geprüft.
+- Seiten über 512 Subwords werden abgeschnitten — siehe oben, für GBERT sind
+  das 531 Wörter auf 19 Testseiten.
 
 ---
 
