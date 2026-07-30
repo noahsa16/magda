@@ -260,6 +260,11 @@ def _is_unsupported_param(exc: Exception) -> bool:
     return getattr(exc, "status_code", None) == 400 and "chat_template" in str(exc)
 
 
+# Labels, die ohne Zahl nicht existieren können. Gegengeprüft: jeder
+# numerische Gold-Span enthält eine Ziffer.
+_NUMERIC_LABELS = {"PRICE", "OLD_PRICE", "DISCOUNT", "QUANTITY", "UNIT_PRICE"}
+
+
 def trim_spans(spans: list[dict], words: list[dict]) -> list[dict]:
     """Kürzt Spans an Grenzen, die keine Entität überschreiten darf.
 
@@ -296,8 +301,18 @@ def trim_spans(spans: list[dict], words: list[dict]) -> list[dict]:
                 cut = i
                 break
 
-        if cut > start:
-            trimmed.append({**span, "end": cut})
+        if cut <= start:
+            continue
+
+        # Ein Preis, ein Rabatt, eine Menge – ohne Ziffer gibt es das nicht.
+        # Das Modell labelt trotz Ausschlussliste im Prompt weiterhin "Aktion"
+        # als PRICE und "UVP" als OLD_PRICE, rund zweimal pro Seite. Auch das
+        # ist mechanisch entscheidbar, also wird es hier erledigt.
+        if span.get("label") in _NUMERIC_LABELS:
+            if not any(char.isdigit() for word in text[start:cut] for char in word):
+                continue
+
+        trimmed.append({**span, "end": cut})
 
     return trimmed
 

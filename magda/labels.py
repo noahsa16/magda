@@ -58,6 +58,33 @@ def spans_to_bio(num_words: int, spans: list[dict]) -> list[str]:
     return tags
 
 
+def bio_to_spans(tags: list[str]) -> list[dict]:
+    """Umkehrung von spans_to_bio: BIO-Tagfolge zurück in Spans.
+
+    Gebraucht überall dort, wo gespeicherte Labels nachbearbeitet oder
+    verglichen werden – auf der Platte stehen Tags, gearbeitet wird mit
+    Spans. Ein I-Tag ohne vorangehendes B-Tag beginnt einen eigenen Span,
+    statt still zu verschwinden: kaputte Tagfolgen sollen sichtbar bleiben.
+    """
+    spans: list[dict] = []
+    for i, tag in enumerate(tags):
+        if tag == "O":
+            continue
+        entity = tag[2:]
+        previous = spans[-1] if spans else None
+        continues = (
+            tag.startswith("I-")
+            and previous is not None
+            and previous["label"] == entity
+            and previous["end"] == i
+        )
+        if continues:
+            previous["end"] = i + 1
+        else:
+            spans.append({"start": i, "end": i + 1, "label": entity})
+    return spans
+
+
 def validate_spans(spans: list[dict], num_words: int) -> list[str]:
     """Prüft handannotierte Spans und sammelt alle Fehler ein.
 

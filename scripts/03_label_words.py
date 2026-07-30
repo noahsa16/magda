@@ -30,7 +30,45 @@ from magda.config import (
     labeled_dir,
     make_llm_client,
 )
-from magda.labeling import label_page_with_retry
+from magda.labeling import label_page_with_retry, trim_spans
+from magda.labels import bio_to_spans, spans_to_bio
+
+
+def repair(model: str):
+    """Wendet den Span-Guard auf bereits gelabelte Seiten an.
+
+    Der Guard ist reine Nachbearbeitung – er braucht kein Modell und keine
+    API. Wächst er um eine Regel, wären sonst die Seiten von vor der Änderung
+    anders behandelt als die danach, und der Datensatz hätte zwei Qualitäten.
+    Neu labeln würde dasselbe erreichen und Stunden API-Zeit kosten.
+    """
+    directory = labeled_dir(model)
+    files = sorted(directory.glob("*.json"))
+    if not files:
+        sys.exit(f"Keine Labels in {directory}.")
+
+    changed = removed_spans = 0
+    for path in tqdm(files, desc="Guard anwenden", unit="Seite"):
+        with open(path) as f:
+            page = json.load(f)
+        tags = page.get("tags")
+        if not tags:
+            continue
+
+        spans = bio_to_spans(tags)
+        cleaned = trim_spans(spans, page["words"])
+        if cleaned == spans:
+            continue
+
+        page["tags"] = spans_to_bio(len(page["words"]), cleaned)
+        removed_spans += len(spans) - len(cleaned)
+        changed += 1
+        tmp = directory / f".{path.name}.tmp"
+        with open(tmp, "w") as f:
+            json.dump(page, f, ensure_ascii=False)
+        tmp.replace(path)
+
+    print(f"\n{changed} von {len(files)} Seiten angepasst, {removed_spans} Spans entfernt.")
 
 
 def main():
@@ -54,7 +92,16 @@ def main():
         action="store_true",
         help="Nur Seiten labeln, für die eine Gold-Annotation existiert.",
     )
+    parser.add_argument(
+        "--repair",
+        action="store_true",
+        help="Kein Labeling: wendet nur den Span-Guard auf vorhandene Labels an. "
+        "Für Seiten, die vor einer Guard-Änderung entstanden sind.",
+    )
     args = parser.parse_args()
+
+    if args.repair:
+        return repair(args.model)
 
     out_dir = labeled_dir(args.model)
     out_dir.mkdir(parents=True, exist_ok=True)

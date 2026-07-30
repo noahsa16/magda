@@ -4,7 +4,7 @@ Die Spans kommen vom LLM und sind entsprechend unzuverlässig – hier wird
 vor allem geprüft, dass kaputter Input verworfen wird statt zu crashen.
 """
 
-from magda.labels import LABELS, label2id, spans_to_bio, validate_spans
+from magda.labels import bio_to_spans, LABELS, label2id, spans_to_bio, validate_spans
 
 
 def test_einfacher_span():
@@ -100,3 +100,29 @@ def test_validate_spans_sammelt_mehrere_fehler():
         {"start": 3, "end": 4, "label": "UNSINN"},
     ]
     assert len(validate_spans(spans, num_words=10)) == 2
+
+
+def test_bio_to_spans_ist_die_umkehrung_von_spans_to_bio():
+    spans = [
+        {"start": 0, "end": 1, "label": "BRAND"},
+        {"start": 1, "end": 4, "label": "PRODUCT"},
+        {"start": 5, "end": 7, "label": "QUANTITY"},
+    ]
+    tags = spans_to_bio(8, spans)
+    assert bio_to_spans(tags) == spans
+
+
+def test_bio_to_spans_trennt_zwei_gleiche_labels_nebeneinander():
+    """B-PRODUCT direkt nach I-PRODUCT ist ein neuer Span, kein Anhängsel –
+    sonst verschmelzen zwei Produkte einer Aufzählung zu einem."""
+    tags = ["B-PRODUCT", "I-PRODUCT", "B-PRODUCT", "O"]
+
+    assert bio_to_spans(tags) == [
+        {"start": 0, "end": 2, "label": "PRODUCT"},
+        {"start": 2, "end": 3, "label": "PRODUCT"},
+    ]
+
+
+def test_bio_to_spans_laesst_ein_verwaistes_i_tag_nicht_verschwinden():
+    """Kaputte Tagfolgen sollen sichtbar bleiben, nicht still wegfallen."""
+    assert bio_to_spans(["O", "I-PRICE"]) == [{"start": 1, "end": 2, "label": "PRICE"}]
