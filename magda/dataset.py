@@ -14,10 +14,19 @@ import json
 import random
 
 import torch
+from PIL import Image
 from torch.utils.data import Dataset
+from transformers import LayoutLMv2ImageProcessor
 
 from magda.alignment import align_word_labels
-from magda.config import SEED, SPLITS_DIR, WORDS_DIR, default_labeled_model, labeled_dir
+from magda.config import (
+    IMAGES_DIR,
+    SEED,
+    SPLITS_DIR,
+    WORDS_DIR,
+    default_labeled_model,
+    labeled_dir,
+)
 from magda.ocr import normalize_bbox
 
 
@@ -118,10 +127,21 @@ class LayoutDataset(Dataset):
     Die Boxen werden hier von PDF-Punkten auf das 0-1000-Raster skaliert,
     das LayoutLM erwartet. Der Tokenizer (LayoutXLMTokenizerFast) übernimmt
     das Vervielfachen der Box auf die Subwords selbst.
+
+    Zusätzlich zu Text und Boxen braucht das Modell das Seitenbild: LayoutXLM
+    ist eine LayoutLMv2-Architektur, und deren visueller Backbone ist kein
+    optionales Extra, sondern Teil des Vorwärtsdurchlaufs. Ohne `image`
+    scheitert er mit einem nichtssagenden AttributeError im Backbone.
+
+    Die Bilder werden erst in `__getitem__` geladen, nicht im Konstruktor: ein
+    Tensor je Seite sind 224*224*3 Byte, bei ein paar hundert Seiten noch
+    harmlos, bei ein paar tausend nicht mehr.
     """
 
     def __init__(self, pages: list[dict], tokenizer, max_length: int):
         self.encodings = []
+        self.page_ids = []
+        self.image_processor = LayoutLMv2ImageProcessor(apply_ocr=False)
         for page in pages:
             words = [w["text"] for w in page["words"]]
             boxes = [
@@ -137,9 +157,17 @@ class LayoutDataset(Dataset):
             )
             enc["labels"] = align_word_labels(enc.word_ids(), page["tags"])
             self.encodings.append(enc)
+            self.page_ids.append(page["page_id"])
 
     def __len__(self):
         return len(self.encodings)
 
     def __getitem__(self, idx):
-        return {k: torch.tensor(v) for k, v in self.encodings[idx].items()}
+        item = {k: torch.tensor(v) for k, v in self.encodings[idx].items()}
+        image_file = IMAGES_DIR / f"{self.page_ids[idx]}.png"
+        with Image.open(image_file) as page_image:
+            pixels = self.image_processor(
+                page_image.convert("RGB"), return_tensors="pt"
+            )["pixel_values"]
+        item["image"] = pixels[0]
+        return item
