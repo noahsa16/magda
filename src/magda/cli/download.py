@@ -1,7 +1,7 @@
 """Lädt alle Seiten eines Penny-Prospekts als einzelne PDFs nach data/raw/.
 
 Aufruf:
-    python scripts/01_download_flyers.py "https://...blaetterkatalog.de/...?catalogId=123456"
+    magda download "https://...blaetterkatalog.de/...?catalogId=123456"
 """
 
 import argparse
@@ -14,11 +14,11 @@ from magda import scraping
 from magda.config import RAW_DIR
 
 
-def main():
+def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("url", help="Blätterkatalog-URL mit catalogId")
     parser.add_argument("--max-pages", type=int, default=40)
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     session = requests.Session()
     try:
@@ -51,6 +51,3 @@ def main():
         sys.exit(f"Katalog {catalog_id} hat keine abrufbare Seite geliefert.")
     print(f"{count} Seiten gespeichert unter {out_dir}")
 
-
-if __name__ == "__main__":
-    main()

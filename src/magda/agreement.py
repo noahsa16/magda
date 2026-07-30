@@ -1,6 +1,6 @@
 """Wo widersprechen sich zwei Labeling-Modelle?
 
-Der Modellvergleich in `scripts/08_compare_labels.py` misst gegen `gold/` –
+Der Modellvergleich in `magda gold` misst gegen `gold/` –
 also gegen drei Seiten. Das ist die verlässlichste Zahl, die wir haben, aber
 eine schmale. Über die Übereinstimmung zweier Modelle lässt sich dagegen auf
 *allen* Seiten etwas sagen, ohne eine einzige davon zu annotieren.

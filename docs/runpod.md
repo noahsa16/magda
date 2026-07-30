@@ -14,7 +14,7 @@ das Zehnfache.
 ## 1. Bündel bauen
 
 ```bash
-python scripts/11_export_bundle.py --labels-from sonnet-5
+magda bundle --labels-from sonnet-5
 ```
 
 Ergebnis: `data/magda-training.tgz`, rund 25 MB. Darin stecken

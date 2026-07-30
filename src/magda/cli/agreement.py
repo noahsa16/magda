@@ -1,7 +1,7 @@
 """Vergleichsschritt: wo widersprechen sich zwei Labeling-Modelle?
 
-    python scripts/09_agreement.py qwen3.5-397b-a17b mistral-medium-3.5-128b
-    python scripts/09_agreement.py a b --top 40      # längere Annotationsliste
+    magda agreement qwen3.5-397b-a17b mistral-medium-3.5-128b
+    magda agreement a b --top 40      # längere Annotationsliste
 
 Der Gold-Vergleich (Schritt 08) misst gegen drei handannotierte Seiten. Das
 ist die verlässlichste Zahl, aber eine schmale. Die Übereinstimmung zweier
@@ -21,12 +21,12 @@ from magda import agreement
 from magda.config import EVAL_DIR, labeled_models
 
 
-def main():
+def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("model_a", help="Erstes Modell (Ordner unter data/labeled/).")
     parser.add_argument("model_b", help="Zweites Modell.")
     parser.add_argument("--top", type=int, default=20, help="Wie viele Seiten auflisten.")
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     known = labeled_models()
     for model in (args.model_a, args.model_b):
@@ -76,6 +76,3 @@ def main():
     print("Achtung beim Zitieren: Übereinstimmung ist keine Richtigkeit. Zwei "
           "Modelle können sich einig und gemeinsam irren.")
 
-
-if __name__ == "__main__":
-    main()

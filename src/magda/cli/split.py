@@ -1,7 +1,7 @@
 """Legt die Train/Dev/Test-Aufteilung neu fest.
 
-    python scripts/12_make_split.py --strategy week
-    python scripts/12_make_split.py --strategy week --force
+    magda split --strategy week
+    magda split --strategy week --force
 
 Ein bestehender Split wird nicht überschrieben, ohne dass man `--force` sagt:
 Er ist eingefroren, damit alle im Team auf denselben Testseiten messen. Die
@@ -43,14 +43,14 @@ def zufaellig(page_ids: list[str]) -> dict:
     }
 
 
-def main():
+def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--strategy", choices=("week", "random"), default="week")
     parser.add_argument("--dev-share", type=float, default=0.1)
     parser.add_argument("--force", action="store_true",
                         help="Bestehenden Split ersetzen (Sicherung wird angelegt).")
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     page_ids = sorted(p.stem for p in WORDS_DIR.glob("*.json"))
     if not page_ids:
@@ -87,6 +87,3 @@ def main():
 
     print(f"\n{split_file}: " + ", ".join(f"{k}={len(v)}" for k, v in splits.items()))
 
-
-if __name__ == "__main__":
-    main()

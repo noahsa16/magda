@@ -1,8 +1,8 @@
-"""Pipeline-Schritt 3: Token-Klassifikation trainieren.
+"""Token-Klassifikation trainieren.
 
 Zwei Varianten (siehe Proposal, "Baseline Architecture"):
-    python scripts/04_train.py gbert       # text-only Baseline
-    python scripts/04_train.py layoutxlm   # layout-aware Modell
+    magda train gbert       # text-only Baseline
+    magda train layoutxlm   # layout-aware Modell
 
 Beide bekommen denselben Klassifikationskopf und dieselben Labels – der
 einzige Unterschied ist die Positionsinformation. Genau diesen Effekt
@@ -48,7 +48,7 @@ from magda.labels import LABELS, id2label, label2id
 def build_datasets(variant: str, labels_from: str | None):
     model = labels_from or default_labeled_model()
     if model is None:
-        sys.exit("Keine gelabelten Seiten in data/labeled/. Erst 03_label_words.py laufen lassen.")
+        sys.exit("Keine gelabelten Seiten in data/labeled/. Erst `magda label` laufen lassen.")
 
     pages = load_labeled_pages(model)
     if not pages:
@@ -84,7 +84,7 @@ def build_datasets(variant: str, labels_from: str | None):
     return model_name, train_ds, dev_ds
 
 
-def main():
+def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("variant", choices=["gbert", "layoutxlm"])
     parser.add_argument("--epochs", type=int, default=10)
@@ -95,7 +95,7 @@ def main():
         help="Modellordner unter data/labeled/, dessen Labels trainiert werden. "
         "Ohne Angabe das konfigurierte Vision-Modell, sonst der größte Ordner.",
     )
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     model_name, train_ds, dev_ds = build_datasets(args.variant, args.labels_from)
 
@@ -131,11 +131,8 @@ def main():
     )
     trainer.train()
 
-    # bestes Modell separat ablegen, darauf zeigt dann 05_evaluate.py
+    # bestes Modell separat ablegen, darauf zeigt dann `magda eval`
     best_dir = output_dir / "best"
     trainer.save_model(str(best_dir))
     print(f"Bestes Modell gespeichert unter {best_dir}")
 
-
-if __name__ == "__main__":
-    main()

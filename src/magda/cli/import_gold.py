@@ -1,14 +1,14 @@
 """Macht aus Annotationen einen Trainingsdatensatz.
 
-    python scripts/10_annotations_to_labels.py --annotator "sonnet-5 (vorannotiert, ungeprueft)"
-    python scripts/10_annotations_to_labels.py --annotator Noah --name gold-noah
+    magda import-gold --annotator "sonnet-5 (vorannotiert, ungeprueft)"
+    magda import-gold --annotator Noah --name gold-noah
 
 Die Annotationen unter gold/ sind Spans; zum Trainieren braucht es BIO-Tags in
 derselben Form, die Schritt 03 schreibt. Dieses Skript übersetzt das eine ins
 andere und legt das Ergebnis als Modellordner unter data/labeled/ ab.
 
 Damit rutschen von Hand oder von einem Agenten erzeugte Labels in dieselbe
-Maschinerie wie die LLM-Läufe: `04_train --labels-from`, der Gold-Vergleich in
+Maschinerie wie die LLM-Läufe: `magda train --labels-from`, der Gold-Vergleich in
 Schritt 08 und die Agreement-Analyse in Schritt 09 funktionieren unverändert.
 
 gold/ bleibt dabei unangetastet. Es ist die Referenz, gegen die gemessen wird –
@@ -25,7 +25,7 @@ from magda.gold import words_hash
 from magda.labels import spans_to_bio
 
 
-def main():
+def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--annotator", required=True, help="Nur Annotationen dieses Urhebers übernehmen."
@@ -39,7 +39,7 @@ def main():
         action="store_true",
         help="Nur freigegebene Seiten (status=done) übernehmen.",
     )
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     name = args.name or args.annotator.split("(")[0].strip()
     out_dir = labeled_dir(name)
@@ -86,6 +86,3 @@ def main():
     if not written:
         sys.exit(f"Nichts gefunden. Vorhandene Urheber: siehe /api/sources oder gold/.")
 
-
-if __name__ == "__main__":
-    main()

@@ -76,9 +76,12 @@ PRUEFUNG
 for variante in gbert layoutxlm; do
   echo ""
   echo "########## $variante ##########"
-  python scripts/04_train.py "$variante" --labels-from __MODEL__ --epochs __EPOCHS__ \\
+  # "python -m magda" statt des Befehls "magda": wohin pip die Konsolenskripte
+  # legt, haengt vom Image ab, und ein PATH-Fehler faellt hier erst nach der
+  # detectron2-Uebersetzung auf.
+  python -m magda train "$variante" --labels-from __MODEL__ --epochs __EPOCHS__ \\
     || { echo "$variante: Training fehlgeschlagen"; continue; }
-  python scripts/05_evaluate.py "$variante" --split test --labels-from __MODEL__
+  python -m magda eval "$variante" --split test --labels-from __MODEL__
 done
 
 echo ""
@@ -118,7 +121,7 @@ def build(target: Path, model: str, epochs: int = 10) -> dict:
     split_file = SPLITS_DIR / "split.json"
     if not split_file.exists():
         raise ValueError(
-            "data/splits/split.json fehlt. Erst lokal einmal 04_train starten, "
+            "data/splits/split.json fehlt. Erst lokal einmal magda train starten, "
             "sonst würfelt der Pod einen eigenen Split und die Zahlen sind "
             "nicht mit deinen vergleichbar."
         )

@@ -10,37 +10,37 @@ export interface StepDef {
 /** Die fünf Skripte in scripts/ – die Nummerierung ist die Ausführungsreihenfolge. */
 export const STEPS: StepDef[] = [
   {
-    job: "01_download_flyers",
+    job: "download",
     title: "Prospekte laden",
     what: "Holt aktuelle Penny-Kataloge und legt jede Seite einzeln als PDF in data/raw ab.",
     variants: [],
   },
   {
-    job: "02_extract_words",
+    job: "extract",
     title: "Wörter extrahieren",
     what: "PyMuPDF liest Text und Koordinaten aus dem PDF-Textlayer und rendert je ein PNG.",
     variants: [],
   },
   {
-    job: "03_label_words",
+    job: "label",
     title: "LLM-Labeling",
     what: "Ein Vision-Modell markiert Spans auf dem Seitenbild, daraus werden BIO-Tags.",
     variants: [],
   },
   {
-    job: "04_train",
+    job: "train",
     title: "Training",
     what: "Token-Klassifikation auf den gelabelten Seiten – einmal mit, einmal ohne Layout.",
     variants: ["layoutxlm", "gbert"],
   },
   {
-    job: "05_evaluate",
+    job: "eval",
     title: "Evaluation",
     what: "Entity-Level-F1 auf dem eingefrorenen Test-Split, als Report nach data/eval.",
     variants: ["layoutxlm", "gbert"],
   },
   {
-    job: "07_flair_baseline",
+    job: "flair",
     title: "Flair-Vergleichsarm",
     what: "Fertiges deutsches NER-Modell ohne Anpassung – misst nur BRAND.",
     variants: [],
@@ -69,23 +69,23 @@ export function stepStates(
   const evaluated = new Set<string>(reports.map((r) => r.variant))
   const bothEvaluated = VARIANTS.every((v) => evaluated.has(v))
   return {
-    "01_download_flyers": totals.raw > 0 ? "done" : "ready",
+    "download": totals.raw > 0 ? "done" : "ready",
     // Nicht words >= raw: die Entdopplung sortiert Seiten aus, damit bleibt
     // words dauerhaft kleiner als raw und der Schritt sähe nie erledigt aus.
     // Erledigt heißt: keine Seite mehr offen – weder extrahiert noch verworfen.
-    "02_extract_words":
+    "extract":
       totals.raw > 0 && totals.pending === 0 ? "done" : totals.raw > 0 ? "ready" : "blocked",
-    "03_label_words":
+    "label":
       totals.words > 0 && totals.labeled >= totals.words
         ? "done"
         : totals.words > 0
           ? "ready"
           : "blocked",
-    "04_train": bothTrained ? "done" : totals.labeled > 0 ? "ready" : "blocked",
-    "05_evaluate": bothEvaluated ? "done" : totals.labeled > 0 ? "ready" : "blocked",
+    "train": bothTrained ? "done" : totals.labeled > 0 ? "ready" : "blocked",
+    "eval": bothEvaluated ? "done" : totals.labeled > 0 ? "ready" : "blocked",
     // Kein "done": der Arm hat keine Varianten, an denen sich Vollständigkeit
     // ablesen ließe, und er wird gegen Gold erneut gefahren, sobald Gold wächst.
-    "07_flair_baseline": totals.labeled > 0 ? "ready" : "blocked",
+    "flair": totals.labeled > 0 ? "ready" : "blocked",
   }
 }
 
@@ -95,15 +95,15 @@ export function doneVariants(
   reports: EvalReport[],
   trainedVariants: string[],
 ): Set<string> {
-  if (job === "04_train") return new Set<string>(trainedVariants)
-  if (job === "05_evaluate") return new Set<string>(reports.map((r) => r.variant))
+  if (job === "train") return new Set<string>(trainedVariants)
+  if (job === "eval") return new Set<string>(reports.map((r) => r.variant))
   return new Set<string>()
 }
 
 /** Fortschrittstext pro Schritt, z. B. "37 / 40 Seiten". */
 export function stepProgress(job: string, totals: PipelineStatus["totals"]): string | null {
-  if (job === "01_download_flyers") return `${totals.raw} Seiten`
-  if (job === "02_extract_words") {
+  if (job === "download") return `${totals.raw} Seiten`
+  if (job === "extract") {
     // Nenner ist, was übrig bleibt, nachdem die Duplikate abgezogen sind.
     // Gegen raw gerechnet stünde hier ewig "196 / 327", und das liest sich wie
     // ein abgebrochener Lauf statt wie eine erfolgreiche Entdopplung.
@@ -111,6 +111,6 @@ export function stepProgress(job: string, totals: PipelineStatus["totals"]): str
     const dupes = totals.excluded > 0 ? ` · ${totals.excluded} Duplikate` : ""
     return `${totals.words} / ${target} Seiten${dupes}`
   }
-  if (job === "03_label_words") return `${totals.labeled} / ${totals.words} Seiten`
+  if (job === "label") return `${totals.labeled} / ${totals.words} Seiten`
   return null
 }

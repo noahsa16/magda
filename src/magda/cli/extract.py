@@ -1,10 +1,11 @@
-"""Pipeline-Schritt 1: Wörter + Positionen aus allen PDFs in data/raw/ ziehen.
+"""Wörter + Positionen aus allen PDFs in data/raw/ ziehen.
 
 Schreibt pro Seite eine JSON-Datei nach data/words/ und das gerenderte
 Seitenbild nach data/images/. Bereits verarbeitete Seiten werden übersprungen,
 das Skript lässt sich also jederzeit erneut laufen lassen.
 """
 
+import argparse
 import json
 import sys
 
@@ -16,13 +17,17 @@ from magda.gold import words_hash
 from magda.ocr import extract_words, render_png
 
 
-def main():
+def main(argv=None):
+    # Der Schritt hat keine Optionen, braucht den Parser aber trotzdem: sonst
+    # beantwortet `magda extract --help` die Frage, indem es losläuft.
+    argparse.ArgumentParser(description=__doc__).parse_args(argv)
+
     WORDS_DIR.mkdir(parents=True, exist_ok=True)
     IMAGES_DIR.mkdir(parents=True, exist_ok=True)
 
     pdfs = sorted(RAW_DIR.glob("*/bk_*.pdf"))
     if not pdfs:
-        sys.exit("Keine PDFs in data/raw/ gefunden. Erst 01_download_flyers.py laufen lassen.")
+        sys.exit("Keine PDFs in data/raw/ gefunden. Erst `magda download` laufen lassen.")
 
     # Seiten, an denen schon Arbeit hängt, zuerst: bei einer Duplikat gewinnt,
     # wer zuerst drankommt. In reiner Sortierreihenfolge gewönne der Katalog
@@ -42,7 +47,7 @@ def main():
         with open(f) as fh:
             seen.setdefault(words_hash(json.load(fh)["words"]), f.stem)
 
-    # Was 06_check_duplicates als Beinah-Duplikat aussortiert hat, bleibt
+    # Was magda dedupe als Beinah-Duplikat aussortiert hat, bleibt
     # draußen. Ohne diese Liste käme es hier zurück und würde in Schritt 03
     # mit LLM-Zeit bezahlt.
     excluded = load_excluded()
@@ -99,6 +104,3 @@ def main():
     print(f"{len(excluded)} Seiten stehen in data/excluded.json, je mit der Seite, "
           "die sie vertritt.")
 
-
-if __name__ == "__main__":
-    main()

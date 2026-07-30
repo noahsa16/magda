@@ -1,8 +1,8 @@
 """Phase 3: Evaluation auf dem Test-Split (Entity-Level P/R/F1 via seqeval).
 
 Aufruf:
-    python scripts/05_evaluate.py gbert
-    python scripts/05_evaluate.py layoutxlm
+    magda eval gbert
+    magda eval layoutxlm
 
 Noch offen (Requirements-Stufe "Excellent"): der Vergleich gegen die
 LLM-Blackbox. Dafür müssen wir erst festlegen, wie wir die Angebots-JSONs
@@ -28,7 +28,7 @@ from magda.dataset import (
 from magda.evaluation import full_report, report_dict
 
 
-def main():
+def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("variant", choices=["gbert", "layoutxlm"])
     parser.add_argument("--split", default="test", choices=["dev", "test"])
@@ -37,11 +37,11 @@ def main():
         help="Modellordner unter data/labeled/. Muss derselbe sein wie beim "
         "Training – sonst wird gegen andere Labels gemessen als gelernt wurde.",
     )
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     model_dir = CHECKPOINTS_DIR / args.variant / "best"
     if not model_dir.exists():
-        sys.exit(f"Kein trainiertes Modell unter {model_dir}. Erst 04_train.py laufen lassen.")
+        sys.exit(f"Kein trainiertes Modell unter {model_dir}. Erst `magda train` laufen lassen.")
 
     pages = load_labeled_pages(args.labels_from)
     splits = get_or_create_splits(pages)
@@ -49,7 +49,7 @@ def main():
     print(f"Evaluiere '{args.variant}' auf {len(eval_pages)} Seiten ({args.split}-Split).")
 
     # Tokenizer kommt vom Basismodell, nicht aus dem Checkpoint –
-    # wir speichern in 04_train.py nur die Modellgewichte.
+    # wir speichern in `magda train` nur die Modellgewichte.
     base_model = TEXT_MODEL if args.variant == "gbert" else LAYOUT_MODEL
     tokenizer = AutoTokenizer.from_pretrained(base_model)
     dataset_cls = TextDataset if args.variant == "gbert" else LayoutDataset
@@ -80,6 +80,3 @@ def main():
         )
     print(f"Report gespeichert: {out_file}")
 
-
-if __name__ == "__main__":
-    main()

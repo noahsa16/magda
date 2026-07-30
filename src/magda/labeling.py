@@ -18,7 +18,7 @@ from magda.labels import spans_to_bio
 
 # Jede Regel unten steht für einen gemessenen Fehler, nicht für eine Vermutung.
 # Grundlage ist der Vergleich der Mistral-Labels gegen die drei handannotierten
-# Gold-Seiten (scripts/08_compare_labels.py, micro-F1 0.306):
+# Gold-Seiten (magda gold, micro-F1 0.306):
 #
 #   UNIT_PRICE   0 von 18 richtig – die Klammer landete durchweg in QUANTITY
 #   QUANTITY     0 von 18 richtig – "je" wurde in den Span gezogen

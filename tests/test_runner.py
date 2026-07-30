@@ -43,12 +43,12 @@ def test_start_lehnt_unbekannten_job_ab():
 
 def test_start_lehnt_unbekannten_parameter_ab():
     with pytest.raises(ValueError, match="Unbekannter Parameter"):
-        runner.start("06_check_duplicates", {"outfile": "/etc/passwd"})
+        runner.start("dedupe", {"outfile": "/etc/passwd"})
 
 
 def test_start_verlangt_pflichtparameter():
     with pytest.raises(ValueError, match="URL"):
-        runner.start("01_download_flyers", {})
+        runner.start("download", {})
 
 
 def test_status_ist_leer_ohne_lauf():
@@ -59,35 +59,35 @@ def test_status_ist_leer_ohne_lauf():
 
 
 def test_lauf_landet_in_der_historie():
-    """06_check_duplicates berichtet ohne --apply nur – deshalb taugt es als
+    """`magda dedupe` berichtet ohne --apply nur – deshalb taugt es als
     Testlauf: echter Subprozess, echter Exit-Code, kein Netz und vor allem
-    keine Veränderung an data/. Mit 02_extract_words schrieb dieser Test in den
+    keine Veränderung an data/. Mit `magda extract` schrieb dieser Test in den
     echten Datenbestand und machte eine vorher gelaufene Entdopplung rückgängig
     (der Subprozess sieht die Monkeypatches nicht).
     """
-    runner.start("06_check_duplicates")
+    runner.start("dedupe")
     state = _wait_until_done()
 
     assert state["exit_code"] is not None
     history = runs.list_runs()
     assert len(history) == 1
-    assert history[0]["job"] == "06_check_duplicates"
-    assert history[0]["command"][-1].endswith("06_check_duplicates.py")
+    assert history[0]["job"] == "dedupe"
+    assert history[0]["command"][-3:] == ["-m", "magda", "dedupe"]
     assert history[0]["exit_code"] == state["exit_code"]
     assert runs.read_run(history[0]["run_id"])["log"] != ""
 
 
 def test_zweiter_lauf_waehrend_eines_laufs_wird_abgelehnt():
-    runner.start("06_check_duplicates")
+    runner.start("dedupe")
     try:
         with pytest.raises(RuntimeError, match="läuft bereits"):
-            runner.start("06_check_duplicates")
+            runner.start("dedupe")
     finally:
         _wait_until_done()
 
 
 def test_args_stehen_im_status_und_in_der_historie():
-    runner.start("06_check_duplicates")
+    runner.start("dedupe")
     _wait_until_done()
 
     assert runs.list_runs()[0]["args"] == {}

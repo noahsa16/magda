@@ -10,13 +10,13 @@ const IDLE_RUN = {
 
 const JOBS = [
   {
-    job: "01_download_flyers", title: "Prospekte laden", what: "Holt einen Katalog.",
+    job: "download", title: "Prospekte laden", what: "Holt einen Katalog.",
     params: [
       { key: "url", label: "Katalog-URL", kind: "str", default: null, choices: [], required: true, help: "" },
       { key: "max_pages", label: "Seiten höchstens", kind: "int", default: 40, choices: [], required: false, help: "" },
     ],
   },
-  { job: "02_extract_words", title: "Wörter extrahieren", what: "PyMuPDF liest.", params: [] },
+  { job: "extract", title: "Wörter extrahieren", what: "PyMuPDF liest.", params: [] },
 ]
 
 const TOTALS = {
@@ -60,7 +60,7 @@ describe("ControlPage", () => {
         .mock.calls.find(([, init]) => (init as RequestInit | undefined)?.method === "POST")
       expect(call).toBeDefined()
       expect(JSON.parse((call?.[1] as RequestInit).body as string)).toEqual({
-        job: "01_download_flyers",
+        job: "download",
         args: { url: "https://x/?catalogId=42", max_pages: "40" },
       })
     })
@@ -69,7 +69,7 @@ describe("ControlPage", () => {
   it("zeigt die Historie mit Exit-Code", async () => {
     mockFetch(base({
       "/api/runs": [{
-        run_id: "20260729-142201_01_download_flyers", job: "01_download_flyers",
+        run_id: "20260729-142201_01_download_flyers", job: "download",
         title: "Prospekte laden", args: {}, command: ["python", "01_download_flyers.py"],
         started: "2026-07-29T14:22:01", finished: "2026-07-29T14:22:03",
         exit_code: 2, duration: 2.0,

@@ -1,8 +1,8 @@
 """Vergleichsarm: fertiges deutsches NER-Modell ohne jede Anpassung.
 
 Aufruf:
-    python scripts/07_flair_baseline.py --reference gold
-    python scripts/07_flair_baseline.py --reference llm --split test
+    magda flair --reference gold
+    magda flair --reference llm --split test
 
 Beantwortet, was man ohne Training geschenkt bekommt – und beziffert damit,
 was die Domänenanpassung wert ist. Verglichen wird nur auf BRAND: das Modell
@@ -67,12 +67,12 @@ def _llm_pages(split: str) -> tuple[list[dict], dict]:
     return pages, {"stale": [], "in_progress": []}
 
 
-def main():
+def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--reference", default="gold", choices=["gold", "llm"])
     parser.add_argument("--split", default="test", choices=["dev", "test", "all"])
     parser.add_argument("--model", default=FLAIR_MODEL)
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     pages, skipped = _gold_pages(args.split) if args.reference == "gold" else _llm_pages(args.split)
     print(
@@ -121,6 +121,3 @@ def main():
         )
     print(f"Report gespeichert: {out_file}")
 
-
-if __name__ == "__main__":
-    main()

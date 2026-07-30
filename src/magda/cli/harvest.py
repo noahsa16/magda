@@ -1,10 +1,10 @@
 """Holt eine komplette Prospektwoche über alle 44 Regionalausgaben.
 
 Aufruf:
-    python scripts/00_harvest_week.py                 # laufende Woche
-    python scripts/00_harvest_week.py --seed 1342881  # ältere Woche über eine bekannte ID
+    magda harvest                 # laufende Woche
+    magda harvest --seed 1342881  # ältere Woche über eine bekannte ID
 
-Warum ein eigener Schritt neben `01_download_flyers`: der lädt einen einzelnen
+Warum ein eigener Schritt neben `magda download`: der lädt einen einzelnen
 Katalog über seine URL. Hier geht es um die Woche als Ganzes – 44 Regionen, die
 zu über 90 % identisch sind. Geladen wird alles, gespeichert nur, was neu ist:
 der Text lässt sich nur im PDF ablesen, also muss jede Seite einmal durch die
@@ -46,11 +46,11 @@ def _known_hashes() -> dict[str, str]:
     return seen
 
 
-def main():
+def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--seed", help="Bekannte Katalog-ID einer älteren Woche")
     parser.add_argument("--max-pages", type=int, default=80)
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     session = discovery.make_session()
 
@@ -102,8 +102,5 @@ def main():
 
     print(f"\n{added} neue Seiten, {duplicate_count} Duplikate verworfen, {empty_count} ohne Textlayer")
     print(f"{len(seen)} verschiedene Seiten in data/raw/")
-    print("Weiter mit: python scripts/02_extract_words.py")
+    print("Weiter mit: magda extract")
 
-
-if __name__ == "__main__":
-    main()

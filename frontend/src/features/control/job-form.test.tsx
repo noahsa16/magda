@@ -5,7 +5,7 @@ import { renderWithProviders } from "@/test/utils"
 import { JobForm, defaultValues, missingRequired } from "./job-form"
 
 const DOWNLOAD: JobDef = {
-  job: "01_download_flyers",
+  job: "download",
   title: "Prospekte laden",
   what: "Holt einen Penny-Katalog.",
   params: [
@@ -15,7 +15,7 @@ const DOWNLOAD: JobDef = {
 }
 
 const TRAIN: JobDef = {
-  job: "04_train",
+  job: "train",
   title: "Training",
   what: "Token-Klassifikation.",
   params: [
@@ -72,7 +72,7 @@ describe("JobForm", () => {
   })
 
   it("zeigt Schritte ohne Parameter als reinen Knopf", () => {
-    const plain: JobDef = { job: "02_extract_words", title: "Wörter", what: "PyMuPDF liest.", params: [] }
+    const plain: JobDef = { job: "extract", title: "Wörter", what: "PyMuPDF liest.", params: [] }
     renderWithProviders(
       <JobForm job={plain} values={{}} onChange={vi.fn()} onStart={vi.fn()} disabled={false} />,
     )

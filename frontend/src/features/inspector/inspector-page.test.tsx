@@ -40,7 +40,7 @@ describe("InspectorPage", () => {
       "/api/pages": [],
       "/api/status": { catalogs: [], totals: { raw: 0, words: 0, images: 0, labeled: 0 } },
     })
-    expect(await screen.findByText(/02_extract_words/)).toBeInTheDocument()
+    expect(await screen.findByText(/magda extract/)).toBeInTheDocument()
   })
 
   it("zeigt nach Seitenauswahl die gruppierten Entities", async () => {

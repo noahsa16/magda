@@ -27,41 +27,31 @@ GPU siehe [docs/runpod.md](docs/runpod.md).
 
 ## Pipeline
 
-```
-Prospekt-PDF ──00/01──> data/raw/      eine Seite = ein PDF
-             ──02─────> data/words/    Wörter + Boxen aus dem PDF-Textlayer
-                        data/images/   gerenderte Seitenbilder
-             ──06─────> data/excluded.json   Beinah-Duplikate aussortiert
-             ──03─────> data/labeled/  BIO-Tags pro Wort, vom LLM gelabelt
-             ──04─────> checkpoints/   feingetuntes LayoutXLM bzw. GBERT
-             ──05─────> data/eval/     Entity-Level P/R/F1 auf dem Test-Split
-```
-
 ```bash
-python scripts/00_harvest_week.py          # laufende Woche, alle 44 Regionen
-python scripts/02_extract_words.py
-python scripts/06_check_duplicates.py --apply
-python scripts/03_label_words.py
-python scripts/12_make_split.py --strategy week
-python scripts/04_train.py gbert           # bzw. layoutxlm
-python scripts/05_evaluate.py gbert --split test
+magda harvest                  # laufende Woche, alle 44 Regionen  -> data/raw/
+magda extract                  # Wörter + Boxen, Seitenbilder      -> data/words/, data/images/
+magda dedupe --apply           # Beinah-Duplikate aussortieren     -> data/excluded.json
+magda label                    # BIO-Tags vom Vision-LLM           -> data/labeled/<modell>/
+magda split --strategy week    # Train/Dev/Test einfrieren         -> data/splits/split.json
+magda train gbert              # bzw. layoutxlm                    -> checkpoints/
+magda eval gbert --split test  # Entity-Level P/R/F1               -> data/eval/
 ```
 
-Jeder Schritt liest vom Vorgänger über die Platte und überspringt, was schon
-verarbeitet ist – ein Lauf über mehrere tausend Seiten beginnt nach einem
-Abbruch nicht von vorn. Skripte immer aus dem Projektroot starten, sie lesen
-und schreiben relativ dazu.
+`magda --help` listet alle Schritte in dieser Reihenfolge auf, `magda <schritt>
+--help` die Optionen eines einzelnen. Jeder Schritt liest vom Vorgänger über
+die Platte und überspringt, was schon verarbeitet ist – ein Lauf über mehrere
+tausend Seiten beginnt nach einem Abbruch nicht von vorn. Immer aus dem
+Projektroot starten, die Schritte lesen und schreiben relativ dazu.
 
-Daneben gibt es Vergleichsarme und Auswertungen: `07_flair_baseline.py`
-(fertiges deutsches NER-Modell, misst nur BRAND), `08_compare_labels.py`
-(Labeling-Modelle gegen `gold/`), `09_agreement.py` (Labeling-Modelle
-gegeneinander).
+Daneben gibt es Vergleichsarme und Auswertungen: `magda flair` (fertiges
+deutsches NER-Modell, misst nur BRAND), `magda gold` (Labeling-Modelle gegen
+`gold/`), `magda agreement` (Labeling-Modelle gegeneinander).
 
 ## Struktur
 
 ```
 src/magda/     Kern-Package: die gesamte Logik, inklusive api.py
-scripts/       nummerierte Pipeline-Schritte, dünne CLI-Wrapper
+    cli/       ein Modul je Pipeline-Schritt, Einstieg über `magda`
 frontend/      React-SPA (Vite, Tailwind, shadcn), liest data/ über die API
 tests/         pytest
 gold/          handannotierte Referenz – versioniert, weil nicht reproduzierbar

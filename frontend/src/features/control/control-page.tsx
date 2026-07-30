@@ -109,7 +109,7 @@ export function ControlPage() {
                 onUse={(url) =>
                   setValues((prev) => ({
                     ...prev,
-                    "01_download_flyers": { ...valuesFor("01_download_flyers"), url },
+                    "download": { ...valuesFor("download"), url },
                   }))
                 }
               />

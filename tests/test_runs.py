@@ -28,31 +28,31 @@ def _record(job: str, when: datetime, exit_code: int = 0, log: str = "") -> str:
 
 
 def test_run_id_enthaelt_zeit_und_job():
-    run_id = runs.new_run_id("04_train", datetime(2026, 7, 29, 14, 22, 1))
+    run_id = runs.new_run_id("train", datetime(2026, 7, 29, 14, 22, 1))
 
-    assert run_id == "20260729-142201_04_train"
+    assert run_id == "20260729-142201_train"
 
 
 def test_run_id_weicht_bei_kollision_aus():
     when = datetime(2026, 7, 29, 14, 22, 1)
-    first = _record("04_train", when)
-    second = runs.new_run_id("04_train", when)
+    first = _record("train", when)
+    second = runs.new_run_id("train", when)
 
     assert second != first
 
 
 def test_write_meta_legt_verzeichnis_an():
-    run_id = _record("02_extract_words", datetime(2026, 7, 29, 10, 0, 0))
+    run_id = _record("extract", datetime(2026, 7, 29, 10, 0, 0))
 
     with open(config.RUNS_DIR / f"{run_id}.json") as f:
-        assert json.load(f)["job"] == "02_extract_words"
+        assert json.load(f)["job"] == "extract"
 
 
 def test_list_runs_sortiert_neueste_zuerst():
-    _record("02_extract_words", datetime(2026, 7, 29, 10, 0, 0))
-    _record("04_train", datetime(2026, 7, 29, 12, 0, 0))
+    _record("extract", datetime(2026, 7, 29, 10, 0, 0))
+    _record("train", datetime(2026, 7, 29, 12, 0, 0))
 
-    assert [r["job"] for r in runs.list_runs()] == ["04_train", "02_extract_words"]
+    assert [r["job"] for r in runs.list_runs()] == ["train", "extract"]
 
 
 def test_list_runs_ohne_verzeichnis_ist_leer():
@@ -60,14 +60,14 @@ def test_list_runs_ohne_verzeichnis_ist_leer():
 
 
 def test_list_runs_ueberspringt_kaputte_datei():
-    _record("04_train", datetime(2026, 7, 29, 12, 0, 0))
+    _record("train", datetime(2026, 7, 29, 12, 0, 0))
     (config.RUNS_DIR / "20260729-090000_kaputt.json").write_text("{nicht json")
 
-    assert [r["job"] for r in runs.list_runs()] == ["04_train"]
+    assert [r["job"] for r in runs.list_runs()] == ["train"]
 
 
 def test_read_run_liefert_log_dazu():
-    run_id = _record("01_download_flyers", datetime(2026, 7, 29, 9, 0, 0), 2, "error: url fehlt")
+    run_id = _record("download", datetime(2026, 7, 29, 9, 0, 0), 2, "error: url fehlt")
 
     entry = runs.read_run(run_id)
 
@@ -83,7 +83,7 @@ def test_read_run_lehnt_pfadangaben_ab():
 
 def test_prune_behaelt_die_juengsten():
     for minute in range(5):
-        _record("02_extract_words", datetime(2026, 7, 29, 10, minute, 0))
+        _record("extract", datetime(2026, 7, 29, 10, minute, 0))
 
     runs.prune(keep=2)
 

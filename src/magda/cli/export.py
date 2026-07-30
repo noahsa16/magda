@@ -1,7 +1,7 @@
 """Packt Code, Labels, Split und verkleinerte Seitenbilder in ein Tar.
 
-    python scripts/11_export_bundle.py --labels-from sonnet-5
-    python scripts/11_export_bundle.py --labels-from sonnet-5 --epochs 20
+    magda bundle --labels-from sonnet-5
+    magda bundle --labels-from sonnet-5 --epochs 20
 
 Gedacht für das Training auf einer fremden GPU (RunPod, Uni-Cluster). Auf der
 Gegenseite reicht:
@@ -19,7 +19,7 @@ from magda import bundle
 from magda.config import DATA_DIR, labeled_models
 
 
-def main():
+def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--labels-from", required=True,
@@ -30,7 +30,7 @@ def main():
         "--out", type=Path, default=DATA_DIR / "magda-training.tgz",
         help="Zieldatei (Standard: data/magda-training.tgz)",
     )
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     try:
         zaehler = bundle.build(args.out, args.labels_from, args.epochs)
@@ -47,6 +47,3 @@ def main():
         print(f"  ACHTUNG: {len(fehlend)} Seiten ohne Bild, "
               f"LayoutXLM bricht daran ab: {', '.join(fehlend[:5])}")
 
-
-if __name__ == "__main__":
-    main()

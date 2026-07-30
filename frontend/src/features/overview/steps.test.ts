@@ -8,16 +8,16 @@ const report = { variant: "layoutxlm", split: "test", num_pages: 4, created: "",
 describe("stepStates", () => {
   it("gibt ohne Daten nur den Download frei", () => {
     const s = stepStates(empty, [])
-    expect(s["01_download_flyers"]).toBe("ready")
-    expect(s["02_extract_words"]).toBe("blocked")
-    expect(s["04_train"]).toBe("blocked")
+    expect(s["download"]).toBe("ready")
+    expect(s["extract"]).toBe("blocked")
+    expect(s["train"]).toBe("blocked")
   })
 
   it("markiert vollständige Schritte als erledigt", () => {
     const s = stepStates({ raw: 40, words: 40, images: 40, labeled: 40, excluded: 0, pending: 0, gold_done: 0, gold_in_progress: 0, labeled_by_model: {} }, [])
-    expect(s["01_download_flyers"]).toBe("done")
-    expect(s["02_extract_words"]).toBe("done")
-    expect(s["03_label_words"]).toBe("done")
+    expect(s["download"]).toBe("done")
+    expect(s["extract"]).toBe("done")
+    expect(s["label"]).toBe("done")
   })
 
   it("zählt aussortierte Duplikate als erledigt, nicht als Rückstand", () => {
@@ -27,21 +27,21 @@ describe("stepStates", () => {
       { raw: 327, words: 196, images: 196, labeled: 196, excluded: 131, pending: 0, gold_done: 0, gold_in_progress: 0, labeled_by_model: {} },
       [],
     )
-    expect(s["02_extract_words"]).toBe("done")
+    expect(s["extract"]).toBe("done")
   })
 
   it("hält teilweise gelabelte Seiten startbar statt erledigt", () => {
     const s = stepStates({ raw: 40, words: 40, images: 40, labeled: 37, excluded: 0, pending: 0, gold_done: 0, gold_in_progress: 0, labeled_by_model: {} }, [])
-    expect(s["03_label_words"]).toBe("ready")
+    expect(s["label"]).toBe("ready")
     // Trainieren geht schon mit unvollständigen Labels.
-    expect(s["04_train"]).toBe("ready")
+    expect(s["train"]).toBe("ready")
   })
 
   it("bleibt bei nur einer Variante offen – der Vergleich fehlt noch", () => {
     const full = { raw: 40, words: 40, images: 40, labeled: 40, excluded: 0, pending: 0, gold_done: 0, gold_in_progress: 0, labeled_by_model: {} }
     const s = stepStates(full, [report], ["gbert"])
-    expect(s["04_train"]).toBe("ready")
-    expect(s["05_evaluate"]).toBe("ready")
+    expect(s["train"]).toBe("ready")
+    expect(s["eval"]).toBe("ready")
   })
 
   it("ist erst mit beiden Varianten erledigt", () => {
@@ -51,21 +51,21 @@ describe("stepStates", () => {
       [report, { ...report, variant: "gbert" } as EvalReport],
       ["layoutxlm", "gbert"],
     )
-    expect(s["04_train"]).toBe("done")
-    expect(s["05_evaluate"]).toBe("done")
+    expect(s["train"]).toBe("done")
+    expect(s["eval"]).toBe("done")
   })
 })
 
 describe("stepProgress", () => {
   it("zeigt Anteile für die datenverarbeitenden Schritte", () => {
     const totals = { raw: 40, words: 40, images: 40, labeled: 37, excluded: 0, pending: 0, gold_done: 0, gold_in_progress: 0, labeled_by_model: {} }
-    expect(stepProgress("02_extract_words", totals)).toBe("40 / 40 Seiten")
-    expect(stepProgress("03_label_words", totals)).toBe("37 / 40 Seiten")
-    expect(stepProgress("04_train", totals)).toBeNull()
+    expect(stepProgress("extract", totals)).toBe("40 / 40 Seiten")
+    expect(stepProgress("label", totals)).toBe("37 / 40 Seiten")
+    expect(stepProgress("train", totals)).toBeNull()
   })
 
   it("rechnet den Nenner gegen die Duplikate", () => {
     const totals = { raw: 327, words: 196, images: 196, labeled: 196, excluded: 131, pending: 0, gold_done: 0, gold_in_progress: 0, labeled_by_model: {} }
-    expect(stepProgress("02_extract_words", totals)).toBe("196 / 196 Seiten · 131 Duplikate")
+    expect(stepProgress("extract", totals)).toBe("196 / 196 Seiten · 131 Duplikate")
   })
 })

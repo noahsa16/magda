@@ -65,7 +65,7 @@ export function BrowsePage() {
           emptyHint={
             <>
               Noch kein Modell hat gelabelt. Im Tab <em>Pipeline</em>{" "}
-              <code>03_label_words</code> starten.
+              <code>magda label</code> starten.
             </>
           }
         />

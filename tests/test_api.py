@@ -248,21 +248,21 @@ def test_run_lehnt_unbekannten_schritt_ab(client, clean_runner):
 
 
 def test_run_lehnt_ungueltige_variante_ab(client, clean_runner):
-    resp = client.post("/api/run", json={"job": "04_train", "args": {"variant": "bash"}})
+    resp = client.post("/api/run", json={"job": "train", "args": {"variant": "bash"}})
 
     assert resp.status_code == 400
     assert "nicht erlaubt" in resp.json()["detail"]
 
 
 def test_run_verlangt_variante_wo_noetig(client, clean_runner):
-    resp = client.post("/api/run", json={"job": "05_evaluate", "args": {}})
+    resp = client.post("/api/run", json={"job": "eval", "args": {}})
 
     assert resp.status_code == 400
 
 
 def test_run_lehnt_unbekannten_parameter_ab(client, clean_runner):
     resp = client.post(
-        "/api/run", json={"job": "02_extract_words", "args": {"outfile": "/etc/passwd"}}
+        "/api/run", json={"job": "extract", "args": {"outfile": "/etc/passwd"}}
     )
 
     assert resp.status_code == 400
@@ -561,8 +561,8 @@ def test_jobs_liefert_den_katalog(client):
     body = client.get("/api/jobs").json()
 
     jobs_by_name = {j["job"]: j for j in body}
-    assert "07_flair_baseline" in jobs_by_name
-    url_param = next(p for p in jobs_by_name["01_download_flyers"]["params"] if p["key"] == "url")
+    assert "flair" in jobs_by_name
+    url_param = next(p for p in jobs_by_name["download"]["params"] if p["key"] == "url")
     assert url_param["required"] is True
 
 
@@ -574,14 +574,14 @@ def test_runs_liefert_historie_und_detail(client):
     from magda import runs
 
     runs.write_meta("20260729-120000_04_train", {
-        "run_id": "20260729-120000_04_train", "job": "04_train", "args": {"variant": "gbert"},
+        "run_id": "20260729-120000_04_train", "job": "train", "args": {"variant": "gbert"},
         "command": ["python", "04_train.py"], "started": "2026-07-29T12:00:00",
         "finished": "2026-07-29T12:08:00", "exit_code": 0, "duration": 480.0,
     })
     runs.log_path("20260729-120000_04_train").write_text("Epoch 1/10")
 
     listing = client.get("/api/runs").json()
-    assert listing[0]["job"] == "04_train"
+    assert listing[0]["job"] == "train"
 
     detail = client.get("/api/runs/20260729-120000_04_train").json()
     assert detail["log"] == "Epoch 1/10"

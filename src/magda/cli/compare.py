@@ -1,8 +1,8 @@
 """Vergleichsschritt: wie nah liegen die LLM-Labels am Goldstandard?
 
-    python scripts/08_compare_labels.py                  # alle Modellordner
-    python scripts/08_compare_labels.py --model qwen3.6-27b
-    python scripts/08_compare_labels.py --per-label      # Aufschlüsselung je Entity-Typ
+    magda gold                  # alle Modellordner
+    magda gold --model qwen3.6-27b
+    magda gold --per-label      # Aufschlüsselung je Entity-Typ
 
 Misst jeden Ordner unter data/labeled/ gegen die handannotierten Seiten in
 gold/ und schreibt einen Report nach data/eval/labels_vs_gold.json. Das ist
@@ -58,11 +58,11 @@ def _score(model: str, gold_pages: list[dict]) -> dict | None:
     }
 
 
-def main():
+def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--model", action="append", help="Nur dieses Modell (mehrfach möglich).")
     parser.add_argument("--per-label", action="store_true", help="Report je Entity-Typ ausgeben.")
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     gold = load_gold_pages()
     if not gold.pages:
@@ -78,7 +78,7 @@ def main():
 
     models = args.model or labeled_models()
     if not models:
-        sys.exit("Keine Labels unter data/labeled/. Erst 03_label_words.py laufen lassen.")
+        sys.exit("Keine Labels unter data/labeled/. Erst `magda label` laufen lassen.")
 
     results = [r for r in (_score(m, gold.pages) for m in models) if r]
     if not results:
@@ -122,6 +122,3 @@ def main():
         "Basis. Große Unterschiede sind aussagekräftig, kleine nicht."
     )
 
-
-if __name__ == "__main__":
-    main()

@@ -39,7 +39,6 @@ class Param:
 
 @dataclass(frozen=True)
 class Job:
-    script: str
     title: str
     what: str
     params: tuple[Param, ...] = field(default_factory=tuple)
@@ -48,8 +47,7 @@ class Job:
 VARIANTS = ("gbert", "layoutxlm")
 
 JOBS: dict[str, Job] = {
-    "00_harvest_week": Job(
-        script="00_harvest_week",
+    "harvest": Job(
         title="Woche ernten",
         what="Holt alle 44 Regionalausgaben einer Woche und behält nur die Seiten, "
              "die es noch nicht gibt. Ohne Angabe die laufende Woche.",
@@ -58,8 +56,7 @@ JOBS: dict[str, Job] = {
                   help="leer lassen für die laufende Woche"),
         ),
     ),
-    "01_download_flyers": Job(
-        script="01_download_flyers",
+    "download": Job(
         title="Prospekte laden",
         what="Holt einen Penny-Katalog und legt jede Seite einzeln als PDF in data/raw ab.",
         params=(
@@ -68,13 +65,11 @@ JOBS: dict[str, Job] = {
             Param("--max-pages", "int", "Seiten höchstens", default=40),
         ),
     ),
-    "02_extract_words": Job(
-        script="02_extract_words",
+    "extract": Job(
         title="Wörter extrahieren",
         what="PyMuPDF liest Text und Koordinaten aus dem PDF-Textlayer und rendert je ein PNG.",
     ),
-    "03_label_words": Job(
-        script="03_label_words",
+    "label": Job(
         title="LLM-Labeling",
         what="Ein Vision-Modell markiert Spans auf dem Seitenbild, daraus werden BIO-Tags.",
         params=(
@@ -91,8 +86,7 @@ JOBS: dict[str, Job] = {
             Param("--only-gold", "flag", "Nur Gold-Seiten"),
         ),
     ),
-    "04_train": Job(
-        script="04_train",
+    "train": Job(
         title="Training",
         what="Token-Klassifikation auf den gelabelten Seiten – einmal mit, einmal ohne Layout.",
         params=(
@@ -103,8 +97,7 @@ JOBS: dict[str, Job] = {
             Param("--labels-from", "str", "Labels von Modell"),
         ),
     ),
-    "05_evaluate": Job(
-        script="05_evaluate",
+    "eval": Job(
         title="Evaluation",
         what="Entity-Level-F1 auf dem eingefrorenen Test-Split, als Report nach data/eval.",
         params=(
@@ -113,8 +106,7 @@ JOBS: dict[str, Job] = {
             Param("--labels-from", "str", "Labels von Modell"),
         ),
     ),
-    "06_check_duplicates": Job(
-        script="06_check_duplicates",
+    "dedupe": Job(
         title="Duplikate prüfen",
         what="Findet Seiten, die sich nur in der Druckkennung oder in Kleinigkeiten "
              "unterscheiden. Ohne Häkchen wird nur berichtet, nichts gelöscht.",
@@ -124,8 +116,7 @@ JOBS: dict[str, Job] = {
             Param("--apply", "flag", "Duplikate entfernen"),
         ),
     ),
-    "07_flair_baseline": Job(
-        script="07_flair_baseline",
+    "flair": Job(
         title="Flair-Vergleichsarm",
         what="Fertiges deutsches NER-Modell ohne Anpassung. Misst nur BRAND – "
              "flair/ner-german-large kennt PER/LOC/ORG/MISC, nur ORG hat eine Entsprechung.",
@@ -135,8 +126,7 @@ JOBS: dict[str, Job] = {
             Param("--model", "str", "Modell", default="flair/ner-german-large"),
         ),
     ),
-    "08_compare_labels": Job(
-        script="08_compare_labels",
+    "gold": Job(
         title="Labels gegen Gold",
         what="Misst jeden Modellordner unter data/labeled/ gegen die handannotierte "
              "Referenz – die Entscheidungsgrundlage für die Modellwahl.",
@@ -144,8 +134,7 @@ JOBS: dict[str, Job] = {
             Param("--per-label", "flag", "Aufschlüsselung je Entity-Typ"),
         ),
     ),
-    "09_agreement": Job(
-        script="09_agreement",
+    "agreement": Job(
         title="Modelle gegeneinander",
         what="Wo widersprechen sich zwei Labeling-Modelle? Misst über alle Seiten "
              "statt nur über die annotierten und sortiert nach Annotationsnutzen.",
@@ -222,8 +211,10 @@ def build_command(job: str, values: dict) -> list[str]:
         else:
             options += [param.name, value]
 
-    script = config.PROJECT_ROOT / "scripts" / f"{spec.script}.py"
-    return [config.PYTHON, "-u", str(script), *positional, *options]
+    # `python -m magda` statt des Konsolenbefehls `magda`: config.PYTHON zeigt
+    # explizit auf das Projekt-venv, während der PATH davon abhängt, aus welcher
+    # Umgebung die API gestartet wurde.
+    return [config.PYTHON, "-u", "-m", "magda", job, *positional, *options]
 
 
 def describe() -> list[dict]:

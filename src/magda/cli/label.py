@@ -1,11 +1,11 @@
-"""Pipeline-Schritt 3: Wörter per LLM labeln -> Trainingsdaten in data/labeled/<modell>/.
+"""Wörter per LLM labeln -> Trainingsdaten in data/labeled/<modell>/.
 
-    python scripts/03_label_words.py                      # konfiguriertes Vision-Modell
-    python scripts/03_label_words.py --model qwen3.6-27b  # zum Vergleich
-    python scripts/03_label_words.py --only-gold          # nur die Gold-Seiten, für Probeläufe
+    magda label                      # konfiguriertes Vision-Modell
+    magda label --model qwen3.6-27b  # zum Vergleich
+    magda label --only-gold          # nur die Gold-Seiten, für Probeläufe
 
 Jedes Modell schreibt in seinen eigenen Ordner, damit sich die Läufe hinterher
-vergleichen lassen (scripts/08_compare_labels.py). Seiten, die dort schon
+vergleichen lassen (magda gold). Seiten, die dort schon
 liegen, werden übersprungen – ein Abbruch kostet also nur die laufenden Seiten,
 nicht den ganzen Durchgang.
 """
@@ -69,7 +69,7 @@ def repair(model: str):
     print(f"\n{changed} von {len(files)} Seiten angepasst, {removed_spans} Spans entfernt.")
 
 
-def main():
+def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--model",
@@ -96,7 +96,7 @@ def main():
         help="Kein Labeling: wendet nur den Span-Guard auf vorhandene Labels an. "
         "Für Seiten, die vor einer Guard-Änderung entstanden sind.",
     )
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     if args.repair:
         return repair(args.model)
@@ -177,6 +177,3 @@ def main():
     if len(failures) > 20:
         print(f"  ... und {len(failures) - 20} weitere")
 
-
-if __name__ == "__main__":
-    main()

@@ -607,7 +607,7 @@ def get_label_agreement(a: str, b: str):
 def get_labels_vs_gold():
     """Rangfolge der Labeling-Modelle gegen die handannotierte Referenz.
 
-    Liest den Report, den scripts/08_compare_labels.py schreibt, statt selbst
+    Liest den Report, den magda gold schreibt, statt selbst
     zu rechnen: seqeval über alle Modelle bei jedem Seitenaufruf wäre teuer,
     und die Zahl ändert sich nur, wenn jemand neu labelt oder annotiert.
 

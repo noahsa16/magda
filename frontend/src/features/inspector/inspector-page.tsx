@@ -17,7 +17,7 @@ import { LabelerSelect } from "./labeler-select"
 import { PageList } from "./page-list"
 
 const EMPTY_HINT = (
-  <>Noch keine Seiten extrahiert. Auf der Übersicht <code>02_extract_words</code> starten (davor <code>01_download_flyers</code>, falls data/raw/ leer ist).</>
+  <>Noch keine Seiten extrahiert. Auf der Übersicht <code>magda extract</code> starten (davor <code>magda download</code>, falls data/raw/ leer ist).</>
 )
 
 function Metric({ label, value, tone }: { label: string; value: string; tone?: "warn" }) {
@@ -319,7 +319,7 @@ export function InspectorPage() {
               <AlertTitle>Noch nicht gelabelt</AlertTitle>
               <AlertDescription>
                 Diese Seite hat noch keine Tags. Auf der Übersicht{" "}
-                <code>03_label_words</code> starten.
+                <code>magda label</code> starten.
               </AlertDescription>
             </Alert>
           )}

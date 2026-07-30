@@ -13,7 +13,7 @@ Ausführliche Erklärung der Pipeline: `EXPLANATION.md` (lokal, nicht im Repo).
 
 ```
 src/magda/   Kern-Package – hier liegt die Logik (inkl. api.py, FastAPI fürs Frontend)
-scripts/     nummerierte Pipeline-Schritte, dünne CLI-Wrapper um magda/
+  cli/       ein Modul je Pipeline-Schritt, Einstieg über den Befehl `magda`
 frontend/    React-SPA (Vite, Tailwind, shadcn) – liest data/ über src/magda/api.py
 tests/       pytest (Labels, Alignment, API)
 gold/        handannotierte Referenz (versioniert)
@@ -27,10 +27,10 @@ reports/     Wochenberichte
 versioniert: gefundene Katalog-IDs und ihre Region lassen sich nicht
 reproduzieren, nur wiederfinden.
 
-Pipeline: `00_harvest_week` → `02_extract_words` → `06_check_duplicates` →
-`03_label_words` → `04_train` → `05_evaluate`, dazu `07_flair_baseline` als
-Vergleichsarm. `01_download_flyers` holt einen einzelnen Katalog über seine
-URL, `00_harvest_week` eine ganze Woche über alle 44 Regionen. Jeder Schritt
+Pipeline: `magda harvest` → `magda extract` → `magda dedupe` →
+`magda label` → `magda train` → `magda eval`, dazu `magda flair` als
+Vergleichsarm. `magda download` holt einen einzelnen Katalog über seine
+URL, `magda harvest` eine ganze Woche über alle 44 Regionen. Jeder Schritt
 liest vom Vorgänger über die Platte, nichts läuft im Speicher durch.
 
 Die Schritte lassen sich auch aus dem Frontend starten – im Tab *Pipeline*
@@ -45,27 +45,36 @@ seine Formulare: ein neuer Parameter wird nur im Backend gepflegt.
 ## Kommandos
 
 ```bash
-.venv/bin/pip install -e '.[dev]'        # einmalig – danach ist magda importierbar
-.venv/bin/python -m pytest               # Tests
-python scripts/02_extract_words.py       # Schritt ausführen (aus dem Projektroot)
-python scripts/04_train.py layoutxlm     # bzw. gbert
-python scripts/00_harvest_week.py        # laufende Prospektwoche, alle Regionen
-python scripts/00_harvest_week.py --seed 1342881   # ältere Woche über bekannte ID
-python scripts/03_label_words.py --model qwen3.6-27b    # anderes Vision-Modell
-python scripts/03_label_words.py --only-gold            # Probelauf auf den Gold-Seiten
-python scripts/06_check_duplicates.py    # Duplikate berichten (--apply entfernt sie)
-python scripts/07_flair_baseline.py --reference gold   # Flair-Vergleichsarm
-python scripts/08_compare_labels.py --per-label        # Modelle gegen Gold messen
-python scripts/09_agreement.py qwen3.5-397b-a17b mistral-medium-3.5-128b  # Modelle gegeneinander
-python scripts/03_label_words.py --model X --repair    # Span-Guard nachträglich anwenden
-uvicorn magda.api:app --reload           # Frontend-API (Port 8000)
-cd frontend && npm run dev               # Frontend-Dev-Server (proxied /api)
-cd frontend && npm test                  # Frontend-Tests (Vitest)
+.venv/bin/pip install -e '.[dev]'   # einmalig – legt auch den Befehl `magda` an
+.venv/bin/python -m pytest          # Tests
+magda --help                        # alle Schritte in Pipeline-Reihenfolge
+magda harvest                       # laufende Prospektwoche, alle Regionen
+magda harvest --seed 1342881        # ältere Woche über bekannte ID
+magda extract
+magda dedupe                        # Duplikate berichten (--apply entfernt sie)
+magda label --model qwen3.6-27b     # anderes Vision-Modell
+magda label --only-gold             # Probelauf auf den Gold-Seiten
+magda label --model X --repair      # Span-Guard nachträglich anwenden
+magda split --strategy week         # Aufteilung neu festlegen (--force überschreibt)
+magda train layoutxlm               # bzw. gbert
+magda eval gbert --split test
+magda flair --reference gold        # Flair-Vergleichsarm
+magda gold --per-label              # Labeling-Modelle gegen Gold messen
+magda agreement qwen3.5-397b-a17b mistral-medium-3.5-128b
+magda bundle --labels-from sonnet-5 # Trainingspaket für eine fremde GPU
+uvicorn magda.api:app --reload      # Frontend-API (Port 8000)
+cd frontend && npm run dev          # Frontend-Dev-Server (proxied /api)
+cd frontend && npm test             # Frontend-Tests (Vitest)
 ```
 
-Skripte immer aus dem Projektroot starten: sie lesen und schreiben relativ zu
-`config.PROJECT_ROOT`. Importierbar ist `magda` über die editierbare
-Installation – ohne die brechen alle Skripte mit `ModuleNotFoundError` ab.
+Immer aus dem Projektroot starten: die Schritte lesen und schreiben relativ zu
+`config.PROJECT_ROOT`. Ohne die editierbare Installation gibt es weder den
+Befehl `magda` noch den Import – alles bricht mit `ModuleNotFoundError` ab.
+
+Die Schritte liegen als je ein Modul unter `src/magda/cli/`, registriert in
+`cli/__init__.py`. Importiert wird erst beim Aufruf: `train` zieht torch und
+transformers herein, und `magda --help` soll nicht zehn Sekunden brauchen, um
+eine Liste auszugeben.
 
 ## Konventionen
 
@@ -203,7 +212,7 @@ Installation – ohne die brechen alle Skripte mit `ModuleNotFoundError` ab.
 - **Labels liegen je Modell getrennt: `data/labeled/<modell>/<seite>.json`.**
   Flach gespeichert überschreibt der zweite Labeling-Lauf den ersten, und die
   Frage „labelt Qwen näher am Goldstandard als Mistral?" ist danach nicht mehr
-  beantwortbar. `04_train --labels-from` wählt aus, worauf trainiert wird;
+  beantwortbar. `magda train --labels-from` wählt aus, worauf trainiert wird;
   ohne Angabe gilt `CHAT_AI_VISION_MODEL`, sonst der größte Ordner. Der
   Modellname wird zum Ordnernamen und kommt aus einer Nutzereingabe – deshalb
   `config.model_slug()`, sonst wäre `../../gold` ein gültiger Modellname.
@@ -212,7 +221,7 @@ Installation – ohne die brechen alle Skripte mit `ModuleNotFoundError` ab.
   und sein Beispiel zeigte den Grundpreis nicht als eigene Angabe. QUANTITY und
   UNIT_PRICE lagen deshalb bei F1 **0.000** – nicht ungenau, sondern
   systematisch falsch. Nach der Überarbeitung 0.752 statt 0.306. Wer den Prompt
-  anfasst, misst danach mit `08_compare_labels.py`, sonst ist es Bauchgefühl.
+  anfasst, misst danach mit `magda gold`, sonst ist es Bauchgefühl.
 - **Eine Prompt-Regel wirkt dort, wo die Entscheidung fällt.** „UVP" und
   „Aktion" standen längst auf der Ausschlussliste; das Modell labelte sie
   trotzdem als OLD_PRICE bzw. PRICE. Erst als sie *in der Preisregel selbst*
@@ -283,7 +292,7 @@ Installation – ohne die brechen alle Skripte mit `ModuleNotFoundError` ab.
   Seiten bei 0.949 überleben sie und landen dann auf verschiedenen Seiten des
   Splits. Gemessener Effekt: F1 0.944 auf Seiten mit nahem Zwilling gegen
   0.886 ohne. Behoben durch den **Wochen-Split**
-  (`scripts/12_make_split.py --strategy week`): KW30 lernt, KW31 testet,
+  (`magda split --strategy week`): KW30 lernt, KW31 testet,
   81/8/107 Seiten. Median-Ähnlichkeit fällt auf 0.257, keine Testseite hat
   noch einen Zwilling ≥ 0.9. Ein Split über *Kataloge* hätte das nicht
   behoben – `1347375_p30` und `1347396_p34` sind verschiedene Kataloge mit
@@ -324,7 +333,7 @@ Installation – ohne die brechen alle Skripte mit `ModuleNotFoundError` ab.
 - **Training gehört auf eine fremde GPU, wegen RAM statt Rechenzeit.** GBERT
   braucht 96 Sekunden, LayoutXLM 254; auf einem 8-GB-Mac füllt LayoutXLM den
   Swap und die Maschine steht (Load 67 bei 100 MB freiem RAM).
-  `scripts/11_export_bundle.py` packt Code (per `git ls-files`, also inklusive
+  `magda bundle` packt Code (per `git ls-files`, also inklusive
   nicht gepushter Commits), Labels, Split und auf 224 px verkleinerte Bilder in
   17 MB. Ohne `split.json` bricht der Export ab – sonst würfelt die fremde
   Maschine klaglos einen eigenen und die Zahlen sind unvergleichbar.

@@ -267,7 +267,7 @@ LayoutXLM 254 — sondern Arbeitsspeicher: auf einem 8-GB-Mac füllt LayoutXLM
 den Swap und die Maschine wird unbenutzbar. Gesamtkosten beider Trainingsrunden
 rund 0,45 $.
 
-`scripts/11_export_bundle.py` packt Code, Labels, Split und Seitenbilder in
+`magda bundle` packt Code, Labels, Split und Seitenbilder in
 ein Tar von 17 MB. Der Code kommt per `git ls-files` statt `git clone` — der
 lokale Stand war 109 Commits vor GitHub, ein Klon hätte den Stand von
 vorletzter Woche trainiert. Ohne `split.json` bricht der Export ab, weil die

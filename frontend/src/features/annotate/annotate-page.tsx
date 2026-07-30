@@ -25,7 +25,7 @@ const SAVE_LABEL = {
 } as const
 
 const EMPTY_HINT = (
-  <>Noch keine Prospekte extrahiert. Auf der Übersicht <code>01_download_flyers</code> und <code>02_extract_words</code> starten.</>
+  <>Noch keine Prospekte extrahiert. Auf der Übersicht <code>magda download</code> und <code>magda extract</code> starten.</>
 )
 
 export function AnnotatePage() {

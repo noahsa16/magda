@@ -37,6 +37,9 @@ dependencies = [
 # visuellen Backbone. Die Installation ist plattformabhaengig und laesst sich
 # nicht als Abhaengigkeit ausdruecken, siehe docs/runpod.md.
 
+[project.scripts]
+magda = "magda.cli:main"
+
 [project.optional-dependencies]
 # Vergleichsarm mit einem fertigen deutschen NER-Modell
 # (scripts/07_flair_baseline.py). Bewusst optional: flair bringt gut zwei
