@@ -17,6 +17,7 @@ const JOBS = [
     ],
   },
   { job: "extract", title: "Wörter extrahieren", what: "PyMuPDF liest.", params: [] },
+  { job: "label", title: "LLM-Labeling", what: "Ein Vision-Modell markiert Spans.", params: [] },
 ]
 
 const TOTALS = {
@@ -36,23 +37,53 @@ function base(extra: Record<string, unknown> = {}) {
   }
 }
 
+/** Öffnet einen Schritt über seine Kachel. */
+async function oeffne(titel: string | RegExp) {
+  fireEvent.click(await screen.findByRole("button", { name: titel }))
+}
+
 describe("ControlPage", () => {
-  it("zeigt je Schritt ein Formular aus dem Job-Katalog", async () => {
+  it("zeigt die Schritte als Kacheln, nicht als offene Formulare", async () => {
+    // Zehn Formulare untereinander waren zwei Bildschirmhöhen, in denen nichts
+    // hervorstach. Erst der Klick auf einen Schritt zeigt seine Parameter.
     mockFetch(base())
     renderWithProviders(<ControlPage />)
 
+    expect(await screen.findByRole("button", { name: /Wörter extrahieren/ })).toBeInTheDocument()
+    expect(screen.queryByLabelText(/Katalog-URL/)).not.toBeInTheDocument()
+  })
+
+  it("öffnet beim Klick das Formular des Schritts", async () => {
+    mockFetch(base())
+    renderWithProviders(<ControlPage />)
+    await oeffne(/Prospekte laden/)
+
     expect(await screen.findByLabelText(/Katalog-URL/)).toBeInTheDocument()
     expect(screen.getByLabelText(/Seiten höchstens/)).toHaveValue("40")
+    expect(screen.getByText("$ magda download")).toBeInTheDocument()
+  })
+
+  it("führt über die Brotkrumen zurück zur Übersicht", async () => {
+    mockFetch(base())
+    renderWithProviders(<ControlPage />)
+    await oeffne(/Prospekte laden/)
+    await screen.findByLabelText(/Katalog-URL/)
+
+    fireEvent.click(screen.getByRole("button", { name: "Alle Schritte" }))
+
+    expect(screen.queryByLabelText(/Katalog-URL/)).not.toBeInTheDocument()
+    expect(await screen.findByRole("button", { name: /LLM-Labeling/ })).toBeInTheDocument()
   })
 
   it("schickt die eingegebenen Werte beim Start", async () => {
     mockFetch(base())
     renderWithProviders(<ControlPage />)
+    await oeffne(/Prospekte laden/)
 
     fireEvent.change(await screen.findByLabelText(/Katalog-URL/), {
       target: { value: "https://x/?catalogId=42" },
     })
-    fireEvent.click(screen.getAllByRole("button", { name: /starten/i })[0])
+    fireEvent.click(screen.getByRole("button", { name: /starten/i }))
 
     await waitFor(() => {
       const call = vi
@@ -66,16 +97,29 @@ describe("ControlPage", () => {
     })
   })
 
+  it("zeigt den laufenden Schritt ohne Zutun", async () => {
+    // Wer einen Lauf gestartet hat und die Seite neu lädt, will sehen, was
+    // läuft – nicht erst wieder danach suchen.
+    mockFetch(base({
+      "/api/run": { ...IDLE_RUN, running: true, job: "label", lines: ["Seite 1"] },
+    }))
+    renderWithProviders(<ControlPage />)
+
+    expect(await screen.findByText("$ magda label")).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: /Stoppen/ })).toBeInTheDocument()
+  })
+
   it("zeigt die Historie mit Exit-Code", async () => {
     mockFetch(base({
       "/api/runs": [{
-        run_id: "20260729-142201_01_download_flyers", job: "download",
-        title: "Prospekte laden", args: {}, command: ["python", "01_download_flyers.py"],
+        run_id: "20260729-142201_download", job: "download",
+        title: "Prospekte laden", args: {}, command: ["python", "-m", "magda", "download"],
         started: "2026-07-29T14:22:01", finished: "2026-07-29T14:22:03",
         exit_code: 2, duration: 2.0,
       }],
     }))
     renderWithProviders(<ControlPage />)
+    await oeffne(/Prospekte laden/)
 
     // Die Historie liegt hinter dem Reiter "Läufe" – Live und Vergangenheit
     // teilen sich eine Spalte, weil man immer nur eins davon ansieht.
@@ -84,15 +128,26 @@ describe("ControlPage", () => {
     expect(await screen.findByText(/Abbruch \(2\)/)).toBeInTheDocument()
   })
 
-  it("meldet ein kaputtes Katalog-Verzeichnis, ohne die Seite zu verlieren", async () => {
+  it("hebt Fehlerzeilen in der Ausgabe hervor", async () => {
     mockFetch(base({
-      "/api/catalogs": { entries: [], error: "catalogs.json ist nicht lesbar. Merge-Konflikt?" },
+      "/api/run": {
+        ...IDLE_RUN, running: true, job: "extract",
+        lines: ["### Extraktion", "Traceback (most recent call last):"],
+      },
     }))
     renderWithProviders(<ControlPage />)
 
-    // Die Katalogverwaltung ist eingeklappt, damit die Seite nicht überläuft.
-    fireEvent.click(await screen.findByText("Kataloge verwalten"))
-    expect(await screen.findByText(/Merge-Konflikt/)).toBeInTheDocument()
-    expect(screen.getByLabelText(/Katalog-URL/)).toBeInTheDocument()
+    const fehler = await screen.findByText(/Traceback/)
+    expect(fehler.className).toMatch(/riso-pink/)
+  })
+
+  it("trennt Pipeline-Schritte von Auswertungswerkzeugen", async () => {
+    mockFetch(base())
+    renderWithProviders(<ControlPage />)
+
+    await screen.findByRole("button", { name: /Wörter extrahieren/ })
+    // Der Fortschrittszähler läuft über die Pipeline, nicht über alles:
+    // ein Flair-Vergleich ist kein Schritt, den man abhaken muss.
+    expect(screen.getByText("0 / 6 erledigt")).toBeInTheDocument()
   })
 })

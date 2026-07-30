@@ -1,8 +1,7 @@
 import type {
-  Agreement, CatalogEntry, CatalogRegistry, EvalReport, GoldAnnotation, GoldSummary,
+  Agreement, EvalReport, GoldAnnotation, GoldSummary,
   JobDef, LabelDistribution, Labeler, LabelSource, LabelsVsGold, ModelStatus, PageDetail, PageSummary,
   PipelineStatus,
-  ProbeResult,
   RunDetail, RunRecord, RunStatus, Span,
 } from "./types"
 
@@ -51,21 +50,6 @@ export const api = {
   jobs: () => fetchJson<JobDef[]>("/api/jobs"),
   runs: () => fetchJson<RunRecord[]>("/api/runs"),
   runDetail: (id: string) => fetchJson<RunDetail>(`/api/runs/${id}`),
-  catalogs: () => fetchJson<CatalogRegistry>("/api/catalogs"),
-  addCatalog: (entry: Partial<CatalogEntry> & { id: string }) =>
-    fetchJson<CatalogEntry>("/api/catalogs", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(entry),
-    }),
-  removeCatalog: (id: string) =>
-    fetchJson<{ removed: string }>(`/api/catalogs/${id}`, { method: "DELETE" }),
-  probeCatalog: (url: string) =>
-    fetchJson<ProbeResult>("/api/catalogs/probe", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ url }),
-    }),
   labelDistribution: (model?: string) =>
     fetchJson<LabelDistribution>(
       `/api/labels/distribution${model ? `?model=${encodeURIComponent(model)}` : ""}`,

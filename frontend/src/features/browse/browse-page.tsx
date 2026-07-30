@@ -110,16 +110,12 @@ export function BrowsePage() {
     )
   }
 
-  const goldPages = golds.reduce((sum, s) => sum + s.pages, 0)
-  const goldDone = golds.reduce((sum, s) => sum + s.done, 0)
-
   return (
     <div className="flex min-w-0 flex-col gap-5">
       {header([{ label: "Labels" }])}
       <p className="max-w-2xl text-sm text-muted-foreground">
-        Zwei Sorten Labels, die sich grundsätzlich unterscheiden: was ein
-        Vision-Modell erzeugt hat – reproduzierbar, jederzeit neu berechenbar –
-        und was von Hand entstanden ist.
+        Was die Vision-Modelle erzeugt haben – ein Ordner je Labeling-Lauf,
+        jederzeit neu berechenbar.
       </p>
       <FolderGrid
         items={[
@@ -129,15 +125,20 @@ export function BrowsePage() {
             sublabel: `${models.length} ${models.length === 1 ? "Lauf" : "Läufe"}`,
             tone: "group",
           },
-          {
-            id: "gold",
-            label: "Handannotation",
-            sublabel: `${goldDone} von ${goldPages} geprüft`,
-            tone: "gold",
-          },
         ]}
         onOpen={(id) => setSearchParams({ group: id })}
       />
+      {/* Die Handannotation ist ausgeblendet, nicht entfernt: /annotate und
+          ?group=gold funktionieren weiter, gold/ bleibt versioniert, und
+          `magda gold` misst weiter dagegen. Sichtbar wird der Ordner wieder,
+          indem man ihn hier einträgt. */}
+      <button
+        type="button"
+        onClick={() => setSearchParams({ group: "gold" })}
+        className="self-start font-mono text-xs text-muted-foreground underline-offset-4 hover:underline"
+      >
+        … Handannotation öffnen
+      </button>
     </div>
   )
 }

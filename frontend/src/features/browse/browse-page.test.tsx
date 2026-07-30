@@ -34,18 +34,25 @@ function setup(route = "/labels") {
 }
 
 describe("BrowsePage — Ordnerebenen", () => {
-  it("trennt Modell-Labels von Handannotation", async () => {
+  it("zeigt oben nur die Modell-Labels", async () => {
     setup()
     expect(await screen.findByText("Modell-Labels")).toBeInTheDocument()
-    expect(screen.getByText("Handannotation")).toBeInTheDocument()
-    // Auf der obersten Ebene stehen die Überordner, nicht schon die Läufe.
+    // Auf der obersten Ebene steht der Überordner, nicht schon die Läufe.
     expect(screen.queryByText("qwen3.5-397b-a17b")).not.toBeInTheDocument()
   })
 
-  it("zählt Handannotation nach geprüften Seiten, nicht nach vorhandenen", async () => {
+  it("blendet die Handannotation aus, ohne sie zu entfernen", async () => {
+    // Team-Entscheidung: gelabelt wird maschinell. Die Handannotation bleibt
+    // als Werkzeug bestehen – gold/ ist versioniert und `magda gold` misst
+    // weiter dagegen –, steht aber nicht mehr im Weg.
+    const user = userEvent.setup()
     setup()
-    // 3 von Noah geprüft, 40 von Sonnet vorannotiert und ungeprüft.
-    expect(await screen.findByText("3 von 43 geprüft")).toBeInTheDocument()
+
+    await screen.findByText("Modell-Labels")
+    expect(screen.queryByText("Handannotation")).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole("button", { name: /Handannotation öffnen/ }))
+    expect(await screen.findByText("sonnet-5")).toBeInTheDocument()
   })
 
   it("öffnet die Modell-Läufe erst eine Ebene tiefer", async () => {
@@ -59,7 +66,7 @@ describe("BrowsePage — Ordnerebenen", () => {
   it("markiert ungeprüfte Vorannotation als solche", async () => {
     const user = userEvent.setup()
     setup()
-    await user.click(await screen.findByText("Handannotation"))
+    await user.click(await screen.findByRole("button", { name: /Handannotation öffnen/ }))
     // Der Klammerzusatz ist Beiwerk, der Name davor die Beschriftung.
     expect(await screen.findByText("sonnet-5")).toBeInTheDocument()
     expect(screen.getByText("ungeprüft")).toBeInTheDocument()
