@@ -1,0 +1,59 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "magda"
+version = "0.3.0"
+description = "Strukturierte Angebotsdaten aus deutschen Supermarkt-Prospekten"
+requires-python = ">=3.11"
+
+dependencies = [
+    # Daten-Pipeline
+    "requests",
+    "pymupdf",
+    "tqdm",
+    "python-dotenv",
+    "openai",
+
+    # Modelltraining und Evaluation
+    "torch",
+    # transformers 5.x hat die Slow-Tokenizer entfernt; deepset/gbert-base
+    # liefert aber nur vocab.txt und laesst sich dort nicht mehr laden.
+    "transformers>=4.44,<5",
+    "accelerate>=0.26",   # vom HF-Trainer vorausgesetzt, kommt nicht automatisch mit
+    "sentencepiece",
+    "pillow",             # Seitenbilder fuer den visuellen Backbone von LayoutXLM
+    "numpy",
+    "seqeval",
+
+    # Frontend-API
+    "fastapi",
+    "uvicorn",
+    "python-multipart",
+]
+
+# LayoutXLM (LayoutLMv2-Architektur) braucht zusaetzlich detectron2 fuer den
+# visuellen Backbone. Die Installation ist plattformabhaengig und laesst sich
+# nicht als Abhaengigkeit ausdruecken, siehe docs/runpod.md.
+
+[project.scripts]
+magda = "magda.cli:main"
+
+[project.optional-dependencies]
+# Vergleichsarm mit einem fertigen deutschen NER-Modell
+# (scripts/07_flair_baseline.py). Bewusst optional: flair bringt gut zwei
+# Dutzend Pakete mit (boto3, gdown, langdetect, lxml ...), die fuer Pipeline
+# und Training keine Rolle spielen.
+#
+# Geprueft am 29.07.2026 gegen das Projekt-venv: flair 0.15.1 laesst numpy,
+# torch, transformers und tokenizers unangetastet. Vor einem Versionssprung
+# lohnt derselbe Test:  pip install --dry-run '.[flair]'
+flair = ["flair>=0.13"]
+dev = ["pytest", "httpx"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

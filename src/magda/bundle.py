@@ -1,0 +1,167 @@
+"""Schnürt ein Trainingspaket für eine fremde Maschine (RunPod, Uni-Cluster).
+
+Warum überhaupt ein Bündel und nicht `git clone` plus `rsync`: Der Code liegt
+nur lokal, solange nicht gepusht wurde, und `data/` ist gitignored. Wer beides
+von Hand zusammensucht, vergisst genau einmal den Split – und trainiert dann
+gegen eine andere Aufteilung als zu Hause, ohne dass es auffällt.
+
+Die Seitenbilder werden auf 224×224 vorskaliert. Das ist keine Sparmaßnahme,
+sondern genau die Größe, auf die `LayoutLMv2ImageProcessor` sie ohnehin bringt
+– mit demselben Filter (bilinear). Aus 390 MB werden so rund 20 MB, ohne dass
+sich am Modelleingang ein Pixel ändert.
+"""
+
+import io
+import subprocess
+import tarfile
+from pathlib import Path
+
+from PIL import Image
+
+from magda.config import IMAGES_DIR, PROJECT_ROOT, SPLITS_DIR, labeled_dir
+
+# Kantenlänge und Filter von LayoutLMv2ImageProcessor. Weichen sie ab, sieht
+# das Modell auf dem Pod andere Pixel als zu Hause.
+IMAGE_SIZE = 224
+RESAMPLE = Image.BILINEAR
+
+BOOTSTRAP = """#!/usr/bin/env bash
+# Auf dem Pod ausfuehren: bash bootstrap.sh
+set -euo pipefail
+cd "$(dirname "$0")"
+
+echo "########## Abhaengigkeiten ##########"
+# Die Python-Installation der ueblichen GPU-Images ist nach PEP 668 als
+# "externally managed" markiert; pip verweigert dort jede Installation. Auf
+# einem Wegwerf-Container ist genau das die falsche Vorsicht - torch liegt
+# ohnehin in derselben Umgebung, ein eigenes venv wuerde es abschneiden.
+export PIP_BREAK_SYSTEM_PACKAGES=1
+# Editierbar, damit `from magda import ...` in den Skripten aufgeht, ohne dass
+# jemand PYTHONPATH setzen muss.
+pip install -q -e .
+# Der visuelle Backbone von LayoutLMv2/LayoutXLM. Wird uebersetzt, dauert
+# einige Minuten. Ohne ihn laeuft nur die GBERT-Variante.
+#
+# --no-build-isolation ist nicht optional: detectron2 importiert torch schon
+# in seiner setup.py, um gegen die richtige CUDA-Version zu uebersetzen. In
+# der Build-Sandbox von pip gibt es kein torch, und der Bau bricht mit
+# "ModuleNotFoundError: No module named 'torch'" ab.
+pip install -q --no-build-isolation \\
+  "git+https://github.com/facebookresearch/detectron2.git" \\
+  || echo "WARNUNG: detectron2 fehlgeschlagen - layoutxlm wird nicht laufen."
+
+# Der teuerste denkbare Fehler: PyTorch findet die GPU nicht, trainiert
+# stillschweigend auf der CPU, und die gemietete Karte steht daneben. Lieber
+# hier abbrechen als eine Stunde spaeter ein Ergebnis haben, das nichts
+# gekostet haette.
+python - <<'PRUEFUNG' || exit 1
+import sys, torch
+if not torch.cuda.is_available():
+    sys.exit("ABBRUCH: torch.cuda.is_available() ist False. Ohne GPU zahlst du "
+             "GPU-Stunden fuer CPU-Training. Falsches Image, oder pip hat das "
+             "CUDA-Torch durch ein CPU-Rad ersetzt.")
+# is_available() reicht nicht: eine von einem Nachbarcontainer belegte Karte
+# meldet sich als verfuegbar und scheitert erst bei der ersten Allokation -
+# mitten im Training, nach der Installation, mit einem CUDA-Fehler tief im
+# HF-Trainer. Einmal wirklich anfassen ist die ehrliche Pruefung.
+try:
+    torch.zeros(8, device="cuda").sum().item()
+except Exception as fehler:
+    sys.exit(f"ABBRUCH: GPU meldet sich verfuegbar, laesst aber nichts zu "
+             f"({type(fehler).__name__}: {fehler}). Karte ist belegt oder defekt "
+             f"- diesen Pod terminieren und einen neuen nehmen.")
+print(f"GPU: {torch.cuda.get_device_name(0)}, torch {torch.__version__}")
+PRUEFUNG
+
+for variante in gbert layoutxlm; do
+  echo ""
+  echo "########## $variante ##########"
+  # "python -m magda" statt des Befehls "magda": wohin pip die Konsolenskripte
+  # legt, haengt vom Image ab, und ein PATH-Fehler faellt hier erst nach der
+  # detectron2-Uebersetzung auf.
+  python -m magda train "$variante" --labels-from __MODEL__ --epochs __EPOCHS__ \\
+    || { echo "$variante: Training fehlgeschlagen"; continue; }
+  python -m magda eval "$variante" --split test --labels-from __MODEL__
+done
+
+echo ""
+echo "########## Ergebnisse einpacken ##########"
+tar czf ergebnisse.tgz data/eval checkpoints
+echo "Fertig: $(pwd)/ergebnisse.tgz"
+"""
+
+
+def _tracked_files() -> list[Path]:
+    """Alles, was unter Versionskontrolle steht – inklusive lokaler Commits.
+
+    `git archive HEAD` wäre kürzer, liefert aber ein zweites Tar-Format im Tar
+    und macht das Entpacken zweistufig.
+    """
+    out = subprocess.run(
+        ["git", "ls-files", "-z"],
+        cwd=PROJECT_ROOT, capture_output=True, text=True, check=True,
+    )
+    return [PROJECT_ROOT / name for name in out.stdout.split("\0") if name]
+
+
+def _shrink(image_file: Path) -> bytes:
+    with Image.open(image_file) as page:
+        small = page.convert("RGB").resize((IMAGE_SIZE, IMAGE_SIZE), RESAMPLE)
+    buffer = io.BytesIO()
+    small.save(buffer, format="PNG")
+    return buffer.getvalue()
+
+
+def build(target: Path, model: str, epochs: int = 10) -> dict:
+    """Schreibt das Tar und meldet, was drinsteckt."""
+    labels = sorted(labeled_dir(model).glob("*.json"))
+    if not labels:
+        raise ValueError(f"Keine Labels in data/labeled/{model}/.")
+
+    split_file = SPLITS_DIR / "split.json"
+    if not split_file.exists():
+        raise ValueError(
+            "data/splits/split.json fehlt. Erst lokal einmal magda train starten, "
+            "sonst würfelt der Pod einen eigenen Split und die Zahlen sind "
+            "nicht mit deinen vergleichbar."
+        )
+
+    zaehler = {"code": 0, "labels": 0, "bilder": 0, "fehlende_bilder": []}
+    target.parent.mkdir(parents=True, exist_ok=True)
+    with tarfile.open(target, "w:gz") as tar:
+        for path in _tracked_files():
+            if not path.is_file():
+                continue  # gelöscht, aber noch im Index
+            tar.add(path, arcname=str(path.relative_to(PROJECT_ROOT)))
+            zaehler["code"] += 1
+
+        for label_file in labels:
+            tar.add(label_file, arcname=f"data/labeled/{model}/{label_file.name}")
+            zaehler["labels"] += 1
+
+            image_file = IMAGES_DIR / f"{label_file.stem}.png"
+            if not image_file.exists():
+                zaehler["fehlende_bilder"].append(label_file.stem)
+                continue
+            data = _shrink(image_file)
+            info = tarfile.TarInfo(f"data/images/{image_file.name}")
+            info.size = len(data)
+            tar.addfile(info, io.BytesIO(data))
+            zaehler["bilder"] += 1
+
+        tar.add(split_file, arcname="data/splits/split.json")
+
+        # Platzhalter statt str.format: das Skript enthaelt selbst
+        # geschweifte Klammern (Shell-Blöcke, f-Strings im Pruefteil).
+        script = (
+            BOOTSTRAP.replace("__MODEL__", model)
+            .replace("__EPOCHS__", str(epochs))
+            .encode()
+        )
+        info = tarfile.TarInfo("bootstrap.sh")
+        info.size = len(script)
+        info.mode = 0o755
+        tar.addfile(info, io.BytesIO(script))
+
+    zaehler["groesse_mb"] = round(target.stat().st_size / 1e6, 1)
+    return zaehler

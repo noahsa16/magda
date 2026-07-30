@@ -1,0 +1,222 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+@import "@fontsource-variable/geist";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+    --font-display: 'Geist Variable', sans-serif;
+    --font-heading: var(--font-display);
+    --font-sans: 'Geist Variable', sans-serif;
+    --font-mono: ui-monospace, "SF Mono", Menlo, monospace;
+    --color-sidebar-ring: var(--sidebar-ring);
+    --color-sidebar-border: var(--sidebar-border);
+    --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+    --color-sidebar-accent: var(--sidebar-accent);
+    --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+    --color-sidebar-primary: var(--sidebar-primary);
+    --color-sidebar-foreground: var(--sidebar-foreground);
+    --color-sidebar: var(--sidebar);
+    --color-chart-5: var(--chart-5);
+    --color-chart-4: var(--chart-4);
+    --color-chart-3: var(--chart-3);
+    --color-chart-2: var(--chart-2);
+    --color-chart-1: var(--chart-1);
+    --color-ring: var(--ring);
+    --color-input: var(--input);
+    --color-border: var(--border);
+    --color-destructive: var(--destructive);
+    --color-accent-foreground: var(--accent-foreground);
+    --color-accent: var(--accent);
+    --color-muted-foreground: var(--muted-foreground);
+    --color-muted: var(--muted);
+    --color-secondary-foreground: var(--secondary-foreground);
+    --color-secondary: var(--secondary);
+    --color-primary-foreground: var(--primary-foreground);
+    --color-primary: var(--primary);
+    --color-popover-foreground: var(--popover-foreground);
+    --color-popover: var(--popover);
+    --color-card-foreground: var(--card-foreground);
+    --color-card: var(--card);
+    --color-foreground: var(--foreground);
+    --color-background: var(--background);
+    --radius-sm: calc(var(--radius) * 0.6);
+    --radius-md: calc(var(--radius) * 0.8);
+    --radius-lg: var(--radius);
+    --radius-xl: calc(var(--radius) * 1.4);
+    --radius-2xl: calc(var(--radius) * 1.8);
+    --radius-3xl: calc(var(--radius) * 2.2);
+    --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+/* Risograph-Palette: Prospekte sind Druckerzeugnisse, also druckt die
+   Oberfläche mit. Papierweiß mit Blaustich, Marineblau statt Schwarz,
+   Fluor-Pink als Signal, Riso-Blau für Daten. */
+:root {
+    --paper: #EEF0EC;
+    --ink: #14203C;
+    --riso-pink: #E8377D;
+    --riso-blue: #2951E8;
+    --riso-yellow: #FFC800;
+
+    --background: var(--paper);
+    --foreground: var(--ink);
+    --card: #F8F9F6;
+    --card-foreground: var(--ink);
+    --popover: #F8F9F6;
+    --popover-foreground: var(--ink);
+    --primary: var(--riso-pink);
+    --primary-foreground: #FFFFFF;
+    --secondary: #E1E5DE;
+    --secondary-foreground: var(--ink);
+    --muted: #E1E5DE;
+    --muted-foreground: #5D6880;
+    --accent: #DDE2DA;
+    --accent-foreground: var(--ink);
+    --destructive: #D22030;
+    --border: #C9CFC6;
+    --input: #C9CFC6;
+    --ring: var(--riso-pink);
+    --chart-1: var(--riso-blue);
+    --chart-2: var(--riso-pink);
+    --chart-3: #8E97A8;
+    --chart-4: var(--riso-yellow);
+    --chart-5: var(--ink);
+    /* Zine-Anmutung: fast kantig, nur gebrochene Ecken */
+    --radius: 0.375rem;
+    --sidebar: #E8EBE5;
+    --sidebar-foreground: var(--ink);
+    --sidebar-primary: var(--riso-pink);
+    --sidebar-primary-foreground: #FFFFFF;
+    --sidebar-accent: #DDE2DA;
+    --sidebar-accent-foreground: var(--ink);
+    --sidebar-border: #C9CFC6;
+    --sidebar-ring: var(--riso-pink);
+}
+
+.dark {
+    --paper: #0F1626;
+    --ink: #E7EAF0;
+    --riso-pink: #FF4C8B;
+    --riso-blue: #5B7DFF;
+    --riso-yellow: #FFC800;
+
+    --background: #0F1626;
+    --foreground: #E7EAF0;
+    --card: #172038;
+    --card-foreground: #E7EAF0;
+    --popover: #172038;
+    --popover-foreground: #E7EAF0;
+    --primary: #FF4C8B;
+    --primary-foreground: #FFFFFF;
+    --secondary: #1E2943;
+    --secondary-foreground: #E7EAF0;
+    --muted: #1E2943;
+    --muted-foreground: #94A0BC;
+    --accent: #232F4D;
+    --accent-foreground: #E7EAF0;
+    --destructive: #FF5A67;
+    --border: oklch(1 0 0 / 12%);
+    --input: oklch(1 0 0 / 16%);
+    --ring: #FF4C8B;
+    --chart-1: #5B7DFF;
+    --chart-2: #FF4C8B;
+    --chart-3: #94A0BC;
+    --chart-4: #FFC800;
+    --chart-5: #E7EAF0;
+    --sidebar: #172038;
+    --sidebar-foreground: #E7EAF0;
+    --sidebar-primary: #FF4C8B;
+    --sidebar-primary-foreground: #FFFFFF;
+    --sidebar-accent: #232F4D;
+    --sidebar-accent-foreground: #E7EAF0;
+    --sidebar-border: oklch(1 0 0 / 12%);
+    --sidebar-ring: #FF4C8B;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+    }
+  body {
+    @apply bg-background text-foreground;
+    /* Halbton-Raster: der Punktraster einer Risodruck-Fläche. Bewusst so
+       schwach, dass er erst auffällt, wenn man ihn sucht. */
+    background-image: radial-gradient(var(--halftone, #14203C1A) 1px, transparent 1px);
+    background-size: 4px 4px;
+    }
+  html {
+    @apply font-sans;
+    }
+}
+
+.dark body {
+  --halftone: #E7EAF014;
+}
+
+/* Riso-Signaturen ---------------------------------------------------------
+   Fehlregistrierung (misprint): der zweite Druckgang sitzt minimal daneben.
+   Als Text-Schatten in Pink/Blau unter der Tinte – das Erkennungszeichen
+   der Seite, sparsam eingesetzt. */
+.misprint {
+  text-shadow:
+    1.5px 1.5px 0 color-mix(in srgb, var(--riso-pink) 55%, transparent),
+    -1.5px -1.5px 0 color-mix(in srgb, var(--riso-blue) 40%, transparent);
+}
+
+/* Kante mit sichtbarem Druckversatz statt Schlagschatten */
+.plate {
+  box-shadow: 3px 3px 0 0 var(--ink);
+}
+
+.plate-pink {
+  box-shadow: 3px 3px 0 0 var(--riso-pink);
+}
+
+/* --- Scan-Reveal (Demo): Scanlinie fährt über die Seite, Boxen erscheinen
+       gestaffelt dahinter – Motion, die zeigt, was das Modell tut. --- */
+
+@keyframes scanline {
+  from { top: 0; opacity: 1; }
+  90%  { opacity: 1; }
+  to   { top: 100%; opacity: 0; }
+}
+
+.scanline {
+  animation: scanline 1.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes box-reveal {
+  from { opacity: 0; transform: scale(0.85); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+.box-reveal {
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: box-reveal 0.35s ease-out forwards;
+  /* Verzögerung pro Box via --reveal-delay (nach y-Position sortiert) */
+  animation-delay: var(--reveal-delay, 0s);
+}
+
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.fade-up {
+  animation: fade-up 0.4s ease-out both;
+  animation-delay: var(--reveal-delay, 0s);
+}
+
+/* Sanftes Einblenden beim Routenwechsel (Wrapper wird pro Route neu gemountet) */
+.page-fade {
+  animation: fade-up 0.35s ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scanline { animation: none; opacity: 0; }
+  .box-reveal, .fade-up, .page-fade { animation: none; opacity: 1; transform: none; }
+}

@@ -12,6 +12,10 @@ checkpoints/**
 # persönliche Notizen, bleiben lokal
 EXPLANATION.md
 
+# Node: das Frontend hat eine eigene .gitignore, hier landet nur der
+# Vitest-Cache, wenn npm test aus dem Projektroot gestartet wird.
+node_modules/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
@@ -28,7 +32,7 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
+/lib/
 lib64/
 parts/
 sdist/
@@ -230,3 +234,6 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# PyCharm-Projektdateien: rechnerspezifisch, gehören niemandem sonst
+.idea/

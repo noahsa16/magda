@@ -3,100 +3,114 @@
 Semesterprojekt im Kurs *Information Extraction* (SoSe 2026).
 Bogdan Roth · Kjell Lavezzari · Noah Samel
 
-Wir extrahieren strukturierte Angebotsdaten (Produkt, Preis, Menge, Rabatt, …)
-aus deutschen Supermarkt-Prospekten. Statt die Extraktion einem LLM zu
-überlassen, trainieren wir ein eigenes layout-aware Modell (LayoutXLM) und
-nutzen das LLM nur, um unsere Trainingsdaten automatisch zu labeln.
-Details stehen im [Proposal](docs/proposal/IE_ProjectProposal_Magda.pdf).
+Aus deutschen Penny-Prospekten werden strukturierte Angebotsdaten extrahiert:
+Produkt, Marke, Preis, Streichpreis, Menge, Grundpreis, Rabatt, Gültigkeit,
+App-Preis. Ein großes Vision-LLM labelt die Trainingsdaten, darauf trainieren
+wir ein eigenes, kleines Modell.
 
-## Pipeline
+Zwei Fragen stehen dahinter. Erstens: **Wie viel von dem, was ein LLM kann,
+passt in ein Modell, das man selbst betreibt?** Gemessen erreicht GBERT F1
+0.908 gegen die LLM-Labels, bei 0,264 statt 44,8 Sekunden je Seite — 109 Mio.
+Parameter, lokal auf CPU, ohne Netz und API-Kontingent. Zweitens: **Wie viel
+bringt Layout-Information?** LayoutXLM kennt die Position jedes Wortes, GBERT
+nur den Text; bisher liegt LayoutXLM 1,3 Punkte zurück.
 
-```
-Prospekt-PDF ──01──> data/raw/      (eine Seite = ein PDF)
-             ──02──> data/words/    (Wörter + Bounding-Boxen, via PDF-Textlayer)
-                     data/images/   (gerenderte Seitenbilder)
-             ──03──> data/labeled/  (BIO-Tags pro Wort, gelabelt vom LLM)
-             ──04──> checkpoints/   (feingetuntes LayoutXLM bzw. GBERT)
-             ──05──> Entity-Level P/R/F1 auf dem Test-Split
-```
-
-Die Skripte sind bewusst dünne Wrapper – die eigentliche Logik liegt im
-`magda/`-Package und ist dort dokumentiert.
+Grundlage ist das [Proposal](docs/proposal/IE_ProjectProposal_Magda.pdf), der
+Stand steht in [reports/](reports/).
 
 ## Setup
 
 ```bash
 python -m venv .venv
 source .venv/bin/activate
-pip install -r requirements.txt
-cp .env.example .env   # API-Key für die Academic Cloud eintragen
+pip install -e '.[dev]'
+cp .env.example .env       # API-Key für die GWDG Academic Cloud eintragen
 ```
 
-Für das LayoutXLM-Training wird zusätzlich detectron2 gebraucht
-(visueller Backbone von LayoutLMv2) – siehe Hinweis in `requirements.txt`
-und in `scripts/04_train.py`.
+LayoutXLM braucht zusätzlich detectron2 (visueller Backbone von LayoutLMv2).
+Die Installation ist plattformabhängig; für das Training auf einer gemieteten
+GPU siehe [docs/runpod.md](docs/runpod.md).
 
-## Benutzung
+## Pipeline
 
 ```bash
-# 1. Prospekt herunterladen
-python scripts/01_download_flyers.py "https://...blaetterkatalog.de/...?catalogId=123456"
-
-# 2. Wörter + Positionen extrahieren
-python scripts/02_extract_words.py
-
-# 3. Automatisch labeln (braucht den API-Key aus der .env)
-python scripts/03_label_words.py
-
-# 4. Trainieren – beide Varianten für den Vergleich
-python scripts/04_train.py gbert
-python scripts/04_train.py layoutxlm
-
-# 5. Evaluieren
-python scripts/05_evaluate.py gbert
-python scripts/05_evaluate.py layoutxlm
+magda harvest                  # laufende Woche, alle 44 Regionen  -> data/raw/
+magda extract                  # Wörter + Boxen, Seitenbilder      -> data/words/, data/images/
+magda dedupe --apply           # Beinah-Duplikate aussortieren     -> data/excluded.json
+magda label                    # BIO-Tags vom Vision-LLM           -> data/labeled/<modell>/
+magda split --strategy week    # Train/Dev/Test einfrieren         -> data/splits/split.json
+magda train gbert              # bzw. layoutxlm                    -> checkpoints/
+magda eval gbert --split test  # Entity-Level P/R/F1               -> data/eval/
 ```
 
-Alle Skripte sind idempotent: bereits verarbeitete Seiten werden übersprungen,
-man kann sie also einfach erneut starten.
+`magda --help` listet alle Schritte in dieser Reihenfolge auf, `magda <schritt>
+--help` die Optionen eines einzelnen. Jeder Schritt liest vom Vorgänger über
+die Platte und überspringt, was schon verarbeitet ist – ein Lauf über mehrere
+tausend Seiten beginnt nach einem Abbruch nicht von vorn. Immer aus dem
+Projektroot starten, die Schritte lesen und schreiben relativ dazu.
 
-## Projektstruktur
+Daneben gibt es Vergleichsarme und Auswertungen: `magda flair` (fertiges
+deutsches NER-Modell, misst nur BRAND), `magda gold` (Labeling-Modelle gegen
+`gold/`), `magda agreement` (Labeling-Modelle gegeneinander).
+
+## Struktur
 
 ```
-magda/                  Kern-Package
-├── config.py           Pfade, Modellnamen, API-Zugang
-├── labels.py           Entity-Schema (BIO), Span-Validierung
-├── scraping.py         Download der Penny-Prospektseiten
-├── ocr.py              Wörter + Boxen aus dem PDF-Textlayer, Box-Normalisierung
-├── labeling.py         LLM-Labeling (Bild + Wortliste -> Spans -> BIO)
-├── alignment.py        Wort-Labels -> Subword-Tokens (-100-Maskierung)
-├── dataset.py          Laden, Splits, PyTorch-Datasets für beide Modelle
-├── evaluation.py       seqeval-Metriken (Entity-Level)
-└── blackbox.py         der alte LLM-Prototyp, dient als Vergleichssystem
-
-scripts/                nummerierte Pipeline-Schritte (siehe oben)
-tests/                  pytest für Labels und Alignment
-data/                   lokale Daten, nicht im Repo (nur .gitkeep)
-checkpoints/            trainierte Modelle, nicht im Repo
-docs/proposal/          das Projekt-Proposal
+src/magda/     Kern-Package: die gesamte Logik, inklusive api.py
+    cli/       ein Modul je Pipeline-Schritt, Einstieg über `magda`
+frontend/      React-SPA (Vite, Tailwind, shadcn), liest data/ über die API
+tests/         pytest
+gold/          handannotierte Referenz – versioniert, weil nicht reproduzierbar
+data/          Arbeitsstände, gitignored
+checkpoints/   trainierte Modelle, gitignored
+docs/          Proposal, RunPod-Anleitung, Ursprungs-Prototyp
+reports/       Wochenberichte
 ```
 
-## Entity-Schema (Entwurf)
+## Frontend
 
-`PRODUCT`, `BRAND`, `PRICE`, `OLD_PRICE`, `QUANTITY`, `DISCOUNT`, `VALID` –
-im BIO-Format. Wird nach Sichtung der ersten gelabelten Daten finalisiert,
-siehe `magda/labels.py`.
+```bash
+magda serve --frontend      # API auf 8000, Oberfläche auf 5173
+```
+
+Beides in einem Befehl; `magda serve` allein startet nur die API. Wer die
+Prozesse getrennt haben will, nimmt zwei Terminals:
+
+```bash
+magda serve
+cd frontend && npm run dev
+```
+
+Nicht `uvicorn magda.api:app` – das `uvicorn` im PATH gehört meist zu einer
+anderen Python-Installation, in der `magda` nicht liegt, und der Start endet
+in `ModuleNotFoundError`.
+
+Die Oberfläche läuft auf http://localhost:5173 und proxied `/api` ans Backend.
+Vier Bereiche:
+**Übersicht** (Datenstand und F1 je Variante), **Pipeline** (Schritte starten,
+Live-Ausgabe, Lauf-Historie), **Daten** (Label-Quellen als Ordner, darunter
+Inspektor und Annotator) und **Ergebnis** (F1 pro Entity-Typ).
+
+Der Annotator unter `/annotate` erzeugt die Referenzdaten in `gold/`: Wort
+anklicken, Shift-Klick erweitert, Ziffer `1`–`9` setzt das Label, `0` entfernt
+es, `f` markiert die Seite als fertig.
+
+Die Pipeline-Schritte laufen als Subprozess auf demselben Rechner wie das
+Backend. Startbar sind nur die in `src/magda/jobs.py` deklarierten Jobs mit
+ihren deklarierten Parametern – gedacht für das lokale Setup, nicht für einen
+offen erreichbaren Server.
 
 ## Tests
 
 ```bash
-pytest
+.venv/bin/python -m pytest        # Backend und Pipeline
+cd frontend && npm test           # Frontend (Vitest)
 ```
 
 ## Offene Punkte
 
-- [ ] Label-Set nach den ersten gelabelten Seiten finalisieren
-- [ ] Split über Kataloge statt Seiten? (Angebote wiederholen sich zwischen Wochen)
-- [ ] detectron2-Installation klären, sonst Plan B: LayoutLMv3-Architektur
-- [ ] Seiten mit >512 Subwords: Truncation reicht oder Sliding Window nötig?
-- [ ] Matching-Logik für den Vergleich Modell vs. LLM-Blackbox (Phase 3)
+- [ ] Vergleich gegen die LLM-Blackbox (`src/magda/blackbox.py`): das LLM
+      extrahiert direkt, ohne Umweg über Training
+- [ ] PRODUCT-Konvention schärfen: wo endet die Sorte, wo beginnt der Werbetext
+- [ ] Seiten über 512 Subwords werden abgeschnitten – Sliding Window nötig?
+- [ ] Dritte Erntewoche: acht Dev-Seiten sind zu wenig für die Modellauswahl
