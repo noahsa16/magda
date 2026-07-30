@@ -39,7 +39,13 @@ export PIP_BREAK_SYSTEM_PACKAGES=1
 pip install -q -r requirements.txt
 # Der visuelle Backbone von LayoutLMv2/LayoutXLM. Wird uebersetzt, dauert
 # einige Minuten. Ohne ihn laeuft nur die GBERT-Variante.
-pip install -q "git+https://github.com/facebookresearch/detectron2.git" \\
+#
+# --no-build-isolation ist nicht optional: detectron2 importiert torch schon
+# in seiner setup.py, um gegen die richtige CUDA-Version zu uebersetzen. In
+# der Build-Sandbox von pip gibt es kein torch, und der Bau bricht mit
+# "ModuleNotFoundError: No module named 'torch'" ab.
+pip install -q --no-build-isolation \\
+  "git+https://github.com/facebookresearch/detectron2.git" \\
   || echo "WARNUNG: detectron2 fehlgeschlagen - layoutxlm wird nicht laufen."
 
 # Der teuerste denkbare Fehler: PyTorch findet die GPU nicht, trainiert
