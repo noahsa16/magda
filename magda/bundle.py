@@ -31,6 +31,11 @@ set -euo pipefail
 cd "$(dirname "$0")"
 
 echo "########## Abhaengigkeiten ##########"
+# Die Python-Installation der ueblichen GPU-Images ist nach PEP 668 als
+# "externally managed" markiert; pip verweigert dort jede Installation. Auf
+# einem Wegwerf-Container ist genau das die falsche Vorsicht - torch liegt
+# ohnehin in derselben Umgebung, ein eigenes venv wuerde es abschneiden.
+export PIP_BREAK_SYSTEM_PACKAGES=1
 pip install -q -r requirements.txt
 # Der visuelle Backbone von LayoutLMv2/LayoutXLM. Wird uebersetzt, dauert
 # einige Minuten. Ohne ihn laeuft nur die GBERT-Variante.
