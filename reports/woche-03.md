@@ -205,6 +205,31 @@ Aufteilung 158 / 19 / 19 Seiten, 10 Epochen, Lernrate 5e-5, Batch 8.
 Beide Dev-Kurven laufen ab Epoche 3 flach bei 0.95–0.96. Zehn Epochen sind
 großzügig; fünf hätten gereicht.
 
+### Einschränkung: die beiden Zahlen stehen nicht über derselben Menge
+
+Die Support-Spalte ist bei GBERT **712**, bei LayoutXLM **728**. Das ist kein
+Rundungsfehler, sondern ein Unterschied in den Eingabedaten.
+
+Beide Modelle schneiden Seiten über 512 Subwords ab (`truncation=True`), aber
+sie tokenisieren verschieden: GBERT nutzt BERT-WordPiece, LayoutXLM das
+SentencePiece von XLM-RoBERTa, das deutsche Komposita sparsamer zerlegt. Über
+die 19 Testseiten gemessen:
+
+| | Seiten über 512 Subwords | abgeschnittene Wörter |
+|---|---:|---:|
+| GBERT | 7 von 19 | **531** |
+| LayoutXLM | 7 von 19 | **368** |
+
+LayoutXLM sieht also 163 Wörter mehr und wird entsprechend über 16 Entitäten
+mehr bewertet. Beide werden nur auf dem bewertet, was sie sehen — keines wird
+für das Abgeschnittene bestraft. Aber die Mengen sind nicht identisch, und der
+Abstand von 0.001 ist ohnehin zu klein, um daraus etwas abzuleiten.
+
+Für die offene Sliding-Window-Frage ist das das zweite Argument nach dem
+Flair-Befund: **531 Wörter auf 19 Testseiten sind für GBERT schlicht
+unsichtbar** — im Betrieb wären das verlorene Angebote, die in keiner Metrik
+auftauchen.
+
 ### Der zentrale Befund: Layout bringt nichts
 
 **0.929 gegen 0.930.** Der Unterschied liegt weit innerhalb dessen, was bei 19
