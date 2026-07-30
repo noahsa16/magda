@@ -197,10 +197,24 @@ def get_page_image(page_id: str):
 
 @app.get("/api/evaluation")
 def get_evaluation():
+    """Modell-Evaluationen aus data/eval/.
+
+    Der Ordner enthält nicht nur Evaluationsreports: dort landen auch der
+    Gold-Vergleich der Labeling-Modelle und die Agreement-Auswertung. Wer
+    hier alles durchreicht, schickt dem Frontend Objekte ohne "report"-Feld,
+    und die Evaluationsseite stirbt an Object.entries(undefined). Deshalb
+    wird auf die Form geprüft statt auf den Dateinamen – ein neuer Report
+    mit anderem Namen soll nicht dasselbe nochmal auslösen.
+    """
     reports = []
     for f in sorted(config.EVAL_DIR.glob("*.json")):
-        with open(f) as fh:
-            reports.append(json.load(fh))
+        try:
+            with open(f) as fh:
+                data = json.load(fh)
+        except (json.JSONDecodeError, OSError):
+            continue
+        if isinstance(data, dict) and isinstance(data.get("report"), dict) and data.get("variant"):
+            reports.append(data)
     return reports
 
 

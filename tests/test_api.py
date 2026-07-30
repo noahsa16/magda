@@ -814,3 +814,19 @@ def test_agreement_liefert_rangfolge_und_verwechslungen(client):
     assert body["pages"][0]["page_id"] == "462828_p2"
     assert body["confusion"] == {"BRAND": {"PRODUCT": 1}}
     assert body["per_label"]["PRICE"] == 1.0
+
+
+def test_evaluation_ignoriert_fremde_dateien_im_eval_ordner(client):
+    """In data/eval/ liegen auch labels_vs_gold.json und agreement_*.json.
+    Wer die durchreicht, killt die Evaluationsseite an Object.entries(undefined)."""
+    with open(config.EVAL_DIR / "layoutxlm_test.json", "w") as f:
+        json.dump({"variant": "layoutxlm", "split": "test", "report": {"PRODUCT": {}}}, f)
+    with open(config.EVAL_DIR / "labels_vs_gold.json", "w") as f:
+        json.dump({"gold_pages": [], "results": []}, f)
+    with open(config.EVAL_DIR / "agreement_a_b.json", "w") as f:
+        json.dump({"model_a": "a", "model_b": "b", "pages": []}, f)
+    (config.EVAL_DIR / "kaputt.json").write_text("{ nicht json")
+
+    body = client.get("/api/evaluation").json()
+
+    assert [r["variant"] for r in body] == ["layoutxlm"]

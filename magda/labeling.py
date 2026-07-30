@@ -66,7 +66,8 @@ beim Wort mit der schließenden Klammer.
 ═══════════════════════════════════════════════════════════════════════
 REGEL 2 — QUANTITY ist nur Zahl und Einheit, sonst nichts
 ═══════════════════════════════════════════════════════════════════════
-"je", "ca.", "Versch. Sorten", "zzgl.", "Pfand" gehören NICHT in den Span.
+"je", "ca.", "Versch. Sorten", "Stück", "zzgl.", "Pfand" gehören NICHT in
+den QUANTITY-Span - dort steht nur die Füllmenge.
 
   Richtig: "500 g" · "1,25 l" · "6 x 1,5 l" · "500-g-Schale"
   Falsch:  "je 500 g" · "je 1,25 l" · "Sorten, je 150 g"
@@ -117,14 +118,22 @@ Steht nur ein Preis ohne Partner, ist er PRICE.
 ═══════════════════════════════════════════════════════════════════════
 REGEL 5 — PRODUCT: Name mit Sorte, aber ohne Menge, Preis und "oder"
 ═══════════════════════════════════════════════════════════════════════
-Der PRODUCT-Span umfasst den Produktnamen einschließlich der Sortenangabe
-("Classic", "Citrus", "Natur", "Gold", "Pink Grapefruit"). Er endet vor der
-Mengenangabe.
+Der PRODUCT-Span umfasst den Produktnamen einschließlich der Sortenangabe.
+Dazu zählt auch "Versch. Sorten". Er endet vor der Mengenangabe.
 
-  Richtig: PRODUCT="Löslicher Kaffee Classic,"   QUANTITY="200 g"
-  Richtig: PRODUCT="Käsescheiben Natur,"         QUANTITY="150 g"
+  Richtig: PRODUCT="Löslicher Kaffee Classic,"      QUANTITY="200 g"
+  Richtig: PRODUCT="Käsescheiben Natur,"            QUANTITY="150 g"
+  Richtig: PRODUCT="Burger Buns* Versch. Sorten,"   QUANTITY="300 g"
   Falsch:  PRODUCT="Käsescheiben Natur, je 150 g (1 kg = 15.27)"
-  Falsch:  PRODUCT="Löslicher Kaffee"            <- Sorte fehlt
+  Falsch:  PRODUCT="Löslicher Kaffee"               <- Sorte fehlt
+
+NICHT zum Produktnamen gehören Handelsklasse und Werbetext:
+
+  Richtig: PRODUCT="Heidelbeeren"    Falsch: PRODUCT="Heidelbeeren Kl. I,"
+  Richtig: PRODUCT="Pasta*"          Falsch: PRODUCT="Pasta* Zu 100% aus Hartweizen"
+
+Merkregel: Sorte beantwortet "welche Variante?" und gehört dazu. Handelsklasse
+und Werbetext beantworten "wie gut / wie beworben?" und bleiben draußen.
 
 Ein PRODUCT-Span enthält NIEMALS ein Wort, das zu QUANTITY, UNIT_PRICE,
 PRICE oder OLD_PRICE gehört. Diese Angaben haben eigene Labels. Enthält
@@ -142,10 +151,13 @@ zweite Produkt. "oder" selbst bleibt ohne Label.
 REGEL 6 — Was NIE ein Label bekommt
 ═══════════════════════════════════════════════════════════════════════
 "je", "oder", "statt", "ca.", "UVP", "KAUFEN", "ENTSPRICHT", "NEU", "TOP",
-"zzgl. 0.25 Pfand", "Versch. Sorten", "Nur mit App", "mit PENNY App",
-"ohne PENNY App", "Aktion", "Haltungsform 2", "Kl. I", "im Kühlregal
+"zzgl. 0.25 Pfand", "Nur mit App", "mit PENNY App", "ohne PENNY App",
+"Aktion", "Haltungsform 2", "Kl. I", "Zu 100% aus Hartweizen", "im Kühlregal
 erhältlich", Fußnotenziffern, Sternchen, Aufzählungspunkte, einzelne
 Buchstaben aus Grafiken.
+
+"Versch. Sorten" ist die Ausnahme: als Teil eines PRODUCT-Spans gehört es
+dazu (Regel 5), allein oder in einer Mengenangabe nicht.
 
 Ebenso der Druckvermerk am rechten Seitenrand in der Form "25_02-09-10" —
 das ist eine Druckkennung, kein Inhalt des Prospekts.

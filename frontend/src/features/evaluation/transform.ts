@@ -15,7 +15,10 @@ const AVG_KEYS = new Set(["micro avg", "macro avg", "weighted avg"])
 export function perEntityRows(reports: EvalReport[], metric: MetricKey): Row[] {
   const rows = new Map<string, Row>()
   for (const r of reports) {
-    for (const [entity, m] of Object.entries(r.report)) {
+    // Zweite Verteidigungslinie: die API filtert formfremde Dateien aus
+    // data/eval/ heraus, aber eine weiße Seite mit Stacktrace ist ein zu
+    // hoher Preis dafür, dass sich nie jemand vertut.
+    for (const [entity, m] of Object.entries(r.report ?? {})) {
       if (AVG_KEYS.has(entity)) continue
       const row = rows.get(entity) ?? { entity, gbert: undefined, layoutxlm: undefined }
       row[r.variant] = m[metric]

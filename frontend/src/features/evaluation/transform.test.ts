@@ -33,3 +33,13 @@ describe("overallF1", () => {
     expect(overallF1([], "gbert")).toBeNull()
   })
 })
+
+describe("perEntityRows – Robustheit", () => {
+  it("überlebt einen Report ohne report-Feld", () => {
+    // data/eval/ enthält auch labels_vs_gold.json und agreement_*.json.
+    // Rutscht so etwas durch, darf die Seite nicht weiß werden.
+    const kaputt = { variant: "gbert", split: "test" } as unknown as EvalReport
+    expect(() => perEntityRows([kaputt], "f1-score")).not.toThrow()
+    expect(perEntityRows([kaputt], "f1-score")).toEqual([])
+  })
+})
