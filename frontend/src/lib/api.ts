@@ -1,6 +1,7 @@
 import type {
   CatalogEntry, CatalogRegistry, EvalReport, GoldAnnotation, GoldSummary, InferenceResult,
-  JobDef, LabelDistribution, Labeler, ModelStatus, PageDetail, PageSummary, PipelineStatus,
+  JobDef, LabelDistribution, Labeler, LabelsVsGold, ModelStatus, PageDetail, PageSummary,
+  PipelineStatus,
   ProbeResult,
   RunDetail, RunRecord, RunStatus, Span,
 } from "./types"
@@ -30,6 +31,7 @@ export const api = {
       `/api/pages/${id}${model ? `?model=${encodeURIComponent(model)}` : ""}`,
     ),
   labelers: () => fetchJson<Labeler[]>("/api/labelers"),
+  labelsVsGold: () => fetchJson<LabelsVsGold>("/api/labels/vs-gold"),
   pageImageUrl: (id: string) => `/api/pages/${id}/image`,
   evaluation: () => fetchJson<EvalReport[]>("/api/evaluation"),
   model: () => fetchJson<ModelStatus[]>("/api/model"),

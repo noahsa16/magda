@@ -755,3 +755,42 @@ def test_labelverteilung_trennt_nach_modell(client):
 
     assert alpha["counts"]["PRODUCT"] == 2 and alpha["counts"]["BRAND"] == 0
     assert beta["counts"]["BRAND"] == 1 and beta["counts"]["PRODUCT"] == 0
+
+
+def test_vs_gold_ist_leer_ohne_report(client):
+    """Kein gefahrener Vergleich ist kein Fehler – das Frontend blendet aus."""
+    assert client.get("/api/labels/vs-gold").json() == {"gold_pages": [], "results": []}
+
+
+def test_vs_gold_liefert_rangfolge_mit_aufschluesselung(client):
+    report = {
+        "gold_pages": ["462828_p1"],
+        "results": [
+            {
+                "model": "qwen3.5-397b-a17b",
+                "pages_compared": 3,
+                "missing": [],
+                "report": {
+                    "PRODUCT": {"f1-score": 0.38, "support": 21},
+                    "PRICE": {"f1-score": 0.87, "support": 18},
+                    "micro avg": {"precision": 0.78, "recall": 0.87, "f1-score": 0.82},
+                },
+            }
+        ],
+    }
+    with open(config.EVAL_DIR / "labels_vs_gold.json", "w") as f:
+        json.dump(report, f)
+
+    body = client.get("/api/labels/vs-gold").json()
+
+    assert body["gold_pages"] == ["462828_p1"]
+    entry = body["results"][0]
+    assert entry["model"] == "qwen3.5-397b-a17b"
+    assert entry["f1"] == 0.82
+    # "micro avg" ist kein Entity-Typ und darf nicht in der Aufschlüsselung landen.
+    assert entry["per_label"] == {"PRODUCT": 0.38, "PRICE": 0.87}
+
+
+def test_vs_gold_ueberlebt_eine_kaputte_reportdatei(client):
+    (config.EVAL_DIR / "labels_vs_gold.json").write_text("{ kaputt")
+    assert client.get("/api/labels/vs-gold").json()["results"] == []

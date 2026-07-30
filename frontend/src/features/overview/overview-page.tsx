@@ -11,6 +11,7 @@ import { useCountUp } from "@/lib/use-count-up"
 import { cn } from "@/lib/utils"
 import { groupByWeek } from "@/lib/weeks"
 import { LabelDistribution } from "./label-distribution"
+import { LabelerComparison } from "./labeler-comparison"
 import { PipelineDiagram } from "./pipeline-diagram"
 import { stepStates } from "./steps"
 
@@ -189,6 +190,8 @@ export function OverviewPage() {
         <LabelDistribution />
         <ModelSummary models={modelQ.data ?? []} reports={evalQ.data ?? []} />
       </div>
+
+      <LabelerComparison />
 
       {weeks.length > 0 && (
         <section className="space-y-3">

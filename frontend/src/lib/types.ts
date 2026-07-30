@@ -27,6 +27,23 @@ export interface Labeler {
   pages: number
 }
 
+/** Wie nah liegt ein Labeling-Modell am Goldstandard? Aus /api/labels/vs-gold. */
+export interface LabelerScore {
+  model: string
+  pages_compared: number
+  f1: number | null
+  precision: number | null
+  recall: number | null
+  /** F1 je Entity-Typ – zeigt, *wo* ein Modell verliert. */
+  per_label: Record<string, number | null>
+}
+
+export interface LabelsVsGold {
+  /** Seiten, gegen die gemessen wurde. Leer = Vergleich noch nicht gefahren. */
+  gold_pages: string[]
+  results: LabelerScore[]
+}
+
 export interface CatalogStatus {
   id: string
   raw: number

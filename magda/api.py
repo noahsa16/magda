@@ -583,6 +583,48 @@ def probe_catalog(req: ProbeRequest):
         raise HTTPException(400, f"Katalog nicht erreichbar: {e}")
 
 
+@app.get("/api/labels/vs-gold")
+def get_labels_vs_gold():
+    """Rangfolge der Labeling-Modelle gegen die handannotierte Referenz.
+
+    Liest den Report, den scripts/08_compare_labels.py schreibt, statt selbst
+    zu rechnen: seqeval über alle Modelle bei jedem Seitenaufruf wäre teuer,
+    und die Zahl ändert sich nur, wenn jemand neu labelt oder annotiert.
+
+    Fehlt die Datei, ist das kein Fehler – der Vergleich wurde dann noch nicht
+    gefahren, und das Frontend blendet den Abschnitt aus.
+    """
+    report_file = config.EVAL_DIR / "labels_vs_gold.json"
+    if not report_file.exists():
+        return {"gold_pages": [], "results": []}
+    try:
+        with open(report_file) as f:
+            report = json.load(f)
+    except (json.JSONDecodeError, OSError):
+        return {"gold_pages": [], "results": []}
+
+    return {
+        "gold_pages": report.get("gold_pages", []),
+        "results": [
+            {
+                "model": entry["model"],
+                "pages_compared": entry["pages_compared"],
+                "f1": entry["report"].get("micro avg", {}).get("f1-score"),
+                "precision": entry["report"].get("micro avg", {}).get("precision"),
+                "recall": entry["report"].get("micro avg", {}).get("recall"),
+                # Je Entity-Typ, damit sichtbar wird *wo* ein Modell verliert –
+                # ein micro-F1 allein sagt nicht, ob Marken oder Preise fehlen.
+                "per_label": {
+                    label: scores.get("f1-score")
+                    for label, scores in entry["report"].items()
+                    if label in ENTITY_TYPES
+                },
+            }
+            for entry in report.get("results", [])
+        ],
+    }
+
+
 @app.get("/api/labels/distribution")
 def get_label_distribution(model: str | None = None):
     """Wie oft kommt welcher Entity-Typ in den Labels eines Modells vor?
