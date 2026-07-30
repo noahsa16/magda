@@ -47,8 +47,11 @@ python scripts/02_extract_words.py       # Schritt ausführen (aus dem Projektro
 python scripts/04_train.py layoutxlm     # bzw. gbert
 python scripts/00_harvest_week.py        # laufende Prospektwoche, alle Regionen
 python scripts/00_harvest_week.py --seed 1342881   # ältere Woche über bekannte ID
+python scripts/03_label_words.py --model qwen3.6-27b    # anderes Vision-Modell
+python scripts/03_label_words.py --only-gold            # Probelauf auf den Gold-Seiten
 python scripts/06_check_duplicates.py    # Duplikate berichten (--apply entfernt sie)
 python scripts/07_flair_baseline.py --reference gold   # Flair-Vergleichsarm
+python scripts/08_compare_labels.py --per-label        # Modelle gegen Gold messen
 uvicorn magda.api:app --reload           # Frontend-API (Port 8000)
 cd frontend && npm run dev               # Frontend-Dev-Server (proxied /api)
 cd frontend && npm test                  # Frontend-Tests (Vitest)
@@ -190,6 +193,45 @@ Skripte immer aus dem Projektroot starten – sie hängen den Root selbst an
 - **`flair` steht nicht in `requirements.txt`.** Es bringt zwei Dutzend Pakete
   mit, die für Pipeline und Training keine Rolle spielen. Wer nur trainiert,
   soll sie nicht installieren müssen.
+- **Labels liegen je Modell getrennt: `data/labeled/<modell>/<seite>.json`.**
+  Flach gespeichert überschreibt der zweite Labeling-Lauf den ersten, und die
+  Frage „labelt Qwen näher am Goldstandard als Mistral?" ist danach nicht mehr
+  beantwortbar. `04_train --labels-from` wählt aus, worauf trainiert wird;
+  ohne Angabe gilt `CHAT_AI_VISION_MODEL`, sonst der größte Ordner. Der
+  Modellname wird zum Ordnernamen und kommt aus einer Nutzereingabe – deshalb
+  `config.model_slug()`, sonst wäre `../../gold` ein gültiger Modellname.
+- **Der Prompt in `labeling.py` widersprach dem eigenen Goldstandard.** Er
+  erklärte `"je 200 g"` zum QUANTITY-Span, während Gold nur `"200 g"` markiert,
+  und sein Beispiel zeigte den Grundpreis nicht als eigene Angabe. QUANTITY und
+  UNIT_PRICE lagen deshalb bei F1 **0.000** – nicht ungenau, sondern
+  systematisch falsch. Nach der Überarbeitung 0.752 statt 0.306. Wer den Prompt
+  anfasst, misst danach mit `08_compare_labels.py`, sonst ist es Bauchgefühl.
+- **Eine Prompt-Regel wirkt dort, wo die Entscheidung fällt.** „UVP" und
+  „Aktion" standen längst auf der Ausschlussliste; das Modell labelte sie
+  trotzdem als OLD_PRICE bzw. PRICE. Erst als sie *in der Preisregel selbst*
+  standen, verschwanden sie. Ein thematisch sauber einsortierter Hinweis wird
+  beim Labeln des Preises nicht herangezogen.
+- **`labeling.trim_spans()` gehört nicht in `labels.spans_to_bio()`.** Der
+  Guard erzwingt, dass „oder" zwei Angebote trennt und die Grundpreis-Klammer
+  jeden Nicht-UNIT_PRICE-Span beendet. Durch `spans_to_bio()` laufen aber auch
+  die handannotierten Gold-Spans, und die dürfen nicht stillschweigend
+  umgeschrieben werden. Was ein Mensch annotiert hat, gilt.
+- **Die Qwen-Modelle denken vor der Antwort, und das kostet `max_tokens`.**
+  qwen3.5-397b lieferte auf allen drei Gold-Seiten 0 Zeichen bei
+  `finish_reason=length`. Abhilfe ist `extra_body={"chat_template_kwargs":
+  {"enable_thinking": False}}` – Mistral lehnt das mit HTTP 400 ab, deshalb
+  probiert `labeling.py` es aus und merkt sich die Absage.
+- **Bildfähigkeit prüft man mit genug `max_tokens`, sonst misst man Unsinn.**
+  Mit `max_tokens=20` antworteten fünf Modelle mit leerem Text – das Budget
+  ging fürs Reasoning drauf. Und `openai-gpt-oss-120b` nimmt Bilder ohne
+  HTTP-Fehler an, antwortet aber „Ich kann das Bild nicht sehen". Wer nur auf
+  400 prüft, labelt damit einen halben Korpus blind. Die geprüfte Liste steht
+  in `config.VISION_MODELS`.
+- **Sortenangaben gehören ins PRODUCT** (Teamentscheidung, 30.07.2026):
+  `"Löslicher Kaffee Classic,"`, nicht `"Löslicher Kaffee"`. Gold ist an
+  dieser Stelle noch uneinheitlich – auf `1342881_p1` fehlen die Sorten
+  (`"Käsescheiben"` statt `"Käsescheiben Natur,"`). Das drückt die messbare
+  Obergrenze und gehört im Annotator geradegezogen.
 - **Das Projekt-Env ist `.venv`, nicht die Anaconda-Basis.** `which python`
   zeigt auf Anaconda; dort fehlt `seqeval`, und Tests brechen beim Import ab.
   Immer `.venv/bin/python` benutzen.

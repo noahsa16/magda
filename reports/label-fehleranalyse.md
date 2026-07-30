@@ -20,19 +20,20 @@ Nach der Überarbeitung liegt dasselbe Modell bei **F1 0.752** statt 0.306.
 |---|---|---|---|
 | Prompt v1 (Ausgangslage) | 0.306 | 0.265 | 0.361 |
 | Prompt v2 (Regeln 1–8) | 0.638 | 0.603 | 0.676 |
-| Prompt v3 (Preisregel geschärft) | **0.752** | 0.745 | 0.759 |
+| Prompt v3 (Preisregel geschärft) | 0.752 | 0.745 | 0.759 |
+| Prompt v4 (PRODUCT-Regel + Span-Guard) | **0.788** | 0.740 | 0.843 |
 
 ## Ergebnis je Label-Typ
 
-| Label | F1 v1 | F1 v3 | Support |
+| Label | F1 v1 | F1 v4 | Support |
 |---|---|---|---|
-| PRICE | 0.850 | **0.895** | 18 |
-| QUANTITY | 0.000 | **0.875** | 18 |
-| UNIT_PRICE | 0.000 | **0.824** | 18 |
-| BRAND | 0.182 | **0.824** | 15 |
-| OLD_PRICE | 0.813 | 0.750 | 14 |
+| QUANTITY | 0.000 | **0.923** | 18 |
+| OLD_PRICE | 0.813 | **0.929** | 14 |
+| UNIT_PRICE | 0.000 | **0.878** | 18 |
+| PRICE | 0.850 | **0.872** | 18 |
+| BRAND | 0.182 | **0.812** | 15 |
 | DISCOUNT | 0.353 | 0.750 | 3 |
-| PRODUCT | 0.074 | **0.368** | 21 |
+| PRODUCT | 0.074 | **0.381** | 21 |
 | VALID | 1.000 | 1.000 | 1 |
 
 VALID und DISCOUNT haben 1 bzw. 3 Instanzen – diese Zahlen sind Rauschen und
@@ -111,11 +112,32 @@ Beispiele: `SCHÖFFER-` + `HOFER`, `Schlemmer-` + `sauce*`, `Orangen-` +
 
 ## Was offen bleibt
 
-**PRODUCT liegt bei 0.368** und ist der verbleibende Schwachpunkt. Die
-Gold-Konvention ist „Produktname inklusive Sortenangabe bis zum Komma vor der
-Mengenangabe". Eine gezielte Regel dafür steht aus; sie wurde bewusst nicht in
-denselben Lauf gepackt, weil sonst Prompt-Änderung und Modellvergleich
-gleichzeitig variiert hätten.
+**PRODUCT liegt bei 0.381** und bewegte sich als einziges Label kaum (von
+0.368). Eine gezielte PRODUCT-Regel und der Span-Guard haben die groben Fehler
+beseitigt – die Riesen-Spans über mehrere Angebote hinweg sind weg –, aber der
+Rest ist zu großen Teilen kein Modellfehler. Die 13 verbliebenen Abweichungen
+zerfallen in drei Gruppen:
+
+*Gold widerspricht der festgelegten Konvention* (Sorte gehört ins PRODUCT,
+Teamentscheidung 30.07.): Gold hat `"Käsescheiben"`, das Modell
+`"Käsescheiben Natur,"`; Gold `"All in 1 Color Pods*"`, das Modell
+`"All in 1 Color Pods* Amethyst Blütentraum,"`. Hier liegt das Modell richtig
+und wird bestraft.
+
+*Konvention ungeklärt:* Ist `"Kl. I"` eine Sorte? `"Zu 100% aus Hartweizen"`?
+`"Versch. Sorten"`? Das sind Beschaffenheits- und Werbeangaben, keine Sorten –
+aber die Grenze ist nirgends definiert, und der menschliche Annotator hat sie
+nicht durchgehalten. Solange sie offen ist, kann kein Prompt hier punkten.
+
+*Echte Modellfehler:* `"COCA-COLA2, FANTA2, SPRITE"` wird ein Span statt drei
+(eine kommagetrennte Produktliste), und umgekehrt zerlegt das Modell
+`"Isotonischer Fitnessdrink1 Citrus,"` in zwei Spans – das Komma innerhalb
+eines Produktnamens trennt für uns nicht, zwischen zwei Produkten schon.
+
+Weiter am Prompt zu drehen wäre an dieser Stelle Anpassung an drei Seiten:
+bei 21 Instanzen bewegt eine einzelne Instanz den F1 um 3–5 Punkte. Der
+wirksame nächste Schritt ist, die Sorten-Grenze zu definieren und Gold darauf
+zu vereinheitlichen – nicht mehr Prompt.
 
 **Drei Gold-Seiten sind eine schmale Basis.** Der Sprung von 0.306 auf 0.752
 ist zu groß, um Zufall zu sein, aber die Werte einzelner Label-Typen sind es
