@@ -1,6 +1,6 @@
 # Woche 2 — Gold-Annotation und Prospekt-Übersicht
 
-**Stand: 29.07.2026**
+Stand: 29.07.2026
 
 ## Was wir gemacht haben
 
@@ -16,7 +16,7 @@ beantworten damit die Frage *„wie gut imitiert das Modell Mistral?"* — nicht
 ist, bestrafen wir das Modell dafür, dass es Mistral nicht genau genug
 nachmacht.
 
-Handannotierte Referenzdaten lösen das. Annotiert wird **von null**, nicht
+Handannotierte Referenzdaten lösen das. Annotiert wird von null, nicht
 durch Korrigieren der LLM-Vorschläge: Vorbelegte Labels erzeugen einen
 Anker-Bias, plausibel aussehende Fehler werden übersehen, und das Gold-Set
 fiele zu LLM-ähnlich aus — es würde die LLM-Qualität dann systematisch zu gut
@@ -62,7 +62,7 @@ nächsten hinein.
 
 Beide Arbeitsblöcke liefen mit Umsetzung und unabhängigem Review je Aufgabe.
 Das hat sich gelohnt, aber anders als erwartet: Die meisten Fehler steckten
-**nicht** in der Umsetzung, sondern im Plan.
+nicht in der Umsetzung, sondern im Plan.
 
 - **Vier Nebenläufigkeitsfehler im Auto-Speichern.** Jede Runde behob den
   gemeldeten Fehler und führte einen neuen derselben Klasse ein. Alle vier
@@ -95,7 +95,7 @@ Das hat sich gelohnt, aber anders als erwartet: Die meisten Fehler steckten
 
 ## Offen
 
-**Für das Team zu entscheiden:**
+Für das Team zu entscheiden:
 
 - **Split-Strategie.** Naheliegend wäre: Gold-Katalog als Testset, LLM-gelabelte
   Kataloge als Trainingsset. Das trennt Train und Test entlang der Kataloge und
@@ -107,7 +107,7 @@ Das hat sich gelohnt, aber anders als erwartet: Die meisten Fehler steckten
   Das beantwortet man nicht am Schreibtisch, sondern wenn man zum dritten Mal
   darüber stolpert. Sollte vor dem großen Durchlauf festgehalten werden.
 
-**Technisch offen:**
+Technisch offen:
 
 - **Gleichzeitiges Annotieren derselben Seite** aus zwei Tabs oder von zwei
   Personen bleibt Last-Write-Wins. Die Warteschlange sitzt im Client und ordnet

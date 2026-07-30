@@ -1,6 +1,6 @@
 # Woche 1 — Setup und erster Durchlauf
 
-**Stand: 23.07.2026**
+Stand: 23.07.2026
 
 ## Was wir gemacht haben
 
@@ -37,7 +37,7 @@ Getestet mit Katalog 1342881 (Penny Lüneburg, Woche 20.–25.7.):
 - 7216 Wörter mit Positionen extrahiert
 - 4796 Wörter gelabelt (66 %)
 
-Wichtigste Erkenntnis hier: **Wir brauchen kein OCR.** Die Penny-PDFs haben
+Wichtigste Erkenntnis hier: Wir brauchen kein OCR. Die Penny-PDFs haben
 einen Textlayer, PyMuPDF liefert Wörter und Koordinaten direkt. Das ist
 schneller und fehlerfrei. Sollten später Händler mit reinen Bild-PDFs
 dazukommen, brauchen wir an der Stelle einen Tesseract-Fallback.
@@ -100,7 +100,7 @@ braucht ein Modell keine Layout-Information. Ob „GÉRAMONT" die Marke und
 auf der Seite — Marke steht fett darüber, Beschreibung kleiner darunter. Genau
 diese Information fehlt GBERT.
 
-**Daraus folgt unsere Hypothese für LayoutXLM:** deutliche Verbesserung bei
+Daraus folgt unsere Hypothese für LayoutXLM: deutliche Verbesserung bei
 PRODUCT und BRAND, ungefähr gleiche Werte bei PRICE und DISCOUNT. Wenn das
 eintritt, ist die Forschungsfrage des Proposals sauber beantwortet.
 
@@ -125,9 +125,9 @@ eintritt, ist die Forschungsfrage des Proposals sauber beantwortet.
 
 detectron2 baut auf Apple Silicon durch, LayoutXLM lädt und rechnet einen
 Forward-Pass. Auf dem Mac läuft der visuelle Backbone allerdings auf CPU, für
-richtiges Training ist das zu langsam. Wir haben Zugang zu einer RunPod-GPU;
-`scripts/setup_runpod.sh` richtet einen Pod ein und beschreibt den Datentransfer
-über R2.
+richtiges Training ist das zu langsam. Wir haben Zugang zu einer RunPod-GPU; ein Setupskript richtet einen Pod ein und
+beschreibt den Datentransfer über R2. (Nachtrag Woche 3: abgelöst durch
+`scripts/11_export_bundle.py` und `docs/runpod.md`.)
 
 ## Nächste Schritte
 
