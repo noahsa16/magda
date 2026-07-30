@@ -22,7 +22,9 @@ from fastapi import FastAPI, HTTPException, UploadFile
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
-from magda import catalog_meta, catalogs, config, dedupe, jobs, runner, runs, scraping
+from magda import (
+    agreement, catalog_meta, catalogs, config, dedupe, jobs, runner, runs, scraping,
+)
 from magda.gold import count_by_status, words_hash
 from magda.labels import ENTITY_TYPES, id2label, validate_spans
 from magda.ocr import extract_words, normalize_bbox, render_png
@@ -581,6 +583,34 @@ def probe_catalog(req: ProbeRequest):
         raise HTTPException(400, str(e))
     except Exception as e:
         raise HTTPException(400, f"Katalog nicht erreichbar: {e}")
+
+
+@app.get("/api/labels/agreement")
+def get_label_agreement(a: str, b: str):
+    """Wo widersprechen sich zwei Labeling-Modelle?
+
+    Ergänzt /api/labels/vs-gold um die Sicht auf *alle* Seiten statt nur die
+    drei annotierten. Die Rangfolge der uneinigsten Seiten ist dabei der
+    praktische Teil: sie sagt, welche Seite als Nächstes von Hand annotiert
+    gehört.
+
+    Keine Qualitätsaussage – zwei Modelle können sich einig und gemeinsam
+    irren. Übereinstimmung ist eine Obergrenze für Vertrauen, kein Ersatz
+    für Gold.
+    """
+    known = config.labeled_models()
+    for model in (a, b):
+        if config.model_slug(model) not in known:
+            raise HTTPException(404, f"Keine Labels für Modell: {model}")
+
+    result = agreement.compare_models(a, b)
+    return {
+        **result,
+        "per_label": agreement.label_agreement(a, b),
+        # Die ganze Seitenliste wäre bei 196 Seiten viel Ballast für eine
+        # Übersicht; wer mehr will, ruft das Skript auf.
+        "pages": result["pages"][:25],
+    }
 
 
 @app.get("/api/labels/vs-gold")

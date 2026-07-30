@@ -794,3 +794,23 @@ def test_vs_gold_liefert_rangfolge_mit_aufschluesselung(client):
 def test_vs_gold_ueberlebt_eine_kaputte_reportdatei(client):
     (config.EVAL_DIR / "labels_vs_gold.json").write_text("{ kaputt")
     assert client.get("/api/labels/vs-gold").json()["results"] == []
+
+
+def test_agreement_lehnt_unbekannte_modelle_ab(client):
+    _write_labeled("462828_p1", {"tags": ["O"]}, model="alpha")
+    assert client.get("/api/labels/agreement?a=alpha&b=gibtsnicht").status_code == 404
+
+
+def test_agreement_liefert_rangfolge_und_verwechslungen(client):
+    _write_labeled("462828_p1", {"tags": ["B-PRICE", "B-PRICE"]}, model="alpha")
+    _write_labeled("462828_p1", {"tags": ["B-PRICE", "B-PRICE"]}, model="beta")
+    _write_labeled("462828_p2", {"tags": ["B-BRAND", "O"]}, model="alpha")
+    _write_labeled("462828_p2", {"tags": ["B-PRODUCT", "O"]}, model="beta")
+
+    body = client.get("/api/labels/agreement?a=alpha&b=beta").json()
+
+    assert body["pages_compared"] == 2
+    # Uneinige Seite zuerst – das ist die Annotationsreihenfolge.
+    assert body["pages"][0]["page_id"] == "462828_p2"
+    assert body["confusion"] == {"BRAND": {"PRODUCT": 1}}
+    assert body["per_label"]["PRICE"] == 1.0
