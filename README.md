@@ -64,11 +64,23 @@ reports/       Wochenberichte
 ## Frontend
 
 ```bash
-uvicorn magda.api:app --reload    # Backend, Port 8000
-cd frontend && npm install && npm run dev
+magda serve --frontend      # API auf 8000, Oberfläche auf 5173
 ```
 
-Läuft auf http://localhost:5173 und proxied `/api` ans Backend. Vier Bereiche:
+Beides in einem Befehl; `magda serve` allein startet nur die API. Wer die
+Prozesse getrennt haben will, nimmt zwei Terminals:
+
+```bash
+magda serve
+cd frontend && npm run dev
+```
+
+Nicht `uvicorn magda.api:app` – das `uvicorn` im PATH gehört meist zu einer
+anderen Python-Installation, in der `magda` nicht liegt, und der Start endet
+in `ModuleNotFoundError`.
+
+Die Oberfläche läuft auf http://localhost:5173 und proxied `/api` ans Backend.
+Vier Bereiche:
 **Übersicht** (Datenstand und F1 je Variante), **Pipeline** (Schritte starten,
 Live-Ausgabe, Lauf-Historie), **Daten** (Label-Quellen als Ordner, darunter
 Inspektor und Annotator) und **Ergebnis** (F1 pro Entity-Typ).

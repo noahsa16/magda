@@ -62,8 +62,8 @@ magda flair --reference gold        # Flair-Vergleichsarm
 magda gold --per-label              # Labeling-Modelle gegen Gold messen
 magda agreement qwen3.5-397b-a17b mistral-medium-3.5-128b
 magda bundle --labels-from sonnet-5 # Trainingspaket für eine fremde GPU
-uvicorn magda.api:app --reload      # Frontend-API (Port 8000)
-cd frontend && npm run dev          # Frontend-Dev-Server (proxied /api)
+magda serve --frontend              # API (8000) und Oberfläche (5173)
+magda serve                         # nur die API
 cd frontend && npm test             # Frontend-Tests (Vitest)
 ```
 

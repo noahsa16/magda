@@ -41,6 +41,7 @@ VERGLEICH = (
 )
 
 WERKZEUGE = (
+    Befehl("serve", "serve", "API starten (--frontend startet auch die Oberfläche)"),
     Befehl("bundle", "export", "Trainingspaket für eine fremde GPU schnüren"),
     Befehl("import-gold", "import_gold", "Handannotationen als Labelordner ablegen"),
 )
