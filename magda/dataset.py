@@ -88,6 +88,72 @@ def get_or_create_splits(pages: list[dict]) -> dict[str, list[str]]:
     return splits
 
 
+# Innerhalb einer Erscheinungswoche liegen Pennys Katalog-IDs dicht beieinander
+# (gemessen: höchstens 24 auseinander), zwischen zwei Wochen klafft eine Lücke
+# von mehreren tausend. Die Schwelle trennt großzügig, ohne auf feste Nummern
+# zu setzen – die wären beim nächsten Erntelauf veraltet.
+WEEK_GAP = 200
+
+
+def group_by_week(page_ids: list[str]) -> list[list[str]]:
+    """Teilt Seiten nach Erscheinungswoche, absteigend sortiert nach Alter.
+
+    Die Woche steht nirgends in den Daten: `catalog_meta.json` kennt nur die
+    Region, und Pennys Markt-API kennt nur die laufende Woche. Ableitbar ist
+    sie aber aus dem Abstand der Katalog-IDs.
+    """
+    kataloge = sorted({int(pid.rsplit("_p", 1)[0]) for pid in page_ids})
+    if not kataloge:
+        return []
+
+    wochen: list[set[int]] = [{kataloge[0]}]
+    for vorher, jetzt in zip(kataloge, kataloge[1:]):
+        if jetzt - vorher > WEEK_GAP:
+            wochen.append(set())
+        wochen[-1].add(jetzt)
+
+    return [
+        sorted(pid for pid in page_ids if int(pid.rsplit("_p", 1)[0]) in woche)
+        for woche in wochen
+    ]
+
+
+def split_by_week(page_ids: list[str], dev_share: float = 0.1) -> dict[str, list[str]]:
+    """Älteste Woche(n) trainieren, die jüngste testen.
+
+    Der Seiten-Split leckt: Penny gibt je Woche 44 fast identische
+    Regionalausgaben heraus, und die Entdopplung greift erst ab Jaccard 0.95 –
+    zwei Seiten bei 0.949 landen also in Train *und* Test. Gemessen hatte
+    darum jede zweite Testseite einen nahen Zwilling im Training.
+
+    Über Wochen getrennt sinkt die Median-Ähnlichkeit von 0.851 auf 0.257.
+    Zugleich entspricht die Richtung dem Einsatzfall: auf alten Prospekten
+    lernen, auf neuen anwenden.
+
+    Dev wird aus den Trainingswochen gezogen, nicht aus der Testwoche – sonst
+    wählt die Modellauswahl auf denselben Daten aus, auf denen gemessen wird.
+    """
+    wochen = group_by_week(page_ids)
+    if len(wochen) < 2:
+        raise ValueError(
+            f"Wochen-Split braucht mindestens zwei Erscheinungswochen, "
+            f"gefunden: {len(wochen)}. Erst mehr Wochen ernten."
+        )
+
+    test = wochen[-1]
+    train = [pid for woche in wochen[:-1] for pid in woche]
+
+    rng = random.Random(SEED)
+    gemischt = sorted(train)
+    rng.shuffle(gemischt)
+    n_dev = max(1, int(len(gemischt) * dev_share))
+    return {
+        "train": sorted(gemischt[n_dev:]),
+        "dev": sorted(gemischt[:n_dev]),
+        "test": sorted(test),
+    }
+
+
 def select_split(pages: list[dict], splits: dict, name: str) -> list[dict]:
     wanted = set(splits[name])
     return [p for p in pages if p["page_id"] in wanted]
