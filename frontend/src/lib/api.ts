@@ -1,5 +1,5 @@
 import type {
-  CatalogEntry, CatalogRegistry, EvalReport, GoldAnnotation, GoldSummary, InferenceResult,
+  Agreement, CatalogEntry, CatalogRegistry, EvalReport, GoldAnnotation, GoldSummary, InferenceResult,
   JobDef, LabelDistribution, Labeler, LabelsVsGold, ModelStatus, PageDetail, PageSummary,
   PipelineStatus,
   ProbeResult,
@@ -32,6 +32,10 @@ export const api = {
     ),
   labelers: () => fetchJson<Labeler[]>("/api/labelers"),
   labelsVsGold: () => fetchJson<LabelsVsGold>("/api/labels/vs-gold"),
+  agreement: (a: string, b: string) =>
+    fetchJson<Agreement>(
+      `/api/labels/agreement?a=${encodeURIComponent(a)}&b=${encodeURIComponent(b)}`,
+    ),
   pageImageUrl: (id: string) => `/api/pages/${id}/image`,
   evaluation: () => fetchJson<EvalReport[]>("/api/evaluation"),
   model: () => fetchJson<ModelStatus[]>("/api/model"),

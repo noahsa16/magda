@@ -11,6 +11,7 @@ import { useCountUp } from "@/lib/use-count-up"
 import { cn } from "@/lib/utils"
 import { groupByWeek } from "@/lib/weeks"
 import { LabelDistribution } from "./label-distribution"
+import { AgreementCard } from "./agreement-card"
 import { LabelerComparison } from "./labeler-comparison"
 import { PipelineDiagram } from "./pipeline-diagram"
 import { stepStates } from "./steps"
@@ -192,6 +193,8 @@ export function OverviewPage() {
       </div>
 
       <LabelerComparison />
+
+      <AgreementCard />
 
       {weeks.length > 0 && (
         <section className="space-y-3">

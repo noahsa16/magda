@@ -38,6 +38,30 @@ export interface LabelerScore {
   per_label: Record<string, number | null>
 }
 
+/** Übereinstimmung zweier Labeling-Modelle – aus /api/labels/agreement. */
+export interface AgreementPage {
+  page_id: string
+  words: number
+  conflicts: number
+  agreement: number
+  agreement_on_labeled: number
+}
+
+export interface Agreement {
+  model_a: string
+  model_b: string
+  pages_compared: number
+  skipped: string[]
+  agreement: number
+  /** Beide labeln, aber verschieden: {BRAND: {PRODUCT: 12}}. */
+  confusion: Record<string, Record<string, number>>
+  only_a: Record<string, number>
+  only_b: Record<string, number>
+  per_label: Record<string, number>
+  /** Uneinigste zuerst – das ist die Reihenfolge für die Handannotation. */
+  pages: AgreementPage[]
+}
+
 export interface LabelsVsGold {
   /** Seiten, gegen die gemessen wurde. Leer = Vergleich noch nicht gefahren. */
   gold_pages: string[]
