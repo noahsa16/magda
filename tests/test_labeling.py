@@ -97,3 +97,41 @@ def test_guard_ruehrt_saubere_spans_nicht_an():
     spans = [{"start": 0, "end": 3, "label": "PRODUCT"}]
 
     assert labeling.trim_spans(spans, words) == spans
+
+
+def test_rate_limit_wird_geduldiger_wiederholt_als_ein_serverfehler(monkeypatch):
+    """Ein Lauf über 196 Seiten verlor 176 davon an 429ern, weil der Backoff
+    nach acht Sekunden aufgab. Ein Kontingentfenster ist keine Sekundenfrage."""
+    waits = []
+    monkeypatch.setattr(labeling.time, "sleep", waits.append)
+
+    class RateLimit(Exception):
+        status_code = 429
+
+    calls = []
+
+    def failing(*args):
+        calls.append(1)
+        if len(calls) < 3:
+            raise RateLimit("API rate limit exceeded")
+        return ["O"]
+
+    monkeypatch.setattr(labeling, "label_page", failing)
+    assert labeling.label_page_with_retry([], b"", None, "m") == ["O"]
+    # 20s, dann 40s – nicht 2s und 4s.
+    assert waits == [20.0, 40.0]
+
+
+def test_parse_fehler_wird_nicht_wiederholt(monkeypatch):
+    """Das Modell hat geantwortet, nur unbrauchbar. Ein zweiter Versuch mit
+    identischer Eingabe kostet nur Zeit."""
+    calls = []
+
+    def failing(*args):
+        calls.append(1)
+        raise ValueError("Kein JSON-Array in der Antwort")
+
+    monkeypatch.setattr(labeling, "label_page", failing)
+    with pytest.raises(ValueError):
+        labeling.label_page_with_retry([], b"", None, "m")
+    assert len(calls) == 1

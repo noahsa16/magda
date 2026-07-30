@@ -352,12 +352,16 @@ def is_retryable(exc: Exception) -> bool:
     )
 
 
+def _is_rate_limit(exc: Exception) -> bool:
+    return getattr(exc, "status_code", None) == 429 or "rate limit" in str(exc).lower()
+
+
 def label_page_with_retry(
     words: list[dict],
     page_png: bytes,
     client: OpenAI,
     model: str,
-    max_retries: int = 3,
+    max_retries: int = 5,
 ) -> list[str]:
     """label_page mit Backoff für vorübergehende Fehler.
 
@@ -365,6 +369,11 @@ def label_page_with_retry(
     geantwortet, die Antwort war nur unbrauchbar. Ein zweiter Versuch mit
     identischer Eingabe kostet nur Zeit. Die Seite bleibt ungelabelt und
     kommt beim nächsten Lauf erneut dran – die Skripte sind idempotent.
+
+    Rate-Limits bekommen einen eigenen, viel geduldigeren Fahrplan. Ein Lauf
+    über 196 Seiten hat bei der GWDG 176 davon an 429ern verloren, weil der
+    Backoff nach acht Sekunden aufgab: ein Kontingentfenster ist keine
+    Sekundenfrage. Gewartet wird deshalb bis zu fünf Minuten am Stück.
     """
     last: Exception | None = None
     for attempt in range(max_retries):
@@ -374,7 +383,10 @@ def label_page_with_retry(
             last = exc
             if not is_retryable(exc) or attempt == max_retries - 1:
                 raise
-            time.sleep(min(30.0, 2.0 * (2**attempt)))
+            if _is_rate_limit(exc):
+                time.sleep(min(300.0, 20.0 * (2**attempt)))
+            else:
+                time.sleep(min(30.0, 2.0 * (2**attempt)))
     raise last  # unerreichbar, aber macht den Rückgabetyp eindeutig
 
 
