@@ -328,10 +328,24 @@ eine Liste auszugeben.
   Training steckt nichts davon), aber die effektive Stichprobe ist ~66, nicht
   107. Und Dev hat nur 8 Seiten – für Modellauswahl zu dünn. Beides löst erst
   eine dritte Erntewoche.
-- **Zahlen aus dem Training gegen `sonnet-5` messen Konsistenz, nicht
-  Richtigkeit.** Trainiert und getestet wird gegen dieselbe Label-Quelle, und
-  die ist noch `in_progress`. Jede Nennung von 0.908 muss das mittragen – kein
-  Split der Welt behebt es, nur die menschliche Freigabe.
+- **`data/labeled/sonnet-5/` ist die Referenz** (Teamentscheidung, 30.07.2026).
+  Nicht `gold/`: drei handannotierte Seiten tragen keine Messung, und die
+  Alternative – 30 Seiten von Hand durchsehen – kostet Tage für eine Zahl, die
+  die Projektfrage nicht beantwortet. Trainiert und getestet wird gegen
+  dieselbe Quelle, und das ist beim überwachten Lernen der Normalfall, kein
+  Mangel. Was 0.908 heißt, steht im nächsten Punkt.
+- **Die Projektfrage ist Kosten, nicht Perfektion.** GBERT und LayoutXLM sind
+  die günstige Alternative zum LLM: 109 Mio. Parameter, 437 MB, läuft lokal
+  auf CPU ohne Netz, API-Key und Kontingent. Gemessen: **0,264 s je Seite**
+  gegen **44,8 s** beim LLM-Labeling (155 Seiten, 6 parallele Anfragen, ohne
+  die 2,4 h Kontingentsperre gerechnet). Für eine Wochenernte über alle 44
+  Regionen sind das **8,8 Minuten gegen 24,9 Stunden**. F1 0.908 ist damit
+  nicht „90 % richtig", sondern „90 % dessen, was das große Modell liefert,
+  zum 170sten Teil der Zeit". Das ist die Aussage, die der Bericht trägt.
+- **`gold/` bleibt liegen, ist aber nicht mehr Referenz.** Die drei Seiten von
+  Noah und die 193 vorannotierten bleiben versioniert – sie kosten nichts und
+  eine spätere Stichprobe kann darauf aufsetzen. `magda gold` läuft weiter,
+  seine Zahl ist aber eine Randnotiz über drei Seiten, keine Bewertung.
 - **`torch.cuda.is_available()` ist keine Prüfung.** Zwei RunPod-Instanzen
   meldeten die GPU als verfügbar und brachen bei der ersten Allokation ab
   („CUDA-capable device(s) is/are busy or unavailable"); `nvidia-smi` zeigte

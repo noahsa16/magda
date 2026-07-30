@@ -21,8 +21,14 @@ Der Sprung kommt von den Labels, nicht vom Modell. Die Zahlen stehen über
 einem Split, der KW30 trainiert und KW31 testet; ein Zufallssplit über Seiten
 lieferte 0.929 und 0.930, war aber undicht (siehe Training).
 
-Layout bringt nach wie vor nichts. Das ist der Befund, um den es im Proposal
-geht, und er fällt gegen die Erwartung aus.
+Gemessen wird gegen die Labels von Sonnet, und die Zahl beantwortet damit die
+Frage, um die es geht: **ein Modell mit 109 Mio. Parametern, das lokal auf CPU
+läuft, erreicht neun Zehntel dessen, was ein großes Vision-LLM liefert — bei
+0,264 statt 44,8 Sekunden je Seite.** Für eine Wochenernte über alle 44
+Regionen sind das 8,8 Minuten gegen 24,9 Stunden.
+
+Layout bringt dabei nach wie vor nichts. Das ist der zweite Befund, um den es
+im Proposal geht, und er fällt gegen die Erwartung aus.
 
 ## Annotation
 
@@ -56,12 +62,16 @@ im Bild stehen — Russell Hobbs, KESPER, Krups, die Bierlogos — haben im
 PDF-Textlayer kein einziges Wort, auf das ein Span zeigen könnte. Solange wir
 ausschließlich den Textlayer nutzen, sind diese Marken prinzipiell unsichtbar.
 
-Alle 193 Seiten tragen `status: "in_progress"` und den Urheber
-`sonnet-5 (vorannotiert, ungeprueft)`. `gold.load_gold_pages()` akzeptiert nur
-`status == "done"`, die Seiten zählen also für keine Messung gegen Gold, bis
-ein Mensch sie im Annotator freigibt. Referenz sind weiterhin die drei von
-Hand annotierten Seiten. Wer eine maschinelle Vorannotation zum Goldstandard
-erklärt und dann Modelle dagegen misst, misst im Kreis.
+Referenz für Training und Test ist `data/labeled/sonnet-5/` (Teamentscheidung
+vom 30.07.2026). Der ursprüngliche Plan sah eine Handannotation vor, gegen die
+gemessen wird; drei fertige Seiten tragen aber keine Messung, und die
+Alternative – zwanzig bis dreißig Seiten durchsehen – kostet Tage für eine
+Zahl, die die eigentliche Projektfrage nicht beantwortet. Diese Frage ist
+nicht, ob die Labels perfekt sind, sondern wie nah ein kleines lokales Modell
+an ein großes LLM herankommt.
+
+Die 196 Seiten in `gold/` bleiben liegen: sie kosten nichts, sind versioniert,
+und eine spätere Stichprobe kann darauf aufsetzen.
 
 ## Prüfung der Vorannotation
 
@@ -233,14 +243,38 @@ Kaffee Classic,` gehört dazu, `Zu 100% aus Hartweizen` nicht — aber
 `Gewürzt, Paprika,`? `4-lagig,`? Das ist eine Konventionslücke, die sich in
 die Labels und von dort ins Modell fortpflanzt.
 
-## Was die Zahlen nicht sagen
+## Was 0.908 wert ist
 
-Die wichtigste Einschränkung: 0.908 misst, wie gut GBERT die Claude-Annotation
-reproduziert, nicht wie gut es Prospekte versteht. Trainiert und getestet wird
-gegen dieselbe Label-Quelle, und die ist von keinem Menschen freigegeben. Die
-Obergrenze der Zahl ist die Qualität der Vorannotation. Das ist übliches
-Vorgehen und kein Fehler, aber jede Nennung muss es mittragen. Kein Split
-behebt es, nur die menschliche Freigabe.
+Die Zahl sagt, wie weit GBERT die Labels von Sonnet reproduziert — nicht, wie
+gut es Prospekte im absoluten Sinn versteht. Genau das ist aber die Frage, um
+die es geht. Ein großes Vision-LLM kann diese Aufgabe; interessant ist, was
+davon in ein Modell passt, das man selbst betreibt.
+
+| | Sonnet (LLM, API) | GBERT (lokal) |
+|---|---|---|
+| Größe | nicht öffentlich | 109 Mio. Parameter, 437 MB |
+| Läuft auf | fremdem Server | 8-GB-Mac, CPU |
+| Braucht | Netz, API-Key, Kontingent | nichts |
+| Zeit je Seite | 44,8 s | **0,264 s** |
+| Eine Wochenernte (2000 Seiten) | 24,9 h | **8,8 min** |
+
+Der Zeitvergleich ist gemessen, nicht geschätzt: das Labeling von 155 Seiten
+lief 4 h 21 min brutto, davon 2,4 h Wartezeit an einer Kontingentsperre der
+GWDG. Gerechnet ist mit der Nettozeit von 1,93 h bei sechs parallelen
+Anfragen. GBERT dagegen lief sequenziell auf vier CPU-Kernen, ohne GPU. Fair
+verglichen sind das rund **170-mal schneller** — und der Faktor ist noch das
+schwächere Argument. Das stärkere ist die Kontingentsperre selbst: sie kostete
+an einem Nachmittag zweieinhalb Stunden, und gegen sie hilft kein Geld,
+sondern nur ein Modell, das niemandem gehört.
+
+Damit liest sich 0.908 so: **neun von zehn Entitäten so wie das große Modell,
+zum 170sten Teil der Zeit, ohne fremden Dienst.** Für die verbleibende Lücke
+zahlt man 25 Stunden Rechenzeit und die Abhängigkeit von einer API.
+
+Die Obergrenze bleibt die Qualität der Sonnet-Labels; besser als seine Quelle
+wird ein überwacht trainiertes Modell nicht. Wie gut die Quelle absolut ist,
+haben wir nicht gemessen — dafür bräuchte es eine Handannotation über mehrere
+Dutzend Seiten, und die ist bewusst nicht gemacht worden.
 
 Der Testsatz ist außerdem in sich redundant. Die 107 Seiten bilden bei Jaccard
 0.7 nur 66 Cluster, der größte umfasst elf Seiten. Nichts davon steckt im
@@ -305,16 +339,16 @@ Fünf Fehler standen dazwischen, alle inzwischen behoben:
 
 ## Offen
 
-- Vorannotation von Hand freigeben. Bis dahin ist 0.908 eine Zahl über
-  Konsistenz, nicht über Richtigkeit. Priorität eins.
+- Die LLM-Blackbox als Vergleichsarm messen (`src/magda/blackbox.py`): das LLM
+  extrahiert direkt aus der Seite, ohne Umweg über Training. Zusammen mit dem
+  Zeitvergleich oben ist das die vollständige Antwort auf die Kostenfrage —
+  und die offene Anforderungsstufe aus dem Proposal.
 - PRODUCT-Konvention schärfen: Sorte gegen Beschreibungstext, mit
-  Beispielliste. Einziges Label unter 0.9 und häufigste Rückfrage der
-  Annotation.
+  Beispielliste. Einziges Label unter 0.9 und häufigste Rückfrage.
 - Labeling-Prompt an die Anweisung angleichen, mechanisch Entscheidbares in
-  `trim_spans()`.
-- Den bestätigten Annotationsfehler korrigieren (`1347411_p42`,
-  `1-l-Sonderedition`).
-- Prüfen, ob APP_PRICE in KW30 wirklich fehlte oder ob die Annotation ihn dort
+  `trim_spans()`. Da die Sonnet-Labels jetzt die Referenz sind, wirkt jede
+  Prompt-Verbesserung unmittelbar auf die Messgrundlage.
+- Prüfen, ob APP_PRICE in KW30 wirklich fehlte oder ob das Labeling ihn dort
   übersehen hat. Das entscheidet, ob die 0.000 ein Verteilungsbefund oder ein
   Datenfehler sind.
 - Dritte Woche ernten. Acht Dev-Seiten sind zu wenig, und 107 Testseiten

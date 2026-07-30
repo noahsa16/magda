@@ -99,10 +99,31 @@ export function OverviewPage() {
           Strukturierte Angebotsdaten aus Supermarkt-Prospekten
         </h1>
         <p className="max-w-2xl text-sm text-muted-foreground">
-          Wie viel bringt Layout-Information bei der Extraktion? LayoutXLM kennt die Position
-          jedes Wortes, GBERT nur den Text – die Differenz im F1-Wert ist das Ergebnis.
+          Ein großes Vision-LLM labelt die Trainingsdaten, darauf trainieren wir ein eigenes
+          kleines Modell. Die Frage ist, wie viel davon in ein Modell passt, das lokal läuft –
+          und ob Layout-Information dabei hilft.
         </p>
       </section>
+
+      {/* Der Kostenvergleich ist die Hauptaussage des Projekts und gehört
+          deshalb über die Zähler, nicht in eine Fußnote. */}
+      <dl className="grid gap-3 rounded-xl border-2 border-foreground bg-card p-4 sm:grid-cols-3">
+        {[
+          { k: "Je Seite", llm: "44,8 s", eigen: "0,264 s" },
+          { k: "Eine Wochenernte", llm: "24,9 h", eigen: "8,8 min" },
+          { k: "Braucht", llm: "API, Kontingent", eigen: "nichts" },
+        ].map((zeile) => (
+          <div key={zeile.k} className="min-w-0">
+            <dt className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+              {zeile.k}
+            </dt>
+            <dd className="mt-1 flex items-baseline gap-2 text-sm">
+              <span className="text-muted-foreground line-through">{zeile.llm}</span>
+              <span className="font-bold tabular-nums">{zeile.eigen}</span>
+            </dd>
+          </div>
+        ))}
+      </dl>
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard

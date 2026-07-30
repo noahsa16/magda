@@ -5,9 +5,15 @@ Bogdan Roth · Kjell Lavezzari · Noah Samel
 
 Aus deutschen Penny-Prospekten werden strukturierte Angebotsdaten extrahiert:
 Produkt, Marke, Preis, Streichpreis, Menge, Grundpreis, Rabatt, Gültigkeit,
-App-Preis. Die Trainingsdaten labelt ein LLM automatisch, trainiert wird ein
-eigenes Modell. Die Projektfrage ist, wie viel Layout-Information dabei
-bringt: LayoutXLM kennt die Position jedes Wortes, GBERT nur den Text.
+App-Preis. Ein großes Vision-LLM labelt die Trainingsdaten, darauf trainieren
+wir ein eigenes, kleines Modell.
+
+Zwei Fragen stehen dahinter. Erstens: **Wie viel von dem, was ein LLM kann,
+passt in ein Modell, das man selbst betreibt?** Gemessen erreicht GBERT F1
+0.908 gegen die LLM-Labels, bei 0,264 statt 44,8 Sekunden je Seite — 109 Mio.
+Parameter, lokal auf CPU, ohne Netz und API-Kontingent. Zweitens: **Wie viel
+bringt Layout-Information?** LayoutXLM kennt die Position jedes Wortes, GBERT
+nur den Text; bisher liegt LayoutXLM 1,3 Punkte zurück.
 
 Grundlage ist das [Proposal](docs/proposal/IE_ProjectProposal_Magda.pdf), der
 Stand steht in [reports/](reports/).
@@ -103,9 +109,8 @@ cd frontend && npm test           # Frontend (Vitest)
 
 ## Offene Punkte
 
-- [ ] Vorannotation von Hand freigeben (`magda queue` nennt die nächsten
-      Seiten); bis dahin messen die F1-Werte Konsistenz mit dem Labeling-LLM,
-      nicht Richtigkeit
+- [ ] Vergleich gegen die LLM-Blackbox (`src/magda/blackbox.py`): das LLM
+      extrahiert direkt, ohne Umweg über Training
 - [ ] PRODUCT-Konvention schärfen: wo endet die Sorte, wo beginnt der Werbetext
 - [ ] Seiten über 512 Subwords werden abgeschnitten – Sliding Window nötig?
-- [ ] Vergleich gegen die LLM-Blackbox (`src/magda/blackbox.py`)
+- [ ] Dritte Erntewoche: acht Dev-Seiten sind zu wenig für die Modellauswahl
