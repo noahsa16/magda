@@ -42,7 +42,7 @@ Liste aller Wörter auf der Seite, jeweils mit Index.
 
 Markiere Entitäten als Spans über die Wortindizes. Erlaubte Labels:
 
-PRODUCT     Produktbezeichnung inkl. Sortenangabe
+PRODUCT     Produktbezeichnung inkl. Sortenangabe, ohne Menge und Preis
 BRAND       Markenname
 PRICE       Aktionspreis (der Preis, den man zahlt)
 OLD_PRICE   Durchgestrichener oder höherer Vergleichspreis
@@ -87,8 +87,8 @@ das nicht mehr durchgehend groß geschrieben ist.
 
 Im Korpus belegte Marken (die Liste ist nicht vollständig, sie zeigt die Form):
 MÜHLENHOF, MILPRIMA, BÄCKERKRÖNUNG, MAGICO, MARATHON, PARADISO, GREENLAND,
-BRAVO, ORTO MIO, SIMPLY SUNNY, NAMDONG, SAN FABIO, COCA-COLA, FANTA, SPRITE,
-KNORR, FERRERO, DR. OETKER, JACOBS, LENOR, ZEWA, BARILLA, KROMBACHER.
+BRAVO, ORTO MIO, SIMPLY SUNNY, NAMDONG, SAN FABIO, KNORR, FERRERO,
+DR. OETKER, JACOBS, LENOR, ZEWA, BARILLA, KROMBACHER, GÉRAMONT.
 
 ═══════════════════════════════════════════════════════════════════════
 REGEL 4 — Ein Preis-Span ist genau EIN Wort: die Zahl
@@ -115,7 +115,31 @@ zuerst steht oder größer gedruckt ist. Rechne nach, bevor du antwortest.
 Steht nur ein Preis ohne Partner, ist er PRICE.
 
 ═══════════════════════════════════════════════════════════════════════
-REGEL 5 — Was NIE ein Label bekommt
+REGEL 5 — PRODUCT: Name mit Sorte, aber ohne Menge, Preis und "oder"
+═══════════════════════════════════════════════════════════════════════
+Der PRODUCT-Span umfasst den Produktnamen einschließlich der Sortenangabe
+("Classic", "Citrus", "Natur", "Gold", "Pink Grapefruit"). Er endet vor der
+Mengenangabe.
+
+  Richtig: PRODUCT="Löslicher Kaffee Classic,"   QUANTITY="200 g"
+  Richtig: PRODUCT="Käsescheiben Natur,"         QUANTITY="150 g"
+  Falsch:  PRODUCT="Käsescheiben Natur, je 150 g (1 kg = 15.27)"
+  Falsch:  PRODUCT="Löslicher Kaffee"            <- Sorte fehlt
+
+Ein PRODUCT-Span enthält NIEMALS ein Wort, das zu QUANTITY, UNIT_PRICE,
+PRICE oder OLD_PRICE gehört. Diese Angaben haben eigene Labels. Enthält
+dein Span eine Zahl mit Einheit oder eine runde Klammer, ist er zu lang.
+
+"oder" trennt zwei Angebote. KEIN Span enthält jemals das Wort "oder":
+der laufende Span endet davor, nach "oder" beginnt ein neuer Span für das
+zweite Produkt. "oder" selbst bleibt ohne Label.
+
+  Richtig: PRODUCT="Waschmittel* Aprilfrisch,"  und ein zweiter Span
+           PRODUCT="All in 1 Color Pods* Amethyst Blütentraum,"
+  Falsch:  ein einziger Span von "Waschmittel*" über "oder" hinweg
+
+═══════════════════════════════════════════════════════════════════════
+REGEL 6 — Was NIE ein Label bekommt
 ═══════════════════════════════════════════════════════════════════════
 "je", "oder", "statt", "ca.", "UVP", "KAUFEN", "ENTSPRICHT", "NEU", "TOP",
 "zzgl. 0.25 Pfand", "Versch. Sorten", "Nur mit App", "mit PENNY App",
@@ -129,7 +153,7 @@ das ist eine Druckkennung, kein Inhalt des Prospekts.
 Lieber ein Wort ohne Label lassen als ein falsches vergeben.
 
 ═══════════════════════════════════════════════════════════════════════
-REGEL 6 — Angebote ohne Produkttext
+REGEL 7 — Angebote ohne Produkttext
 ═══════════════════════════════════════════════════════════════════════
 Manche Angebote bestehen nur aus einem Produktfoto und einem Preis; der
 Produktname steht nirgends im Text. Dann labelst du NUR den Preis. Erfinde
@@ -137,7 +161,7 @@ keinen PRODUCT-Span aus benachbarten Wörtern — du darfst ausschließlich auf
 Wörter zeigen, die in der Liste stehen.
 
 ═══════════════════════════════════════════════════════════════════════
-REGEL 7 — Zusammengehörendes und Getrenntes
+REGEL 8 — Zusammengehörendes und Getrenntes
 ═══════════════════════════════════════════════════════════════════════
 Am Zeilenumbruch getrennte Wörter ("Orangen-" + "Nektar", "Hähnchen-" +
 "Brustfilets") gehören in EINEN Span, der beide Wörter umfasst.
@@ -147,7 +171,7 @@ bekommt trotzdem nur einen einzigen PRICE-Span an seiner Textstelle.
 Erkennungsmerkmale für so eine Gruppe: "oder", "Versch. Sorten", "je".
 
 ═══════════════════════════════════════════════════════════════════════
-REGEL 8 — Den Gültigkeitszeitraum zuerst suchen
+REGEL 9 — Den Gültigkeitszeitraum zuerst suchen
 ═══════════════════════════════════════════════════════════════════════
 Suche VOR allem anderen die Seite nach einem Zeitraum ab (meist oben oder in
 einem Banner, Form "Mo, 20.7. – Sa, 25.7." oder "Do, 23.7. bis Sa, 25.7.").
@@ -218,6 +242,66 @@ def _extract_json_array(text: str) -> str:
     raise ValueError(f"JSON-Array nicht geschlossen (abgeschnitten?): {text[:150]}")
 
 
+# Die Qwen-Modelle denken vor der Antwort, und diese Token zählen gegen
+# max_tokens. Gemessen am 30.07.2026: qwen3.5-397b lieferte auf allen drei
+# Gold-Seiten 0 Zeichen, weil das ganze Budget fürs Nachdenken draufging –
+# "finish_reason=length" bei leerem Text. Mit abgeschaltetem Reasoning
+# braucht dasselbe Modell 10 statt 200 Token für dieselbe Antwort.
+#
+# Mistral lehnt den Schalter mit HTTP 400 ab ("chat_template is not supported
+# for Mistral"). Statt eine Liste zu pflegen, welches Modell ihn verträgt –
+# der GWDG-Katalog ändert sich –, probieren wir ihn einmal aus und merken uns
+# die Absage für den Rest des Laufs.
+_NO_THINKING = {"chat_template_kwargs": {"enable_thinking": False}}
+_rejects_thinking_flag: set[str] = set()
+
+
+def _is_unsupported_param(exc: Exception) -> bool:
+    return getattr(exc, "status_code", None) == 400 and "chat_template" in str(exc)
+
+
+def trim_spans(spans: list[dict], words: list[dict]) -> list[dict]:
+    """Kürzt Spans an Grenzen, die keine Entität überschreiten darf.
+
+    Zwei Fälle, beide gemessen: Das Modell zieht zwei Angebote in einen Span,
+    wenn "oder" dazwischensteht ("Waschmittel* … oder All in 1 Color Pods* …"),
+    und es schluckt den Grundpreis in die Mengenangabe ("g (1 kg = 11.98)").
+
+    Beides ist mechanisch entscheidbar, also wird es hier erzwungen statt nur
+    im Prompt erbeten – eine Regel senkt die Fehlerrate, ein Guard setzt sie
+    auf null.
+
+    Bewusst hier und nicht in labels.spans_to_bio(): dort laufen auch die
+    handannotierten Gold-Spans durch, und die dürfen nicht stillschweigend
+    umgeschrieben werden. Was ein Mensch annotiert hat, gilt.
+    """
+    text = [w["text"] for w in words]
+    trimmed = []
+
+    for span in spans:
+        start, end = span.get("start"), span.get("end")
+        if not isinstance(start, int) or not isinstance(end, int):
+            trimmed.append(span)  # ungültig – spans_to_bio verwirft es gleich
+            continue
+
+        cut = end
+        for i in range(start, min(end, len(text))):
+            word = text[i]
+            if word.lower().strip(",.") == "oder":
+                cut = i
+                break
+            # Öffnende Klammer beginnt den Grundpreis. Für UNIT_PRICE ist sie
+            # der Anfang des Spans, für jedes andere Label das Ende.
+            if i > start and word.startswith("(") and span.get("label") != "UNIT_PRICE":
+                cut = i
+                break
+
+        if cut > start:
+            trimmed.append({**span, "end": cut})
+
+    return trimmed
+
+
 def is_retryable(exc: Exception) -> bool:
     """Ist der Fehler ein Schluckauf oder ein echtes Problem?
 
@@ -278,38 +362,45 @@ def label_page(
     prompt = _PROMPT.format(word_list=word_list)
     b64 = base64.b64encode(page_png).decode("ascii")
 
-    response = client.chat.completions.create(
-        model=model,
-        messages=[
-            {
-                "role": "user",
-                "content": [
-                    {"type": "text", "text": prompt},
-                    {
-                        "type": "image_url",
-                        "image_url": {"url": f"data:image/png;base64,{b64}"},
-                    },
-                ],
-            }
-        ],
-        # Nicht 0: bei greedy decoding ist das Modell auf einer Seite in eine
-        # Endlosschleife gelaufen (hunderte Wiederholungen von '" a "'), bis
-        # das Token-Limit griff. Ein bisschen Temperatur bricht solche Loops.
-        # Die Labels werden dadurch nicht mehr exakt reproduzierbar – für
-        # einmalig erzeugte Trainingsdaten ist Robustheit hier wichtiger.
-        temperature=0.2,
-        # Ohne Limit greift das Server-Default und schneidet die Antwort mitten
-        # im JSON ab. Gemessen an echten Seiten braucht Mistral rund 25 Zeichen
-        # JSON pro Wort, und JSON ist tokendicht (~2 Zeichen pro Token) – also
-        # etwa 13 Token pro Wort.
-        #
-        # Der Faktor 40 statt 30 ist für die Qwen-Modelle: die denken vor der
-        # Antwort, und diese Token zählen mit. Beim Vision-Test brauchte
-        # qwen3.5-397b 124 Token für das Wort "Rot" – auf einer Prospektseite
-        # ginge ein knappes Budget komplett fürs Nachdenken drauf und die
-        # Antwort käme abgeschnitten zurück.
-        max_tokens=max(4096, len(words) * 40),
-    )
+    messages = [
+        {
+            "role": "user",
+            "content": [
+                {"type": "text", "text": prompt},
+                {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{b64}"}},
+            ],
+        }
+    ]
+
+    def call(extra_body: dict | None):
+        return client.chat.completions.create(
+            model=model,
+            messages=messages,
+            # Nicht 0: bei greedy decoding ist das Modell auf einer Seite in
+            # eine Endlosschleife gelaufen (hunderte Wiederholungen von
+            # '" a "'), bis das Token-Limit griff. Ein bisschen Temperatur
+            # bricht solche Loops. Die Labels werden dadurch nicht mehr exakt
+            # reproduzierbar – für einmalig erzeugte Trainingsdaten ist
+            # Robustheit hier wichtiger.
+            temperature=0.2,
+            # Ohne Limit greift das Server-Default und schneidet die Antwort
+            # mitten im JSON ab. Gemessen an echten Seiten braucht Mistral rund
+            # 25 Zeichen JSON pro Wort, und JSON ist tokendicht (~2 Zeichen pro
+            # Token) – also etwa 13 Token pro Wort. Faktor 40 gibt Puffer.
+            max_tokens=max(4096, len(words) * 40),
+            extra_body=extra_body,
+        )
+
+    if model in _rejects_thinking_flag:
+        response = call(None)
+    else:
+        try:
+            response = call(_NO_THINKING)
+        except Exception as exc:
+            if not _is_unsupported_param(exc):
+                raise
+            _rejects_thinking_flag.add(model)
+            response = call(None)
 
     choice = response.choices[0]
     text = choice.message.content or ""
@@ -328,4 +419,4 @@ def label_page(
     if not isinstance(spans, list):
         raise ValueError(f"LLM hat kein JSON-Array geliefert: {text[:200]}")
 
-    return spans_to_bio(len(words), spans)
+    return spans_to_bio(len(words), trim_spans(spans, words))

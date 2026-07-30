@@ -6,6 +6,7 @@ einen Penny-Prospekt – das Modell hält sich nur meistens an "nur JSON".
 
 import pytest
 
+from magda import labeling
 from magda.labeling import _extract_json_array
 
 
@@ -42,3 +43,57 @@ def test_kein_array_wirft():
 def test_unvollstaendiges_array_wirft():
     with pytest.raises(ValueError, match="nicht geschlossen"):
         _extract_json_array('[{"start": 0}, {"start"')
+
+
+# ---------------------------------------------------------------------------
+# Span-Guard
+# ---------------------------------------------------------------------------
+
+
+def _words(*texts):
+    return [{"text": t, "bbox": [0, 0, 1, 1]} for t in texts]
+
+
+def test_guard_trennt_zwei_angebote_am_oder():
+    """Das Modell zog "Waschmittel* ... oder All in 1 Color Pods* ..." in einen
+    Span. "oder" trennt zwei Angebote und darf in keiner Entität stehen."""
+    words = _words("Waschmittel*", "Aprilfrisch,", "oder", "All", "in", "1")
+    spans = [{"start": 0, "end": 6, "label": "PRODUCT"}]
+
+    assert labeling.trim_spans(spans, words) == [
+        {"start": 0, "end": 2, "label": "PRODUCT"}
+    ]
+
+
+def test_guard_schneidet_den_grundpreis_aus_der_menge():
+    """QUANTITY="g (1 kg = 11.98)" war der häufigste Einzelfehler."""
+    words = _words("500", "g", "(1", "kg", "=", "11.98)")
+    spans = [{"start": 0, "end": 6, "label": "QUANTITY"}]
+
+    assert labeling.trim_spans(spans, words) == [
+        {"start": 0, "end": 2, "label": "QUANTITY"}
+    ]
+
+
+def test_guard_laesst_den_grundpreis_selbst_in_ruhe():
+    """UNIT_PRICE beginnt mit der Klammer – dort ist sie kein Abbruchgrund."""
+    words = _words("(1", "kg", "=", "11.98)")
+    spans = [{"start": 0, "end": 4, "label": "UNIT_PRICE"}]
+
+    assert labeling.trim_spans(spans, words) == spans
+
+
+def test_guard_verwirft_einen_span_der_mit_oder_beginnt():
+    """"oder MEZZO MIX ..." – bleibt nach dem Kürzen nichts übrig, fällt der
+    Span ganz weg statt als leerer Span durchzurutschen."""
+    words = _words("oder", "MEZZO", "MIX")
+    spans = [{"start": 0, "end": 3, "label": "PRODUCT"}]
+
+    assert labeling.trim_spans(spans, words) == []
+
+
+def test_guard_ruehrt_saubere_spans_nicht_an():
+    words = _words("Löslicher", "Kaffee", "Classic,")
+    spans = [{"start": 0, "end": 3, "label": "PRODUCT"}]
+
+    assert labeling.trim_spans(spans, words) == spans
