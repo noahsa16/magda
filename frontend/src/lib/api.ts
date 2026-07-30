@@ -1,6 +1,7 @@
 import type {
   CatalogEntry, CatalogRegistry, EvalReport, GoldAnnotation, GoldSummary, InferenceResult,
-  JobDef, LabelDistribution, ModelStatus, PageDetail, PageSummary, PipelineStatus, ProbeResult,
+  JobDef, LabelDistribution, Labeler, ModelStatus, PageDetail, PageSummary, PipelineStatus,
+  ProbeResult,
   RunDetail, RunRecord, RunStatus, Span,
 } from "./types"
 
@@ -19,8 +20,16 @@ async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
 export const api = {
   schema: () => fetchJson<{ entity_types: string[] }>("/api/schema"),
   status: () => fetchJson<PipelineStatus>("/api/status"),
-  pages: () => fetchJson<PageSummary[]>("/api/pages"),
-  page: (id: string) => fetchJson<PageDetail>(`/api/pages/${id}`),
+  // Ohne model liefert die API die Labels des konfigurierten Modells und
+  // markiert eine Seite als gelabelt, sobald irgendein Modell sie bearbeitet
+  // hat. Mit model geht es um genau diesen einen Lauf.
+  pages: (model?: string) =>
+    fetchJson<PageSummary[]>(`/api/pages${model ? `?model=${encodeURIComponent(model)}` : ""}`),
+  page: (id: string, model?: string) =>
+    fetchJson<PageDetail>(
+      `/api/pages/${id}${model ? `?model=${encodeURIComponent(model)}` : ""}`,
+    ),
+  labelers: () => fetchJson<Labeler[]>("/api/labelers"),
   pageImageUrl: (id: string) => `/api/pages/${id}/image`,
   evaluation: () => fetchJson<EvalReport[]>("/api/evaluation"),
   model: () => fetchJson<ModelStatus[]>("/api/model"),
@@ -55,7 +64,10 @@ export const api = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ url }),
     }),
-  labelDistribution: () => fetchJson<LabelDistribution>("/api/labels/distribution"),
+  labelDistribution: (model?: string) =>
+    fetchJson<LabelDistribution>(
+      `/api/labels/distribution${model ? `?model=${encodeURIComponent(model)}` : ""}`,
+    ),
   gold: () => fetchJson<GoldSummary[]>("/api/gold"),
   goldPage: (id: string) => fetchJson<GoldAnnotation>(`/api/gold/${id}`),
   saveGold: (

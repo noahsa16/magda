@@ -10,7 +10,7 @@ import { entityColor } from "@/lib/entities"
  * nicht erst an schlechten Metriken danach.
  */
 export function LabelDistribution() {
-  const { data } = useQuery({ queryKey: ["labelDistribution"], queryFn: api.labelDistribution })
+  const { data } = useQuery({ queryKey: ["labelDistribution"], queryFn: () => api.labelDistribution() })
   const schema = useQuery({ queryKey: ["schema"], queryFn: api.schema })
 
   if (!data || data.total === 0) {

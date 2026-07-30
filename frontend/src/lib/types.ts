@@ -17,6 +17,14 @@ export interface PageDetail {
   height: number
   words: Word[]
   tags?: string[]
+  /** Welches Modell die Tags erzeugt hat. Fehlt, wenn die Seite ungelabelt ist. */
+  model?: string
+}
+
+/** Ein Modell, das gelabelt hat – aus /api/labelers. */
+export interface Labeler {
+  model: string
+  pages: number
 }
 
 export interface CatalogStatus {
@@ -49,6 +57,12 @@ export interface PipelineStatus {
     /** Gold zählt quer über Kataloge, deshalb nur in den Summen. */
     gold_done: number
     gold_in_progress: number
+    /**
+     * Seiten je Labeling-Modell. "labeled" oben zählt jede Seite einmal,
+     * egal wie viele Modelle sie bearbeitet haben – hier steht, wer wie viel
+     * beigetragen hat.
+     */
+    labeled_by_model: Record<string, number>
   }
 }
 

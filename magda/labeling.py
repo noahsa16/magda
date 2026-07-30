@@ -16,50 +16,170 @@ from openai import OpenAI
 
 from magda.labels import spans_to_bio
 
-# Die Regeln unten sind nicht theoretisch, sondern die Fehler aus dem ersten
-# Durchlauf über einen echten Prospekt (siehe reports/woche-01.md):
-# Grundpreise landeten in QUANTITY, Angaben wurden in Einzelwörter zerrissen,
-# und "mit PENNY App" wurde als Marke gelabelt.
+# Jede Regel unten steht für einen gemessenen Fehler, nicht für eine Vermutung.
+# Grundlage ist der Vergleich der Mistral-Labels gegen die drei handannotierten
+# Gold-Seiten (scripts/08_compare_labels.py, micro-F1 0.306):
+#
+#   UNIT_PRICE   0 von 18 richtig – die Klammer landete durchweg in QUANTITY
+#   QUANTITY     0 von 18 richtig – "je" wurde in den Span gezogen
+#   PRODUCT   19 Spans verfehlt   – "oder", "Versch. Sorten", "je …" mit drin
+#   BRAND     12 Spans verfehlt   – die Marke verschluckte den Produktnamen
+#   PRICE/OLD_PRICE 0.85/0.81     – funktioniert, bleibt wie es ist
+#
+# Der schwerwiegendste Befund war, dass die alte Fassung dem Modell an zwei
+# Stellen das Gegenteil des Goldstandards beibrachte: Sie erklärte "je 200 g"
+# zum QUANTITY-Span und zeigte im Beispiel UNIT_PRICE als Teil der Preiszeile.
+# Ein Prompt, der gegen die eigene Referenz arbeitet, ist nicht ungenau,
+# sondern falsch.
+#
+# Aufbau und Ton sind an den Extractor-Prompt aus dem Vorgängerprojekt
+# angelehnt (notebooks/pdf_extractor(op).py): benannte Erkennungsmerkmale
+# statt vager Anweisungen, kontrastive Richtig/Falsch-Paare, und eine
+# ausdrückliche Liste dessen, was NICHT gelabelt wird.
 _PROMPT = """\
-Du siehst eine Seite aus einem deutschen Supermarkt-Prospekt sowie die Liste
-aller Wörter auf der Seite, jeweils mit Index.
+Du siehst eine Seite aus einem deutschen Supermarkt-Prospekt (Penny) sowie die
+Liste aller Wörter auf der Seite, jeweils mit Index.
 
-Markiere alle Entitäten als Spans über die Wortindizes. Erlaubte Labels:
+Markiere Entitäten als Spans über die Wortindizes. Erlaubte Labels:
 
-PRODUCT     Produktbezeichnung inkl. Sortenangabe, z.B. "Löslicher Kaffee Classic"
-BRAND       Marke, z.B. "MAGICO", "COCA-COLA", "SAN FABIO"
-PRICE       Aktionspreis, z.B. "3.99"
-OLD_PRICE   durchgestrichener Originalpreis, z.B. "5.99"
-QUANTITY    Füllmenge des Produkts, z.B. "500 g", "je 200 g", "6 x 1,5 l"
-UNIT_PRICE  Grundpreis in Klammern, z.B. "(1 kg = 24.95)"
+PRODUCT     Produktbezeichnung inkl. Sortenangabe
+BRAND       Markenname
+PRICE       Aktionspreis (der Preis, den man zahlt)
+OLD_PRICE   Durchgestrichener oder höherer Vergleichspreis
+QUANTITY    Füllmenge: Zahl + Einheit
+UNIT_PRICE  Grundpreis in runden Klammern
 DISCOUNT    Rabattangabe, z.B. "-33%"
-VALID       Gültigkeitszeitraum, z.B. "Gültig von Mo, 20.7. bis Sa, 25.7."
+VALID       Gültigkeitszeitraum
 
-Wichtige Regeln:
+═══════════════════════════════════════════════════════════════════════
+REGEL 1 — Der Grundpreis ist IMMER ein eigener Span (häufigster Fehler)
+═══════════════════════════════════════════════════════════════════════
+Alles in runden Klammern der Form "(1 kg = 11.98)" oder "(1 l = 0.70)" ist
+UNIT_PRICE. Der Span beginnt beim Wort mit der öffnenden Klammer und endet
+beim Wort mit der schließenden Klammer.
 
-1. Ein Span pro Angabe, zusammenhängend. "je 200 g" ist EIN QUANTITY-Span über
-   alle drei Wörter, nicht drei einzelne. Ebenso ist "Löslicher Kaffee Classic"
-   EIN PRODUCT-Span.
-2. Grundpreise gehören zu UNIT_PRICE, nicht zu QUANTITY. Der Span umfasst die
-   ganze Klammer inklusive "(" und ")".
-3. Aktions- und Werbetext ist keine Entität: "mit PENNY App", "ohne PENNY App",
-   "Nur mit App", "Aktion", Fußnotenzeichen, Aufzählungspunkte und einzelne
-   Buchstaben aus Grafiken bleiben ohne Label.
-4. Wörter wie "statt" vor einem Streichpreis gehören NICHT zum OLD_PRICE, der
-   Span umfasst nur die Zahl.
-5. Nutze das Bild, um zu erkennen, welche Angaben zu welchem Angebot gehören.
-   Preis und Produkt stehen räumlich beieinander.
+  Richtig: QUANTITY="500 g"   UNIT_PRICE="(1 kg = 11.98)"
+  Falsch:  QUANTITY="500 g (1 kg = 11.98)"      <- Klammer gehört nicht dazu
+  Falsch:  QUANTITY="(1 kg = 11.98)"            <- das ist kein QUANTITY
+  Falsch:  PRICE="0.88 (1 l = 0.70)"            <- zwei getrennte Angaben
 
-Beispiel für "MAGICO Löslicher Kaffee Classic, je 200 g (1 kg = 24.95) 4.99":
+═══════════════════════════════════════════════════════════════════════
+REGEL 2 — QUANTITY ist nur Zahl und Einheit, sonst nichts
+═══════════════════════════════════════════════════════════════════════
+"je", "ca.", "Versch. Sorten", "zzgl.", "Pfand" gehören NICHT in den Span.
+
+  Richtig: "500 g" · "1,25 l" · "6 x 1,5 l" · "500-g-Schale"
+  Falsch:  "je 500 g" · "je 1,25 l" · "Sorten, je 150 g"
+
+═══════════════════════════════════════════════════════════════════════
+REGEL 3 — BRAND ist nur der Markenname, nicht das Produkt
+═══════════════════════════════════════════════════════════════════════
+Ein Angebot beginnt meist mit der Marke in GROSSBUCHSTABEN, danach folgt der
+Produktname in normaler Schreibweise. Der BRAND-Span endet beim ersten Wort,
+das nicht mehr durchgehend groß geschrieben ist.
+
+  Richtig: BRAND="MÜHLENHOF"  PRODUCT="Frische Hähnchen- Brustfilets"
+  Richtig: BRAND="MAGICO KAFFEE"  PRODUCT="Löslicher Kaffee Classic,"
+  Richtig: BRAND="ORTO MIO"   PRODUCT="Antipasticreme,"
+  Falsch:  BRAND="MÜHLENHOF Frische Hähnchen- Brustfilets"
+  Falsch:  BRAND="LENOR Waschmittel*"
+  Falsch:  BRAND="MARATHON Isotonischer"
+
+Im Korpus belegte Marken (die Liste ist nicht vollständig, sie zeigt die Form):
+MÜHLENHOF, MILPRIMA, BÄCKERKRÖNUNG, MAGICO, MARATHON, PARADISO, GREENLAND,
+BRAVO, ORTO MIO, SIMPLY SUNNY, NAMDONG, SAN FABIO, COCA-COLA, FANTA, SPRITE,
+KNORR, FERRERO, DR. OETKER, JACOBS, LENOR, ZEWA, BARILLA, KROMBACHER.
+
+═══════════════════════════════════════════════════════════════════════
+REGEL 4 — Ein Preis-Span ist genau EIN Wort: die Zahl
+═══════════════════════════════════════════════════════════════════════
+Preise stehen paarweise beieinander. Jede Zahl wird ein eigener Span über
+genau ein Wort. Nie zwei Preise in einem Span, nie ein Wort dazu.
+
+Wörter, die neben einem Preis stehen und NICHT in den Span gehören:
+"UVP", "statt", "Aktion", "je", "nur", "ab", "Einzelpreis".
+
+  Richtig: OLD_PRICE="10.49"                 (für den Text "UVP 10.49")
+  Falsch:  OLD_PRICE="UVP 10.49"             <- "UVP" ist kein Preis
+  Falsch:  PRICE="Aktion"                    <- das ist eine Überschrift
+  Falsch:  PRICE="0.88 0.77"                 <- zwei Preise, zwei Spans
+
+Welcher der beiden ist PRICE? Vergleiche die ZAHLENWERTE: die kleinere Zahl
+ist PRICE, die größere OLD_PRICE. Das gilt immer, auch wenn die größere Zahl
+zuerst steht oder größer gedruckt ist. Rechne nach, bevor du antwortest.
+
+  "5.99  6.99"  ->  PRICE="5.99"   OLD_PRICE="6.99"      (5.99 < 6.99)
+  "1.49  1.59"  ->  PRICE="1.49"   OLD_PRICE="1.59"      (1.49 < 1.59)
+  "3.49  2.29"  ->  OLD_PRICE="3.49"  PRICE="2.29"       (2.29 < 3.49)
+
+Steht nur ein Preis ohne Partner, ist er PRICE.
+
+═══════════════════════════════════════════════════════════════════════
+REGEL 5 — Was NIE ein Label bekommt
+═══════════════════════════════════════════════════════════════════════
+"je", "oder", "statt", "ca.", "UVP", "KAUFEN", "ENTSPRICHT", "NEU", "TOP",
+"zzgl. 0.25 Pfand", "Versch. Sorten", "Nur mit App", "mit PENNY App",
+"ohne PENNY App", "Aktion", "Haltungsform 2", "Kl. I", "im Kühlregal
+erhältlich", Fußnotenziffern, Sternchen, Aufzählungspunkte, einzelne
+Buchstaben aus Grafiken.
+
+Ebenso der Druckvermerk am rechten Seitenrand in der Form "25_02-09-10" —
+das ist eine Druckkennung, kein Inhalt des Prospekts.
+
+Lieber ein Wort ohne Label lassen als ein falsches vergeben.
+
+═══════════════════════════════════════════════════════════════════════
+REGEL 6 — Angebote ohne Produkttext
+═══════════════════════════════════════════════════════════════════════
+Manche Angebote bestehen nur aus einem Produktfoto und einem Preis; der
+Produktname steht nirgends im Text. Dann labelst du NUR den Preis. Erfinde
+keinen PRODUCT-Span aus benachbarten Wörtern — du darfst ausschließlich auf
+Wörter zeigen, die in der Liste stehen.
+
+═══════════════════════════════════════════════════════════════════════
+REGEL 7 — Zusammengehörendes und Getrenntes
+═══════════════════════════════════════════════════════════════════════
+Am Zeilenumbruch getrennte Wörter ("Orangen-" + "Nektar", "Hähnchen-" +
+"Brustfilets") gehören in EINEN Span, der beide Wörter umfasst.
+
+Ein Preis, der mittig unter mehreren Produkten steht, gilt für alle — er
+bekommt trotzdem nur einen einzigen PRICE-Span an seiner Textstelle.
+Erkennungsmerkmale für so eine Gruppe: "oder", "Versch. Sorten", "je".
+
+═══════════════════════════════════════════════════════════════════════
+REGEL 8 — Den Gültigkeitszeitraum zuerst suchen
+═══════════════════════════════════════════════════════════════════════
+Suche VOR allem anderen die Seite nach einem Zeitraum ab (meist oben oder in
+einem Banner, Form "Mo, 20.7. – Sa, 25.7." oder "Do, 23.7. bis Sa, 25.7.").
+Er kommt höchstens einmal pro Seite vor und wird sonst leicht übersehen.
+Der VALID-Span umfasst die ganze Angabe mit Wochentagen und Daten.
+
+═══════════════════════════════════════════════════════════════════════
+
+Vollständiges Beispiel. Für die Wortliste
+
+  0:MARATHON 1:Isotonischer 2:Fitnessdrink 3:Citrus, 4:zzgl. 5:0.25
+  6:Pfand, 7:je 8:0,5 9:l 10:(1 11:l 12:= 13:0.78) 14:1.49 15:1.59
+
+lautet die Antwort:
+
 [{{"start": 0, "end": 1, "label": "BRAND"}},
  {{"start": 1, "end": 4, "label": "PRODUCT"}},
- {{"start": 4, "end": 7, "label": "QUANTITY"}},
- {{"start": 7, "end": 12, "label": "UNIT_PRICE"}},
- {{"start": 12, "end": 13, "label": "PRICE"}}]
+ {{"start": 8, "end": 10, "label": "QUANTITY"}},
+ {{"start": 10, "end": 14, "label": "UNIT_PRICE"}},
+ {{"start": 14, "end": 15, "label": "PRICE"}},
+ {{"start": 15, "end": 16, "label": "OLD_PRICE"}}]
+
+Beachte: 4-7 ("zzgl. 0.25 Pfand, je") bleiben ohne Label, die Klammer 10-14
+ist ein eigener Span, und QUANTITY beginnt bei 8, nicht bei 7.
+
+Nutze das Bild, um zu erkennen, welche Angaben zu welchem Angebot gehören:
+Preis, Produkt und Menge stehen räumlich beieinander, und der durchgestrichene
+Preis ist nur im Bild als solcher erkennbar.
 
 Antworte ausschließlich mit einem JSON-Array dieser Form. "end" ist exklusiv.
-Wörter, die zu keiner Entität gehören, lässt du weg.
-Kein Markdown, keine Erklärungen.
+Spans dürfen sich nicht überlappen. Wörter ohne Entität lässt du weg.
+Kein Markdown, keine Erklärungen, kein Vorspann.
 
 Wortliste:
 {word_list}

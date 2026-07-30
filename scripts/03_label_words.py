@@ -58,7 +58,9 @@ def main():
 
     out_dir = labeled_dir(args.model)
     out_dir.mkdir(parents=True, exist_ok=True)
-    client = make_llm_client()
+    # max_retries=0: label_page_with_retry wiederholt selbst, verschachtelt
+    # wären es bis zu neun Anläufe à 120 Sekunden für eine Seite.
+    client = make_llm_client(max_retries=0)
 
     word_files = sorted(WORDS_DIR.glob("*.json"))
     if args.only_gold:

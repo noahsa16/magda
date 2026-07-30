@@ -177,13 +177,19 @@ MAX_SEQ_LENGTH = 512
 SEED = 13
 
 
-def make_llm_client():
+def make_llm_client(max_retries: int = 2):
     """OpenAI-Client für die Academic Cloud. Wirft früh, wenn der Key fehlt.
 
     Timeout bewusst eng: die GWDG lädt Modelle bei Bedarf und hängt dabei
     gern minutenlang. Lieber nach 2 Minuten abbrechen und die Seite beim
     nächsten Lauf erneut versuchen (Skripte sind idempotent), als einen
     Batchlauf an einer einzigen Seite festhängen zu lassen.
+
+    max_retries=0 gehört überall dorthin, wo schon eine eigene Wiederholung
+    darüberliegt – etwa labeling.label_page_with_retry. Sonst multiplizieren
+    sich die Versuche: dreimal außen mal dreimal innen mal 120 Sekunden sind
+    18 Minuten für eine einzige Seite. Genau das hat einen Probelauf über drei
+    Seiten 45 Minuten dauern lassen.
     """
     from openai import OpenAI
 
@@ -195,5 +201,5 @@ def make_llm_client():
         base_url=CHAT_AI_BASE_URL,
         api_key=CHAT_AI_API_KEY,
         timeout=120.0,
-        max_retries=2,
+        max_retries=max_retries,
     )

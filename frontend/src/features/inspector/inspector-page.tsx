@@ -13,6 +13,7 @@ import { groupEntities } from "@/lib/bio"
 import { groupPagesByCatalog } from "@/lib/catalogs"
 import { api } from "@/lib/api"
 import { cn } from "@/lib/utils"
+import { LabelerSelect } from "./labeler-select"
 import { PageList } from "./page-list"
 
 const EMPTY_HINT = (
@@ -39,6 +40,10 @@ export function InspectorPage() {
   // ?page= impliziert ihn also. Eigenen Parameter braucht nur der Zustand
   // "Prospekt offen, aber keine Seite gewählt".
   const catalog = searchParams.get("catalog") ?? selected?.split("_p")[0] ?? null
+  // Das gewählte Modell steht in der URL, nicht im State: nur so lässt sich
+  // ein Vergleich verlinken ("schau dir Seite X bei Qwen an"), und ein Reload
+  // landet nicht stillschweigend wieder bei einem anderen Modell.
+  const model = searchParams.get("model") ?? undefined
   // null = alle Typen sichtbar; Set = explizite Auswahl.
   const [visibleTypes, setVisibleTypes] = useState<Set<string> | null>(null)
   const [picked, setPicked] = useState<EntityRef | null>(null)
@@ -47,10 +52,10 @@ export function InspectorPage() {
   const [showPlainWords, setShowPlainWords] = useState(true)
 
   const schema = useQuery({ queryKey: ["schema"], queryFn: api.schema })
-  const pages = useQuery({ queryKey: ["pages"], queryFn: api.pages })
+  const pages = useQuery({ queryKey: ["pages", model], queryFn: () => api.pages(model) })
   const page = useQuery({
-    queryKey: ["page", selected],
-    queryFn: () => api.page(selected!),
+    queryKey: ["page", selected, model],
+    queryFn: () => api.page(selected!, model),
     enabled: selected !== null,
   })
   const status = useQuery({ queryKey: ["status"], queryFn: api.status })
@@ -71,11 +76,20 @@ export function InspectorPage() {
   const ids = useMemo(() => catalogPages.map((p) => p.page_id), [catalogPages])
   const idx = selected ? ids.indexOf(selected) : -1
 
+  /** Navigation, die das gewählte Modell nicht verliert. */
+  function navigate(next: { catalog?: string; page?: string }) {
+    const params: Record<string, string> = {}
+    if (next.catalog) params.catalog = next.catalog
+    if (next.page) params.page = next.page
+    if (model) params.model = model
+    setSearchParams(params)
+  }
+
   function goto(i: number) {
     if (i < 0 || i >= ids.length) return
     setPicked(null)
     setHovered(null)
-    setSearchParams({ catalog: catalog!, page: ids[i] })
+    navigate({ catalog: catalog!, page: ids[i] })
   }
 
   useEffect(() => {
@@ -117,7 +131,7 @@ export function InspectorPage() {
         <CatalogGrid
           tiles={tiles}
           unit="gelabelt"
-          onSelect={(id) => setSearchParams({ catalog: id })}
+          onSelect={(id) => navigate({ catalog: id })}
           emptyHint={EMPTY_HINT}
         />
       </div>
@@ -137,7 +151,7 @@ export function InspectorPage() {
         <CatalogGrid
           tiles={tiles}
           unit="gelabelt"
-          onSelect={(id) => setSearchParams({ catalog: id })}
+          onSelect={(id) => navigate({ catalog: id })}
           emptyHint={EMPTY_HINT}
         />
       </div>
@@ -156,9 +170,9 @@ export function InspectorPage() {
           <h1 className="text-3xl font-extrabold tracking-tight">Label-Inspektor</h1>
           <Crumbs
             items={[
-              { label: "Prospekte", onClick: () => setSearchParams({}) },
+              { label: "Prospekte", onClick: () => navigate({}) },
               selected
-                ? { label: catalog, onClick: () => setSearchParams({ catalog }) }
+                ? { label: catalog, onClick: () => navigate({ catalog }) }
                 : { label: catalog },
               ...(selected ? [{ label: selected.split("_").pop()! }] : []),
             ]}
@@ -168,6 +182,17 @@ export function InspectorPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <LabelerSelect
+            value={model}
+            onChange={(next) => {
+              // Katalog und Seite mitnehmen: beim Modellwechsel will man
+              // dieselbe Seite sehen, nur anders gelabelt.
+              const params: Record<string, string> = { model: next }
+              if (catalog) params.catalog = catalog
+              if (selected) params.page = selected
+              setSearchParams(params)
+            }}
+          />
           <Button
             variant="outline" size="sm" aria-label="Vorherige Seite (Pfeil links)"
             disabled={idx <= 0} onClick={() => goto(idx - 1)}
@@ -191,7 +216,7 @@ export function InspectorPage() {
             onSelect={(id) => {
               setPicked(null)
               setHovered(null)
-              setSearchParams({ catalog: catalog, page: id })
+              navigate({ catalog, page: id })
             }}
           />
         </div>

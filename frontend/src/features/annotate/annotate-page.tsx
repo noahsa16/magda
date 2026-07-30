@@ -42,7 +42,7 @@ export function AnnotatePage() {
   const [sel, setSel] = useState<{ anchor: number; focus: number } | null>(null)
 
   const schema = useQuery({ queryKey: ["schema"], queryFn: api.schema })
-  const pages = useQuery({ queryKey: ["pages"], queryFn: api.pages })
+  const pages = useQuery({ queryKey: ["pages"], queryFn: () => api.pages() })
   const gold = useQuery({ queryKey: ["gold"], queryFn: api.gold })
   const page = useQuery({
     queryKey: ["page", selected],
