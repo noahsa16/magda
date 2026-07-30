@@ -110,6 +110,7 @@ JOBS: dict[str, Job] = {
         params=(
             Param("variant", "choice", "Variante", choices=VARIANTS, required=True),
             Param("--split", "choice", "Split", choices=("dev", "test"), default="test"),
+            Param("--labels-from", "str", "Labels von Modell"),
         ),
     ),
     "06_check_duplicates": Job(

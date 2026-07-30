@@ -35,13 +35,18 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("variant", choices=["gbert", "layoutxlm"])
     parser.add_argument("--split", default="test", choices=["dev", "test"])
+    parser.add_argument(
+        "--labels-from",
+        help="Modellordner unter data/labeled/. Muss derselbe sein wie beim "
+        "Training – sonst wird gegen andere Labels gemessen als gelernt wurde.",
+    )
     args = parser.parse_args()
 
     model_dir = CHECKPOINTS_DIR / args.variant / "best"
     if not model_dir.exists():
         sys.exit(f"Kein trainiertes Modell unter {model_dir}. Erst 04_train.py laufen lassen.")
 
-    pages = load_labeled_pages()
+    pages = load_labeled_pages(args.labels_from)
     splits = get_or_create_splits(pages)
     eval_pages = select_split(pages, splits, args.split)
     print(f"Evaluiere '{args.variant}' auf {len(eval_pages)} Seiten ({args.split}-Split).")
