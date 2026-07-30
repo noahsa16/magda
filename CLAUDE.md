@@ -52,6 +52,8 @@ python scripts/03_label_words.py --only-gold            # Probelauf auf den Gold
 python scripts/06_check_duplicates.py    # Duplikate berichten (--apply entfernt sie)
 python scripts/07_flair_baseline.py --reference gold   # Flair-Vergleichsarm
 python scripts/08_compare_labels.py --per-label        # Modelle gegen Gold messen
+python scripts/09_agreement.py qwen3.5-397b-a17b mistral-medium-3.5-128b  # Modelle gegeneinander
+python scripts/03_label_words.py --model X --repair    # Span-Guard nachträglich anwenden
 uvicorn magda.api:app --reload           # Frontend-API (Port 8000)
 cd frontend && npm run dev               # Frontend-Dev-Server (proxied /api)
 cd frontend && npm test                  # Frontend-Tests (Vitest)
@@ -227,6 +229,24 @@ Skripte immer aus dem Projektroot starten – sie hängen den Root selbst an
   HTTP-Fehler an, antwortet aber „Ich kann das Bild nicht sehen". Wer nur auf
   400 prüft, labelt damit einen halben Korpus blind. Die geprüfte Liste steht
   in `config.VISION_MODELS`.
+- **Was mechanisch entscheidbar ist, gehört in Code statt in den Prompt.**
+  `labeling.trim_spans()` erzwingt drei Grenzen, die der Prompt jahrelang nur
+  hätte erbitten können: kein Span enthält „oder", die Grundpreis-Klammer
+  beendet jeden Nicht-UNIT_PRICE-Span, und ein numerisches Label ohne Ziffer
+  fällt weg. Gemessen über 196 Seiten: 179 und 322 Verstöße vorher, null
+  danach; Werbewörter von 2,4 auf 0,06 je Seite. Eine Prompt-Regel senkt die
+  Fehlerrate, ein Guard setzt sie auf null.
+- **`data/eval/` enthält nicht nur Evaluationsreports.** Dort liegen auch
+  `labels_vs_gold.json` und `agreement_*.json`. `/api/evaluation` prüft
+  deshalb die *Form* (`variant` + `report`), nicht den Dateinamen – vorher
+  reichte es alles durch und die Evaluationsseite starb an
+  `Object.entries(undefined)`.
+- **Übereinstimmung ist keine Richtigkeit.** `magda/agreement.py` misst, wo
+  sich zwei Labeling-Modelle widersprechen – über alle 196 Seiten statt über
+  die drei annotierten. Nützlich ist vor allem die Rangfolge: die uneinigsten
+  Seiten bringen pro Annotationsstunde am meisten. Aber zwei Modelle können
+  sich einig und gemeinsam irren; die Zahl ist eine Obergrenze für Vertrauen,
+  kein Ersatz für `gold/`.
 - **Sortenangaben gehören ins PRODUCT** (Teamentscheidung, 30.07.2026):
   `"Löslicher Kaffee Classic,"`, nicht `"Löslicher Kaffee"`. Gold ist an
   dieser Stelle noch uneinheitlich – auf `1342881_p1` fehlen die Sorten
