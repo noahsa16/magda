@@ -37,6 +37,19 @@ pip install -q -r requirements.txt
 pip install -q "git+https://github.com/facebookresearch/detectron2.git" \\
   || echo "WARNUNG: detectron2 fehlgeschlagen - layoutxlm wird nicht laufen."
 
+# Der teuerste denkbare Fehler: PyTorch findet die GPU nicht, trainiert
+# stillschweigend auf der CPU, und die gemietete Karte steht daneben. Lieber
+# hier abbrechen als eine Stunde spaeter ein Ergebnis haben, das nichts
+# gekostet haette.
+python - <<'PRUEFUNG' || exit 1
+import sys, torch
+if not torch.cuda.is_available():
+    sys.exit("ABBRUCH: torch.cuda.is_available() ist False. Ohne GPU zahlst du "
+             "GPU-Stunden fuer CPU-Training. Falsches Image, oder pip hat das "
+             "CUDA-Torch durch ein CPU-Rad ersetzt.")
+print(f"GPU: {torch.cuda.get_device_name(0)}, torch {torch.__version__}")
+PRUEFUNG
+
 for variante in gbert layoutxlm; do
   echo ""
   echo "########## $variante ##########"
