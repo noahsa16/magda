@@ -266,6 +266,21 @@ eine Liste auszugeben.
   dieser Stelle noch uneinheitlich – auf `1342881_p1` fehlen die Sorten
   (`"Käsescheiben"` statt `"Käsescheiben Natur,"`). Das drückt die messbare
   Obergrenze und gehört im Annotator geradegezogen.
+- **Gebindeangaben als zusammengesetztes Wort sind ungeklärt.** Gemessen über
+  alle Gold-Seiten: `50-ml-Fläschchen` ist 4× QUANTITY, `0,33-l-Dose` 6× gar
+  nicht, `1-l-Sonderedition` war 8× ohne und 3× QUANTITY. Die drei Fälle sind
+  strukturell gleich (Menge, Einheit, Gebindeart in einem Token) und werden
+  verschieden behandelt. `1-l-Sonderedition` ist auf die Mehrheit angeglichen,
+  damit Gold in sich stimmt – die Regel dahinter steht aus und ist eine
+  Teamentscheidung. Prüfen lässt sie sich mit einer Auszählung je Wortlaut,
+  nicht seitenweise: seitenweise sieht man Einzelfälle, über den Korpus den
+  Widerspruch.
+- **`magda queue` sagt, welche Gold-Seite als Nächstes drankommt.** Eine Seite
+  je Duplikat-Cluster (Jaccard 0.7), Testseiten zuerst, darin die uneinigsten.
+  Ohne die Clusterung annotiert man 30 Seiten und misst 11-mal dieselbe
+  Vorlage. Als Uneinigkeitsmass taugt nur ein Paar aus *verschiedenen*
+  Modellen – `mistral-…` gegen `mistral-…-promptv1` misst die
+  Prompt-Überarbeitung, nicht die Schwierigkeit der Seite (`review.default_pair`).
 - **Das Projekt-Env ist `.venv`, nicht die Anaconda-Basis.** `which python`
   zeigt auf Anaconda; dort fehlt `seqeval`, und Tests brechen beim Import ab.
   Immer `.venv/bin/python` benutzen.

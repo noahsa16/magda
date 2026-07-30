@@ -38,6 +38,7 @@ VERGLEICH = (
     Befehl("flair", "flair", "Fertiges deutsches NER-Modell als Vergleich (nur BRAND)"),
     Befehl("gold", "compare", "Labeling-Modelle gegen die Handannotation messen"),
     Befehl("agreement", "agreement", "Zwei Labeling-Modelle gegeneinander halten"),
+    Befehl("queue", "queue", "Welche Gold-Seiten als Nächstes durchzusehen sind"),
 )
 
 WERKZEUGE = (

@@ -103,8 +103,9 @@ cd frontend && npm test           # Frontend (Vitest)
 
 ## Offene Punkte
 
-- [ ] Vorannotation von Hand freigeben; bis dahin messen die F1-Werte
-      Konsistenz mit dem Labeling-LLM, nicht Richtigkeit
+- [ ] Vorannotation von Hand freigeben (`magda queue` nennt die nächsten
+      Seiten); bis dahin messen die F1-Werte Konsistenz mit dem Labeling-LLM,
+      nicht Richtigkeit
 - [ ] PRODUCT-Konvention schärfen: wo endet die Sorte, wo beginnt der Werbetext
 - [ ] Seiten über 512 Subwords werden abgeschnitten – Sliding Window nötig?
 - [ ] Vergleich gegen die LLM-Blackbox (`src/magda/blackbox.py`)
