@@ -53,9 +53,9 @@ PRUEFUNG
 for variante in gbert layoutxlm; do
   echo ""
   echo "########## $variante ##########"
-  python scripts/04_train.py "$variante" --labels-from {model} --epochs {epochs} \\
-    || {{ echo "$variante: Training fehlgeschlagen"; continue; }}
-  python scripts/05_evaluate.py "$variante" --split test --labels-from {model}
+  python scripts/04_train.py "$variante" --labels-from __MODEL__ --epochs __EPOCHS__ \\
+    || { echo "$variante: Training fehlgeschlagen"; continue; }
+  python scripts/05_evaluate.py "$variante" --split test --labels-from __MODEL__
 done
 
 echo ""
@@ -125,7 +125,13 @@ def build(target: Path, model: str, epochs: int = 10) -> dict:
 
         tar.add(split_file, arcname="data/splits/split.json")
 
-        script = BOOTSTRAP.format(model=model, epochs=epochs).encode()
+        # Platzhalter statt str.format: das Skript enthaelt selbst
+        # geschweifte Klammern (Shell-Blöcke, f-Strings im Pruefteil).
+        script = (
+            BOOTSTRAP.replace("__MODEL__", model)
+            .replace("__EPOCHS__", str(epochs))
+            .encode()
+        )
         info = tarfile.TarInfo("bootstrap.sh")
         info.size = len(script)
         info.mode = 0o755
