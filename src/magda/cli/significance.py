@@ -68,39 +68,39 @@ def main(argv=None):
 
     a, b = args.compare
     predictions = {name: load_predictions(name) for name in (a, b)}
-    gemeinsam = sorted(set(predictions[a]) & set(predictions[b]))
-    if not gemeinsam:
+    shared = sorted(set(predictions[a]) & set(predictions[b]))
+    if not shared:
         sys.exit(f"Keine Seiten, die in {a} und {b} beide vorliegen.")
 
     reference = []
-    for pid in gemeinsam:
+    for pid in shared:
         path = labeled_dir(args.labels_from) / f"{pid}.json"
         if not path.exists():
             sys.exit(f"Referenz fehlt: {path}")
         reference.append(json.loads(path.read_text())["tags"])
 
-    clusters = test_clusters(gemeinsam)
-    print(f"{len(gemeinsam)} Seiten in {len(clusters)} Clustern "
+    clusters = test_clusters(shared)
+    print(f"{len(shared)} Seiten in {len(clusters)} Clustern "
           f"(Jaccard {CLUSTER_THRESHOLD}), {args.resamples} Resamples.\n")
 
-    ergebnis = {}
+    result = {}
     for name in (a, b):
-        tags = [predictions[name][pid] for pid in gemeinsam]
-        ergebnis[name] = bootstrap_f1(reference, tags, clusters, args.resamples)
-        r = ergebnis[name]
+        tags = [predictions[name][pid] for pid in shared]
+        result[name] = bootstrap_f1(reference, tags, clusters, args.resamples)
+        r = result[name]
         print(f"{name:<12} F1 {r['f1']:.4f}  95%-KI [{r['ci95'][0]:.4f}, {r['ci95'][1]:.4f}]")
 
-    vergleich = paired_bootstrap(
+    comparison = paired_bootstrap(
         reference,
-        [predictions[a][pid] for pid in gemeinsam],
-        [predictions[b][pid] for pid in gemeinsam],
+        [predictions[a][pid] for pid in shared],
+        [predictions[b][pid] for pid in shared],
         clusters,
         args.resamples,
     )
-    print(f"\n{a} − {b}: {vergleich['difference']:+.4f}  "
-          f"95%-KI [{vergleich['ci95'][0]:+.4f}, {vergleich['ci95'][1]:+.4f}]  "
-          f"p = {vergleich['p_value']:.4f}")
-    if vergleich["significant"]:
+    print(f"\n{a} − {b}: {comparison['difference']:+.4f}  "
+          f"95%-KI [{comparison['ci95'][0]:+.4f}, {comparison['ci95'][1]:+.4f}]  "
+          f"p = {comparison['p_value']:.4f}")
+    if comparison["significant"]:
         print(f"Der Unterschied ist mit diesen Daten belegbar.")
     else:
         print("Das Intervall überdeckt die Null: mit diesen Daten ist kein "
@@ -113,11 +113,11 @@ def main(argv=None):
             {
                 "created": datetime.now().isoformat(timespec="seconds"),
                 "labels_from": args.labels_from,
-                "pages": len(gemeinsam),
+                "pages": len(shared),
                 "clusters": len(clusters),
                 "cluster_threshold": CLUSTER_THRESHOLD,
-                "per_model": ergebnis,
-                "paired": vergleich,
+                "per_model": result,
+                "paired": comparison,
             },
             f,
             ensure_ascii=False,

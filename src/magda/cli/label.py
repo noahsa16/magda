@@ -28,7 +28,7 @@ from magda.config import (
     labeled_dir,
     make_llm_client,
 )
-from magda.labeling import label_page_with_retry, trim_spans
+from magda.labeling import apply_app_price_rule, label_page_with_retry, trim_spans
 from magda.labels import bio_to_spans, spans_to_bio
 
 
@@ -45,7 +45,7 @@ def repair(model: str):
     if not files:
         sys.exit(f"Keine Labels in {directory}.")
 
-    changed = removed_spans = 0
+    changed = removed_spans = relabelled = 0
     for path in tqdm(files, desc="Guard anwenden", unit="Seite"):
         with open(path) as f:
             page = json.load(f)
@@ -55,10 +55,16 @@ def repair(model: str):
 
         spans = bio_to_spans(tags)
         cleaned = trim_spans(spans, page["words"])
-        if cleaned == spans:
+        # Nach dem Kürzen, nicht davor: die Regel prüft das Wort *hinter* dem
+        # Span auf die Fußnote, und trim_spans verschiebt genau dieses Ende.
+        final = apply_app_price_rule(cleaned, page["words"])
+        if final == spans:
             continue
 
-        page["tags"] = spans_to_bio(len(page["words"]), cleaned)
+        relabelled += sum(
+            1 for a, b in zip(cleaned, final) if a["label"] != b["label"]
+        )
+        page["tags"] = spans_to_bio(len(page["words"]), final)
         removed_spans += len(spans) - len(cleaned)
         changed += 1
         tmp = directory / f".{path.name}.tmp"
@@ -66,7 +72,8 @@ def repair(model: str):
             json.dump(page, f, ensure_ascii=False)
         tmp.replace(path)
 
-    print(f"\n{changed} von {len(files)} Seiten angepasst, {removed_spans} Spans entfernt.")
+    print(f"\n{changed} von {len(files)} Seiten angepasst, {removed_spans} Spans "
+          f"entfernt, {relabelled} Preise als APP_PRICE umgewidmet.")
 
 
 def main(argv=None):

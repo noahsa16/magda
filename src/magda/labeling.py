@@ -292,6 +292,87 @@ def _is_unsupported_param(exc: Exception) -> bool:
 _NUMERIC_LABELS = {"PRICE", "OLD_PRICE", "DISCOUNT", "QUANTITY", "UNIT_PRICE"}
 
 
+# Die Fußnote, die einen Preis zum App-Preis macht, trägt je Seite eine andere
+# Ziffer. Gemessen über 296 Seiten: 33 Seiten benutzen "1", 33 benutzen "2",
+# 11 beide, eine "2,3". Eine feste Ziffer wäre auf mindestens einem Drittel der
+# Seiten falsch – und der Fehler bliebe unsichtbar, weil die Zahlen danach
+# besser aussehen.
+_FOOTNOTE_MARKER = re.compile(r"^[123](?:,[123])*$")
+_APP_LEGEND = "Nur für registrierte"
+_PRICE = re.compile(r"^\d+[.,]\d{2}$")
+
+
+def app_footnote_markers(words: list[dict]) -> set[str]:
+    """Welche Fußnotenziffern markieren auf *dieser* Seite den App-Preis?
+
+    Gelesen aus der Legende im Kleingedruckten („1,2 Nur für registrierte PENNY
+    App Nutzer."). Steht sie nicht auf der Seite, ist die Menge leer und der
+    Aufrufer ändert nichts – katalogweit lässt sie sich nicht übertragen, 11
+    der 52 Kataloge benutzen auf verschiedenen Seiten verschiedene Ziffern.
+    """
+    text = [w["text"] for w in words]
+    markers: set[str] = set()
+    for i, word in enumerate(text):
+        if _FOOTNOTE_MARKER.match(word) and " ".join(text[i + 1:i + 4]).startswith(
+            _APP_LEGEND
+        ):
+            markers.update(word.split(","))
+    return markers
+
+
+def apply_app_price_rule(spans: list[dict], words: list[dict]) -> list[dict]:
+    """Preise, die als App-Preis ausgewiesen sind, auch so labeln.
+
+    Penny schreibt den App-Preis in zwei Formen: mit dem Text „mit PENNY App"
+    daneben oder nur mit einer Fußnote dahinter. Das Vision-LLM labelt fast nur
+    die Textvariante – gemessen ist das Muster `<preis> <fußnote>` 1× als
+    APP_PRICE und 60× als O vergeben. Das Modell lernt diese Lücke mit und
+    erreicht APP_PRICE-Recall 0.133 bei Precision 1.000: Es findet jeden
+    App-Preis und nennt ihn PRICE.
+
+    Drei Stufen, und die dritte ist die wichtige:
+
+    1. Fußnote gegen die Legende *dieser* Seite (`app_footnote_markers`).
+    2. „mit PENNY App" davor – und ausdrücklich das Gegenstück „ohne PENNY
+       App", das einen Preis vor der Umwidmung schützt. Wer nur nach „App" in
+       der Nähe sucht, dreht den Normalpreis zum App-Preis.
+    3. Sonst nichts ändern. Eine Regel, die dort schweigt, wo sie es nicht
+       weiß, kann die Referenz nur verbessern.
+
+    Achtung: Das ändert die Referenzdefinition. Zahlen von vor und nach dem
+    Repair-Lauf sind nur mit Angabe des Labelstands vergleichbar.
+    """
+    markers = app_footnote_markers(words)
+    text = [w["text"] for w in words]
+    result = []
+
+    for span in spans:
+        start, end = span.get("start"), span.get("end")
+        if span.get("label") != "PRICE" or not isinstance(start, int) or not isinstance(
+            end, int
+        ):
+            result.append(span)
+            continue
+
+        before = " ".join(text[max(0, start - 3):start])
+        if "ohne PENNY App" in before:
+            result.append(span)
+            continue
+
+        marker_follows = (
+            markers
+            and end < len(text)
+            and text[end] in markers
+            and _PRICE.match(text[end - 1] if end - 1 < len(text) else "")
+        )
+        if marker_follows or "mit PENNY App" in before:
+            result.append({**span, "label": "APP_PRICE"})
+        else:
+            result.append(span)
+
+    return result
+
+
 def trim_spans(spans: list[dict], words: list[dict]) -> list[dict]:
     """Kürzt Spans an Grenzen, die keine Entität überschreiten darf.
 

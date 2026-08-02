@@ -125,7 +125,7 @@ def main(argv=None):
         for i, page in enumerate(eval_pages)
     ]
     plain_tags = [as_tags(t) for t in plain_raw]
-    fehlend = sum(t.count(None) for t in plain_raw)
+    missing_words = sum(t.count(None) for t in plain_raw)
 
     # --- Protokoll 2: überlappende Fenster ---------------------------------
     window_ds = WindowDataset(eval_pages, tokenizer, MAX_SEQ_LENGTH, WINDOW_STRIDE, layout)
@@ -142,7 +142,7 @@ def main(argv=None):
 
     print(f"\n{len(window_ds)} Fenster über {len(eval_pages)} Seiten "
           f"(Überlappung {WINDOW_STRIDE}). Ohne Fenster hätten "
-          f"{fehlend} Wörter keine Vorhersage.")
+          f"{missing_words} Wörter keine Vorhersage.")
 
     # Vier Schemata nach SemEval-2013 Task 9.1: seqeval wertet strikt, und ein
     # verschobener Sortenzusatz zählt dort als doppelter Fehler, obwohl er den
@@ -154,7 +154,7 @@ def main(argv=None):
 
     print("\n########## Matching-Schemata (SemEval-2013 Task 9.1) ##########")
     print(f"  {'Schema':<9}{'P':>8}{'R':>8}{'F1':>8}   Kriterium")
-    kriterien = {
+    criteria = {
         "strict": "Grenze und Typ exakt (= seqeval, Anschlusszahl)",
         "exact": "Grenze exakt, Typ ignoriert",
         "partial": "Überlappung, Teiltreffer zählt 0.5 (MUC)",
@@ -163,7 +163,7 @@ def main(argv=None):
     for scheme in matching.SCHEMES:
         s = schemes[scheme]
         print(f"  {scheme:<9}{s['precision']:>8.3f}{s['recall']:>8.3f}{s['f1']:>8.3f}"
-              f"   {kriterien[scheme]}")
+              f"   {criteria[scheme]}")
     s = schemes["strict"]
     print(f"\n  Davon Grenzfehler (richtiger Typ, Span daneben): "
           f"{schemes['type']['correct'] - s['correct']}")
@@ -191,7 +191,7 @@ def main(argv=None):
                     ref_spans, win_spans, scheme="type"
                 ),
                 "window_stride": WINDOW_STRIDE,
-                "words_without_prediction_unwindowed": fehlend,
+                "words_without_prediction_unwindowed": missing_words,
                 # `report` bleibt die windowed-Zahl: das Frontend liest dieses
                 # Feld, und dort soll die Primärmetrik stehen.
                 "report": word_level_report_dict(reference, windowed_tags),

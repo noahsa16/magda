@@ -99,57 +99,57 @@ def count_page(reference: list[dict], predicted: list[dict]) -> dict[str, Counts
     """
     counts = {scheme: Counts() for scheme in SCHEMES}
 
-    offen_ref = list(reference)
-    offen_pred = list(predicted)
-    paare: list[tuple[dict, dict]] = []
+    open_ref = list(reference)
+    open_pred = list(predicted)
+    pairs: list[tuple[dict, dict]] = []
 
-    for exakt in (True, False):
-        rest_ref, genommen = [], set()
-        for r in offen_ref:
-            partner = None
-            for i, p in enumerate(offen_pred):
-                if i in genommen:
+    for exact_pass in (True, False):
+        unmatched_ref, used = [], set()
+        for r in open_ref:
+            match = None
+            for i, p in enumerate(open_pred):
+                if i in used:
                     continue
-                if _same_span(r, p) if exakt else _overlaps(r, p):
-                    partner = (i, p)
+                if _same_span(r, p) if exact_pass else _overlaps(r, p):
+                    match = (i, p)
                     break
-            if partner is None:
-                rest_ref.append(r)
+            if match is None:
+                unmatched_ref.append(r)
             else:
-                genommen.add(partner[0])
-                paare.append((r, partner[1]))
-        offen_ref = rest_ref
-        offen_pred = [p for i, p in enumerate(offen_pred) if i not in genommen]
+                used.add(match[0])
+                pairs.append((r, match[1]))
+        open_ref = unmatched_ref
+        open_pred = [p for i, p in enumerate(open_pred) if i not in used]
 
-    for r, p in paare:
-        gleicher_span = _same_span(r, p)
-        gleicher_typ = r["label"] == p["label"]
+    for r, p in pairs:
+        same_span = _same_span(r, p)
+        same_type = r["label"] == p["label"]
 
-        if gleicher_span and gleicher_typ:
+        if same_span and same_type:
             counts["strict"].correct += 1
-        elif gleicher_span:
+        elif same_span:
             counts["strict"].incorrect += 1
         else:
             counts["strict"].incorrect += 1
 
-        if gleicher_span:
+        if same_span:
             counts["exact"].correct += 1
         else:
             counts["exact"].incorrect += 1
 
-        if gleicher_span:
+        if same_span:
             counts["partial"].correct += 1
         else:
             counts["partial"].partial += 1
 
-        if gleicher_typ:
+        if same_type:
             counts["type"].correct += 1
         else:
             counts["type"].incorrect += 1
 
     for scheme in SCHEMES:
-        counts[scheme].missing += len(offen_ref)
-        counts[scheme].spurious += len(offen_pred)
+        counts[scheme].missing += len(open_ref)
+        counts[scheme].spurious += len(open_pred)
     return counts
 
 
@@ -161,17 +161,17 @@ def evaluate(
     `reference` und `predicted` sind je Seite eine Span-Liste
     (`{"start", "end", "label"}`), wie `labels.bio_to_spans` sie liefert.
     """
-    gesamt = {scheme: Counts() for scheme in SCHEMES}
+    totals = {scheme: Counts() for scheme in SCHEMES}
     for ref_page, pred_page in zip(reference, predicted):
-        seite = count_page(ref_page, pred_page)
+        page_counts = count_page(ref_page, pred_page)
         for scheme in SCHEMES:
-            c, s = gesamt[scheme], seite[scheme]
+            c, s = totals[scheme], page_counts[scheme]
             c.correct += s.correct
             c.incorrect += s.incorrect
             c.partial += s.partial
             c.missing += s.missing
             c.spurious += s.spurious
-    return {scheme: gesamt[scheme].scores() for scheme in SCHEMES}
+    return {scheme: totals[scheme].scores() for scheme in SCHEMES}
 
 
 def evaluate_per_label(
@@ -184,9 +184,9 @@ def evaluate_per_label(
     Fehler zweimal auf und die Summe der Labels wiche vom Gesamtwert ab.
     """
     labels = {s["label"] for page in reference for s in page}
-    ergebnis = {}
+    result = {}
     for label in sorted(labels):
         ref = [[s for s in page if s["label"] == label] for page in reference]
         pred = [[s for s in page if s["label"] == label] for page in predicted]
-        ergebnis[label] = evaluate(ref, pred)[scheme]
-    return ergebnis
+        result[label] = evaluate(ref, pred)[scheme]
+    return result

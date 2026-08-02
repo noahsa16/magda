@@ -135,3 +135,76 @@ def test_parse_fehler_wird_nicht_wiederholt(monkeypatch):
     with pytest.raises(ValueError):
         labeling.label_page_with_retry([], b"", None, "m")
     assert len(calls) == 1
+
+
+# --- App-Preis-Regel -------------------------------------------------------
+#
+# Der App-Preis steht mal als Text ("mit PENNY App 0.77"), mal nur als Fußnote
+# hinter der Zahl. Welche Ziffer die Fußnote ist, wechselt je Seite: gemessen
+# 33 Seiten mit "1", 33 mit "2", 11 mit beiden.
+
+def _worte(*texte):
+    return [{"text": t, "bbox": [0, 0, 1, 1]} for t in texte]
+
+
+LEGENDE = ("2", "Nur", "für", "registrierte", "PENNY", "App", "Nutzer.")
+
+
+def test_liest_die_fussnotenziffer_aus_der_legende_der_seite():
+    assert labeling.app_footnote_markers(_worte(*LEGENDE)) == {"2"}
+    assert labeling.app_footnote_markers(
+        _worte("1,2", "Nur", "für", "registrierte", "PENNY", "App")
+    ) == {"1", "2"}
+
+
+def test_ohne_legende_keine_marker():
+    """Katalogweit uebertragbar ist sie nicht - 11 von 52 Katalogen mischen."""
+    assert labeling.app_footnote_markers(_worte("1.49", "2", "Aktion")) == set()
+
+
+def test_preis_mit_app_fussnote_wird_app_price():
+    words = _worte("Aktion", "1.69", "1.49", "2", *LEGENDE)
+    spans = [{"start": 2, "end": 3, "label": "PRICE"}]
+
+    ergebnis = labeling.apply_app_price_rule(spans, words)
+
+    assert ergebnis[0]["label"] == "APP_PRICE"
+
+
+def test_falsche_fussnotenziffer_aendert_nichts():
+    """Auf dieser Seite ist "2" der Marker - eine "1" dahinter ist etwas anderes."""
+    words = _worte("Aktion", "1.69", "1.49", "1", *LEGENDE)
+    spans = [{"start": 2, "end": 3, "label": "PRICE"}]
+
+    assert labeling.apply_app_price_rule(spans, words)[0]["label"] == "PRICE"
+
+
+def test_ohne_penny_app_schuetzt_den_normalpreis():
+    """Der Textlayer enthaelt beides. Wer nur nach "App" sucht, dreht ihn um."""
+    words = _worte("ohne", "PENNY", "App", "1.99", "2", *LEGENDE)
+    spans = [{"start": 3, "end": 4, "label": "PRICE"}]
+
+    assert labeling.apply_app_price_rule(spans, words)[0]["label"] == "PRICE"
+
+
+def test_mit_penny_app_reicht_ohne_fussnote():
+    words = _worte("mit", "PENNY", "App", "0.77")
+    spans = [{"start": 3, "end": 4, "label": "PRICE"}]
+
+    assert labeling.apply_app_price_rule(spans, words)[0]["label"] == "APP_PRICE"
+
+
+def test_ohne_legende_und_ohne_text_bleibt_alles_unveraendert():
+    """Stufe 3: wo die Regel es nicht weiss, schweigt sie."""
+    words = _worte("Aktion", "1.69", "1.49", "2")
+    spans = [{"start": 2, "end": 3, "label": "PRICE"}]
+
+    assert labeling.apply_app_price_rule(spans, words) == spans
+
+
+def test_andere_label_fasst_die_regel_nicht_an():
+    words = _worte("1.69", "2", *LEGENDE)
+    spans = [{"start": 0, "end": 1, "label": "OLD_PRICE"},
+             {"start": 0, "end": 1, "label": "PRODUCT"}]
+
+    assert labeling.apply_app_price_rule(spans, words) == spans
