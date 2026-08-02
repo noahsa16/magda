@@ -463,11 +463,55 @@ eine Liste auszugeben.
 
 ## Offene Entscheidungen (nicht eigenmächtig festlegen)
 
-- **APP_PRICE-Regel: Badge-Variante mitlabeln?** Gemessen ist der Fall (siehe
-  „Konsistenzgrenze" oben): `<preis>` plus Fußnote „2" ist 1× als APP_PRICE und
-  60× als O gelabelt. Mechanisch entscheidbar und damit ein Kandidat für
-  `labeling.trim_spans()` plus Repair-Pass – aber es ändert die
-  Referenzdefinition und ist deshalb Teamsache. Größter bekannter Hebel.
+- **APP_PRICE-Regel: Badge-Variante mitlabeln?** *Größter bekannter Hebel,
+  Stand 02.08.2026.* Penny schreibt den App-Preis in zwei Formen: mit dem Text
+  „mit PENNY App" daneben, oder nur mit der hochgestellten Fußnote „2" hinter
+  der Zahl. Gemessen über die Testwoche ist das Muster `<preis> 2` **1× als
+  APP_PRICE und 60× als O** gelabelt – sonnet-5 kennt praktisch nur die
+  Textvariante, und das Modell hat genau das gelernt (Precision 1.000, Recall
+  0.133, **null reine Falsch-Negative**: es findet jeden App-Preis und nennt
+  ihn nur PRICE oder OLD_PRICE).
+
+  Warum das so viel bringt: Der Fehler zählt doppelt. Er drückt APP_PRICE auf
+  F1 0.234 *und* PRICE auf Precision 0.766 – von rund 263 PRICE-Falsch-Positiven
+  sind 74 Referenz-APP_PRICEs und mindestens 60 die ungelabelten Badge-Preise.
+  Die Metrik bestraft dort Vorhersagen, die richtiger sind als die Referenz.
+  Erwartbar: APP_PRICE deutlich über 0.8, PRICE-Precision Richtung 0.9,
+  micro-F1 grob +2 Punkte.
+
+  **Die naheliegende Regel „Preis plus 2 ist ein App-Preis" reicht nicht.**
+  Ausgezählt über alle 296 Seiten stehen hinter einem Preis: 101× eine „1",
+  113× eine „2", 27× eine „3". Die Ziffer allein trägt also nichts – „1" ist
+  fast genauso häufig. Was trägt, ist die Kombination mit der Seite: von den
+  113 „2" stehen **99 auf Seiten, die „App" erwähnen** (88 %), bei „1" sind es
+  nur 67 von 101 (66 %). Die Fußnotenlegende steht im Kleingedruckten, die
+  Ziffer verweist also seitenweise auf verschiedene Bedeutungen.
+
+  Belegte Kontexte – die Zahl *vor* der Fußnote ist der reduzierte Preis:
+  ```
+  1-kg-Beutel Aktion 1.69 → 1.49 ²      (1342812_p3)
+  0.44 UVP 0.79 → 0.39 ² -50% MÜLLER    (1342821_p11)
+  9.49 UVP 17.99 → 8.49 ² -52% HASSERÖDER
+  ```
+
+  Umsetzung, wenn das Team zustimmt (ein Nachmittag, GBERT trainiert in 96 s):
+  1. Regel in `labeling.py`: Preis-Span mit folgender alleinstehender „2"
+     **und** „App" auf derselben Seite wird APP_PRICE. Gehört zu `trim_spans()`,
+     weil mechanisch entscheidbar – „Was mechanisch entscheidbar ist, gehört in
+     Code statt in den Prompt." Sauberer wäre, die Fußnotenlegende der Seite
+     auszulesen statt die Seitenbedingung als Näherung zu nehmen; das ist mehr
+     Arbeit und sollte vorher an den 14 Gegenbeispielen geprüft werden
+     („2" hinter Preis, aber kein „App" auf der Seite).
+  2. `magda label --model sonnet-5 --repair` über die bestehenden Labels, statt
+     neu zu labeln – die Maschinerie dafür existiert.
+  3. `magda train gbert --labels-from sonnet-5`, `magda eval`, `magda predict`,
+     dann `magda significance` gegen den alten Stand.
+
+  Vorsicht: Das ändert die **Referenzdefinition**, also auch alle Zahlen davor.
+  Alte und neue Werte sind nur mit Angabe des Labelstands vergleichbar. Und die
+  Regel ist eine Heuristik, keine Ableitung – wer sie einbaut, zählt hinterher
+  aus, wie viele Spans sie umgewidmet hat, so wie es `trim_spans()` für seine
+  drei Grenzen dokumentiert.
 - **Sortenangaben und Gebinde-Komposita** (`50-ml-Fläschchen`, `0,33-l-Dose`,
   `1-l-Sonderedition`): unverändert offen, und mit 106 von 135 PRODUCT-Fehlern
   jetzt beziffert. Prüfen per Auszählung je Wortlaut über den Korpus, nicht
