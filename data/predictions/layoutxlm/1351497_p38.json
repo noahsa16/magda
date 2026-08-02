@@ -1,0 +1,3177 @@
+{
+  "page_id": "1351497_p38",
+  "catalog_id": "1351497",
+  "page": 38,
+  "width": 476.22,
+  "height": 841.89,
+  "model": "layoutxlm",
+  "labels_from": "sonnet-5",
+  "created": "2026-08-02T20:18:21",
+  "num_words": 194,
+  "num_words_predicted": 194,
+  "truncated": false,
+  "words": [
+    {
+      "i": 0,
+      "text": "-50%",
+      "bbox": [
+        26.93,
+        51.27,
+        219.36,
+        153.92
+      ],
+      "label": "O",
+      "confidence": 0.9973
+    },
+    {
+      "i": 1,
+      "text": "sparen…",
+      "bbox": [
+        26.93,
+        141.36,
+        104.83,
+        168.24
+      ],
+      "label": "O",
+      "confidence": 0.9987
+    },
+    {
+      "i": 2,
+      "text": "Bis",
+      "bbox": [
+        26.93,
+        45.42,
+        50.71,
+        66.51
+      ],
+      "label": "O",
+      "confidence": 0.9992
+    },
+    {
+      "i": 3,
+      "text": "zu",
+      "bbox": [
+        54.21,
+        45.42,
+        72.95,
+        66.51
+      ],
+      "label": "O",
+      "confidence": 0.9992
+    },
+    {
+      "i": 4,
+      "text": "%",
+      "bbox": [
+        52.91,
+        6.89,
+        68.2,
+        27.93
+      ],
+      "label": "O",
+      "confidence": 0.9992
+    },
+    {
+      "i": 5,
+      "text": "%",
+      "bbox": [
+        377.54,
+        5.0,
+        392.83,
+        26.04
+      ],
+      "label": "O",
+      "confidence": 0.999
+    },
+    {
+      "i": 6,
+      "text": "%",
+      "bbox": [
+        406.95,
+        19.02,
+        416.81,
+        32.6
+      ],
+      "label": "O",
+      "confidence": 0.999
+    },
+    {
+      "i": 7,
+      "text": "%",
+      "bbox": [
+        81.09,
+        17.3,
+        90.95,
+        30.87
+      ],
+      "label": "O",
+      "confidence": 0.9991
+    },
+    {
+      "i": 8,
+      "text": "%",
+      "bbox": [
+        432.52,
+        3.33,
+        456.41,
+        36.2
+      ],
+      "label": "O",
+      "confidence": 0.9989
+    },
+    {
+      "i": 9,
+      "text": "-15%",
+      "bbox": [
+        117.66,
+        536.92,
+        154.94,
+        556.47
+      ],
+      "label": "B-DISCOUNT",
+      "confidence": 0.9971
+    },
+    {
+      "i": 10,
+      "text": "2.79",
+      "bbox": [
+        99.16,
+        564.7,
+        143.67,
+        591.58
+      ],
+      "label": "B-PRICE",
+      "confidence": 0.9953
+    },
+    {
+      "i": 11,
+      "text": "UVP",
+      "bbox": [
+        106.35,
+        588.86,
+        119.97,
+        598.02
+      ],
+      "label": "O",
+      "confidence": 0.9991
+    },
+    {
+      "i": 12,
+      "text": "3.29",
+      "bbox": [
+        121.32,
+        588.86,
+        136.49,
+        598.02
+      ],
+      "label": "B-OLD_PRICE",
+      "confidence": 0.9973
+    },
+    {
+      "i": 13,
+      "text": "FERRERO",
+      "bbox": [
+        17.01,
+        569.82,
+        46.06,
+        578.85
+      ],
+      "label": "B-BRAND",
+      "confidence": 0.9981
+    },
+    {
+      "i": 14,
+      "text": "Hanuta",
+      "bbox": [
+        17.01,
+        577.32,
+        40.94,
+        586.35
+      ],
+      "label": "B-PRODUCT",
+      "confidence": 0.9962
+    },
+    {
+      "i": 15,
+      "text": "Minis*",
+      "bbox": [
+        42.14,
+        577.32,
+        63.49,
+        586.35
+      ],
+      "label": "I-PRODUCT",
+      "confidence": 0.9983
+    },
+    {
+      "i": 16,
+      "text": "je",
+      "bbox": [
+        17.01,
+        584.89,
+        23.17,
+        593.82
+      ],
+      "label": "O",
+      "confidence": 0.999
+    },
+    {
+      "i": 17,
+      "text": "200",
+      "bbox": [
+        24.67,
+        584.89,
+        37.27,
+        593.82
+      ],
+      "label": "B-QUANTITY",
+      "confidence": 0.9986
+    },
+    {
+      "i": 18,
+      "text": "g",
+      "bbox": [
+        38.77,
+        584.89,
+        43.05,
+        593.82
+      ],
+      "label": "I-QUANTITY",
+      "confidence": 0.9986
+    },
+    {
+      "i": 19,
+      "text": "(1",
+      "bbox": [
+        17.01,
+        592.39,
+        23.91,
+        601.32
+      ],
+      "label": "B-UNIT_PRICE",
+      "confidence": 0.9985
+    },
+    {
+      "i": 20,
+      "text": "kg",
+      "bbox": [
+        25.41,
+        592.39,
+        33.46,
+        601.32
+      ],
+      "label": "I-UNIT_PRICE",
+      "confidence": 0.9992
+    },
+    {
+      "i": 21,
+      "text": "=",
+      "bbox": [
+        34.96,
+        592.39,
+        39.16,
+        601.32
+      ],
+      "label": "I-UNIT_PRICE",
+      "confidence": 0.9992
+    },
+    {
+      "i": 22,
+      "text": "13.95)",
+      "bbox": [
+        40.66,
+        592.39,
+        62.22,
+        601.32
+      ],
+      "label": "I-UNIT_PRICE",
+      "confidence": 0.9992
+    },
+    {
+      "i": 23,
+      "text": "-14%",
+      "bbox": [
+        420.02,
+        344.17,
+        457.3,
+        363.72
+      ],
+      "label": "B-DISCOUNT",
+      "confidence": 0.997
+    },
+    {
+      "i": 24,
+      "text": "3.99",
+      "bbox": [
+        401.53,
+        371.94,
+        446.03,
+        398.83
+      ],
+      "label": "B-PRICE",
+      "confidence": 0.9957
+    },
+    {
+      "i": 25,
+      "text": "UVP",
+      "bbox": [
+        408.71,
+        396.1,
+        422.33,
+        405.27
+      ],
+      "label": "O",
+      "confidence": 0.9988
+    },
+    {
+      "i": 26,
+      "text": "4.69",
+      "bbox": [
+        423.68,
+        396.1,
+        438.85,
+        405.27
+      ],
+      "label": "B-OLD_PRICE",
+      "confidence": 0.9973
+    },
+    {
+      "i": 27,
+      "text": "STORCK",
+      "bbox": [
+        243.78,
+        377.06,
+        267.89,
+        386.1
+      ],
+      "label": "B-BRAND",
+      "confidence": 0.9977
+    },
+    {
+      "i": 28,
+      "text": "Toffifee",
+      "bbox": [
+        243.78,
+        384.56,
+        268.87,
+        393.6
+      ],
+      "label": "B-PRODUCT",
+      "confidence": 0.998
+    },
+    {
+      "i": 29,
+      "text": "Maxi-Pack*",
+      "bbox": [
+        270.07,
+        384.56,
+        307.72,
+        393.6
+      ],
+      "label": "I-PRODUCT",
+      "confidence": 0.9978
+    },
+    {
+      "i": 30,
+      "text": "je",
+      "bbox": [
+        243.78,
+        392.14,
+        249.94,
+        401.07
+      ],
+      "label": "O",
+      "confidence": 0.9988
+    },
+    {
+      "i": 31,
+      "text": "400",
+      "bbox": [
+        251.44,
+        392.14,
+        264.04,
+        401.07
+      ],
+      "label": "B-QUANTITY",
+      "confidence": 0.9986
+    },
+    {
+      "i": 32,
+      "text": "g",
+      "bbox": [
+        265.54,
+        392.14,
+        269.82,
+        401.07
+      ],
+      "label": "I-QUANTITY",
+      "confidence": 0.9986
+    },
+    {
+      "i": 33,
+      "text": "(1",
+      "bbox": [
+        243.78,
+        399.64,
+        250.68,
+        408.57
+      ],
+      "label": "B-UNIT_PRICE",
+      "confidence": 0.9985
+    },
+    {
+      "i": 34,
+      "text": "kg",
+      "bbox": [
+        252.18,
+        399.64,
+        260.23,
+        408.57
+      ],
+      "label": "I-UNIT_PRICE",
+      "confidence": 0.9992
+    },
+    {
+      "i": 35,
+      "text": "=",
+      "bbox": [
+        261.73,
+        399.64,
+        265.93,
+        408.57
+      ],
+      "label": "I-UNIT_PRICE",
+      "confidence": 0.9992
+    },
+    {
+      "i": 36,
+      "text": "9.98)",
+      "bbox": [
+        267.43,
+        399.64,
+        284.79,
+        408.57
+      ],
+      "label": "I-UNIT_PRICE",
+      "confidence": 0.9991
+    },
+    {
+      "i": 37,
+      "text": "-16%",
+      "bbox": [
+        268.84,
+        536.92,
+        306.12,
+        556.47
+      ],
+      "label": "B-DISCOUNT",
+      "confidence": 0.997
+    },
+    {
+      "i": 38,
+      "text": "2.99",
+      "bbox": [
+        250.35,
+        564.7,
+        294.85,
+        591.58
+      ],
+      "label": "B-PRICE",
+      "confidence": 0.9956
+    },
+    {
+      "i": 39,
+      "text": "UVP",
+      "bbox": [
+        257.53,
+        588.86,
+        271.15,
+        598.02
+      ],
+      "label": "O",
+      "confidence": 0.999
+    },
+    {
+      "i": 40,
+      "text": "3.59",
+      "bbox": [
+        272.5,
+        588.86,
+        287.67,
+        598.02
+      ],
+      "label": "B-OLD_PRICE",
+      "confidence": 0.9973
+    },
+    {
+      "i": 41,
+      "text": "FERRERO",
+      "bbox": [
+        168.19,
+        569.82,
+        197.24,
+        578.85
+      ],
+      "label": "B-BRAND",
+      "confidence": 0.9982
+    },
+    {
+      "i": 42,
+      "text": "Nutella",
+      "bbox": [
+        168.19,
+        577.32,
+        192.34,
+        586.35
+      ],
+      "label": "B-PRODUCT",
+      "confidence": 0.997
+    },
+    {
+      "i": 43,
+      "text": "B-ready*",
+      "bbox": [
+        193.54,
+        577.32,
+        222.98,
+        586.35
+      ],
+      "label": "I-PRODUCT",
+      "confidence": 0.9982
+    },
+    {
+      "i": 44,
+      "text": "je",
+      "bbox": [
+        168.19,
+        584.89,
+        174.35,
+        593.82
+      ],
+      "label": "O",
+      "confidence": 0.9988
+    },
+    {
+      "i": 45,
+      "text": "220",
+      "bbox": [
+        175.85,
+        584.89,
+        188.45,
+        593.82
+      ],
+      "label": "B-QUANTITY",
+      "confidence": 0.9987
+    },
+    {
+      "i": 46,
+      "text": "g",
+      "bbox": [
+        189.95,
+        584.89,
+        194.23,
+        593.82
+      ],
+      "label": "I-QUANTITY",
+      "confidence": 0.9986
+    },
+    {
+      "i": 47,
+      "text": "(1",
+      "bbox": [
+        168.19,
+        592.39,
+        175.09,
+        601.32
+      ],
+      "label": "B-UNIT_PRICE",
+      "confidence": 0.9985
+    },
+    {
+      "i": 48,
+      "text": "kg",
+      "bbox": [
+        176.59,
+        592.39,
+        184.64,
+        601.32
+      ],
+      "label": "I-UNIT_PRICE",
+      "confidence": 0.9992
+    },
+    {
+      "i": 49,
+      "text": "=",
+      "bbox": [
+        186.14,
+        592.39,
+        190.34,
+        601.32
+      ],
+      "label": "I-UNIT_PRICE",
+      "confidence": 0.9992
+    },
+    {
+      "i": 50,
+      "text": "13.59)",
+      "bbox": [
+        191.84,
+        592.39,
+        213.4,
+        601.32
+      ],
+      "label": "I-UNIT_PRICE",
+      "confidence": 0.9992
+    },
+    {
+      "i": 51,
+      "text": "-50%",
+      "bbox": [
+        420.02,
+        151.41,
+        457.3,
+        170.96
+      ],
+      "label": "B-DISCOUNT",
+      "confidence": 0.9973
+    },
+    {
+      "i": 52,
+      "text": "2.99",
+      "bbox": [
+        401.53,
+        179.19,
+        446.03,
+        206.07
+      ],
+      "label": "B-PRICE",
+      "confidence": 0.9957
+    },
+    {
+      "i": 53,
+      "text": "UVP",
+      "bbox": [
+        408.71,
+        203.35,
+        422.33,
+        212.51
+      ],
+      "label": "O",
+      "confidence": 0.9989
+    },
+    {
+      "i": 54,
+      "text": "5.99",
+      "bbox": [
+        423.68,
+        203.35,
+        438.85,
+        212.51
+      ],
+      "label": "B-OLD_PRICE",
+      "confidence": 0.9973
+    },
+    {
+      "i": 55,
+      "text": "LINDT",
+      "bbox": [
+        243.78,
+        184.3,
+        261.76,
+        193.34
+      ],
+      "label": "B-BRAND",
+      "confidence": 0.9978
+    },
+    {
+      "i": 56,
+      "text": "Mini",
+      "bbox": [
+        243.78,
+        191.8,
+        258.34,
+        200.84
+      ],
+      "label": "B-PRODUCT",
+      "confidence": 0.9966
+    },
+    {
+      "i": 57,
+      "text": "Pralinés*",
+      "bbox": [
+        259.54,
+        191.8,
+        289.63,
+        200.84
+      ],
+      "label": "I-PRODUCT",
+      "confidence": 0.9984
+    },
+    {
+      "i": 58,
+      "text": "je",
+      "bbox": [
+        243.78,
+        199.38,
+        249.94,
+        208.31
+      ],
+      "label": "O",
+      "confidence": 0.9986
+    },
+    {
+      "i": 59,
+      "text": "80",
+      "bbox": [
+        251.44,
+        199.38,
+        259.84,
+        208.31
+      ],
+      "label": "B-QUANTITY",
+      "confidence": 0.9983
+    },
+    {
+      "i": 60,
+      "text": "g",
+      "bbox": [
+        261.34,
+        199.38,
+        265.62,
+        208.31
+      ],
+      "label": "I-QUANTITY",
+      "confidence": 0.9986
+    },
+    {
+      "i": 61,
+      "text": "(1",
+      "bbox": [
+        243.78,
+        206.88,
+        250.68,
+        215.81
+      ],
+      "label": "B-UNIT_PRICE",
+      "confidence": 0.9984
+    },
+    {
+      "i": 62,
+      "text": "kg",
+      "bbox": [
+        252.18,
+        206.88,
+        260.23,
+        215.81
+      ],
+      "label": "I-UNIT_PRICE",
+      "confidence": 0.9992
+    },
+    {
+      "i": 63,
+      "text": "=",
+      "bbox": [
+        261.73,
+        206.88,
+        265.93,
+        215.81
+      ],
+      "label": "I-UNIT_PRICE",
+      "confidence": 0.9991
+    },
+    {
+      "i": 64,
+      "text": "37.38)",
+      "bbox": [
+        267.43,
+        206.88,
+        288.99,
+        215.81
+      ],
+      "label": "I-UNIT_PRICE",
+      "confidence": 0.9989
+    },
+    {
+      "i": 65,
+      "text": "Aktion",
+      "bbox": [
+        269.65,
+        732.34,
+        305.31,
+        746.39
+      ],
+      "label": "O",
+      "confidence": 0.9988
+    },
+    {
+      "i": 66,
+      "text": "2.99",
+      "bbox": [
+        250.35,
+        757.45,
+        294.85,
+        784.34
+      ],
+      "label": "B-PRICE",
+      "confidence": 0.9956
+    },
+    {
+      "i": 67,
+      "text": "SCHAUMA",
+      "bbox": [
+        261.92,
+        675.7,
+        293.82,
+        684.74
+      ],
+      "label": "B-BRAND",
+      "confidence": 0.9979
+    },
+    {
+      "i": 68,
+      "text": "Shampoo*",
+      "bbox": [
+        261.92,
+        683.2,
+        296.87,
+        692.24
+      ],
+      "label": "B-PRODUCT",
+      "confidence": 0.9974
+    },
+    {
+      "i": 69,
+      "text": "Versch.",
+      "bbox": [
+        261.92,
+        690.78,
+        285.06,
+        699.71
+      ],
+      "label": "I-PRODUCT",
+      "confidence": 0.9974
+    },
+    {
+      "i": 70,
+      "text": "Sorten,",
+      "bbox": [
+        286.4,
+        690.78,
+        310.17,
+        699.71
+      ],
+      "label": "I-PRODUCT",
+      "confidence": 0.9982
+    },
+    {
+      "i": 71,
+      "text": "je",
+      "bbox": [
+        261.92,
+        698.28,
+        268.09,
+        707.21
+      ],
+      "label": "O",
+      "confidence": 0.9989
+    },
+    {
+      "i": 72,
+      "text": "2",
+      "bbox": [
+        269.59,
+        698.28,
+        273.79,
+        707.21
+      ],
+      "label": "B-QUANTITY",
+      "confidence": 0.9986
+    },
+    {
+      "i": 73,
+      "text": "x",
+      "bbox": [
+        275.29,
+        698.28,
+        279.08,
+        707.21
+      ],
+      "label": "I-QUANTITY",
+      "confidence": 0.9984
+    },
+    {
+      "i": 74,
+      "text": "400",
+      "bbox": [
+        280.58,
+        698.28,
+        293.18,
+        707.21
+      ],
+      "label": "I-QUANTITY",
+      "confidence": 0.9976
+    },
+    {
+      "i": 75,
+      "text": "ml",
+      "bbox": [
+        294.68,
+        698.28,
+        303.36,
+        707.21
+      ],
+      "label": "I-QUANTITY",
+      "confidence": 0.9985
+    },
+    {
+      "i": 76,
+      "text": "(1",
+      "bbox": [
+        261.92,
+        705.78,
+        268.82,
+        714.71
+      ],
+      "label": "B-UNIT_PRICE",
+      "confidence": 0.9984
+    },
+    {
+      "i": 77,
+      "text": "l",
+      "bbox": [
+        270.32,
+        705.78,
+        272.46,
+        714.71
+      ],
+      "label": "I-UNIT_PRICE",
+      "confidence": 0.9991
+    },
+    {
+      "i": 78,
+      "text": "=",
+      "bbox": [
+        273.96,
+        705.78,
+        278.16,
+        714.71
+      ],
+      "label": "I-UNIT_PRICE",
+      "confidence": 0.9992
+    },
+    {
+      "i": 79,
+      "text": "3.74)",
+      "bbox": [
+        279.66,
+        705.78,
+        297.02,
+        714.71
+      ],
+      "label": "I-UNIT_PRICE",
+      "confidence": 0.9991
+    },
+    {
+      "i": 80,
+      "text": "Aktion",
+      "bbox": [
+        118.47,
+        732.34,
+        154.13,
+        746.39
+      ],
+      "label": "O",
+      "confidence": 0.9989
+    },
+    {
+      "i": 81,
+      "text": "2.49",
+      "bbox": [
+        99.16,
+        757.45,
+        143.67,
+        784.34
+      ],
+      "label": "B-PRICE",
+      "confidence": 0.9944
+    },
+    {
+      "i": 82,
+      "text": "KNEIPP",
+      "bbox": [
+        103.56,
+        645.59,
+        127.18,
+        654.63
+      ],
+      "label": "B-BRAND",
+      "confidence": 0.998
+    },
+    {
+      "i": 83,
+      "text": "Pflegedusche*",
+      "bbox": [
+        103.56,
+        653.09,
+        151.75,
+        662.13
+      ],
+      "label": "B-PRODUCT",
+      "confidence": 0.9974
+    },
+    {
+      "i": 84,
+      "text": "Versch.",
+      "bbox": [
+        103.56,
+        660.67,
+        126.7,
+        669.6
+      ],
+      "label": "I-PRODUCT",
+      "confidence": 0.9953
+    },
+    {
+      "i": 85,
+      "text": "Sorten,",
+      "bbox": [
+        128.04,
+        660.67,
+        151.81,
+        669.6
+      ],
+      "label": "I-PRODUCT",
+      "confidence": 0.9985
+    },
+    {
+      "i": 86,
+      "text": "je",
+      "bbox": [
+        103.56,
+        668.17,
+        109.72,
+        677.1
+      ],
+      "label": "O",
+      "confidence": 0.9988
+    },
+    {
+      "i": 87,
+      "text": "200",
+      "bbox": [
+        111.22,
+        668.17,
+        123.82,
+        677.1
+      ],
+      "label": "B-QUANTITY",
+      "confidence": 0.9986
+    },
+    {
+      "i": 88,
+      "text": "ml",
+      "bbox": [
+        125.32,
+        668.17,
+        134.0,
+        677.1
+      ],
+      "label": "I-QUANTITY",
+      "confidence": 0.9985
+    },
+    {
+      "i": 89,
+      "text": "2.49",
+      "bbox": [
+        135.5,
+        668.17,
+        150.16,
+        677.1
+      ],
+      "label": "B-PRICE",
+      "confidence": 0.9873
+    },
+    {
+      "i": 90,
+      "text": "(1",
+      "bbox": [
+        103.56,
+        675.67,
+        110.46,
+        684.6
+      ],
+      "label": "B-UNIT_PRICE",
+      "confidence": 0.998
+    },
+    {
+      "i": 91,
+      "text": "l",
+      "bbox": [
+        111.96,
+        675.67,
+        114.1,
+        684.6
+      ],
+      "label": "I-UNIT_PRICE",
+      "confidence": 0.9991
+    },
+    {
+      "i": 92,
+      "text": "=",
+      "bbox": [
+        115.6,
+        675.67,
+        119.8,
+        684.6
+      ],
+      "label": "I-UNIT_PRICE",
+      "confidence": 0.9992
+    },
+    {
+      "i": 93,
+      "text": "12.45)",
+      "bbox": [
+        121.3,
+        675.67,
+        142.85,
+        684.6
+      ],
+      "label": "I-UNIT_PRICE",
+      "confidence": 0.9991
+    },
+    {
+      "i": 94,
+      "text": "Schaumbad*",
+      "bbox": [
+        103.56,
+        683.2,
+        146.89,
+        692.24
+      ],
+      "label": "B-PRODUCT",
+      "confidence": 0.9956
+    },
+    {
+      "i": 95,
+      "text": "Versch.",
+      "bbox": [
+        103.56,
+        690.78,
+        126.7,
+        699.71
+      ],
+      "label": "I-PRODUCT",
+      "confidence": 0.9973
+    },
+    {
+      "i": 96,
+      "text": "Sorten,",
+      "bbox": [
+        128.04,
+        690.78,
+        151.81,
+        699.71
+      ],
+      "label": "I-PRODUCT",
+      "confidence": 0.9987
+    },
+    {
+      "i": 97,
+      "text": "je",
+      "bbox": [
+        103.56,
+        698.28,
+        109.72,
+        707.21
+      ],
+      "label": "O",
+      "confidence": 0.9989
+    },
+    {
+      "i": 98,
+      "text": "400",
+      "bbox": [
+        111.22,
+        698.28,
+        123.82,
+        707.21
+      ],
+      "label": "B-QUANTITY",
+      "confidence": 0.9986
+    },
+    {
+      "i": 99,
+      "text": "ml",
+      "bbox": [
+        125.32,
+        698.28,
+        134.0,
+        707.21
+      ],
+      "label": "I-QUANTITY",
+      "confidence": 0.9985
+    },
+    {
+      "i": 100,
+      "text": "2.99",
+      "bbox": [
+        135.5,
+        698.28,
+        150.16,
+        707.21
+      ],
+      "label": "B-PRICE",
+      "confidence": 0.9901
+    },
+    {
+      "i": 101,
+      "text": "(1",
+      "bbox": [
+        103.56,
+        705.78,
+        110.46,
+        714.71
+      ],
+      "label": "B-UNIT_PRICE",
+      "confidence": 0.9983
+    },
+    {
+      "i": 102,
+      "text": "l",
+      "bbox": [
+        111.96,
+        705.78,
+        114.1,
+        714.71
+      ],
+      "label": "I-UNIT_PRICE",
+      "confidence": 0.9991
+    },
+    {
+      "i": 103,
+      "text": "=",
+      "bbox": [
+        115.6,
+        705.78,
+        119.8,
+        714.71
+      ],
+      "label": "I-UNIT_PRICE",
+      "confidence": 0.9992
+    },
+    {
+      "i": 104,
+      "text": "7.48)",
+      "bbox": [
+        121.3,
+        705.78,
+        138.65,
+        714.71
+      ],
+      "label": "I-UNIT_PRICE",
+      "confidence": 0.9991
+    },
+    {
+      "i": 105,
+      "text": "%",
+      "bbox": [
+        428.15,
+        723.77,
+        449.21,
+        755.54
+      ],
+      "label": "O",
+      "confidence": 0.9852
+    },
+    {
+      "i": 106,
+      "text": "2.99",
+      "bbox": [
+        401.53,
+        757.45,
+        446.03,
+        784.34
+      ],
+      "label": "B-PRICE",
+      "confidence": 0.9936
+    },
+    {
+      "i": 107,
+      "text": "UVP",
+      "bbox": [
+        408.71,
+        781.61,
+        422.33,
+        790.78
+      ],
+      "label": "O",
+      "confidence": 0.999
+    },
+    {
+      "i": 108,
+      "text": "3.29",
+      "bbox": [
+        423.68,
+        781.61,
+        438.85,
+        790.78
+      ],
+      "label": "B-OLD_PRICE",
+      "confidence": 0.9973
+    },
+    {
+      "i": 109,
+      "text": "RORAX",
+      "bbox": [
+        412.44,
+        683.2,
+        435.2,
+        692.24
+      ],
+      "label": "B-BRAND",
+      "confidence": 0.9979
+    },
+    {
+      "i": 110,
+      "text": "Rohrfrei",
+      "bbox": [
+        412.44,
+        690.7,
+        439.57,
+        699.74
+      ],
+      "label": "B-PRODUCT",
+      "confidence": 0.9958
+    },
+    {
+      "i": 111,
+      "text": "Power-Gel*",
+      "bbox": [
+        412.44,
+        698.2,
+        450.61,
+        707.24
+      ],
+      "label": "I-PRODUCT",
+      "confidence": 0.9984
+    },
+    {
+      "i": 112,
+      "text": "je",
+      "bbox": [
+        412.44,
+        705.78,
+        418.61,
+        714.71
+      ],
+      "label": "O",
+      "confidence": 0.9991
+    },
+    {
+      "i": 113,
+      "text": "1",
+      "bbox": [
+        420.11,
+        705.78,
+        424.31,
+        714.71
+      ],
+      "label": "B-QUANTITY",
+      "confidence": 0.9986
+    },
+    {
+      "i": 114,
+      "text": "l",
+      "bbox": [
+        425.81,
+        705.78,
+        427.94,
+        714.71
+      ],
+      "label": "I-QUANTITY",
+      "confidence": 0.9986
+    },
+    {
+      "i": 115,
+      "text": "Aktion",
+      "bbox": [
+        420.83,
+        539.58,
+        456.49,
+        553.63
+      ],
+      "label": "O",
+      "confidence": 0.9988
+    },
+    {
+      "i": 116,
+      "text": "1.79",
+      "bbox": [
+        401.53,
+        564.7,
+        446.03,
+        591.58
+      ],
+      "label": "B-PRICE",
+      "confidence": 0.9912
+    },
+    {
+      "i": 117,
+      "text": "MUH-MUHS",
+      "bbox": [
+        319.37,
+        569.82,
+        356.32,
+        578.85
+      ],
+      "label": "B-BRAND",
+      "confidence": 0.998
+    },
+    {
+      "i": 118,
+      "text": "Toffee-Muffins*",
+      "bbox": [
+        319.37,
+        577.32,
+        371.02,
+        586.35
+      ],
+      "label": "B-PRODUCT",
+      "confidence": 0.9978
+    },
+    {
+      "i": 119,
+      "text": "je",
+      "bbox": [
+        319.37,
+        584.89,
+        325.54,
+        593.82
+      ],
+      "label": "O",
+      "confidence": 0.9988
+    },
+    {
+      "i": 120,
+      "text": "280",
+      "bbox": [
+        327.04,
+        584.89,
+        339.64,
+        593.82
+      ],
+      "label": "B-QUANTITY",
+      "confidence": 0.9986
+    },
+    {
+      "i": 121,
+      "text": "g",
+      "bbox": [
+        341.14,
+        584.89,
+        345.41,
+        593.82
+      ],
+      "label": "I-QUANTITY",
+      "confidence": 0.9984
+    },
+    {
+      "i": 122,
+      "text": "(1",
+      "bbox": [
+        319.37,
+        592.39,
+        326.27,
+        601.32
+      ],
+      "label": "B-UNIT_PRICE",
+      "confidence": 0.9984
+    },
+    {
+      "i": 123,
+      "text": "kg",
+      "bbox": [
+        327.77,
+        592.39,
+        335.83,
+        601.32
+      ],
+      "label": "I-UNIT_PRICE",
+      "confidence": 0.9992
+    },
+    {
+      "i": 124,
+      "text": "=",
+      "bbox": [
+        337.33,
+        592.39,
+        341.53,
+        601.32
+      ],
+      "label": "I-UNIT_PRICE",
+      "confidence": 0.9992
+    },
+    {
+      "i": 125,
+      "text": "6.39)",
+      "bbox": [
+        343.03,
+        592.39,
+        360.38,
+        601.32
+      ],
+      "label": "I-UNIT_PRICE",
+      "confidence": 0.9991
+    },
+    {
+      "i": 126,
+      "text": "-25%",
+      "bbox": [
+        183.99,
+        327.92,
+        230.01,
+        352.05
+      ],
+      "label": "B-DISCOUNT",
+      "confidence": 0.9974
+    },
+    {
+      "i": 127,
+      "text": "1.49",
+      "bbox": [
+        161.62,
+        362.64,
+        215.23,
+        395.02
+      ],
+      "label": "B-PRICE",
+      "confidence": 0.9949
+    },
+    {
+      "i": 128,
+      "text": "UVP",
+      "bbox": [
+        170.34,
+        392.75,
+        186.69,
+        403.75
+      ],
+      "label": "O",
+      "confidence": 0.999
+    },
+    {
+      "i": 129,
+      "text": "1.99",
+      "bbox": [
+        188.31,
+        392.75,
+        206.51,
+        403.75
+      ],
+      "label": "B-OLD_PRICE",
+      "confidence": 0.9972
+    },
+    {
+      "i": 130,
+      "text": "FUNNY",
+      "bbox": [
+        22.68,
+        191.17,
+        44.88,
+        200.21
+      ],
+      "label": "B-BRAND",
+      "confidence": 0.9979
+    },
+    {
+      "i": 131,
+      "text": "FRISCH",
+      "bbox": [
+        45.94,
+        191.17,
+        68.21,
+        200.21
+      ],
+      "label": "I-BRAND",
+      "confidence": 0.9809
+    },
+    {
+      "i": 132,
+      "text": "Riffels*",
+      "bbox": [
+        22.68,
+        198.67,
+        47.45,
+        207.71
+      ],
+      "label": "B-PRODUCT",
+      "confidence": 0.9967
+    },
+    {
+      "i": 133,
+      "text": "Chili",
+      "bbox": [
+        22.68,
+        206.25,
+        36.78,
+        215.18
+      ],
+      "label": "I-PRODUCT",
+      "confidence": 0.9475
+    },
+    {
+      "i": 134,
+      "text": "&",
+      "bbox": [
+        38.28,
+        206.25,
+        43.45,
+        215.18
+      ],
+      "label": "I-PRODUCT",
+      "confidence": 0.96
+    },
+    {
+      "i": 135,
+      "text": "Paprika,",
+      "bbox": [
+        44.95,
+        206.25,
+        71.49,
+        215.18
+      ],
+      "label": "I-PRODUCT",
+      "confidence": 0.976
+    },
+    {
+      "i": 136,
+      "text": "je",
+      "bbox": [
+        22.68,
+        213.75,
+        28.84,
+        222.68
+      ],
+      "label": "O",
+      "confidence": 0.999
+    },
+    {
+      "i": 137,
+      "text": "150",
+      "bbox": [
+        30.34,
+        213.75,
+        42.94,
+        222.68
+      ],
+      "label": "B-QUANTITY",
+      "confidence": 0.9986
+    },
+    {
+      "i": 138,
+      "text": "g",
+      "bbox": [
+        44.44,
+        213.75,
+        48.72,
+        222.68
+      ],
+      "label": "I-QUANTITY",
+      "confidence": 0.9987
+    },
+    {
+      "i": 139,
+      "text": "(1",
+      "bbox": [
+        22.68,
+        221.25,
+        29.58,
+        230.18
+      ],
+      "label": "B-UNIT_PRICE",
+      "confidence": 0.9985
+    },
+    {
+      "i": 140,
+      "text": "kg",
+      "bbox": [
+        31.08,
+        221.25,
+        39.13,
+        230.18
+      ],
+      "label": "I-UNIT_PRICE",
+      "confidence": 0.9991
+    },
+    {
+      "i": 141,
+      "text": "=",
+      "bbox": [
+        40.63,
+        221.25,
+        44.83,
+        230.18
+      ],
+      "label": "I-UNIT_PRICE",
+      "confidence": 0.9991
+    },
+    {
+      "i": 142,
+      "text": "9.93)",
+      "bbox": [
+        46.33,
+        221.25,
+        63.69,
+        230.18
+      ],
+      "label": "I-UNIT_PRICE",
+      "confidence": 0.9991
+    },
+    {
+      "i": 143,
+      "text": "oder",
+      "bbox": [
+        65.19,
+        221.25,
+        80.55,
+        230.18
+      ],
+      "label": "O",
+      "confidence": 0.9989
+    },
+    {
+      "i": 144,
+      "text": "Linsen",
+      "bbox": [
+        22.68,
+        228.79,
+        44.44,
+        237.82
+      ],
+      "label": "B-PRODUCT",
+      "confidence": 0.9961
+    },
+    {
+      "i": 145,
+      "text": "Chips*",
+      "bbox": [
+        45.94,
+        228.79,
+        68.1,
+        237.82
+      ],
+      "label": "I-PRODUCT",
+      "confidence": 0.9981
+    },
+    {
+      "i": 146,
+      "text": "Versch.",
+      "bbox": [
+        22.68,
+        236.36,
+        45.81,
+        245.29
+      ],
+      "label": "I-PRODUCT",
+      "confidence": 0.9692
+    },
+    {
+      "i": 147,
+      "text": "Sorten,",
+      "bbox": [
+        47.16,
+        236.36,
+        70.92,
+        245.29
+      ],
+      "label": "I-PRODUCT",
+      "confidence": 0.9983
+    },
+    {
+      "i": 148,
+      "text": "je",
+      "bbox": [
+        22.68,
+        243.86,
+        28.84,
+        252.79
+      ],
+      "label": "O",
+      "confidence": 0.999
+    },
+    {
+      "i": 149,
+      "text": "90",
+      "bbox": [
+        30.34,
+        243.86,
+        38.74,
+        252.79
+      ],
+      "label": "B-QUANTITY",
+      "confidence": 0.9985
+    },
+    {
+      "i": 150,
+      "text": "g",
+      "bbox": [
+        40.24,
+        243.86,
+        44.52,
+        252.79
+      ],
+      "label": "I-QUANTITY",
+      "confidence": 0.9986
+    },
+    {
+      "i": 151,
+      "text": "(1",
+      "bbox": [
+        22.68,
+        251.36,
+        29.58,
+        260.29
+      ],
+      "label": "B-UNIT_PRICE",
+      "confidence": 0.9984
+    },
+    {
+      "i": 152,
+      "text": "kg",
+      "bbox": [
+        31.08,
+        251.36,
+        39.13,
+        260.29
+      ],
+      "label": "I-UNIT_PRICE",
+      "confidence": 0.9991
+    },
+    {
+      "i": 153,
+      "text": "=",
+      "bbox": [
+        40.63,
+        251.36,
+        44.83,
+        260.29
+      ],
+      "label": "I-UNIT_PRICE",
+      "confidence": 0.9991
+    },
+    {
+      "i": 154,
+      "text": "16.56)",
+      "bbox": [
+        46.33,
+        251.36,
+        67.89,
+        260.29
+      ],
+      "label": "I-UNIT_PRICE",
+      "confidence": 0.9991
+    },
+    {
+      "i": 155,
+      "text": "Do,",
+      "bbox": [
+        185.71,
+        14.05,
+        206.99,
+        30.92
+      ],
+      "label": "B-VALID",
+      "confidence": 0.9909
+    },
+    {
+      "i": 156,
+      "text": "6.8. – Sa,",
+      "bbox": [
+        209.79,
+        13.98,
+        263.18,
+        31.09
+      ],
+      "label": "I-VALID",
+      "confidence": 0.9945
+    },
+    {
+      "i": 157,
+      "text": "8.8.",
+      "bbox": [
+        265.98,
+        14.05,
+        290.52,
+        30.92
+      ],
+      "label": "I-VALID",
+      "confidence": 0.9953
+    },
+    {
+      "i": 158,
+      "text": "32_02-03-04-05-06-07-08-09-10-14",
+      "bbox": [
+        5.05,
+        701.37,
+        12.19,
+        796.77
+      ],
+      "label": "O",
+      "confidence": 0.9987
+    },
+    {
+      "i": 159,
+      "text": "*",
+      "bbox": [
+        17.01,
+        818.73,
+        20.5,
+        827.07
+      ],
+      "label": "O",
+      "confidence": 0.9991
+    },
+    {
+      "i": 160,
+      "text": "Dieser",
+      "bbox": [
+        22.04,
+        818.73,
+        41.75,
+        827.07
+      ],
+      "label": "O",
+      "confidence": 0.9993
+    },
+    {
+      "i": 161,
+      "text": "Artikel",
+      "bbox": [
+        43.29,
+        818.73,
+        63.86,
+        827.07
+      ],
+      "label": "O",
+      "confidence": 0.9992
+    },
+    {
+      "i": 162,
+      "text": "ist",
+      "bbox": [
+        65.4,
+        818.73,
+        72.56,
+        827.07
+      ],
+      "label": "O",
+      "confidence": 0.9994
+    },
+    {
+      "i": 163,
+      "text": "ggf.",
+      "bbox": [
+        74.1,
+        818.73,
+        86.38,
+        827.07
+      ],
+      "label": "O",
+      "confidence": 0.9994
+    },
+    {
+      "i": 164,
+      "text": "nicht",
+      "bbox": [
+        87.77,
+        818.73,
+        103.13,
+        827.07
+      ],
+      "label": "O",
+      "confidence": 0.9994
+    },
+    {
+      "i": 165,
+      "text": "in",
+      "bbox": [
+        104.67,
+        818.73,
+        110.59,
+        827.07
+      ],
+      "label": "O",
+      "confidence": 0.9994
+    },
+    {
+      "i": 166,
+      "text": "allen",
+      "bbox": [
+        112.13,
+        818.73,
+        127.91,
+        827.07
+      ],
+      "label": "O",
+      "confidence": 0.9993
+    },
+    {
+      "i": 167,
+      "text": "Filialen",
+      "bbox": [
+        129.45,
+        818.73,
+        152.48,
+        827.07
+      ],
+      "label": "O",
+      "confidence": 0.9992
+    },
+    {
+      "i": 168,
+      "text": "erhältlich.",
+      "bbox": [
+        154.02,
+        818.73,
+        185.72,
+        827.07
+      ],
+      "label": "O",
+      "confidence": 0.9993
+    },
+    {
+      "i": 169,
+      "text": "Aufgrund",
+      "bbox": [
+        187.11,
+        818.73,
+        216.14,
+        827.07
+      ],
+      "label": "O",
+      "confidence": 0.9993
+    },
+    {
+      "i": 170,
+      "text": "begrenzter",
+      "bbox": [
+        217.68,
+        818.73,
+        252.17,
+        827.07
+      ],
+      "label": "O",
+      "confidence": 0.9991
+    },
+    {
+      "i": 171,
+      "text": "Vorratsmengen",
+      "bbox": [
+        253.52,
+        818.73,
+        301.49,
+        827.07
+      ],
+      "label": "O",
+      "confidence": 0.9992
+    },
+    {
+      "i": 172,
+      "text": "kann",
+      "bbox": [
+        303.03,
+        818.73,
+        318.43,
+        827.07
+      ],
+      "label": "O",
+      "confidence": 0.9993
+    },
+    {
+      "i": 173,
+      "text": "der",
+      "bbox": [
+        319.97,
+        818.73,
+        330.43,
+        827.07
+      ],
+      "label": "O",
+      "confidence": 0.9994
+    },
+    {
+      "i": 174,
+      "text": "Artikel",
+      "bbox": [
+        331.97,
+        818.73,
+        352.54,
+        827.07
+      ],
+      "label": "O",
+      "confidence": 0.9992
+    },
+    {
+      "i": 175,
+      "text": "bereits",
+      "bbox": [
+        354.08,
+        818.73,
+        375.63,
+        827.07
+      ],
+      "label": "O",
+      "confidence": 0.9993
+    },
+    {
+      "i": 176,
+      "text": "kurz",
+      "bbox": [
+        377.17,
+        818.73,
+        390.51,
+        827.07
+      ],
+      "label": "O",
+      "confidence": 0.9994
+    },
+    {
+      "i": 177,
+      "text": "nach",
+      "bbox": [
+        392.05,
+        818.73,
+        406.82,
+        827.07
+      ],
+      "label": "O",
+      "confidence": 0.9993
+    },
+    {
+      "i": 178,
+      "text": "Öffnung",
+      "bbox": [
+        408.36,
+        818.73,
+        433.75,
+        827.07
+      ],
+      "label": "O",
+      "confidence": 0.9993
+    },
+    {
+      "i": 179,
+      "text": "ausverkauft",
+      "bbox": [
+        22.04,
+        826.73,
+        58.83,
+        835.07
+      ],
+      "label": "O",
+      "confidence": 0.9994
+    },
+    {
+      "i": 180,
+      "text": "sein.",
+      "bbox": [
+        60.37,
+        826.73,
+        75.09,
+        835.07
+      ],
+      "label": "O",
+      "confidence": 0.9994
+    },
+    {
+      "i": 181,
+      "text": "Die",
+      "bbox": [
+        76.49,
+        826.73,
+        86.84,
+        835.07
+      ],
+      "label": "O",
+      "confidence": 0.9994
+    },
+    {
+      "i": 182,
+      "text": "Abgabe",
+      "bbox": [
+        88.38,
+        826.73,
+        112.16,
+        835.07
+      ],
+      "label": "O",
+      "confidence": 0.9994
+    },
+    {
+      "i": 183,
+      "text": "erfolgt",
+      "bbox": [
+        113.7,
+        826.73,
+        135.15,
+        835.07
+      ],
+      "label": "O",
+      "confidence": 0.9993
+    },
+    {
+      "i": 184,
+      "text": "nur",
+      "bbox": [
+        136.69,
+        826.73,
+        147.24,
+        835.07
+      ],
+      "label": "O",
+      "confidence": 0.9994
+    },
+    {
+      "i": 185,
+      "text": "in",
+      "bbox": [
+        148.78,
+        826.73,
+        154.7,
+        835.07
+      ],
+      "label": "O",
+      "confidence": 0.9994
+    },
+    {
+      "i": 186,
+      "text": "haushaltsüblichen",
+      "bbox": [
+        156.24,
+        826.73,
+        213.18,
+        835.07
+      ],
+      "label": "O",
+      "confidence": 0.9994
+    },
+    {
+      "i": 187,
+      "text": "Mengen.",
+      "bbox": [
+        214.72,
+        826.73,
+        242.02,
+        835.07
+      ],
+      "label": "O",
+      "confidence": 0.9991
+    },
+    {
+      "i": 188,
+      "text": "Alle",
+      "bbox": [
+        243.42,
+        826.73,
+        255.33,
+        835.07
+      ],
+      "label": "O",
+      "confidence": 0.9993
+    },
+    {
+      "i": 189,
+      "text": "Preise",
+      "bbox": [
+        256.87,
+        826.73,
+        275.74,
+        835.07
+      ],
+      "label": "O",
+      "confidence": 0.9993
+    },
+    {
+      "i": 190,
+      "text": "ohne",
+      "bbox": [
+        277.28,
+        826.73,
+        293.32,
+        835.07
+      ],
+      "label": "O",
+      "confidence": 0.9993
+    },
+    {
+      "i": 191,
+      "text": "Deko.",
+      "bbox": [
+        294.86,
+        826.73,
+        312.92,
+        835.07
+      ],
+      "label": "O",
+      "confidence": 0.9993
+    },
+    {
+      "i": 192,
+      "text": "Druckfehler",
+      "bbox": [
+        314.31,
+        826.73,
+        350.84,
+        835.07
+      ],
+      "label": "O",
+      "confidence": 0.9993
+    },
+    {
+      "i": 193,
+      "text": "vorbehalten.",
+      "bbox": [
+        352.38,
+        826.73,
+        392.63,
+        835.07
+      ],
+      "label": "O",
+      "confidence": 0.9992
+    }
+  ],
+  "entities": [
+    {
+      "label": "DISCOUNT",
+      "start": 9,
+      "end": 10,
+      "text": "-15%",
+      "bbox": [
+        117.66,
+        536.92,
+        154.94,
+        556.47
+      ],
+      "confidence": 0.9971
+    },
+    {
+      "label": "PRICE",
+      "start": 10,
+      "end": 11,
+      "text": "2.79",
+      "bbox": [
+        99.16,
+        564.7,
+        143.67,
+        591.58
+      ],
+      "confidence": 0.9953
+    },
+    {
+      "label": "OLD_PRICE",
+      "start": 12,
+      "end": 13,
+      "text": "3.29",
+      "bbox": [
+        121.32,
+        588.86,
+        136.49,
+        598.02
+      ],
+      "confidence": 0.9973
+    },
+    {
+      "label": "BRAND",
+      "start": 13,
+      "end": 14,
+      "text": "FERRERO",
+      "bbox": [
+        17.01,
+        569.82,
+        46.06,
+        578.85
+      ],
+      "confidence": 0.9981
+    },
+    {
+      "label": "PRODUCT",
+      "start": 14,
+      "end": 16,
+      "text": "Hanuta Minis*",
+      "bbox": [
+        17.01,
+        577.32,
+        63.49,
+        586.35
+      ],
+      "confidence": 0.9972
+    },
+    {
+      "label": "QUANTITY",
+      "start": 17,
+      "end": 19,
+      "text": "200 g",
+      "bbox": [
+        24.67,
+        584.89,
+        43.05,
+        593.82
+      ],
+      "confidence": 0.9986
+    },
+    {
+      "label": "UNIT_PRICE",
+      "start": 19,
+      "end": 23,
+      "text": "(1 kg = 13.95)",
+      "bbox": [
+        17.01,
+        592.39,
+        62.22,
+        601.32
+      ],
+      "confidence": 0.999
+    },
+    {
+      "label": "DISCOUNT",
+      "start": 23,
+      "end": 24,
+      "text": "-14%",
+      "bbox": [
+        420.02,
+        344.17,
+        457.3,
+        363.72
+      ],
+      "confidence": 0.997
+    },
+    {
+      "label": "PRICE",
+      "start": 24,
+      "end": 25,
+      "text": "3.99",
+      "bbox": [
+        401.53,
+        371.94,
+        446.03,
+        398.83
+      ],
+      "confidence": 0.9957
+    },
+    {
+      "label": "OLD_PRICE",
+      "start": 26,
+      "end": 27,
+      "text": "4.69",
+      "bbox": [
+        423.68,
+        396.1,
+        438.85,
+        405.27
+      ],
+      "confidence": 0.9973
+    },
+    {
+      "label": "BRAND",
+      "start": 27,
+      "end": 28,
+      "text": "STORCK",
+      "bbox": [
+        243.78,
+        377.06,
+        267.89,
+        386.1
+      ],
+      "confidence": 0.9977
+    },
+    {
+      "label": "PRODUCT",
+      "start": 28,
+      "end": 30,
+      "text": "Toffifee Maxi-Pack*",
+      "bbox": [
+        243.78,
+        384.56,
+        307.72,
+        393.6
+      ],
+      "confidence": 0.9979
+    },
+    {
+      "label": "QUANTITY",
+      "start": 31,
+      "end": 33,
+      "text": "400 g",
+      "bbox": [
+        251.44,
+        392.14,
+        269.82,
+        401.07
+      ],
+      "confidence": 0.9986
+    },
+    {
+      "label": "UNIT_PRICE",
+      "start": 33,
+      "end": 37,
+      "text": "(1 kg = 9.98)",
+      "bbox": [
+        243.78,
+        399.64,
+        284.79,
+        408.57
+      ],
+      "confidence": 0.999
+    },
+    {
+      "label": "DISCOUNT",
+      "start": 37,
+      "end": 38,
+      "text": "-16%",
+      "bbox": [
+        268.84,
+        536.92,
+        306.12,
+        556.47
+      ],
+      "confidence": 0.997
+    },
+    {
+      "label": "PRICE",
+      "start": 38,
+      "end": 39,
+      "text": "2.99",
+      "bbox": [
+        250.35,
+        564.7,
+        294.85,
+        591.58
+      ],
+      "confidence": 0.9956
+    },
+    {
+      "label": "OLD_PRICE",
+      "start": 40,
+      "end": 41,
+      "text": "3.59",
+      "bbox": [
+        272.5,
+        588.86,
+        287.67,
+        598.02
+      ],
+      "confidence": 0.9973
+    },
+    {
+      "label": "BRAND",
+      "start": 41,
+      "end": 42,
+      "text": "FERRERO",
+      "bbox": [
+        168.19,
+        569.82,
+        197.24,
+        578.85
+      ],
+      "confidence": 0.9982
+    },
+    {
+      "label": "PRODUCT",
+      "start": 42,
+      "end": 44,
+      "text": "Nutella B-ready*",
+      "bbox": [
+        168.19,
+        577.32,
+        222.98,
+        586.35
+      ],
+      "confidence": 0.9976
+    },
+    {
+      "label": "QUANTITY",
+      "start": 45,
+      "end": 47,
+      "text": "220 g",
+      "bbox": [
+        175.85,
+        584.89,
+        194.23,
+        593.82
+      ],
+      "confidence": 0.9987
+    },
+    {
+      "label": "UNIT_PRICE",
+      "start": 47,
+      "end": 51,
+      "text": "(1 kg = 13.59)",
+      "bbox": [
+        168.19,
+        592.39,
+        213.4,
+        601.32
+      ],
+      "confidence": 0.999
+    },
+    {
+      "label": "DISCOUNT",
+      "start": 51,
+      "end": 52,
+      "text": "-50%",
+      "bbox": [
+        420.02,
+        151.41,
+        457.3,
+        170.96
+      ],
+      "confidence": 0.9973
+    },
+    {
+      "label": "PRICE",
+      "start": 52,
+      "end": 53,
+      "text": "2.99",
+      "bbox": [
+        401.53,
+        179.19,
+        446.03,
+        206.07
+      ],
+      "confidence": 0.9957
+    },
+    {
+      "label": "OLD_PRICE",
+      "start": 54,
+      "end": 55,
+      "text": "5.99",
+      "bbox": [
+        423.68,
+        203.35,
+        438.85,
+        212.51
+      ],
+      "confidence": 0.9973
+    },
+    {
+      "label": "BRAND",
+      "start": 55,
+      "end": 56,
+      "text": "LINDT",
+      "bbox": [
+        243.78,
+        184.3,
+        261.76,
+        193.34
+      ],
+      "confidence": 0.9978
+    },
+    {
+      "label": "PRODUCT",
+      "start": 56,
+      "end": 58,
+      "text": "Mini Pralinés*",
+      "bbox": [
+        243.78,
+        191.8,
+        289.63,
+        200.84
+      ],
+      "confidence": 0.9975
+    },
+    {
+      "label": "QUANTITY",
+      "start": 59,
+      "end": 61,
+      "text": "80 g",
+      "bbox": [
+        251.44,
+        199.38,
+        265.62,
+        208.31
+      ],
+      "confidence": 0.9985
+    },
+    {
+      "label": "UNIT_PRICE",
+      "start": 61,
+      "end": 65,
+      "text": "(1 kg = 37.38)",
+      "bbox": [
+        243.78,
+        206.88,
+        288.99,
+        215.81
+      ],
+      "confidence": 0.9989
+    },
+    {
+      "label": "PRICE",
+      "start": 66,
+      "end": 67,
+      "text": "2.99",
+      "bbox": [
+        250.35,
+        757.45,
+        294.85,
+        784.34
+      ],
+      "confidence": 0.9956
+    },
+    {
+      "label": "BRAND",
+      "start": 67,
+      "end": 68,
+      "text": "SCHAUMA",
+      "bbox": [
+        261.92,
+        675.7,
+        293.82,
+        684.74
+      ],
+      "confidence": 0.9979
+    },
+    {
+      "label": "PRODUCT",
+      "start": 68,
+      "end": 71,
+      "text": "Shampoo* Versch. Sorten,",
+      "bbox": [
+        261.92,
+        683.2,
+        310.17,
+        699.71
+      ],
+      "confidence": 0.9977
+    },
+    {
+      "label": "QUANTITY",
+      "start": 72,
+      "end": 76,
+      "text": "2 x 400 ml",
+      "bbox": [
+        269.59,
+        698.28,
+        303.36,
+        707.21
+      ],
+      "confidence": 0.9983
+    },
+    {
+      "label": "UNIT_PRICE",
+      "start": 76,
+      "end": 80,
+      "text": "(1 l = 3.74)",
+      "bbox": [
+        261.92,
+        705.78,
+        297.02,
+        714.71
+      ],
+      "confidence": 0.999
+    },
+    {
+      "label": "PRICE",
+      "start": 81,
+      "end": 82,
+      "text": "2.49",
+      "bbox": [
+        99.16,
+        757.45,
+        143.67,
+        784.34
+      ],
+      "confidence": 0.9944
+    },
+    {
+      "label": "BRAND",
+      "start": 82,
+      "end": 83,
+      "text": "KNEIPP",
+      "bbox": [
+        103.56,
+        645.59,
+        127.18,
+        654.63
+      ],
+      "confidence": 0.998
+    },
+    {
+      "label": "PRODUCT",
+      "start": 83,
+      "end": 86,
+      "text": "Pflegedusche* Versch. Sorten,",
+      "bbox": [
+        103.56,
+        653.09,
+        151.81,
+        669.6
+      ],
+      "confidence": 0.9971
+    },
+    {
+      "label": "QUANTITY",
+      "start": 87,
+      "end": 89,
+      "text": "200 ml",
+      "bbox": [
+        111.22,
+        668.17,
+        134.0,
+        677.1
+      ],
+      "confidence": 0.9986
+    },
+    {
+      "label": "PRICE",
+      "start": 89,
+      "end": 90,
+      "text": "2.49",
+      "bbox": [
+        135.5,
+        668.17,
+        150.16,
+        677.1
+      ],
+      "confidence": 0.9873
+    },
+    {
+      "label": "UNIT_PRICE",
+      "start": 90,
+      "end": 94,
+      "text": "(1 l = 12.45)",
+      "bbox": [
+        103.56,
+        675.67,
+        142.85,
+        684.6
+      ],
+      "confidence": 0.9989
+    },
+    {
+      "label": "PRODUCT",
+      "start": 94,
+      "end": 97,
+      "text": "Schaumbad* Versch. Sorten,",
+      "bbox": [
+        103.56,
+        683.2,
+        151.81,
+        699.71
+      ],
+      "confidence": 0.9972
+    },
+    {
+      "label": "QUANTITY",
+      "start": 98,
+      "end": 100,
+      "text": "400 ml",
+      "bbox": [
+        111.22,
+        698.28,
+        134.0,
+        707.21
+      ],
+      "confidence": 0.9986
+    },
+    {
+      "label": "PRICE",
+      "start": 100,
+      "end": 101,
+      "text": "2.99",
+      "bbox": [
+        135.5,
+        698.28,
+        150.16,
+        707.21
+      ],
+      "confidence": 0.9901
+    },
+    {
+      "label": "UNIT_PRICE",
+      "start": 101,
+      "end": 105,
+      "text": "(1 l = 7.48)",
+      "bbox": [
+        103.56,
+        705.78,
+        138.65,
+        714.71
+      ],
+      "confidence": 0.9989
+    },
+    {
+      "label": "PRICE",
+      "start": 106,
+      "end": 107,
+      "text": "2.99",
+      "bbox": [
+        401.53,
+        757.45,
+        446.03,
+        784.34
+      ],
+      "confidence": 0.9936
+    },
+    {
+      "label": "OLD_PRICE",
+      "start": 108,
+      "end": 109,
+      "text": "3.29",
+      "bbox": [
+        423.68,
+        781.61,
+        438.85,
+        790.78
+      ],
+      "confidence": 0.9973
+    },
+    {
+      "label": "BRAND",
+      "start": 109,
+      "end": 110,
+      "text": "RORAX",
+      "bbox": [
+        412.44,
+        683.2,
+        435.2,
+        692.24
+      ],
+      "confidence": 0.9979
+    },
+    {
+      "label": "PRODUCT",
+      "start": 110,
+      "end": 112,
+      "text": "Rohrfrei Power-Gel*",
+      "bbox": [
+        412.44,
+        690.7,
+        450.61,
+        707.24
+      ],
+      "confidence": 0.9971
+    },
+    {
+      "label": "QUANTITY",
+      "start": 113,
+      "end": 115,
+      "text": "1 l",
+      "bbox": [
+        420.11,
+        705.78,
+        427.94,
+        714.71
+      ],
+      "confidence": 0.9986
+    },
+    {
+      "label": "PRICE",
+      "start": 116,
+      "end": 117,
+      "text": "1.79",
+      "bbox": [
+        401.53,
+        564.7,
+        446.03,
+        591.58
+      ],
+      "confidence": 0.9912
+    },
+    {
+      "label": "BRAND",
+      "start": 117,
+      "end": 118,
+      "text": "MUH-MUHS",
+      "bbox": [
+        319.37,
+        569.82,
+        356.32,
+        578.85
+      ],
+      "confidence": 0.998
+    },
+    {
+      "label": "PRODUCT",
+      "start": 118,
+      "end": 119,
+      "text": "Toffee-Muffins*",
+      "bbox": [
+        319.37,
+        577.32,
+        371.02,
+        586.35
+      ],
+      "confidence": 0.9978
+    },
+    {
+      "label": "QUANTITY",
+      "start": 120,
+      "end": 122,
+      "text": "280 g",
+      "bbox": [
+        327.04,
+        584.89,
+        345.41,
+        593.82
+      ],
+      "confidence": 0.9985
+    },
+    {
+      "label": "UNIT_PRICE",
+      "start": 122,
+      "end": 126,
+      "text": "(1 kg = 6.39)",
+      "bbox": [
+        319.37,
+        592.39,
+        360.38,
+        601.32
+      ],
+      "confidence": 0.999
+    },
+    {
+      "label": "DISCOUNT",
+      "start": 126,
+      "end": 127,
+      "text": "-25%",
+      "bbox": [
+        183.99,
+        327.92,
+        230.01,
+        352.05
+      ],
+      "confidence": 0.9974
+    },
+    {
+      "label": "PRICE",
+      "start": 127,
+      "end": 128,
+      "text": "1.49",
+      "bbox": [
+        161.62,
+        362.64,
+        215.23,
+        395.02
+      ],
+      "confidence": 0.9949
+    },
+    {
+      "label": "OLD_PRICE",
+      "start": 129,
+      "end": 130,
+      "text": "1.99",
+      "bbox": [
+        188.31,
+        392.75,
+        206.51,
+        403.75
+      ],
+      "confidence": 0.9972
+    },
+    {
+      "label": "BRAND",
+      "start": 130,
+      "end": 132,
+      "text": "FUNNY FRISCH",
+      "bbox": [
+        22.68,
+        191.17,
+        68.21,
+        200.21
+      ],
+      "confidence": 0.9894
+    },
+    {
+      "label": "PRODUCT",
+      "start": 132,
+      "end": 136,
+      "text": "Riffels* Chili & Paprika,",
+      "bbox": [
+        22.68,
+        198.67,
+        71.49,
+        215.18
+      ],
+      "confidence": 0.97
+    },
+    {
+      "label": "QUANTITY",
+      "start": 137,
+      "end": 139,
+      "text": "150 g",
+      "bbox": [
+        30.34,
+        213.75,
+        48.72,
+        222.68
+      ],
+      "confidence": 0.9987
+    },
+    {
+      "label": "UNIT_PRICE",
+      "start": 139,
+      "end": 143,
+      "text": "(1 kg = 9.93)",
+      "bbox": [
+        22.68,
+        221.25,
+        63.69,
+        230.18
+      ],
+      "confidence": 0.999
+    },
+    {
+      "label": "PRODUCT",
+      "start": 144,
+      "end": 148,
+      "text": "Linsen Chips* Versch. Sorten,",
+      "bbox": [
+        22.68,
+        228.79,
+        70.92,
+        245.29
+      ],
+      "confidence": 0.9904
+    },
+    {
+      "label": "QUANTITY",
+      "start": 149,
+      "end": 151,
+      "text": "90 g",
+      "bbox": [
+        30.34,
+        243.86,
+        44.52,
+        252.79
+      ],
+      "confidence": 0.9986
+    },
+    {
+      "label": "UNIT_PRICE",
+      "start": 151,
+      "end": 155,
+      "text": "(1 kg = 16.56)",
+      "bbox": [
+        22.68,
+        251.36,
+        67.89,
+        260.29
+      ],
+      "confidence": 0.9989
+    },
+    {
+      "label": "VALID",
+      "start": 155,
+      "end": 158,
+      "text": "Do, 6.8. – Sa, 8.8.",
+      "bbox": [
+        185.71,
+        13.98,
+        290.52,
+        31.09
+      ],
+      "confidence": 0.9936
+    }
+  ]
+}

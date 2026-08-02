@@ -49,43 +49,28 @@ def load_labeled_pages(model: str | None = None) -> list[dict]:
 
 
 def get_or_create_splits(pages: list[dict]) -> dict[str, list[str]]:
-    """80/10/10-Split auf Seitenebene, einmal gewürfelt und dann eingefroren.
+    """Die eingefrorene Aufteilung aus data/splits/split.json.
 
-    Der Split liegt als Datei in data/splits/, damit alle im Team (und alle
-    Trainingsläufe) dieselbe Aufteilung benutzen. Neu würfeln = Datei löschen.
+    Früher wurde hier ein 80/10/10-Split über Seiten gewürfelt, falls die Datei
+    fehlte. Das war der gefährlichste Zweig im Projekt: Genau dieser Seiten-Split
+    leckt (12 von 19 Testseiten hatten einen Trainingszwilling, Median-Jaccard
+    0.851), und er entstand kommentarlos – auf einer frischen GPU-Instanz, bei
+    einem Teammitglied ohne die Datei, nach einem versehentlichen Löschen. Die
+    Zahlen sehen dabei *besser* aus als beim korrekten Wochen-Split, es fällt
+    also nicht einmal negativ auf.
 
-    Gewürfelt wird über *alle* extrahierten Seiten, nicht über die gerade
-    gelabelten. Sonst hinge die Aufteilung am Fortschritt des Labelings: wer
-    bei 141 von 196 Seiten trainiert, fröre einen Split ein, dem 55 Seiten
-    fehlen, und die nachgelieferten landeten sämtlich im Training. Seiten ohne
-    Labels tauchen in `select_split` schlicht nicht auf.
-
-    TODO: aktuell wird über Seiten gesplittet. Diskutieren, ob wir stattdessen
-    über Kataloge splitten sollten, damit kein Prospekt gleichzeitig in Train
-    und Test landet (Angebote wiederholen sich zwischen Wochen).
+    Der Split wird deshalb nur noch gelesen. Angelegt wird er ausdrücklich mit
+    `magda split`, wo die Strategie eine bewusste Entscheidung ist.
     """
     split_file = SPLITS_DIR / "split.json"
-    if split_file.exists():
-        with open(split_file) as f:
-            return json.load(f)
-
-    extracted = sorted(p.stem for p in WORDS_DIR.glob("*.json"))
-    page_ids = extracted or [p["page_id"] for p in pages]
-    rng = random.Random(SEED)
-    rng.shuffle(page_ids)
-
-    n = len(page_ids)
-    n_dev = max(1, n // 10)
-    splits = {
-        "train": page_ids[: n - 2 * n_dev],
-        "dev": page_ids[n - 2 * n_dev : n - n_dev],
-        "test": page_ids[n - n_dev :],
-    }
-
-    SPLITS_DIR.mkdir(parents=True, exist_ok=True)
-    with open(split_file, "w") as f:
-        json.dump(splits, f, indent=2)
-    return splits
+    if not split_file.exists():
+        raise FileNotFoundError(
+            f"{split_file} fehlt. Die Aufteilung wird nicht mehr automatisch "
+            f"gewürfelt – ein Seiten-Split leckt zwischen Train und Test.\n"
+            f"Anlegen mit: magda split --strategy week"
+        )
+    with open(split_file) as f:
+        return json.load(f)
 
 
 # Innerhalb einer Erscheinungswoche liegen Pennys Katalog-IDs dicht beieinander
@@ -118,7 +103,35 @@ def group_by_week(page_ids: list[str]) -> list[list[str]]:
     ]
 
 
-def split_by_week(page_ids: list[str], dev_share: float = 0.1) -> dict[str, list[str]]:
+# Ab dieser Ähnlichkeit zeigen zwei Seiten dieselbe Vorlage und dürfen nicht
+# auf Train und Dev verteilt werden. Dieselbe Schwelle, mit der `magda queue`
+# die Annotationsreihenfolge clustert – wer sie hier lockert, macht Dev wieder
+# zum Spiegel des Trainings.
+DEV_CLUSTER_THRESHOLD = 0.7
+
+
+def load_page_words(page_ids: list[str]) -> dict[str, list[str]]:
+    """Wortlisten aus data/words – für Ähnlichkeitsvergleiche, nicht fürs Modell.
+
+    Fehlende Dateien werden übergangen statt zu werfen: der Aufrufer vergleicht
+    damit nur, und eine Seite ohne Wortliste ist schlicht mit keiner anderen
+    ähnlich.
+    """
+    words = {}
+    for pid in page_ids:
+        path = WORDS_DIR / f"{pid}.json"
+        if not path.exists():
+            continue
+        with open(path) as f:
+            words[pid] = [w["text"] for w in json.load(f)["words"]]
+    return words
+
+
+def split_by_week(
+    page_ids: list[str],
+    dev_share: float = 0.1,
+    pages: dict[str, list[str]] | None = None,
+) -> dict[str, list[str]]:
     """Älteste Woche(n) trainieren, die jüngste testen.
 
     Der Seiten-Split leckt: Penny gibt je Woche 44 fast identische
@@ -132,26 +145,52 @@ def split_by_week(page_ids: list[str], dev_share: float = 0.1) -> dict[str, list
 
     Dev wird aus den Trainingswochen gezogen, nicht aus der Testwoche – sonst
     wählt die Modellauswahl auf denselben Daten aus, auf denen gemessen wird.
+    Und es wird *clusterweise* gezogen: zufällig je Seite gemessen (02.08.2026,
+    drei Wochen) lag Dev bei Median-Ähnlichkeit 0.721 zum Training, vier von
+    19 Seiten über 0.9. Der Testsplit war da längst sauber – die Modellauswahl
+    lief trotzdem auf halb auswendig Gelerntem und griff damit zum falschen
+    Checkpoint. Ein gruppierter Split kostet nichts außer etwas Ungenauigkeit
+    in der Dev-Größe.
+
+    `pages` bildet page_id auf Wortliste ab; ohne Angabe wird aus data/words
+    geladen. Seiten ohne Wortliste bilden je einen eigenen Cluster.
     """
-    wochen = group_by_week(page_ids)
-    if len(wochen) < 2:
+    weeks = group_by_week(page_ids)
+    if len(weeks) < 2:
         raise ValueError(
             f"Wochen-Split braucht mindestens zwei Erscheinungswochen, "
-            f"gefunden: {len(wochen)}. Erst mehr Wochen ernten."
+            f"gefunden: {len(weeks)}. Erst mehr Wochen ernten."
         )
 
-    test = wochen[-1]
-    train = [pid for woche in wochen[:-1] for pid in woche]
+    test = weeks[-1]
+    train = sorted(pid for week in weeks[:-1] for pid in week)
+
+    words = pages if pages is not None else load_page_words(train)
+    clusters = _dev_clusters(train, words)
 
     rng = random.Random(SEED)
-    gemischt = sorted(train)
-    rng.shuffle(gemischt)
-    n_dev = max(1, int(len(gemischt) * dev_share))
-    return {
-        "train": sorted(gemischt[n_dev:]),
-        "dev": sorted(gemischt[:n_dev]),
-        "test": sorted(test),
-    }
+    rng.shuffle(clusters)
+
+    # Ganze Cluster aufnehmen, bis das Ziel erreicht ist. Der letzte darf
+    # überschießen – ihn zu überspringen und einen kleineren zu nehmen füllte
+    # Dev systematisch mit Einzelseiten, also mit den seltenen Layouts.
+    goal = max(1, int(len(train) * dev_share))
+    dev: list[str] = []
+    rest: list[str] = []
+    for cluster in clusters:
+        (dev if len(dev) < goal else rest).extend(cluster)
+
+    return {"train": sorted(rest), "dev": sorted(dev), "test": sorted(test)}
+
+
+def _dev_clusters(page_ids: list[str], words: dict[str, list[str]]) -> list[list[str]]:
+    """Duplikat-Cluster der Trainingswochen, jede Seite in genau einem."""
+    from magda.dedupe import group
+
+    known = {pid: words[pid] for pid in page_ids if pid in words}
+    clusters = [list(g) for g in group(known, threshold=DEV_CLUSTER_THRESHOLD)]
+    clusters += [[pid] for pid in page_ids if pid not in known]
+    return clusters
 
 
 def select_split(pages: list[dict], splits: dict, name: str) -> list[dict]:
@@ -168,6 +207,8 @@ class TextDataset(Dataset):
 
     def __init__(self, pages: list[dict], tokenizer, max_length: int):
         self.encodings = []
+        self.page_ids = []
+        self.word_ids = []
         for page in pages:
             words = [w["text"] for w in page["words"]]
             enc = tokenizer(
@@ -178,7 +219,9 @@ class TextDataset(Dataset):
                 padding="max_length",
             )
             enc["labels"] = align_word_labels(enc.word_ids(), page["tags"])
+            self.word_ids.append(enc.word_ids())
             self.encodings.append(enc)
+            self.page_ids.append(page["page_id"])
 
     def __len__(self):
         return len(self.encodings)
@@ -207,6 +250,7 @@ class LayoutDataset(Dataset):
     def __init__(self, pages: list[dict], tokenizer, max_length: int):
         self.encodings = []
         self.page_ids = []
+        self.word_ids = []
         self.image_processor = LayoutLMv2ImageProcessor(apply_ocr=False)
         for page in pages:
             words = [w["text"] for w in page["words"]]
@@ -222,6 +266,7 @@ class LayoutDataset(Dataset):
                 padding="max_length",
             )
             enc["labels"] = align_word_labels(enc.word_ids(), page["tags"])
+            self.word_ids.append(enc.word_ids())
             self.encodings.append(enc)
             self.page_ids.append(page["page_id"])
 

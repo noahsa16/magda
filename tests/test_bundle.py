@@ -86,3 +86,27 @@ def test_seite_ohne_bild_wird_gemeldet(projekt):
     zaehler = bundle.build(projekt / "b.tgz", "testmodell")
 
     assert zaehler["fehlende_bilder"] == ["1_p1"]
+
+
+def test_data_kommt_nicht_ueber_git_ins_buendel(tmp_path, monkeypatch):
+    """`data/` ist versioniert, damit das Team es nicht neu erzeugen muss.
+
+    Fürs Transportpaket ist das die falsche Quelle: die Original-PDFs und die
+    unverkleinerten Bilder wiegen zusammen 1,2 GB, und was die GPU braucht,
+    legt `build()` ohnehin gezielt dazu.
+    """
+    (tmp_path / "data" / "raw" / "1").mkdir(parents=True)
+    (tmp_path / "data" / "raw" / "1" / "bk_1.pdf").write_bytes(b"%PDF-gross")
+    (tmp_path / "src").mkdir()
+    (tmp_path / "src" / "modul.py").write_text("x = 1")
+
+    monkeypatch.setattr(bundle, "PROJECT_ROOT", tmp_path)
+    monkeypatch.setattr(
+        bundle.subprocess, "run",
+        lambda *a, **k: type("R", (), {"stdout": "src/modul.py\0data/raw/1/bk_1.pdf\0"})(),
+    )
+
+    dateien = [p.relative_to(tmp_path).as_posix() for p in bundle._tracked_files()]
+
+    assert "src/modul.py" in dateien
+    assert not [d for d in dateien if d.startswith("data/")]

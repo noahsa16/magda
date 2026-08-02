@@ -1,0 +1,701 @@
+{
+  "page_id": "1351497_p2",
+  "catalog_id": "1351497",
+  "page": 2,
+  "width": 476.22,
+  "height": 841.89,
+  "model": "layoutxlm",
+  "labels_from": "sonnet-5",
+  "created": "2026-08-02T20:18:21",
+  "num_words": 44,
+  "num_words_predicted": 44,
+  "truncated": false,
+  "words": [
+    {
+      "i": 0,
+      "text": "1.45",
+      "bbox": [
+        173.99,
+        757.45,
+        218.49,
+        784.34
+      ],
+      "label": "B-PRICE",
+      "confidence": 0.9906
+    },
+    {
+      "i": 1,
+      "text": "1.65",
+      "bbox": [
+        187.14,
+        780.73,
+        205.34,
+        791.73
+      ],
+      "label": "B-OLD_PRICE",
+      "confidence": 0.9898
+    },
+    {
+      "i": 2,
+      "text": "PENATEN",
+      "bbox": [
+        176.03,
+        707.37,
+        204.93,
+        716.41
+      ],
+      "label": "B-BRAND",
+      "confidence": 0.9964
+    },
+    {
+      "i": 3,
+      "text": "Puder1",
+      "bbox": [
+        176.03,
+        713.82,
+        198.9,
+        723.91
+      ],
+      "label": "B-PRODUCT",
+      "confidence": 0.9937
+    },
+    {
+      "i": 4,
+      "text": "je",
+      "bbox": [
+        176.03,
+        722.45,
+        182.2,
+        731.38
+      ],
+      "label": "O",
+      "confidence": 0.9981
+    },
+    {
+      "i": 5,
+      "text": "100",
+      "bbox": [
+        183.7,
+        722.45,
+        196.3,
+        731.38
+      ],
+      "label": "B-QUANTITY",
+      "confidence": 0.9984
+    },
+    {
+      "i": 6,
+      "text": "g",
+      "bbox": [
+        197.8,
+        722.45,
+        202.07,
+        731.38
+      ],
+      "label": "I-QUANTITY",
+      "confidence": 0.9982
+    },
+    {
+      "i": 7,
+      "text": "(1",
+      "bbox": [
+        176.03,
+        729.95,
+        182.93,
+        738.88
+      ],
+      "label": "B-UNIT_PRICE",
+      "confidence": 0.998
+    },
+    {
+      "i": 8,
+      "text": "kg",
+      "bbox": [
+        184.43,
+        729.95,
+        192.49,
+        738.88
+      ],
+      "label": "I-UNIT_PRICE",
+      "confidence": 0.999
+    },
+    {
+      "i": 9,
+      "text": "=",
+      "bbox": [
+        193.99,
+        729.95,
+        198.19,
+        738.88
+      ],
+      "label": "I-UNIT_PRICE",
+      "confidence": 0.999
+    },
+    {
+      "i": 10,
+      "text": "14.50)",
+      "bbox": [
+        199.69,
+        729.95,
+        221.24,
+        738.88
+      ],
+      "label": "I-UNIT_PRICE",
+      "confidence": 0.999
+    },
+    {
+      "i": 11,
+      "text": "1.75",
+      "bbox": [
+        401.53,
+        757.45,
+        446.03,
+        784.34
+      ],
+      "label": "B-PRICE",
+      "confidence": 0.9909
+    },
+    {
+      "i": 12,
+      "text": "1.95",
+      "bbox": [
+        414.68,
+        780.73,
+        432.88,
+        791.73
+      ],
+      "label": "B-OLD_PRICE",
+      "confidence": 0.99
+    },
+    {
+      "i": 13,
+      "text": "TODAY",
+      "bbox": [
+        412.44,
+        699.87,
+        433.65,
+        708.91
+      ],
+      "label": "B-BRAND",
+      "confidence": 0.9954
+    },
+    {
+      "i": 14,
+      "text": "Bodylotion",
+      "bbox": [
+        412.44,
+        707.37,
+        449.17,
+        716.41
+      ],
+      "label": "B-PRODUCT",
+      "confidence": 0.9966
+    },
+    {
+      "i": 15,
+      "text": "Urea1",
+      "bbox": [
+        412.44,
+        713.82,
+        430.99,
+        723.91
+      ],
+      "label": "I-PRODUCT",
+      "confidence": 0.9972
+    },
+    {
+      "i": 16,
+      "text": "je",
+      "bbox": [
+        412.44,
+        722.45,
+        418.61,
+        731.38
+      ],
+      "label": "O",
+      "confidence": 0.9984
+    },
+    {
+      "i": 17,
+      "text": "400",
+      "bbox": [
+        420.11,
+        722.45,
+        432.71,
+        731.38
+      ],
+      "label": "B-QUANTITY",
+      "confidence": 0.998
+    },
+    {
+      "i": 18,
+      "text": "ml",
+      "bbox": [
+        434.21,
+        722.45,
+        442.88,
+        731.38
+      ],
+      "label": "I-QUANTITY",
+      "confidence": 0.9981
+    },
+    {
+      "i": 19,
+      "text": "(1",
+      "bbox": [
+        412.44,
+        729.95,
+        419.34,
+        738.88
+      ],
+      "label": "B-UNIT_PRICE",
+      "confidence": 0.9981
+    },
+    {
+      "i": 20,
+      "text": "l",
+      "bbox": [
+        420.84,
+        729.95,
+        422.98,
+        738.88
+      ],
+      "label": "I-UNIT_PRICE",
+      "confidence": 0.9987
+    },
+    {
+      "i": 21,
+      "text": "=",
+      "bbox": [
+        424.48,
+        729.95,
+        428.68,
+        738.88
+      ],
+      "label": "I-UNIT_PRICE",
+      "confidence": 0.9989
+    },
+    {
+      "i": 22,
+      "text": "4.38)",
+      "bbox": [
+        430.18,
+        729.95,
+        447.53,
+        738.88
+      ],
+      "label": "I-UNIT_PRICE",
+      "confidence": 0.9989
+    },
+    {
+      "i": 23,
+      "text": "DAUERHAFT",
+      "bbox": [
+        100.19,
+        7.37,
+        346.29,
+        253.47
+      ],
+      "label": "O",
+      "confidence": 0.999
+    },
+    {
+      "i": 24,
+      "text": "GÜNSTIGER",
+      "bbox": [
+        76.28,
+        59.19,
+        308.43,
+        291.33
+      ],
+      "label": "O",
+      "confidence": 0.9989
+    },
+    {
+      "i": 25,
+      "text": "1",
+      "bbox": [
+        17.01,
+        816.05,
+        20.37,
+        823.19
+      ],
+      "label": "O",
+      "confidence": 0.9992
+    },
+    {
+      "i": 26,
+      "text": "Artikel",
+      "bbox": [
+        21.57,
+        818.55,
+        38.84,
+        825.7
+      ],
+      "label": "O",
+      "confidence": 0.9991
+    },
+    {
+      "i": 27,
+      "text": "sind",
+      "bbox": [
+        40.04,
+        818.55,
+        50.88,
+        825.7
+      ],
+      "label": "O",
+      "confidence": 0.9994
+    },
+    {
+      "i": 28,
+      "text": "regional",
+      "bbox": [
+        52.08,
+        818.55,
+        74.2,
+        825.7
+      ],
+      "label": "O",
+      "confidence": 0.9991
+    },
+    {
+      "i": 29,
+      "text": "unterschiedlich",
+      "bbox": [
+        75.4,
+        818.55,
+        115.48,
+        825.7
+      ],
+      "label": "O",
+      "confidence": 0.9992
+    },
+    {
+      "i": 30,
+      "text": "verfügbar",
+      "bbox": [
+        116.68,
+        818.55,
+        142.66,
+        825.7
+      ],
+      "label": "O",
+      "confidence": 0.9992
+    },
+    {
+      "i": 31,
+      "text": "und",
+      "bbox": [
+        21.57,
+        825.05,
+        31.79,
+        832.19
+      ],
+      "label": "O",
+      "confidence": 0.9994
+    },
+    {
+      "i": 32,
+      "text": "nicht",
+      "bbox": [
+        32.99,
+        825.05,
+        45.92,
+        832.19
+      ],
+      "label": "O",
+      "confidence": 0.9994
+    },
+    {
+      "i": 33,
+      "text": "in",
+      "bbox": [
+        47.12,
+        825.05,
+        52.13,
+        832.19
+      ],
+      "label": "O",
+      "confidence": 0.9994
+    },
+    {
+      "i": 34,
+      "text": "allen",
+      "bbox": [
+        53.33,
+        825.05,
+        66.62,
+        832.19
+      ],
+      "label": "O",
+      "confidence": 0.9992
+    },
+    {
+      "i": 35,
+      "text": "Filialen",
+      "bbox": [
+        67.82,
+        825.05,
+        87.14,
+        832.19
+      ],
+      "label": "O",
+      "confidence": 0.9991
+    },
+    {
+      "i": 36,
+      "text": "erhältlich.",
+      "bbox": [
+        88.34,
+        825.05,
+        114.91,
+        832.19
+      ],
+      "label": "O",
+      "confidence": 0.9992
+    },
+    {
+      "i": 37,
+      "text": "Dauerhaft",
+      "bbox": [
+        25.85,
+        335.02,
+        150.79,
+        368.74
+      ],
+      "label": "O",
+      "confidence": 0.9987
+    },
+    {
+      "i": 38,
+      "text": "im",
+      "bbox": [
+        156.38,
+        335.02,
+        188.81,
+        368.74
+      ],
+      "label": "O",
+      "confidence": 0.9991
+    },
+    {
+      "i": 39,
+      "text": "Preis",
+      "bbox": [
+        194.4,
+        335.02,
+        254.47,
+        368.74
+      ],
+      "label": "O",
+      "confidence": 0.999
+    },
+    {
+      "i": 40,
+      "text": "gesenkt",
+      "bbox": [
+        260.05,
+        335.02,
+        359.7,
+        368.74
+      ],
+      "label": "O",
+      "confidence": 0.9989
+    },
+    {
+      "i": 41,
+      "text": "und",
+      "bbox": [
+        25.85,
+        364.85,
+        74.31,
+        398.58
+      ],
+      "label": "O",
+      "confidence": 0.9992
+    },
+    {
+      "i": 42,
+      "text": "nirgendwo",
+      "bbox": [
+        79.89,
+        364.54,
+        224.04,
+        399.0
+      ],
+      "label": "O",
+      "confidence": 0.9991
+    },
+    {
+      "i": 43,
+      "text": "günstiger.",
+      "bbox": [
+        229.62,
+        364.54,
+        362.21,
+        399.0
+      ],
+      "label": "O",
+      "confidence": 0.9981
+    }
+  ],
+  "entities": [
+    {
+      "label": "PRICE",
+      "start": 0,
+      "end": 1,
+      "text": "1.45",
+      "bbox": [
+        173.99,
+        757.45,
+        218.49,
+        784.34
+      ],
+      "confidence": 0.9906
+    },
+    {
+      "label": "OLD_PRICE",
+      "start": 1,
+      "end": 2,
+      "text": "1.65",
+      "bbox": [
+        187.14,
+        780.73,
+        205.34,
+        791.73
+      ],
+      "confidence": 0.9898
+    },
+    {
+      "label": "BRAND",
+      "start": 2,
+      "end": 3,
+      "text": "PENATEN",
+      "bbox": [
+        176.03,
+        707.37,
+        204.93,
+        716.41
+      ],
+      "confidence": 0.9964
+    },
+    {
+      "label": "PRODUCT",
+      "start": 3,
+      "end": 4,
+      "text": "Puder1",
+      "bbox": [
+        176.03,
+        713.82,
+        198.9,
+        723.91
+      ],
+      "confidence": 0.9937
+    },
+    {
+      "label": "QUANTITY",
+      "start": 5,
+      "end": 7,
+      "text": "100 g",
+      "bbox": [
+        183.7,
+        722.45,
+        202.07,
+        731.38
+      ],
+      "confidence": 0.9983
+    },
+    {
+      "label": "UNIT_PRICE",
+      "start": 7,
+      "end": 11,
+      "text": "(1 kg = 14.50)",
+      "bbox": [
+        176.03,
+        729.95,
+        221.24,
+        738.88
+      ],
+      "confidence": 0.9988
+    },
+    {
+      "label": "PRICE",
+      "start": 11,
+      "end": 12,
+      "text": "1.75",
+      "bbox": [
+        401.53,
+        757.45,
+        446.03,
+        784.34
+      ],
+      "confidence": 0.9909
+    },
+    {
+      "label": "OLD_PRICE",
+      "start": 12,
+      "end": 13,
+      "text": "1.95",
+      "bbox": [
+        414.68,
+        780.73,
+        432.88,
+        791.73
+      ],
+      "confidence": 0.99
+    },
+    {
+      "label": "BRAND",
+      "start": 13,
+      "end": 14,
+      "text": "TODAY",
+      "bbox": [
+        412.44,
+        699.87,
+        433.65,
+        708.91
+      ],
+      "confidence": 0.9954
+    },
+    {
+      "label": "PRODUCT",
+      "start": 14,
+      "end": 16,
+      "text": "Bodylotion Urea1",
+      "bbox": [
+        412.44,
+        707.37,
+        449.17,
+        723.91
+      ],
+      "confidence": 0.9969
+    },
+    {
+      "label": "QUANTITY",
+      "start": 17,
+      "end": 19,
+      "text": "400 ml",
+      "bbox": [
+        420.11,
+        722.45,
+        442.88,
+        731.38
+      ],
+      "confidence": 0.998
+    },
+    {
+      "label": "UNIT_PRICE",
+      "start": 19,
+      "end": 23,
+      "text": "(1 l = 4.38)",
+      "bbox": [
+        412.44,
+        729.95,
+        447.53,
+        738.88
+      ],
+      "confidence": 0.9987
+    }
+  ]
+}

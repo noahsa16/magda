@@ -17,7 +17,7 @@ src/magda/   Kern-Package – hier liegt die Logik (inkl. api.py, FastAPI fürs 
 frontend/    React-SPA (Vite, Tailwind, shadcn) – liest data/ über src/magda/api.py
 tests/       pytest (Labels, Alignment, API)
 gold/        handannotierte Referenz (versioniert)
-data/        lokal, gitignored (nur .gitkeep versioniert)
+data/        versioniert (PDFs, Wörter, Labels, Bilder, Splits)
 checkpoints/ lokal, gitignored
 docs/        Proposal, RunPod-Anleitung, Ursprungs-Prototyp
 reports/     Wochenberichte
@@ -58,6 +58,9 @@ magda label --model X --repair      # Span-Guard nachträglich anwenden
 magda split --strategy week         # Aufteilung neu festlegen (--force überschreibt)
 magda train layoutxlm               # bzw. gbert
 magda eval gbert --split test
+magda predict gbert --split test --labels-from sonnet-5   # Wort, Box, Label je Seite
+magda predict gbert --all-words     # ganze Ernte, ohne Labels – der Einsatzfall
+magda significance --labels-from sonnet-5   # Konfidenzintervall, gepaarter Vergleich
 magda flair --reference gold        # Flair-Vergleichsarm
 magda gold --per-label              # Labeling-Modelle gegen Gold messen
 magda agreement qwen3.5-397b-a17b mistral-medium-3.5-128b
@@ -78,7 +81,17 @@ eine Liste auszugeben.
 
 ## Konventionen
 
-- Kommentare und Docstrings auf Deutsch, Code-Identifier auf Englisch.
+- **Kommentare und Docstrings auf Deutsch, jeder Code-Identifier auf Englisch.**
+  Das gilt für Klassen, Funktionen, Parameter, JSON-Feldnamen *und lokale
+  Variablen* – `target`, nicht `ziel`; `previous`, nicht `vorheriges`.
+- **Der umgebende Code ist hier kein Vorbild.** Im Altbestand stehen deutsche
+  Identifier (`Befehl`, `wochen`, `zaehler`, `sicherung`, `fehler`); sie sind
+  Altlast, kein Stil, an den man sich anpasst. Neuer Code wird englisch
+  benannt, auch wenn direkt daneben deutscher steht. Bestehende Namen werden
+  nicht nebenbei umbenannt – das gehört in einen eigenen Commit, sonst
+  versteckt sich eine Umbenennung in einer inhaltlichen Änderung.
+  Einzige Ausnahme: Testfunktionsnamen (`test_dev_kommt_nicht_aus_der_testwoche`)
+  bleiben deutsch – sie sind Sätze über das Verhalten, keine Bezeichner.
 - Docstrings erklären *warum*, nicht *was*. Kein Kommentar, der die Zeile
   darunter wiederholt.
 - Neue Pipeline-Logik gehört ins Package, nicht in die Skripte. Skripte machen
@@ -135,7 +148,16 @@ eine Liste auszugeben.
   Zuordnung nach sieben Tagen weg und ein Katalog nur noch eine sechsstellige
   Nummer. Für vergangene Wochen wird sie über den Gitterabstand übertragen und
   als `confirmed: false` ausgewiesen — vermutet, nicht belegt.
-- **`gold/` ist versioniert, `data/` nicht.** Handannotierte Referenzlabels
+- **`data/` ist seit dem 02.08.2026 mitversioniert – absichtlich.** Die
+  Alternative war, dass jede Person im Team Ernte, Extraktion und Labeling
+  selbst durchläuft; das kostet LLM-Kontingent für ein Ergebnis, das
+  identisch sein soll. Wer daran etwas ändern will, fragt vorher im Team.
+  Eine Nebenwirkung war, dass `magda bundle` auf 1054 MB anschwoll, weil
+  `git ls-files` plötzlich die Original-PDFs mitlieferte – deshalb filtert
+  `bundle._tracked_files()` `data/` heraus und legt die für die GPU nötigen
+  Teile gezielt dazu. Das Filtern betrifft nur das Transportpaket, nicht das
+  Repo.
+- **`gold/` ist versioniert, `data/` inzwischen auch.** Handannotierte Referenzlabels
   sind nicht reproduzierbar – ein verlorenes `data/labeled/` kostet API-Zeit,
   ein verlorenes `gold/` kostet Arbeitstage. Gespeichert werden Spans, nicht
   BIO-Tags: git-diffbar, und `labels.spans_to_bio()` erzeugt die Tags daraus.
@@ -295,39 +317,110 @@ eine Liste auszugeben.
   Zufall des Labeling-Fortschritts: wer bei 141 von 196 Seiten trainiert,
   friert einen Split ohne die restlichen 55 ein, und die landen später
   sämtlich im Training.
-- **Layout hat bisher nichts gebracht.** Test-F1 0.908 (GBERT) gegen 0.895
-  (LayoutXLM) über 3901 Entitäten im Wochen-Split; im alten Zufallssplit
-  0.929 gegen 0.930. BRAND, das Label, für das LayoutXLM angetreten ist,
-  erreicht auch ohne jede Positionsinformation 0.938 – in Woche 1 waren es
-  0.10. Der Unterschied lag nie am Layout, sondern an den Labels. OLD_PRICE
-  gewann im Zufallssplit noch (+0.056), im Wochen-Split verliert es (−0.050);
-  die These trägt also nicht einmal dort.
+- **Zum Layout-Vorteil ist kein Effekt nachweisbar – in keine Richtung.**
+  Über drei Wochen (02.08.2026, Test = KW32, 100 Seiten, 5107 Entitäten):
+  GBERT 0.891, LayoutXLM 0.878. Die Differenz von +0.013 hat ein
+  95-%-Intervall von [−0.008, +0.043] bei p = 0.435 – sie überdeckt die Null.
+  „GBERT ist besser" ist damit **nicht** belegt; belegt ist nur, dass der
+  Aufwand für den visuellen Backbone sich nicht auszahlt. Frühere Zahlen
+  (0.908 gegen 0.895, davor 0.929 gegen 0.930) sahen nach einem klaren
+  Ergebnis aus, weil das Intervall fehlte. Wer den Vergleich berichtet, nennt
+  das Intervall mit – sonst behauptet er mehr, als 43 Cluster hergeben.
+  Auffällig bleibt die *Streuung*: LayoutXLMs Intervall ist mit [0.812, 0.928]
+  deutlich breiter als GBERTs [0.852, 0.927]. Das layout-aware Modell ist über
+  die Vorlagen hinweg instabiler, und das verschluckt der Punktschätzer.
+  BRAND, das Label, für das LayoutXLM angetreten ist, erreicht auch ohne jede
+  Positionsinformation 0.938 – in Woche 1 waren es 0.10. Der Unterschied lag
+  nie am Layout, sondern an den Labels.
+- **Die Modelle sind an der Konsistenzgrenze ihres Lehrers angekommen.**
+  Fehleranalyse über die 100 Testseiten (02.08.2026): APP_PRICE hat F1 0.234
+  bei Precision 1.000 – und **null reine Falsch-Negative**. Das Modell findet
+  jeden App-Preis, nennt ihn nur PRICE (74×) oder OLD_PRICE (24×). Ursache ist
+  die Referenz: Penny setzt App-Preise mal mit dem Text „mit PENNY App", mal
+  nur mit der Fußnote „2" hinter der Zahl, und das Muster `<preis> 2` ist in
+  den sonnet-5-Labels **1× als APP_PRICE und 60× als O** vergeben. Dasselbe
+  von der anderen Seite bei PRICE (Precision 0.766): von rund 263
+  Falsch-Positiven sind 74 Referenz-APP_PRICEs und mindestens 60 die
+  ungelabelten Badge-Preise – die Metrik bestraft dort Vorhersagen, die
+  richtiger sind als die Referenz. Bei PRODUCT (0.835) sind 106 von 135
+  Fehlern Grenzfehler an Sortenzusätzen, also die offene Teamfrage.
+  **Konsequenz für die Priorisierung:** mehr Daten und größere Modelle bringen
+  hier nichts, konsistentere Labels schon. Was mechanisch entscheidbar ist,
+  gehört als Regel in den Code – wie bei `labeling.trim_spans()`.
+- **`magda eval` misst in drei Protokollen, und nur eines davon ist ehrlich.**
+  Das alte Protokoll wertete nur die Tensorpositionen aus, die ins 512er-Fenster
+  passten. Entities dahinter fehlten damit nicht als Falsch-Negative, sondern
+  **im Nenner**: gemessen 0.890 über 4921 Entitäten statt 0.891 über 5107. Die
+  Zahl war also nicht falsch berechnet, sie beantwortete eine andere Frage
+  („F1 auf den ersten 512 Subwords"). Primärmetrik ist `windowed`, weil sie das
+  misst, was `magda predict` ausliefert. `no-windows` (0.874) zeigt gegen
+  dieselbe volle Referenz, was ein Deployment ohne Fenster kostet – die
+  Differenz von 1,7 Punkten ist der Wert der Fenster, nicht die 0.001 gegen
+  `truncated`. Wer nur zwei Zahlen vergleicht, muss den Support danebenstellen.
+- **Sliding Window steckt in der Inferenz, nicht im Training** (`windows.py`,
+  Stride 128). Bewusst so: Training und Checkpoint-Auswahl bleiben unverändert,
+  damit die Vergleichbarkeit erhalten bleibt, während der ausgelieferte Output
+  vollständig ist – 0 statt 1476 Wörtern ohne Vorhersage auf der Testwoche.
+  Fenstergrenzen liegen auf Subwords, nicht auf Wörtern: das erste Wort eines
+  Folgefensters kann mit einem Fortsetzungs-Subword beginnen, das im Training
+  mit `-100` maskiert war. `merge_windows` überspringt es, solange ein anderes
+  Fenster das Wort ganz sieht.
+- **`get_or_create_splits` würfelt nichts mehr.** Fehlte `split.json`, entstand
+  dort kommentarlos ein 80/10/10-Seiten-Split – genau der, dessen Leck gemessen
+  und verworfen wurde. Auf einer frischen GPU-Instanz oder bei einem
+  Teammitglied ohne die Datei wäre das unbemerkt passiert, und die Zahlen sehen
+  dabei *besser* aus. Jetzt bricht die Funktion ab und verweist auf
+  `magda split`.
 - **Der Seiten-Split leckt: 12 von 19 Testseiten hatten einen Trainingszwilling
   mit Jaccard ≥ 0.7**, Median 0.851. Die Entdopplung greift erst ab 0.95,
   Seiten bei 0.949 überleben sie und landen dann auf verschiedenen Seiten des
   Splits. Gemessener Effekt: F1 0.944 auf Seiten mit nahem Zwilling gegen
   0.886 ohne. Behoben durch den **Wochen-Split**
-  (`magda split --strategy week`): KW30 lernt, KW31 testet,
-  81/8/107 Seiten. Median-Ähnlichkeit fällt auf 0.257, keine Testseite hat
-  noch einen Zwilling ≥ 0.9. Ein Split über *Kataloge* hätte das nicht
-  behoben – `1347375_p30` und `1347396_p34` sind verschiedene Kataloge mit
-  Jaccard 0.939, zwei Regionalausgaben derselben Woche.
+  (`magda split --strategy week`). Stand 02.08.2026 über drei Wochen:
+  KW30+KW31 lernen, KW32 testet, **175/21/100 Seiten**. Median-Ähnlichkeit von
+  Test zu Train 0.285, keine der 100 Testseiten hat einen Zwilling ≥ 0.9. Ein
+  Split über *Kataloge* hätte das nicht behoben – `1347375_p30` und
+  `1347396_p34` sind verschiedene Kataloge mit Jaccard 0.939, zwei
+  Regionalausgaben derselben Woche.
+- **Dev wird clusterweise gezogen, nicht seitenweise.** Zufällig je Seite lag
+  Dev bei Median-Ähnlichkeit 0.721 zum Training, vier von 19 Seiten über 0.9 –
+  kein Test-Leck, aber die Checkpoint-Auswahl bewertete damit teils
+  Auswendiggelerntes und griff zum falschen Modell. Über ganze Duplikat-Cluster
+  gezogen (Jaccard 0.7): Median 0.315, keine Dev-Seite mehr über 0.7.
+- **Was von Test zu Train an Ähnlichkeit übrig bleibt, ist kein Leck.** Zwei
+  von 100 Testseiten liegen über 0.7 (Max 0.824), und beide sind Rückseiten mit
+  dem rechtlichen Kleingedruckten: 46 Wörter, davon 42 wortgleich zur Vorwoche,
+  verschieden sind Produkt, Preis und Datum. Solche Wiederholung tritt im
+  Einsatz garantiert auf – sie zu entfernen machte den Testsatz unrealistisch
+  schwer. Der schädliche Leak war ein anderer: dieselbe Seite in 44
+  Regionalfassungen, künstlich vervielfacht.
+- **Der Testsatz hat 100 Seiten, aber nur 43 unabhängige Einheiten.**
+  Bei Jaccard 0.7 bilden die 100 Seiten 43 Cluster, der größte umfasst 11.
+  Jede Unsicherheitsrechnung muss über *Cluster* resampeln
+  (`magda significance`), nicht über Seiten – sonst gelten elf Kopien einer
+  Vorlage als elf Beobachtungen und das Intervall wird zu eng. Praktische
+  Folge: ein Teacher-Fehler auf einer Seite im großen Cluster zählt 11-fach.
 - **Die Woche steht nirgends in den Daten, nur im Abstand der Katalog-IDs.**
   Innerhalb einer Woche liegen sie höchstens 24 auseinander, zwischen zwei
   Wochen 4446. `dataset.WEEK_GAP = 200` schneidet großzügig dazwischen. Feste
   ID-Bereiche wären beim nächsten Erntelauf veraltet.
 - **Der Wochen-Split misst Generalisierung über die Zeit – und deckt damit
-  Verteilungsverschiebungen auf.** APP_PRICE hat 2 Spans in KW30 und 57 in
-  KW31 (auf 46 von 107 Testseiten): Penny hat den App-Preis dazwischen breit
-  ausgerollt. Das Modell sagt ihn kein einziges Mal voraus, F1 0.000. Ohne
-  APP_PRICE läge GBERT bei 0.914 statt 0.908. Ein Zufallssplit hätte die 57
-  Spans verteilt und eine passable Zahl geliefert – der Befund wäre unsichtbar
-  geblieben.
-- **Auch ohne Leck bleibt der Testsatz redundant.** Die 107 Testseiten bilden
-  bei Jaccard 0.7 nur 66 Cluster, der größte umfasst 11 Seiten. Kein Leck (im
-  Training steckt nichts davon), aber die effektive Stichprobe ist ~66, nicht
-  107. Und Dev hat nur 8 Seiten – für Modellauswahl zu dünn. Beides löst erst
-  eine dritte Erntewoche.
+  Verteilungsverschiebungen auf.** APP_PRICE wächst über die drei Wochen von
+  2 auf 57 auf 98 Spans: Penny rollt den App-Preis gerade aus. Trainiert wird
+  auf 57 Beispielen, gemessen gegen 98. Mit zwei Wochen (Training nur KW30,
+  2 Spans) lag das Label bei F1 0.000, mit drei Wochen bei 0.234 – bei
+  Precision 1.000 und Recall 0.133. Ein Zufallssplit hätte die Spans verteilt
+  und eine passable Zahl geliefert; der Befund „unsere Pipeline hinkt
+  Sortimentsänderungen eine Woche hinterher" wäre unsichtbar geblieben. Dev
+  enthält nur 2 APP_PRICE-Spans – die Checkpoint-Auswahl kann dieses Label
+  praktisch nicht bewerten.
+- **Dev ist mit 21 Seiten in 14 Clustern dünn.** Für die Wahl unter zehn
+  Epochen-Checkpoints reicht es knapp; für Hyperparametersuche oder
+  Architekturentscheidungen nicht. Dazu kommt eine bauartbedingte Schieflage:
+  Dev stammt aus den Trainingswochen, misst also In-Distribution-Fit, während
+  Test die Zeitverschiebung misst. Mit drei Wochen nicht besser lösbar – aber
+  im Bericht zu nennen, samt Entity-Zahl von Dev, damit das Auswahlrauschen
+  einzuordnen ist.
 - **`data/labeled/sonnet-5/` ist die Referenz** (Teamentscheidung, 30.07.2026).
   Nicht `gold/`: drei handannotierte Seiten tragen keine Messung, und die
   Alternative – 30 Seiten von Hand durchsehen – kostet Tage für eine Zahl, die
@@ -370,15 +463,37 @@ eine Liste auszugeben.
 
 ## Offene Entscheidungen (nicht eigenmächtig festlegen)
 
-- Split über Kataloge statt Seiten? Angebote wiederholen sich zwischen Wochen,
-  das leakt möglicherweise vom Train- in den Test-Split.
-- LayoutXLM braucht detectron2 (visueller Backbone von LayoutLMv2). Falls die
-  Installation scheitert: Plan B wäre LayoutLMv3 – weicht aber vom Proposal ab
-  und muss im Team besprochen werden.
-- Seiten mit >512 Subwords werden aktuell abgeschnitten. Sliding Window nur,
-  wenn messbar Entities verlorengehen.
+- **APP_PRICE-Regel: Badge-Variante mitlabeln?** Gemessen ist der Fall (siehe
+  „Konsistenzgrenze" oben): `<preis>` plus Fußnote „2" ist 1× als APP_PRICE und
+  60× als O gelabelt. Mechanisch entscheidbar und damit ein Kandidat für
+  `labeling.trim_spans()` plus Repair-Pass – aber es ändert die
+  Referenzdefinition und ist deshalb Teamsache. Größter bekannter Hebel.
+- **Sortenangaben und Gebinde-Komposita** (`50-ml-Fläschchen`, `0,33-l-Dose`,
+  `1-l-Sonderedition`): unverändert offen, und mit 106 von 135 PRODUCT-Fehlern
+  jetzt beziffert. Prüfen per Auszählung je Wortlaut über den Korpus, nicht
+  seitenweise.
+- **Sliding Window auch im Training?** In der Inferenz ist es drin und bringt
+  +1,7 Punkte gegen die volle Referenz. Im Training wäre es Augmentierung, kein
+  Messfehler – also eine Abwägung, keine Korrektur. Bisher bewusst nicht getan,
+  damit Trainingssignal und Checkpoint-Auswahl unverändert bleiben.
+- **LiLT als dritter Arm?** LayoutXLM verliert konsistent, aber nicht
+  nachweisbar (Intervall überdeckt die Null). LiLT hat keinen visuellen
+  Backbone und ist bei 175 Trainingsseiten gutmütiger; ein Lauf würde den
+  Layout-Negativbefund gegen den Einwand „falsche Layout-Architektur"
+  absichern. Weicht vom Proposal ab → Teamentscheidung.
 - Label-Set ist ein Entwurf und wird nach Sichtung der ersten gelabelten Seiten
   finalisiert.
+
+### Beantwortet (nicht erneut aufmachen)
+
+- ~~Split über Kataloge statt Seiten?~~ Hätte nicht gereicht: `1347375_p30`
+  und `1347396_p34` sind verschiedene Kataloge mit Jaccard 0.939. Gelöst durch
+  den Wochen-Split.
+- ~~detectron2 als Risiko, Plan B LayoutLMv3?~~ detectron2 baut auf dem
+  RunPod-PyTorch-Image ohne Eingriff durch (02.08.2026).
+- ~~Sliding Window nur, wenn messbar Entities verlorengehen.~~ Gemessen: 186
+  von 5107 Entitäten (3,6 %) lagen hinter dem Abschnitt, 1476 von 20952 Wörtern
+  (7,0 %) hatten keine Vorhersage. Umgesetzt für die Inferenz.
 
 ## Zugangsdaten
 

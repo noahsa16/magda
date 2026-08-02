@@ -1,0 +1,2022 @@
+{
+  "page_id": "1351497_p31",
+  "catalog_id": "1351497",
+  "page": 31,
+  "width": 476.22,
+  "height": 841.89,
+  "model": "gbert",
+  "labels_from": "sonnet-5",
+  "created": "2026-08-02T20:15:23",
+  "num_words": 140,
+  "num_words_predicted": 140,
+  "truncated": false,
+  "words": [
+    {
+      "i": 0,
+      "text": "Aktion",
+      "bbox": [
+        420.43,
+        500.34,
+        456.09,
+        514.39
+      ],
+      "label": "O",
+      "confidence": 0.9994
+    },
+    {
+      "i": 1,
+      "text": "2.99",
+      "bbox": [
+        401.13,
+        525.46,
+        445.63,
+        552.34
+      ],
+      "label": "B-PRICE",
+      "confidence": 0.987
+    },
+    {
+      "i": 2,
+      "text": "Aktion",
+      "bbox": [
+        412.56,
+        293.74,
+        455.98,
+        310.85
+      ],
+      "label": "O",
+      "confidence": 0.9993
+    },
+    {
+      "i": 3,
+      "text": "9.99",
+      "bbox": [
+        388.9,
+        325.06,
+        442.51,
+        357.44
+      ],
+      "label": "B-PRICE",
+      "confidence": 0.498
+    },
+    {
+      "i": 4,
+      "text": "HOME",
+      "bbox": [
+        127.56,
+        528.49,
+        146.85,
+        537.53
+      ],
+      "label": "B-BRAND",
+      "confidence": 0.99
+    },
+    {
+      "i": 5,
+      "text": "IDEAS",
+      "bbox": [
+        148.05,
+        528.49,
+        166.78,
+        537.53
+      ],
+      "label": "I-BRAND",
+      "confidence": 0.9888
+    },
+    {
+      "i": 6,
+      "text": "Living",
+      "bbox": [
+        167.98,
+        528.49,
+        187.7,
+        537.53
+      ],
+      "label": "O",
+      "confidence": 0.8749
+    },
+    {
+      "i": 7,
+      "text": "Kunststoff-Brauseschlauch*",
+      "bbox": [
+        127.56,
+        535.99,
+        218.53,
+        545.03
+      ],
+      "label": "B-PRODUCT",
+      "confidence": 0.9921
+    },
+    {
+      "i": 8,
+      "text": "•",
+      "bbox": [
+        127.56,
+        543.57,
+        131.29,
+        552.5
+      ],
+      "label": "O",
+      "confidence": 0.9995
+    },
+    {
+      "i": 9,
+      "text": "12,7-mm-1/2”-Standardanschluss",
+      "bbox": [
+        132.79,
+        543.57,
+        243.52,
+        552.5
+      ],
+      "label": "O",
+      "confidence": 0.9976
+    },
+    {
+      "i": 10,
+      "text": "•",
+      "bbox": [
+        127.56,
+        551.07,
+        131.29,
+        560.0
+      ],
+      "label": "O",
+      "confidence": 0.9996
+    },
+    {
+      "i": 11,
+      "text": "Ca.",
+      "bbox": [
+        132.79,
+        551.07,
+        142.4,
+        560.0
+      ],
+      "label": "O",
+      "confidence": 0.9995
+    },
+    {
+      "i": 12,
+      "text": "2",
+      "bbox": [
+        143.74,
+        551.07,
+        147.94,
+        560.0
+      ],
+      "label": "O",
+      "confidence": 0.9969
+    },
+    {
+      "i": 13,
+      "text": "m",
+      "bbox": [
+        149.44,
+        551.07,
+        155.98,
+        560.0
+      ],
+      "label": "O",
+      "confidence": 0.9985
+    },
+    {
+      "i": 14,
+      "text": "lang",
+      "bbox": [
+        157.48,
+        551.07,
+        172.12,
+        560.0
+      ],
+      "label": "O",
+      "confidence": 0.9992
+    },
+    {
+      "i": 15,
+      "text": "je",
+      "bbox": [
+        127.56,
+        558.57,
+        133.72,
+        567.5
+      ],
+      "label": "O",
+      "confidence": 0.9995
+    },
+    {
+      "i": 16,
+      "text": "Stück",
+      "bbox": [
+        135.22,
+        558.57,
+        152.61,
+        567.5
+      ],
+      "label": "O",
+      "confidence": 0.9993
+    },
+    {
+      "i": 17,
+      "text": "4.99",
+      "bbox": [
+        154.11,
+        558.57,
+        168.76,
+        567.5
+      ],
+      "label": "B-PRICE",
+      "confidence": 0.9971
+    },
+    {
+      "i": 18,
+      "text": "Spül-/Waschbeckenzubehör*",
+      "bbox": [
+        269.29,
+        528.74,
+        365.38,
+        537.78
+      ],
+      "label": "B-PRODUCT",
+      "confidence": 0.9926
+    },
+    {
+      "i": 19,
+      "text": "•",
+      "bbox": [
+        269.29,
+        536.32,
+        273.03,
+        545.25
+      ],
+      "label": "O",
+      "confidence": 0.9994
+    },
+    {
+      "i": 20,
+      "text": "2er-Packung",
+      "bbox": [
+        274.53,
+        536.32,
+        315.81,
+        545.25
+      ],
+      "label": "B-QUANTITY",
+      "confidence": 0.9849
+    },
+    {
+      "i": 21,
+      "text": "Schwenkbrausen,",
+      "bbox": [
+        317.31,
+        536.32,
+        375.44,
+        545.25
+      ],
+      "label": "O",
+      "confidence": 0.9894
+    },
+    {
+      "i": 22,
+      "text": "mit",
+      "bbox": [
+        376.78,
+        536.32,
+        387.83,
+        545.25
+      ],
+      "label": "O",
+      "confidence": 0.9989
+    },
+    {
+      "i": 23,
+      "text": "Dusch-/Perlstrahlfunktion",
+      "bbox": [
+        274.53,
+        543.82,
+        358.71,
+        552.75
+      ],
+      "label": "O",
+      "confidence": 0.9986
+    },
+    {
+      "i": 24,
+      "text": "oder",
+      "bbox": [
+        360.21,
+        543.82,
+        375.57,
+        552.75
+      ],
+      "label": "O",
+      "confidence": 0.9995
+    },
+    {
+      "i": 25,
+      "text": "•",
+      "bbox": [
+        269.29,
+        551.32,
+        273.03,
+        560.25
+      ],
+      "label": "O",
+      "confidence": 0.9993
+    },
+    {
+      "i": 26,
+      "text": "4-teiliges",
+      "bbox": [
+        274.53,
+        551.32,
+        305.66,
+        560.25
+      ],
+      "label": "B-QUANTITY",
+      "confidence": 0.9889
+    },
+    {
+      "i": 27,
+      "text": "Mischdüsen-Set",
+      "bbox": [
+        307.16,
+        551.32,
+        358.22,
+        560.25
+      ],
+      "label": "B-PRODUCT",
+      "confidence": 0.8528
+    },
+    {
+      "i": 28,
+      "text": "je",
+      "bbox": [
+        269.29,
+        558.82,
+        275.46,
+        567.75
+      ],
+      "label": "O",
+      "confidence": 0.9994
+    },
+    {
+      "i": 29,
+      "text": "Packung/Set",
+      "bbox": [
+        276.96,
+        558.82,
+        318.03,
+        567.75
+      ],
+      "label": "O",
+      "confidence": 0.9982
+    },
+    {
+      "i": 30,
+      "text": "2.99",
+      "bbox": [
+        319.53,
+        558.82,
+        334.19,
+        567.75
+      ],
+      "label": "B-PRICE",
+      "confidence": 0.9968
+    },
+    {
+      "i": 31,
+      "text": "-34%",
+      "bbox": [
+        420.02,
+        729.68,
+        457.3,
+        749.23
+      ],
+      "label": "B-DISCOUNT",
+      "confidence": 0.998
+    },
+    {
+      "i": 32,
+      "text": "12.99",
+      "bbox": [
+        401.05,
+        760.11,
+        446.51,
+        781.5
+      ],
+      "label": "B-PRICE",
+      "confidence": 0.9973
+    },
+    {
+      "i": 33,
+      "text": "UVP",
+      "bbox": [
+        406.55,
+        781.61,
+        420.17,
+        790.78
+      ],
+      "label": "O",
+      "confidence": 0.9973
+    },
+    {
+      "i": 34,
+      "text": "19.90",
+      "bbox": [
+        421.52,
+        781.61,
+        441.01,
+        790.78
+      ],
+      "label": "B-OLD_PRICE",
+      "confidence": 0.9973
+    },
+    {
+      "i": 35,
+      "text": "Damen-",
+      "bbox": [
+        159.19,
+        760.74,
+        185.5,
+        769.78
+      ],
+      "label": "B-PRODUCT",
+      "confidence": 0.7113
+    },
+    {
+      "i": 36,
+      "text": "oder",
+      "bbox": [
+        186.7,
+        760.82,
+        202.06,
+        769.75
+      ],
+      "label": "O",
+      "confidence": 0.9989
+    },
+    {
+      "i": 37,
+      "text": "Herren-Slipper*",
+      "bbox": [
+        203.41,
+        760.74,
+        254.9,
+        769.78
+      ],
+      "label": "B-PRODUCT",
+      "confidence": 0.7068
+    },
+    {
+      "i": 38,
+      "text": "Obermaterial",
+      "bbox": [
+        159.19,
+        768.32,
+        202.94,
+        777.25
+      ],
+      "label": "O",
+      "confidence": 0.9993
+    },
+    {
+      "i": 39,
+      "text": "PVC,",
+      "bbox": [
+        204.44,
+        768.32,
+        218.27,
+        777.25
+      ],
+      "label": "O",
+      "confidence": 0.9993
+    },
+    {
+      "i": 40,
+      "text": "Sohle",
+      "bbox": [
+        219.61,
+        768.32,
+        238.19,
+        777.25
+      ],
+      "label": "O",
+      "confidence": 0.9992
+    },
+    {
+      "i": 41,
+      "text": "aus",
+      "bbox": [
+        239.69,
+        768.32,
+        250.92,
+        777.25
+      ],
+      "label": "O",
+      "confidence": 0.9992
+    },
+    {
+      "i": 42,
+      "text": "EVA",
+      "bbox": [
+        252.42,
+        768.32,
+        264.29,
+        777.25
+      ],
+      "label": "O",
+      "confidence": 0.9993
+    },
+    {
+      "i": 43,
+      "text": "•",
+      "bbox": [
+        159.19,
+        775.82,
+        162.92,
+        784.75
+      ],
+      "label": "O",
+      "confidence": 0.9996
+    },
+    {
+      "i": 44,
+      "text": "Damen-Größen:",
+      "bbox": [
+        164.42,
+        775.82,
+        217.54,
+        784.75
+      ],
+      "label": "O",
+      "confidence": 0.9987
+    },
+    {
+      "i": 45,
+      "text": "37–40",
+      "bbox": [
+        219.04,
+        775.82,
+        239.44,
+        784.75
+      ],
+      "label": "O",
+      "confidence": 0.9991
+    },
+    {
+      "i": 46,
+      "text": "•",
+      "bbox": [
+        159.19,
+        783.32,
+        162.92,
+        792.25
+      ],
+      "label": "O",
+      "confidence": 0.9996
+    },
+    {
+      "i": 47,
+      "text": "Herren-Größen:",
+      "bbox": [
+        164.42,
+        783.32,
+        216.35,
+        792.25
+      ],
+      "label": "O",
+      "confidence": 0.9971
+    },
+    {
+      "i": 48,
+      "text": "42–45",
+      "bbox": [
+        217.85,
+        783.32,
+        238.25,
+        792.25
+      ],
+      "label": "O",
+      "confidence": 0.999
+    },
+    {
+      "i": 49,
+      "text": "je",
+      "bbox": [
+        159.19,
+        790.82,
+        165.35,
+        799.75
+      ],
+      "label": "O",
+      "confidence": 0.9994
+    },
+    {
+      "i": 50,
+      "text": "Paar",
+      "bbox": [
+        166.85,
+        790.82,
+        181.24,
+        799.75
+      ],
+      "label": "O",
+      "confidence": 0.9984
+    },
+    {
+      "i": 51,
+      "text": "Aktion",
+      "bbox": [
+        109.47,
+        732.34,
+        145.13,
+        746.39
+      ],
+      "label": "O",
+      "confidence": 0.9993
+    },
+    {
+      "i": 52,
+      "text": "12.99",
+      "bbox": [
+        89.68,
+        760.11,
+        135.15,
+        781.5
+      ],
+      "label": "B-PRICE",
+      "confidence": 0.9779
+    },
+    {
+      "i": 53,
+      "text": "Mit",
+      "bbox": [
+        59.44,
+        579.82,
+        72.0,
+        590.06
+      ],
+      "label": "O",
+      "confidence": 0.9991
+    },
+    {
+      "i": 54,
+      "text": "Absenkautomatik",
+      "bbox": [
+        73.7,
+        579.82,
+        143.11,
+        590.06
+      ],
+      "label": "O",
+      "confidence": 0.9984
+    },
+    {
+      "i": 55,
+      "text": "Duroplast-WC-Sitz*",
+      "bbox": [
+        17.01,
+        745.74,
+        79.7,
+        754.78
+      ],
+      "label": "B-PRODUCT",
+      "confidence": 0.9736
+    },
+    {
+      "i": 56,
+      "text": "•",
+      "bbox": [
+        17.01,
+        753.32,
+        20.74,
+        762.25
+      ],
+      "label": "O",
+      "confidence": 0.9994
+    },
+    {
+      "i": 57,
+      "text": "Passend",
+      "bbox": [
+        22.24,
+        753.32,
+        48.7,
+        762.25
+      ],
+      "label": "O",
+      "confidence": 0.9996
+    },
+    {
+      "i": 58,
+      "text": "für",
+      "bbox": [
+        50.2,
+        753.32,
+        59.57,
+        762.25
+      ],
+      "label": "O",
+      "confidence": 0.9995
+    },
+    {
+      "i": 59,
+      "text": "handels­übliche",
+      "bbox": [
+        22.24,
+        760.82,
+        72.5,
+        769.75
+      ],
+      "label": "O",
+      "confidence": 0.9993
+    },
+    {
+      "i": 60,
+      "text": "WCs",
+      "bbox": [
+        22.24,
+        768.32,
+        35.32,
+        777.25
+      ],
+      "label": "O",
+      "confidence": 0.9987
+    },
+    {
+      "i": 61,
+      "text": "•",
+      "bbox": [
+        17.01,
+        775.82,
+        20.74,
+        784.75
+      ],
+      "label": "O",
+      "confidence": 0.9997
+    },
+    {
+      "i": 62,
+      "text": "Ca.",
+      "bbox": [
+        22.24,
+        775.82,
+        31.85,
+        784.75
+      ],
+      "label": "O",
+      "confidence": 0.9996
+    },
+    {
+      "i": 63,
+      "text": "H",
+      "bbox": [
+        33.19,
+        775.82,
+        37.96,
+        784.75
+      ],
+      "label": "O",
+      "confidence": 0.9996
+    },
+    {
+      "i": 64,
+      "text": "4,8",
+      "bbox": [
+        39.46,
+        775.82,
+        49.91,
+        784.75
+      ],
+      "label": "O",
+      "confidence": 0.9995
+    },
+    {
+      "i": 65,
+      "text": "x",
+      "bbox": [
+        51.41,
+        775.82,
+        55.21,
+        784.75
+      ],
+      "label": "O",
+      "confidence": 0.9996
+    },
+    {
+      "i": 66,
+      "text": "B",
+      "bbox": [
+        22.24,
+        783.32,
+        26.53,
+        792.25
+      ],
+      "label": "O",
+      "confidence": 0.9996
+    },
+    {
+      "i": 67,
+      "text": "38,2",
+      "bbox": [
+        28.03,
+        783.32,
+        42.69,
+        792.25
+      ],
+      "label": "O",
+      "confidence": 0.9996
+    },
+    {
+      "i": 68,
+      "text": "x",
+      "bbox": [
+        44.19,
+        783.32,
+        47.98,
+        792.25
+      ],
+      "label": "O",
+      "confidence": 0.9995
+    },
+    {
+      "i": 69,
+      "text": "T",
+      "bbox": [
+        49.4,
+        783.32,
+        52.72,
+        792.25
+      ],
+      "label": "O",
+      "confidence": 0.9996
+    },
+    {
+      "i": 70,
+      "text": "45,5",
+      "bbox": [
+        54.13,
+        783.32,
+        68.79,
+        792.25
+      ],
+      "label": "O",
+      "confidence": 0.9994
+    },
+    {
+      "i": 71,
+      "text": "cm",
+      "bbox": [
+        70.29,
+        783.32,
+        79.95,
+        792.25
+      ],
+      "label": "O",
+      "confidence": 0.9993
+    },
+    {
+      "i": 72,
+      "text": "je",
+      "bbox": [
+        17.01,
+        790.82,
+        23.17,
+        799.75
+      ],
+      "label": "O",
+      "confidence": 0.9993
+    },
+    {
+      "i": 73,
+      "text": "Stück",
+      "bbox": [
+        24.67,
+        790.82,
+        42.06,
+        799.75
+      ],
+      "label": "O",
+      "confidence": 0.9987
+    },
+    {
+      "i": 74,
+      "text": "HOME",
+      "bbox": [
+        16.92,
+        513.49,
+        36.21,
+        522.53
+      ],
+      "label": "B-BRAND",
+      "confidence": 0.9952
+    },
+    {
+      "i": 75,
+      "text": "IDEAS",
+      "bbox": [
+        37.41,
+        513.49,
+        56.15,
+        522.53
+      ],
+      "label": "I-BRAND",
+      "confidence": 0.9912
+    },
+    {
+      "i": 76,
+      "text": "Living",
+      "bbox": [
+        57.35,
+        513.49,
+        77.06,
+        522.53
+      ],
+      "label": "O",
+      "confidence": 0.8001
+    },
+    {
+      "i": 77,
+      "text": "Design-Handbrause*",
+      "bbox": [
+        16.92,
+        520.99,
+        85.46,
+        530.03
+      ],
+      "label": "B-PRODUCT",
+      "confidence": 0.9931
+    },
+    {
+      "i": 78,
+      "text": "•",
+      "bbox": [
+        16.92,
+        528.57,
+        20.66,
+        537.5
+      ],
+      "label": "O",
+      "confidence": 0.9993
+    },
+    {
+      "i": 79,
+      "text": "3",
+      "bbox": [
+        22.16,
+        528.57,
+        26.36,
+        537.5
+      ],
+      "label": "O",
+      "confidence": 0.9941
+    },
+    {
+      "i": 80,
+      "text": "Strahlausführungen",
+      "bbox": [
+        27.86,
+        528.57,
+        92.95,
+        537.5
+      ],
+      "label": "O",
+      "confidence": 0.9841
+    },
+    {
+      "i": 81,
+      "text": "•",
+      "bbox": [
+        16.92,
+        536.07,
+        20.66,
+        545.0
+      ],
+      "label": "O",
+      "confidence": 0.9996
+    },
+    {
+      "i": 82,
+      "text": "Inkl.",
+      "bbox": [
+        22.16,
+        536.07,
+        36.49,
+        545.0
+      ],
+      "label": "O",
+      "confidence": 0.9995
+    },
+    {
+      "i": 83,
+      "text": "Brauseschlauch,",
+      "bbox": [
+        37.83,
+        536.07,
+        90.2,
+        545.0
+      ],
+      "label": "O",
+      "confidence": 0.9993
+    },
+    {
+      "i": 84,
+      "text": "ca.",
+      "bbox": [
+        22.16,
+        543.57,
+        31.3,
+        552.5
+      ],
+      "label": "O",
+      "confidence": 0.9997
+    },
+    {
+      "i": 85,
+      "text": "170",
+      "bbox": [
+        32.64,
+        543.57,
+        45.24,
+        552.5
+      ],
+      "label": "O",
+      "confidence": 0.9991
+    },
+    {
+      "i": 86,
+      "text": "cm",
+      "bbox": [
+        46.74,
+        543.57,
+        56.4,
+        552.5
+      ],
+      "label": "O",
+      "confidence": 0.9988
+    },
+    {
+      "i": 87,
+      "text": "lang",
+      "bbox": [
+        57.9,
+        543.57,
+        72.53,
+        552.5
+      ],
+      "label": "O",
+      "confidence": 0.9992
+    },
+    {
+      "i": 88,
+      "text": "•",
+      "bbox": [
+        16.92,
+        551.07,
+        20.66,
+        560.0
+      ],
+      "label": "O",
+      "confidence": 0.9996
+    },
+    {
+      "i": 89,
+      "text": "Standard­anschlüsse",
+      "bbox": [
+        22.16,
+        551.07,
+        86.78,
+        560.0
+      ],
+      "label": "O",
+      "confidence": 0.9989
+    },
+    {
+      "i": 90,
+      "text": "je",
+      "bbox": [
+        16.92,
+        558.57,
+        23.09,
+        567.5
+      ],
+      "label": "O",
+      "confidence": 0.9996
+    },
+    {
+      "i": 91,
+      "text": "Set",
+      "bbox": [
+        24.59,
+        558.57,
+        34.97,
+        567.5
+      ],
+      "label": "O",
+      "confidence": 0.9994
+    },
+    {
+      "i": 92,
+      "text": "9.99",
+      "bbox": [
+        36.47,
+        558.57,
+        51.12,
+        567.5
+      ],
+      "label": "B-PRICE",
+      "confidence": 0.9956
+    },
+    {
+      "i": 93,
+      "text": "Weitere",
+      "bbox": [
+        288.36,
+        387.66,
+        309.06,
+        394.8
+      ],
+      "label": "O",
+      "confidence": 0.9996
+    },
+    {
+      "i": 94,
+      "text": "Farbe",
+      "bbox": [
+        291.38,
+        393.66,
+        306.04,
+        400.8
+      ],
+      "label": "O",
+      "confidence": 0.9996
+    },
+    {
+      "i": 95,
+      "text": "1",
+      "bbox": [
+        461.64,
+        273.71,
+        468.78,
+        277.07
+      ],
+      "label": "O",
+      "confidence": 0.9997
+    },
+    {
+      "i": 96,
+      "text": "Inhalte",
+      "bbox": [
+        464.14,
+        252.81,
+        471.28,
+        272.51
+      ],
+      "label": "O",
+      "confidence": 0.9996
+    },
+    {
+      "i": 97,
+      "text": "nicht",
+      "bbox": [
+        464.14,
+        237.91,
+        471.28,
+        251.61
+      ],
+      "label": "O",
+      "confidence": 0.9995
+    },
+    {
+      "i": 98,
+      "text": "im",
+      "bbox": [
+        464.14,
+        229.71,
+        471.28,
+        236.71
+      ],
+      "label": "O",
+      "confidence": 0.9992
+    },
+    {
+      "i": 99,
+      "text": "Lieferumfang",
+      "bbox": [
+        464.14,
+        190.82,
+        471.28,
+        228.51
+      ],
+      "label": "O",
+      "confidence": 0.9992
+    },
+    {
+      "i": 100,
+      "text": "enthalten.",
+      "bbox": [
+        464.14,
+        160.49,
+        471.28,
+        189.62
+      ],
+      "label": "O",
+      "confidence": 0.9992
+    },
+    {
+      "i": 101,
+      "text": "Herren-Modell",
+      "bbox": [
+        387.83,
+        578.72,
+        434.21,
+        587.15
+      ],
+      "label": "O",
+      "confidence": 0.9989
+    },
+    {
+      "i": 102,
+      "text": "Weiteres",
+      "bbox": [
+        23.8,
+        575.87,
+        46.91,
+        583.02
+      ],
+      "label": "O",
+      "confidence": 0.9992
+    },
+    {
+      "i": 103,
+      "text": "Design",
+      "bbox": [
+        26.37,
+        581.87,
+        44.35,
+        589.02
+      ],
+      "label": "O",
+      "confidence": 0.9945
+    },
+    {
+      "i": 104,
+      "text": "Mini-Kosmetik-",
+      "bbox": [
+        16.92,
+        285.17,
+        67.82,
+        294.21
+      ],
+      "label": "B-PRODUCT",
+      "confidence": 0.9972
+    },
+    {
+      "i": 105,
+      "text": "kühlschrank1*",
+      "bbox": [
+        16.92,
+        291.61,
+        64.24,
+        301.71
+      ],
+      "label": "I-PRODUCT",
+      "confidence": 0.9971
+    },
+    {
+      "i": 106,
+      "text": "Hält",
+      "bbox": [
+        16.92,
+        300.24,
+        30.25,
+        309.18
+      ],
+      "label": "O",
+      "confidence": 0.9988
+    },
+    {
+      "i": 107,
+      "text": "Kosmetik",
+      "bbox": [
+        31.75,
+        300.24,
+        62.11,
+        309.18
+      ],
+      "label": "O",
+      "confidence": 0.9982
+    },
+    {
+      "i": 108,
+      "text": "kühler",
+      "bbox": [
+        63.61,
+        300.24,
+        84.86,
+        309.18
+      ],
+      "label": "O",
+      "confidence": 0.9977
+    },
+    {
+      "i": 109,
+      "text": "oder",
+      "bbox": [
+        16.92,
+        307.74,
+        32.28,
+        316.68
+      ],
+      "label": "O",
+      "confidence": 0.9995
+    },
+    {
+      "i": 110,
+      "text": "angenehm",
+      "bbox": [
+        33.78,
+        307.74,
+        69.61,
+        316.68
+      ],
+      "label": "O",
+      "confidence": 0.9971
+    },
+    {
+      "i": 111,
+      "text": "warm,",
+      "bbox": [
+        71.11,
+        307.74,
+        92.62,
+        316.68
+      ],
+      "label": "O",
+      "confidence": 0.995
+    },
+    {
+      "i": 112,
+      "text": "je",
+      "bbox": [
+        16.92,
+        315.24,
+        23.08,
+        324.18
+      ],
+      "label": "O",
+      "confidence": 0.9994
+    },
+    {
+      "i": 113,
+      "text": "Stück",
+      "bbox": [
+        24.58,
+        315.24,
+        41.97,
+        324.18
+      ],
+      "label": "O",
+      "confidence": 0.9987
+    },
+    {
+      "i": 114,
+      "text": "29.99",
+      "bbox": [
+        43.47,
+        315.24,
+        62.32,
+        324.18
+      ],
+      "label": "B-PRICE",
+      "confidence": 0.9968
+    },
+    {
+      "i": 115,
+      "text": "Welleneisen*",
+      "bbox": [
+        16.92,
+        322.67,
+        63.1,
+        331.71
+      ],
+      "label": "B-PRODUCT",
+      "confidence": 0.9891
+    },
+    {
+      "i": 116,
+      "text": "Schnelle",
+      "bbox": [
+        16.92,
+        330.24,
+        44.83,
+        339.18
+      ],
+      "label": "O",
+      "confidence": 0.994
+    },
+    {
+      "i": 117,
+      "text": "Beach-Waves",
+      "bbox": [
+        46.33,
+        330.24,
+        89.66,
+        339.18
+      ],
+      "label": "O",
+      "confidence": 0.9089
+    },
+    {
+      "i": 118,
+      "text": "mit",
+      "bbox": [
+        16.92,
+        337.74,
+        27.97,
+        346.68
+      ],
+      "label": "O",
+      "confidence": 0.9989
+    },
+    {
+      "i": 119,
+      "text": "nur",
+      "bbox": [
+        29.47,
+        337.74,
+        40.63,
+        346.68
+      ],
+      "label": "O",
+      "confidence": 0.9995
+    },
+    {
+      "i": 120,
+      "text": "einem",
+      "bbox": [
+        42.13,
+        337.74,
+        63.22,
+        346.68
+      ],
+      "label": "O",
+      "confidence": 0.9995
+    },
+    {
+      "i": 121,
+      "text": "Clip",
+      "bbox": [
+        64.72,
+        337.74,
+        76.81,
+        346.68
+      ],
+      "label": "O",
+      "confidence": 0.9993
+    },
+    {
+      "i": 122,
+      "text": "in",
+      "bbox": [
+        78.31,
+        337.74,
+        84.58,
+        346.68
+      ],
+      "label": "O",
+      "confidence": 0.9993
+    },
+    {
+      "i": 123,
+      "text": "Sekunden",
+      "bbox": [
+        16.92,
+        345.24,
+        49.78,
+        354.18
+      ],
+      "label": "O",
+      "confidence": 0.9991
+    },
+    {
+      "i": 124,
+      "text": "oder",
+      "bbox": [
+        51.28,
+        345.24,
+        66.64,
+        354.18
+      ],
+      "label": "O",
+      "confidence": 0.9996
+    },
+    {
+      "i": 125,
+      "text": "Wiederaufladbare",
+      "bbox": [
+        16.92,
+        352.67,
+        79.0,
+        361.71
+      ],
+      "label": "O",
+      "confidence": 0.9922
+    },
+    {
+      "i": 126,
+      "text": "Bürste*",
+      "bbox": [
+        80.5,
+        352.67,
+        106.2,
+        361.71
+      ],
+      "label": "O",
+      "confidence": 0.8348
+    },
+    {
+      "i": 127,
+      "text": "Sanftes",
+      "bbox": [
+        16.92,
+        360.24,
+        41.0,
+        369.18
+      ],
+      "label": "O",
+      "confidence": 0.9993
+    },
+    {
+      "i": 128,
+      "text": "Glätten",
+      "bbox": [
+        42.5,
+        360.24,
+        66.42,
+        369.18
+      ],
+      "label": "O",
+      "confidence": 0.999
+    },
+    {
+      "i": 129,
+      "text": "in",
+      "bbox": [
+        67.92,
+        360.24,
+        74.19,
+        369.18
+      ],
+      "label": "O",
+      "confidence": 0.9992
+    },
+    {
+      "i": 130,
+      "text": "einem",
+      "bbox": [
+        75.69,
+        360.24,
+        96.78,
+        369.18
+      ],
+      "label": "O",
+      "confidence": 0.999
+    },
+    {
+      "i": 131,
+      "text": "Zug,",
+      "bbox": [
+        98.28,
+        360.24,
+        112.24,
+        369.18
+      ],
+      "label": "O",
+      "confidence": 0.9982
+    },
+    {
+      "i": 132,
+      "text": "je",
+      "bbox": [
+        16.92,
+        367.74,
+        23.08,
+        376.68
+      ],
+      "label": "O",
+      "confidence": 0.9995
+    },
+    {
+      "i": 133,
+      "text": "Stück",
+      "bbox": [
+        24.58,
+        367.74,
+        41.97,
+        376.68
+      ],
+      "label": "O",
+      "confidence": 0.9989
+    },
+    {
+      "i": 134,
+      "text": "9.99",
+      "bbox": [
+        43.47,
+        367.74,
+        58.12,
+        376.68
+      ],
+      "label": "B-PRICE",
+      "confidence": 0.9969
+    },
+    {
+      "i": 135,
+      "text": "Welleneisen",
+      "bbox": [
+        207.24,
+        267.39,
+        246.85,
+        275.82
+      ],
+      "label": "O",
+      "confidence": 0.8695
+    },
+    {
+      "i": 136,
+      "text": "Ab",
+      "bbox": [
+        203.78,
+        14.05,
+        221.09,
+        30.92
+      ],
+      "label": "B-VALID",
+      "confidence": 0.9313
+    },
+    {
+      "i": 137,
+      "text": "Do,",
+      "bbox": [
+        223.89,
+        14.05,
+        245.17,
+        30.92
+      ],
+      "label": "I-VALID",
+      "confidence": 0.9266
+    },
+    {
+      "i": 138,
+      "text": "6.8.",
+      "bbox": [
+        247.97,
+        14.05,
+        272.44,
+        30.92
+      ],
+      "label": "I-VALID",
+      "confidence": 0.995
+    },
+    {
+      "i": 139,
+      "text": "27_02-03-08-09-10",
+      "bbox": [
+        464.12,
+        745.32,
+        471.26,
+        796.77
+      ],
+      "label": "O",
+      "confidence": 0.9992
+    }
+  ],
+  "entities": [
+    {
+      "label": "PRICE",
+      "start": 1,
+      "end": 2,
+      "text": "2.99",
+      "bbox": [
+        401.13,
+        525.46,
+        445.63,
+        552.34
+      ],
+      "confidence": 0.987
+    },
+    {
+      "label": "PRICE",
+      "start": 3,
+      "end": 4,
+      "text": "9.99",
+      "bbox": [
+        388.9,
+        325.06,
+        442.51,
+        357.44
+      ],
+      "confidence": 0.498
+    },
+    {
+      "label": "BRAND",
+      "start": 4,
+      "end": 6,
+      "text": "HOME IDEAS",
+      "bbox": [
+        127.56,
+        528.49,
+        166.78,
+        537.53
+      ],
+      "confidence": 0.9894
+    },
+    {
+      "label": "PRODUCT",
+      "start": 7,
+      "end": 8,
+      "text": "Kunststoff-Brauseschlauch*",
+      "bbox": [
+        127.56,
+        535.99,
+        218.53,
+        545.03
+      ],
+      "confidence": 0.9921
+    },
+    {
+      "label": "PRICE",
+      "start": 17,
+      "end": 18,
+      "text": "4.99",
+      "bbox": [
+        154.11,
+        558.57,
+        168.76,
+        567.5
+      ],
+      "confidence": 0.9971
+    },
+    {
+      "label": "PRODUCT",
+      "start": 18,
+      "end": 19,
+      "text": "Spül-/Waschbeckenzubehör*",
+      "bbox": [
+        269.29,
+        528.74,
+        365.38,
+        537.78
+      ],
+      "confidence": 0.9926
+    },
+    {
+      "label": "QUANTITY",
+      "start": 20,
+      "end": 21,
+      "text": "2er-Packung",
+      "bbox": [
+        274.53,
+        536.32,
+        315.81,
+        545.25
+      ],
+      "confidence": 0.9849
+    },
+    {
+      "label": "QUANTITY",
+      "start": 26,
+      "end": 27,
+      "text": "4-teiliges",
+      "bbox": [
+        274.53,
+        551.32,
+        305.66,
+        560.25
+      ],
+      "confidence": 0.9889
+    },
+    {
+      "label": "PRODUCT",
+      "start": 27,
+      "end": 28,
+      "text": "Mischdüsen-Set",
+      "bbox": [
+        307.16,
+        551.32,
+        358.22,
+        560.25
+      ],
+      "confidence": 0.8528
+    },
+    {
+      "label": "PRICE",
+      "start": 30,
+      "end": 31,
+      "text": "2.99",
+      "bbox": [
+        319.53,
+        558.82,
+        334.19,
+        567.75
+      ],
+      "confidence": 0.9968
+    },
+    {
+      "label": "DISCOUNT",
+      "start": 31,
+      "end": 32,
+      "text": "-34%",
+      "bbox": [
+        420.02,
+        729.68,
+        457.3,
+        749.23
+      ],
+      "confidence": 0.998
+    },
+    {
+      "label": "PRICE",
+      "start": 32,
+      "end": 33,
+      "text": "12.99",
+      "bbox": [
+        401.05,
+        760.11,
+        446.51,
+        781.5
+      ],
+      "confidence": 0.9973
+    },
+    {
+      "label": "OLD_PRICE",
+      "start": 34,
+      "end": 35,
+      "text": "19.90",
+      "bbox": [
+        421.52,
+        781.61,
+        441.01,
+        790.78
+      ],
+      "confidence": 0.9973
+    },
+    {
+      "label": "PRODUCT",
+      "start": 35,
+      "end": 36,
+      "text": "Damen-",
+      "bbox": [
+        159.19,
+        760.74,
+        185.5,
+        769.78
+      ],
+      "confidence": 0.7113
+    },
+    {
+      "label": "PRODUCT",
+      "start": 37,
+      "end": 38,
+      "text": "Herren-Slipper*",
+      "bbox": [
+        203.41,
+        760.74,
+        254.9,
+        769.78
+      ],
+      "confidence": 0.7068
+    },
+    {
+      "label": "PRICE",
+      "start": 52,
+      "end": 53,
+      "text": "12.99",
+      "bbox": [
+        89.68,
+        760.11,
+        135.15,
+        781.5
+      ],
+      "confidence": 0.9779
+    },
+    {
+      "label": "PRODUCT",
+      "start": 55,
+      "end": 56,
+      "text": "Duroplast-WC-Sitz*",
+      "bbox": [
+        17.01,
+        745.74,
+        79.7,
+        754.78
+      ],
+      "confidence": 0.9736
+    },
+    {
+      "label": "BRAND",
+      "start": 74,
+      "end": 76,
+      "text": "HOME IDEAS",
+      "bbox": [
+        16.92,
+        513.49,
+        56.15,
+        522.53
+      ],
+      "confidence": 0.9932
+    },
+    {
+      "label": "PRODUCT",
+      "start": 77,
+      "end": 78,
+      "text": "Design-Handbrause*",
+      "bbox": [
+        16.92,
+        520.99,
+        85.46,
+        530.03
+      ],
+      "confidence": 0.9931
+    },
+    {
+      "label": "PRICE",
+      "start": 92,
+      "end": 93,
+      "text": "9.99",
+      "bbox": [
+        36.47,
+        558.57,
+        51.12,
+        567.5
+      ],
+      "confidence": 0.9956
+    },
+    {
+      "label": "PRODUCT",
+      "start": 104,
+      "end": 106,
+      "text": "Mini-Kosmetik- kühlschrank1*",
+      "bbox": [
+        16.92,
+        285.17,
+        67.82,
+        301.71
+      ],
+      "confidence": 0.9971
+    },
+    {
+      "label": "PRICE",
+      "start": 114,
+      "end": 115,
+      "text": "29.99",
+      "bbox": [
+        43.47,
+        315.24,
+        62.32,
+        324.18
+      ],
+      "confidence": 0.9968
+    },
+    {
+      "label": "PRODUCT",
+      "start": 115,
+      "end": 116,
+      "text": "Welleneisen*",
+      "bbox": [
+        16.92,
+        322.67,
+        63.1,
+        331.71
+      ],
+      "confidence": 0.9891
+    },
+    {
+      "label": "PRICE",
+      "start": 134,
+      "end": 135,
+      "text": "9.99",
+      "bbox": [
+        43.47,
+        367.74,
+        58.12,
+        376.68
+      ],
+      "confidence": 0.9969
+    },
+    {
+      "label": "VALID",
+      "start": 136,
+      "end": 139,
+      "text": "Ab Do, 6.8.",
+      "bbox": [
+        203.78,
+        14.05,
+        272.44,
+        30.92
+      ],
+      "confidence": 0.951
+    }
+  ]
+}

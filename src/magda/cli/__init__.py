@@ -32,6 +32,7 @@ PIPELINE = (
     Befehl("split", "split", "Train/Dev/Test festlegen"),
     Befehl("train", "train", "Token-Klassifikation trainieren"),
     Befehl("eval", "evaluate", "Entity-Level-F1 auf einem Split messen"),
+    Befehl("predict", "predict", "Modellausgabe je Seite exportieren (Wort, Box, Label)"),
 )
 
 VERGLEICH = (
@@ -39,6 +40,8 @@ VERGLEICH = (
     Befehl("gold", "compare", "Labeling-Modelle gegen die Handannotation messen"),
     Befehl("agreement", "agreement", "Zwei Labeling-Modelle gegeneinander halten"),
     Befehl("queue", "queue", "Welche Gold-Seiten als Nächstes durchzusehen sind"),
+    Befehl("significance", "significance",
+           "Konfidenzintervall und gepaarter Modellvergleich über Cluster"),
 )
 
 WERKZEUGE = (

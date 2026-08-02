@@ -1,0 +1,406 @@
+{
+  "page_id": "1351497_p33",
+  "catalog_id": "1351497",
+  "page": 33,
+  "width": 476.22,
+  "height": 841.89,
+  "model": "layoutxlm",
+  "labels_from": "sonnet-5",
+  "created": "2026-08-02T20:18:21",
+  "num_words": 27,
+  "num_words_predicted": 27,
+  "truncated": false,
+  "words": [
+    {
+      "i": 0,
+      "text": "Aktion",
+      "bbox": [
+        343.08,
+        596.68,
+        445.41,
+        637.0
+      ],
+      "label": "O",
+      "confidence": 0.9989
+    },
+    {
+      "i": 1,
+      "text": "1.89",
+      "bbox": [
+        293.51,
+        665.88,
+        414.25,
+        738.82
+      ],
+      "label": "B-PRICE",
+      "confidence": 0.9801
+    },
+    {
+      "i": 2,
+      "text": "Zwiebeln*",
+      "bbox": [
+        34.02,
+        720.16,
+        88.57,
+        734.36
+      ],
+      "label": "B-PRODUCT",
+      "confidence": 0.9694
+    },
+    {
+      "i": 3,
+      "text": "Kl.",
+      "bbox": [
+        34.02,
+        732.06,
+        47.04,
+        746.1
+      ],
+      "label": "O",
+      "confidence": 0.9983
+    },
+    {
+      "i": 4,
+      "text": "II,",
+      "bbox": [
+        49.15,
+        732.06,
+        58.78,
+        746.1
+      ],
+      "label": "O",
+      "confidence": 0.9981
+    },
+    {
+      "i": 5,
+      "text": "je",
+      "bbox": [
+        34.02,
+        743.85,
+        43.7,
+        757.88
+      ],
+      "label": "O",
+      "confidence": 0.9992
+    },
+    {
+      "i": 6,
+      "text": "2-kg-Netz",
+      "bbox": [
+        46.06,
+        743.85,
+        97.19,
+        757.88
+      ],
+      "label": "B-QUANTITY",
+      "confidence": 0.9921
+    },
+    {
+      "i": 7,
+      "text": "(1",
+      "bbox": [
+        34.02,
+        755.63,
+        44.86,
+        769.66
+      ],
+      "label": "B-UNIT_PRICE",
+      "confidence": 0.9954
+    },
+    {
+      "i": 8,
+      "text": "kg",
+      "bbox": [
+        47.21,
+        755.63,
+        59.87,
+        769.66
+      ],
+      "label": "I-UNIT_PRICE",
+      "confidence": 0.9979
+    },
+    {
+      "i": 9,
+      "text": "=",
+      "bbox": [
+        62.23,
+        755.63,
+        68.82,
+        769.66
+      ],
+      "label": "I-UNIT_PRICE",
+      "confidence": 0.9981
+    },
+    {
+      "i": 10,
+      "text": "0.95)",
+      "bbox": [
+        71.18,
+        755.63,
+        98.45,
+        769.66
+      ],
+      "label": "I-UNIT_PRICE",
+      "confidence": 0.9969
+    },
+    {
+      "i": 11,
+      "text": "Do,",
+      "bbox": [
+        185.71,
+        14.05,
+        206.99,
+        30.92
+      ],
+      "label": "B-VALID",
+      "confidence": 0.9859
+    },
+    {
+      "i": 12,
+      "text": "6.8. – Sa,",
+      "bbox": [
+        209.79,
+        13.98,
+        263.18,
+        31.09
+      ],
+      "label": "I-VALID",
+      "confidence": 0.9949
+    },
+    {
+      "i": 13,
+      "text": "8.8.",
+      "bbox": [
+        265.98,
+        14.05,
+        290.52,
+        30.92
+      ],
+      "label": "I-VALID",
+      "confidence": 0.9952
+    },
+    {
+      "i": 14,
+      "text": "39_01-02-03-04-05-06-07-08-09-10-11-12-13-14",
+      "bbox": [
+        464.12,
+        666.2,
+        471.26,
+        796.77
+      ],
+      "label": "O",
+      "confidence": 0.9985
+    },
+    {
+      "i": 15,
+      "text": "Über",
+      "bbox": [
+        43.42,
+        226.71,
+        100.93,
+        258.48
+      ],
+      "label": "O",
+      "confidence": 0.998
+    },
+    {
+      "i": 16,
+      "text": "140",
+      "bbox": [
+        106.65,
+        226.71,
+        152.8,
+        258.48
+      ],
+      "label": "O",
+      "confidence": 0.9975
+    },
+    {
+      "i": 17,
+      "text": "Obst",
+      "bbox": [
+        35.39,
+        255.64,
+        60.34,
+        269.79
+      ],
+      "label": "O",
+      "confidence": 0.9988
+    },
+    {
+      "i": 18,
+      "text": "&",
+      "bbox": [
+        62.89,
+        255.64,
+        70.78,
+        269.79
+      ],
+      "label": "O",
+      "confidence": 0.9987
+    },
+    {
+      "i": 19,
+      "text": "Gemüse",
+      "bbox": [
+        73.33,
+        255.64,
+        116.97,
+        269.79
+      ],
+      "label": "O",
+      "confidence": 0.9984
+    },
+    {
+      "i": 20,
+      "text": "Artikel.",
+      "bbox": [
+        119.52,
+        255.64,
+        160.82,
+        269.79
+      ],
+      "label": "O",
+      "confidence": 0.9986
+    },
+    {
+      "i": 21,
+      "text": "Täglich",
+      "bbox": [
+        196.37,
+        226.1,
+        283.34,
+        257.87
+      ],
+      "label": "O",
+      "confidence": 0.9987
+    },
+    {
+      "i": 22,
+      "text": "frische",
+      "bbox": [
+        185.58,
+        255.02,
+        222.38,
+        269.18
+      ],
+      "label": "O",
+      "confidence": 0.9989
+    },
+    {
+      "i": 23,
+      "text": "Anlieferung.",
+      "bbox": [
+        224.93,
+        255.02,
+        294.12,
+        269.18
+      ],
+      "label": "O",
+      "confidence": 0.999
+    },
+    {
+      "i": 24,
+      "text": "Immer",
+      "bbox": [
+        337.94,
+        226.1,
+        418.51,
+        257.87
+      ],
+      "label": "O",
+      "confidence": 0.9991
+    },
+    {
+      "i": 25,
+      "text": "zu",
+      "bbox": [
+        336.41,
+        255.02,
+        349.2,
+        269.18
+      ],
+      "label": "O",
+      "confidence": 0.9992
+    },
+    {
+      "i": 26,
+      "text": "Sparpreisen.",
+      "bbox": [
+        351.75,
+        255.02,
+        420.03,
+        269.18
+      ],
+      "label": "O",
+      "confidence": 0.9989
+    }
+  ],
+  "entities": [
+    {
+      "label": "PRICE",
+      "start": 1,
+      "end": 2,
+      "text": "1.89",
+      "bbox": [
+        293.51,
+        665.88,
+        414.25,
+        738.82
+      ],
+      "confidence": 0.9801
+    },
+    {
+      "label": "PRODUCT",
+      "start": 2,
+      "end": 3,
+      "text": "Zwiebeln*",
+      "bbox": [
+        34.02,
+        720.16,
+        88.57,
+        734.36
+      ],
+      "confidence": 0.9694
+    },
+    {
+      "label": "QUANTITY",
+      "start": 6,
+      "end": 7,
+      "text": "2-kg-Netz",
+      "bbox": [
+        46.06,
+        743.85,
+        97.19,
+        757.88
+      ],
+      "confidence": 0.9921
+    },
+    {
+      "label": "UNIT_PRICE",
+      "start": 7,
+      "end": 11,
+      "text": "(1 kg = 0.95)",
+      "bbox": [
+        34.02,
+        755.63,
+        98.45,
+        769.66
+      ],
+      "confidence": 0.9971
+    },
+    {
+      "label": "VALID",
+      "start": 11,
+      "end": 14,
+      "text": "Do, 6.8. – Sa, 8.8.",
+      "bbox": [
+        185.71,
+        13.98,
+        290.52,
+        31.09
+      ],
+      "confidence": 0.992
+    }
+  ]
+}

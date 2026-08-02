@@ -82,11 +82,15 @@ for variante in gbert layoutxlm; do
   python -m magda train "$variante" --labels-from __MODEL__ --epochs __EPOCHS__ \\
     || { echo "$variante: Training fehlgeschlagen"; continue; }
   python -m magda eval "$variante" --split test --labels-from __MODEL__
+  # Die Metrik beantwortet "wie gut", nicht "was steht drin". Den Export
+  # braucht die naechste Stufe, um aus getaggten Woertern samt Koordinaten
+  # Angebote zu rekonstruieren - ohne ihn muesste die GPU dafuer erneut laufen.
+  python -m magda predict "$variante" --split test --labels-from __MODEL__
 done
 
 echo ""
 echo "########## Ergebnisse einpacken ##########"
-tar czf ergebnisse.tgz data/eval checkpoints
+tar czf ergebnisse.tgz data/eval data/predictions checkpoints
 echo "Fertig: $(pwd)/ergebnisse.tgz"
 """
 
@@ -96,12 +100,22 @@ def _tracked_files() -> list[Path]:
 
     `git archive HEAD` wäre kürzer, liefert aber ein zweites Tar-Format im Tar
     und macht das Entpacken zweistufig.
+
+    `data/` bleibt draußen, seit es versioniert wird: darin liegen die
+    Original-PDFs (587 MB) und die unverkleinerten Seitenbilder (618 MB). Was
+    die GPU davon braucht, legt `build()` gezielt dazu – Labels, Split und
+    Bilder auf 224 px. Ungefiltert wiegt das Paket 1054 MB statt 17, und der
+    Upload wäre die längste Etappe des ganzen Laufs.
     """
     out = subprocess.run(
         ["git", "ls-files", "-z"],
         cwd=PROJECT_ROOT, capture_output=True, text=True, check=True,
     )
-    return [PROJECT_ROOT / name for name in out.stdout.split("\0") if name]
+    return [
+        PROJECT_ROOT / name
+        for name in out.stdout.split("\0")
+        if name and not name.startswith("data/")
+    ]
 
 
 def _shrink(image_file: Path) -> bytes:

@@ -52,3 +52,52 @@ def test_eine_einzige_woche_ist_kein_split():
 
 def test_ist_deterministisch():
     assert split_by_week(ALT + NEU) == split_by_week(ALT + NEU)
+
+
+def _jaccard(a, b):
+    a, b = set(a), set(b)
+    return len(a & b) / len(a | b)
+
+
+def test_dev_reisst_keine_zwillinge_aus_dem_training():
+    """Zwei Regionalfassungen derselben Seite gehören auf dieselbe Seite des Splits.
+
+    Zufällig je Seite gezogen lag Dev über echten Daten bei Median-Ähnlichkeit
+    0.721 zum Training – die Modellauswahl bewertete damit teils Auswendiggelerntes.
+    """
+    alt = [f"1342812_p{i}" for i in range(1, 21)]
+    neu = [f"1347375_p{i}" for i in range(1, 6)]
+    # Je zwei aufeinanderfolgende Altseiten teilen 20 von 22 Wörtern (0.909).
+    worte = {pid: [f"w{i // 2}_{k}" for k in range(20)] + [f"einzel{i}"]
+             for i, pid in enumerate(alt)}
+    worte.update({pid: [f"{pid}_{k}" for k in range(20)] for pid in neu})
+
+    splits = split_by_week(alt + neu, dev_share=0.2, pages=worte)
+
+    assert splits["dev"], "Dev darf nicht leer sein"
+    for d in splits["dev"]:
+        for t in splits["train"]:
+            assert _jaccard(worte[d], worte[t]) < 0.7, f"{d} hat Zwilling {t} im Training"
+
+
+def test_seiten_ohne_wortliste_brechen_den_split_nicht():
+    """data/words kann fehlen – dann ist eben jede Seite ihr eigener Cluster."""
+    splits = split_by_week(ALT + NEU, pages={})
+
+    assert sorted(splits["train"] + splits["dev"] + splits["test"]) == sorted(ALT + NEU)
+    assert splits["dev"]
+
+
+def test_fehlender_split_wird_nicht_mehr_gewuerfelt(tmp_path, monkeypatch):
+    """Der Zufallssplit war der leckende – er darf nicht durch eine fehlende Datei entstehen.
+
+    Auf einer frischen GPU-Instanz oder bei einem Teammitglied ohne die Datei
+    entstand er kommentarlos, und seine Zahlen sehen besser aus als die des
+    korrekten Wochen-Splits. Ein Fehlschlag ist die einzige sichere Antwort.
+    """
+    from magda import dataset
+
+    monkeypatch.setattr(dataset, "SPLITS_DIR", tmp_path)
+
+    with pytest.raises(FileNotFoundError, match="magda split"):
+        dataset.get_or_create_splits([{"page_id": "1_p1"}])
