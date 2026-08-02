@@ -20,6 +20,17 @@ Testwoche betrifft das 31 von 100 Seiten und 186 der 5107 Entities:
              ist der ehrliche Wert eines Deployments ohne Fenster, und die
              Differenz zu `windowed` beziffert, was die Fenster bringen.
 
+Quer dazu stehen vier **Matching-Schemata nach SemEval-2013 Task 9.1**
+(Zählweise wie MUC-5): `strict`, `exact`, `partial`, `type`. seqeval entspricht
+`strict` – dort zählt ein um ein Wort verschobener Span als doppelter Fehler,
+obwohl er den Angebotsdatensatz nicht falsch macht. Begründung und Definition
+stehen in `magda.matching`.
+
+Es werden immer alle vier ausgegeben, und jeder Report trägt das Schema
+mit. Wer eine Zahl nennt, ohne das Kriterium danebenzuschreiben, macht sie
+unvergleichbar; wer sich eine aussucht, weil sie besser aussieht, betreibt
+Metrik-Shopping.
+
 Noch offen (Requirements-Stufe "Excellent"): der Vergleich gegen die
 LLM-Blackbox. Dafür müssen wir erst festlegen, wie wir die Angebots-JSONs
 der Blackbox mit unseren Token-Entities matchen.
@@ -41,12 +52,14 @@ from magda.dataset import (
     load_labeled_pages,
     select_split,
 )
+from magda import matching
 from magda.evaluation import (
     full_report,
     report_dict,
     word_level_report,
     word_level_report_dict,
 )
+from magda.labels import bio_to_spans
 from magda.predict import WINDOW_STRIDE, merge_windows, word_predictions
 from magda.windows import WindowDataset
 
@@ -131,6 +144,30 @@ def main(argv=None):
           f"(Überlappung {WINDOW_STRIDE}). Ohne Fenster hätten "
           f"{fehlend} Wörter keine Vorhersage.")
 
+    # Vier Schemata nach SemEval-2013 Task 9.1: seqeval wertet strikt, und ein
+    # verschobener Sortenzusatz zählt dort als doppelter Fehler, obwohl er den
+    # Angebotsdatensatz nicht falsch macht. Alle vier werden berichtet – wer
+    # sich eine aussucht, weil sie besser aussieht, betreibt Metrik-Shopping.
+    ref_spans = [bio_to_spans(tags) for tags in reference]
+    win_spans = [bio_to_spans(tags) for tags in windowed_tags]
+    schemes = matching.evaluate(ref_spans, win_spans)
+
+    print("\n########## Matching-Schemata (SemEval-2013 Task 9.1) ##########")
+    print(f"  {'Schema':<9}{'P':>8}{'R':>8}{'F1':>8}   Kriterium")
+    kriterien = {
+        "strict": "Grenze und Typ exakt (= seqeval, Anschlusszahl)",
+        "exact": "Grenze exakt, Typ ignoriert",
+        "partial": "Überlappung, Teiltreffer zählt 0.5 (MUC)",
+        "type": "Typ stimmt, Grenze darf abweichen",
+    }
+    for scheme in matching.SCHEMES:
+        s = schemes[scheme]
+        print(f"  {scheme:<9}{s['precision']:>8.3f}{s['recall']:>8.3f}{s['f1']:>8.3f}"
+              f"   {kriterien[scheme]}")
+    s = schemes["strict"]
+    print(f"\n  Davon Grenzfehler (richtiger Typ, Span daneben): "
+          f"{schemes['type']['correct'] - s['correct']}")
+
     print("\n########## windowed (Primärmetrik) ##########")
     print(word_level_report(reference, windowed_tags))
     print("########## no-windows, gegen volle Referenz ##########")
@@ -148,6 +185,11 @@ def main(argv=None):
                 "num_pages": len(eval_pages),
                 "created": datetime.now().isoformat(timespec="seconds"),
                 "protocol": "windowed",
+                "matching_schemes": schemes,
+                "matching_scheme_source": "SemEval-2013 Task 9.1 (MUC-5-Zaehlweise)",
+                "matching_per_label_type": matching.evaluate_per_label(
+                    ref_spans, win_spans, scheme="type"
+                ),
                 "window_stride": WINDOW_STRIDE,
                 "words_without_prediction_unwindowed": fehlend,
                 # `report` bleibt die windowed-Zahl: das Frontend liest dieses
