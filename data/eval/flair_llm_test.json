@@ -1,0 +1,44 @@
+{
+  "variant": "flair",
+  "model": "flair/ner-german-large",
+  "reference": "llm",
+  "split": "test",
+  "num_pages": 4,
+  "mapping": {
+    "ORG": "BRAND"
+  },
+  "restricted_to": [
+    "BRAND"
+  ],
+  "skipped": {
+    "stale": [],
+    "in_progress": []
+  },
+  "created": "2026-07-29T11:00:17",
+  "report": {
+    "BRAND": {
+      "precision": 0.24242424242424243,
+      "recall": 0.3333333333333333,
+      "f1-score": 0.2807017543859649,
+      "support": 24
+    },
+    "micro avg": {
+      "precision": 0.24242424242424243,
+      "recall": 0.3333333333333333,
+      "f1-score": 0.2807017543859649,
+      "support": 24
+    },
+    "macro avg": {
+      "precision": 0.24242424242424243,
+      "recall": 0.3333333333333333,
+      "f1-score": 0.2807017543859649,
+      "support": 24
+    },
+    "weighted avg": {
+      "precision": 0.24242424242424243,
+      "recall": 0.3333333333333333,
+      "f1-score": 0.2807017543859649,
+      "support": 24
+    }
+  }
+}

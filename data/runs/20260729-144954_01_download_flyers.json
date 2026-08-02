@@ -1,0 +1,21 @@
+{
+ "run_id": "20260729-144954_01_download_flyers",
+ "job": "01_download_flyers",
+ "title": "Prospekte laden",
+ "args": {
+  "url": "https://x.de/?catalogId=999999",
+  "max_pages": "2"
+ },
+ "command": [
+  "/Users/noahsamel/PycharmProjects/magda/.venv/bin/python",
+  "-u",
+  "/Users/noahsamel/PycharmProjects/magda/scripts/01_download_flyers.py",
+  "https://x.de/?catalogId=999999",
+  "--max-pages",
+  "2"
+ ],
+ "started": "2026-07-29T14:49:54",
+ "finished": "2026-07-29T14:49:55",
+ "exit_code": 1,
+ "duration": 0.6
+}

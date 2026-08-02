@@ -1,0 +1,472 @@
+{
+  "gold_pages": [
+    "1342881_p1",
+    "1342881_p2",
+    "1342881_p3"
+  ],
+  "results": [
+    {
+      "model": "qwen3.5-397b-a17b",
+      "pages_compared": 3,
+      "page_ids": [
+        "1342881_p1",
+        "1342881_p2",
+        "1342881_p3"
+      ],
+      "missing": [],
+      "report": {
+        "BRAND": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1-score": 1.0,
+          "support": 15
+        },
+        "DISCOUNT": {
+          "precision": 0.5,
+          "recall": 1.0,
+          "f1-score": 0.6666666666666666,
+          "support": 3
+        },
+        "OLD_PRICE": {
+          "precision": 0.8571428571428571,
+          "recall": 0.8571428571428571,
+          "f1-score": 0.8571428571428571,
+          "support": 14
+        },
+        "PRICE": {
+          "precision": 0.8095238095238095,
+          "recall": 0.9444444444444444,
+          "f1-score": 0.8717948717948718,
+          "support": 18
+        },
+        "PRODUCT": {
+          "precision": 0.55,
+          "recall": 0.5238095238095238,
+          "f1-score": 0.5365853658536585,
+          "support": 21
+        },
+        "QUANTITY": {
+          "precision": 0.9,
+          "recall": 1.0,
+          "f1-score": 0.9473684210526316,
+          "support": 18
+        },
+        "UNIT_PRICE": {
+          "precision": 0.9,
+          "recall": 1.0,
+          "f1-score": 0.9473684210526316,
+          "support": 18
+        },
+        "VALID": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1-score": 0.0,
+          "support": 1
+        },
+        "micro avg": {
+          "precision": 0.8034188034188035,
+          "recall": 0.8703703703703703,
+          "f1-score": 0.8355555555555555,
+          "support": 108
+        },
+        "macro avg": {
+          "precision": 0.6895833333333333,
+          "recall": 0.7906746031746031,
+          "f1-score": 0.7283658254454146,
+          "support": 108
+        },
+        "weighted avg": {
+          "precision": 0.8057539682539683,
+          "recall": 0.8703703703703703,
+          "f1-score": 0.833943180862308,
+          "support": 108
+        }
+      }
+    },
+    {
+      "model": "sonnet-5",
+      "pages_compared": 3,
+      "page_ids": [
+        "1342881_p1",
+        "1342881_p2",
+        "1342881_p3"
+      ],
+      "missing": [],
+      "report": {
+        "APP_PRICE": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1-score": 0.0,
+          "support": 0
+        },
+        "BRAND": {
+          "precision": 0.7894736842105263,
+          "recall": 1.0,
+          "f1-score": 0.8823529411764706,
+          "support": 15
+        },
+        "DISCOUNT": {
+          "precision": 0.6,
+          "recall": 1.0,
+          "f1-score": 0.7499999999999999,
+          "support": 3
+        },
+        "OLD_PRICE": {
+          "precision": 0.9285714285714286,
+          "recall": 0.9285714285714286,
+          "f1-score": 0.9285714285714286,
+          "support": 14
+        },
+        "PRICE": {
+          "precision": 0.8823529411764706,
+          "recall": 0.8333333333333334,
+          "f1-score": 0.8571428571428571,
+          "support": 18
+        },
+        "PRODUCT": {
+          "precision": 0.5,
+          "recall": 0.5238095238095238,
+          "f1-score": 0.5116279069767442,
+          "support": 21
+        },
+        "QUANTITY": {
+          "precision": 0.9,
+          "recall": 1.0,
+          "f1-score": 0.9473684210526316,
+          "support": 18
+        },
+        "UNIT_PRICE": {
+          "precision": 0.9,
+          "recall": 1.0,
+          "f1-score": 0.9473684210526316,
+          "support": 18
+        },
+        "VALID": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1-score": 0.0,
+          "support": 1
+        },
+        "micro avg": {
+          "precision": 0.775,
+          "recall": 0.8611111111111112,
+          "f1-score": 0.8157894736842106,
+          "support": 108
+        },
+        "macro avg": {
+          "precision": 0.611155339328714,
+          "recall": 0.6984126984126985,
+          "f1-score": 0.6471591084414182,
+          "support": 108
+        },
+        "weighted avg": {
+          "precision": 0.7909672055956887,
+          "recall": 0.8611111111111112,
+          "f1-score": 0.8218825439872672,
+          "support": 108
+        }
+      }
+    },
+    {
+      "model": "mistral-medium-3.5-128b",
+      "pages_compared": 3,
+      "page_ids": [
+        "1342881_p1",
+        "1342881_p2",
+        "1342881_p3"
+      ],
+      "missing": [],
+      "report": {
+        "BRAND": {
+          "precision": 0.7647058823529411,
+          "recall": 0.8666666666666667,
+          "f1-score": 0.8125,
+          "support": 15
+        },
+        "DISCOUNT": {
+          "precision": 0.6,
+          "recall": 1.0,
+          "f1-score": 0.7499999999999999,
+          "support": 3
+        },
+        "OLD_PRICE": {
+          "precision": 0.9285714285714286,
+          "recall": 0.9285714285714286,
+          "f1-score": 0.9285714285714286,
+          "support": 14
+        },
+        "PRICE": {
+          "precision": 0.8095238095238095,
+          "recall": 0.9444444444444444,
+          "f1-score": 0.8717948717948718,
+          "support": 18
+        },
+        "PRODUCT": {
+          "precision": 0.38095238095238093,
+          "recall": 0.38095238095238093,
+          "f1-score": 0.38095238095238093,
+          "support": 21
+        },
+        "QUANTITY": {
+          "precision": 0.8571428571428571,
+          "recall": 1.0,
+          "f1-score": 0.923076923076923,
+          "support": 18
+        },
+        "UNIT_PRICE": {
+          "precision": 0.782608695652174,
+          "recall": 1.0,
+          "f1-score": 0.878048780487805,
+          "support": 18
+        },
+        "VALID": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1-score": 1.0,
+          "support": 1
+        },
+        "micro avg": {
+          "precision": 0.7398373983739838,
+          "recall": 0.8425925925925926,
+          "f1-score": 0.7878787878787878,
+          "support": 108
+        },
+        "macro avg": {
+          "precision": 0.765438131774449,
+          "recall": 0.890079365079365,
+          "f1-score": 0.8181180481104261,
+          "support": 108
+        },
+        "weighted avg": {
+          "precision": 0.7347920810836411,
+          "recall": 0.8425925925925926,
+          "f1-score": 0.7828710218191924,
+          "support": 108
+        }
+      }
+    },
+    {
+      "model": "qwen3.6-35b-a3b",
+      "pages_compared": 2,
+      "page_ids": [
+        "1342881_p2",
+        "1342881_p3"
+      ],
+      "missing": [
+        "1342881_p1"
+      ],
+      "report": {
+        "BRAND": {
+          "precision": 0.5454545454545454,
+          "recall": 0.6,
+          "f1-score": 0.5714285714285713,
+          "support": 10
+        },
+        "OLD_PRICE": {
+          "precision": 0.45454545454545453,
+          "recall": 0.5,
+          "f1-score": 0.47619047619047616,
+          "support": 10
+        },
+        "PRICE": {
+          "precision": 0.45454545454545453,
+          "recall": 0.5,
+          "f1-score": 0.47619047619047616,
+          "support": 10
+        },
+        "PRODUCT": {
+          "precision": 0.5454545454545454,
+          "recall": 0.6,
+          "f1-score": 0.5714285714285713,
+          "support": 10
+        },
+        "QUANTITY": {
+          "precision": 0.8181818181818182,
+          "recall": 0.9,
+          "f1-score": 0.8571428571428572,
+          "support": 10
+        },
+        "UNIT_PRICE": {
+          "precision": 0.7272727272727273,
+          "recall": 0.8888888888888888,
+          "f1-score": 0.7999999999999999,
+          "support": 9
+        },
+        "micro avg": {
+          "precision": 0.5909090909090909,
+          "recall": 0.6610169491525424,
+          "f1-score": 0.6240000000000001,
+          "support": 59
+        },
+        "macro avg": {
+          "precision": 0.5909090909090909,
+          "recall": 0.6648148148148149,
+          "f1-score": 0.6253968253968253,
+          "support": 59
+        },
+        "weighted avg": {
+          "precision": 0.588597842835131,
+          "recall": 0.6610169491525424,
+          "f1-score": 0.6224374495560936,
+          "support": 59
+        }
+      }
+    },
+    {
+      "model": "qwen3.5-122b-a10b",
+      "pages_compared": 3,
+      "page_ids": [
+        "1342881_p1",
+        "1342881_p2",
+        "1342881_p3"
+      ],
+      "missing": [],
+      "report": {
+        "BRAND": {
+          "precision": 0.07042253521126761,
+          "recall": 1.0,
+          "f1-score": 0.13157894736842107,
+          "support": 15
+        },
+        "DISCOUNT": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1-score": 0.0,
+          "support": 3
+        },
+        "OLD_PRICE": {
+          "precision": 0.9166666666666666,
+          "recall": 0.7857142857142857,
+          "f1-score": 0.8461538461538461,
+          "support": 14
+        },
+        "PRICE": {
+          "precision": 0.8461538461538461,
+          "recall": 0.6111111111111112,
+          "f1-score": 0.7096774193548387,
+          "support": 18
+        },
+        "PRODUCT": {
+          "precision": 0.7,
+          "recall": 0.3333333333333333,
+          "f1-score": 0.45161290322580644,
+          "support": 21
+        },
+        "QUANTITY": {
+          "precision": 0.9090909090909091,
+          "recall": 0.5555555555555556,
+          "f1-score": 0.6896551724137931,
+          "support": 18
+        },
+        "UNIT_PRICE": {
+          "precision": 0.9,
+          "recall": 0.5,
+          "f1-score": 0.6428571428571429,
+          "support": 18
+        },
+        "VALID": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1-score": 0.0,
+          "support": 1
+        },
+        "micro avg": {
+          "precision": 0.23161764705882354,
+          "recall": 0.5833333333333334,
+          "f1-score": 0.3315789473684211,
+          "support": 108
+        },
+        "macro avg": {
+          "precision": 0.5427917446403361,
+          "recall": 0.4732142857142857,
+          "f1-score": 0.433941928921731,
+          "support": 108
+        },
+        "weighted avg": {
+          "precision": 0.7072599718139624,
+          "recall": 0.5833333333333334,
+          "f1-score": 0.5561400393304263,
+          "support": 108
+        }
+      }
+    },
+    {
+      "model": "mistral-medium-3.5-128b-promptv1",
+      "pages_compared": 3,
+      "page_ids": [
+        "1342881_p1",
+        "1342881_p2",
+        "1342881_p3"
+      ],
+      "missing": [],
+      "report": {
+        "BRAND": {
+          "precision": 0.16666666666666666,
+          "recall": 0.2,
+          "f1-score": 0.1818181818181818,
+          "support": 15
+        },
+        "DISCOUNT": {
+          "precision": 0.21428571428571427,
+          "recall": 1.0,
+          "f1-score": 0.35294117647058826,
+          "support": 3
+        },
+        "OLD_PRICE": {
+          "precision": 0.7222222222222222,
+          "recall": 0.9285714285714286,
+          "f1-score": 0.8125000000000001,
+          "support": 14
+        },
+        "PRICE": {
+          "precision": 0.7727272727272727,
+          "recall": 0.9444444444444444,
+          "f1-score": 0.85,
+          "support": 18
+        },
+        "PRODUCT": {
+          "precision": 0.06060606060606061,
+          "recall": 0.09523809523809523,
+          "f1-score": 0.07407407407407407,
+          "support": 21
+        },
+        "QUANTITY": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1-score": 0.0,
+          "support": 18
+        },
+        "UNIT_PRICE": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1-score": 0.0,
+          "support": 18
+        },
+        "VALID": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1-score": 1.0,
+          "support": 1
+        },
+        "micro avg": {
+          "precision": 0.2653061224489796,
+          "recall": 0.3611111111111111,
+          "f1-score": 0.3058823529411765,
+          "support": 108
+        },
+        "macro avg": {
+          "precision": 0.36706349206349204,
+          "recall": 0.521031746031746,
+          "f1-score": 0.4089166790453555,
+          "support": 108
+        },
+        "weighted avg": {
+          "precision": 0.27255357810913367,
+          "recall": 0.3611111111111111,
+          "f1-score": 0.3057097390022227,
+          "support": 108
+        }
+      }
+    }
+  ]
+}

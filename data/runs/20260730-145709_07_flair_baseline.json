@@ -1,0 +1,25 @@
+{
+ "run_id": "20260730-145709_07_flair_baseline",
+ "job": "07_flair_baseline",
+ "title": "Flair-Vergleichsarm",
+ "args": {
+  "reference": "gold",
+  "split": "test",
+  "model": "flair/ner-german-large"
+ },
+ "command": [
+  "/Users/noahsamel/PycharmProjects/magda/.venv/bin/python",
+  "-u",
+  "/Users/noahsamel/PycharmProjects/magda/scripts/07_flair_baseline.py",
+  "--reference",
+  "gold",
+  "--split",
+  "test",
+  "--model",
+  "flair/ner-german-large"
+ ],
+ "started": "2026-07-30T14:57:09",
+ "finished": "2026-07-30T14:57:15",
+ "exit_code": 1,
+ "duration": 6.2
+}

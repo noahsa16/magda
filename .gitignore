@@ -1,10 +1,10 @@
 # ---------------------------------------------------------------------------
-# Magda-spezifisch: Daten und Checkpoints bleiben lokal, nur die
-# Ordnerstruktur (.gitkeep) wird versioniert.
+# Magda-spezifisch: checkpoints/ bleibt lokal (Modellgewichte, >100MB je
+# Datei -> GitHub lehnt den Push sowieso ab), nur die Ordnerstruktur
+# (.gitkeep) wird versioniert. data/ ist bewusst NICHT mehr ausgeschlossen,
+# damit Teammates die Prospektdaten per git statt per Pipeline-Neulauf
+# bekommen.
 # ---------------------------------------------------------------------------
-data/**
-!data/**/
-!data/**/.gitkeep
 checkpoints/**
 !checkpoints/**/
 !checkpoints/.gitkeep
