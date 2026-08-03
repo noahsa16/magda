@@ -5,6 +5,7 @@ import { BrowsePage } from "@/features/browse/browse-page"
 import { InspectorPage } from "@/features/inspector/inspector-page"
 import { OverviewPage } from "@/features/overview/overview-page"
 import { AnnotatePage } from "@/features/annotate/annotate-page"
+import { AuditPage } from "@/features/audit/audit-page"
 import { Layout } from "./layout"
 
 export const routes: RouteObject[] = [
@@ -18,6 +19,7 @@ export const routes: RouteObject[] = [
       { path: "/labels", element: <BrowsePage /> },
       { path: "/inspector", element: <InspectorPage /> },
       { path: "/annotate", element: <AnnotatePage /> },
+      { path: "/audit", element: <AuditPage /> },
       { path: "/evaluation", element: <EvaluationPage /> },
     ],
   },

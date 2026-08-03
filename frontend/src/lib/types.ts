@@ -275,3 +275,55 @@ export interface CatalogTile {
   region: string
   region_confirmed: boolean | null
 }
+
+/** Ein Fall in der Handprüfung eines Labels (`magda audit`). */
+export interface AuditCandidate {
+  key: string
+  page_id: string
+  split: string
+  start: number
+  end: number
+  text: string
+  bbox: [number, number, number, number]
+  page_width: number
+  page_height: number
+  current_label: string
+  /** "labeled": trägt das Label. "candidate": sitzt auf passendem Grund ohne es. */
+  source: "labeled" | "candidate"
+  background: [number, number, number] | null
+  color_distance: number | null
+  on_app_background: boolean
+  app_in_context: boolean
+  /** Wortlaut mit «…» um den Span. */
+  context: string
+  priority: "likely_missing" | "check" | "low"
+  /** Gesetzt, wenn ein anderer Kandidat denselben Wortlaut vertritt. */
+  duplicate_of: string | null
+  /** Wie oft dieser Wortlaut im Korpus vorkommt (44 Regionalausgaben je Woche). */
+  duplicates: number
+}
+
+export interface AuditReport {
+  label: string
+  labels_from: string
+  candidates: AuditCandidate[]
+  verdicts: Record<string, AuditVerdict>
+  summary: AuditSummary
+}
+
+export interface AuditVerdict {
+  verdict: "correct" | "wrong" | "unsure"
+  should_be: string
+  note: string
+  updated: string
+}
+
+export interface AuditSummary {
+  total: number
+  labeled: number
+  candidate: number
+  correct: number
+  wrong: number
+  unsure: number
+  judged: number
+}

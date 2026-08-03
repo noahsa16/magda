@@ -41,17 +41,33 @@ def load_predictions(variant: str) -> dict[str, list[str]]:
 
 
 def test_clusters(page_ids: list[str]) -> list[list[int]]:
-    """Duplikat-Cluster als Positionen in `page_ids`."""
-    words = {}
+    """Duplikat-Cluster als Positionen in `page_ids`.
+
+    Fehlt auch nur eine Wortliste, wird abgebrochen statt geschätzt. Der
+    frühere Fallback fasste die fehlenden Seiten zu einem Sammel-Cluster
+    zusammen – und lief auf einer Maschine ohne `data/words` (etwa dem
+    Trainings-Bundle) klaglos mit *einem* Cluster über alle 100 Seiten durch.
+    Das Ergebnis war ein Intervall der Breite null und p = 0.0, also die
+    Optik eines hochsignifikanten Befunds an genau der Stelle, an der die
+    Unsicherheit herkommen soll.
+    """
+    words, missing = {}, []
     for pid in page_ids:
         path = WORDS_DIR / f"{pid}.json"
         if path.exists():
             words[pid] = [w["text"] for w in json.loads(path.read_text())["words"]]
+        else:
+            missing.append(pid)
+    if missing:
+        sys.exit(
+            f"{len(missing)} von {len(page_ids)} Wortlisten fehlen unter {WORDS_DIR} "
+            f"(z. B. {', '.join(missing[:3])}). Ohne sie lassen sich die "
+            f"Duplikat-Cluster nicht bilden, und über Seiten statt Cluster "
+            f"gezogen wäre das Konfidenzintervall zu eng.\n"
+            f"Diesen Schritt dort laufen lassen, wo data/words vollständig ist."
+        )
     position = {pid: i for i, pid in enumerate(page_ids)}
     clusters = [[position[p] for p in c] for c in group(words, threshold=CLUSTER_THRESHOLD)]
-    clusters += [[position[p] for p in page_ids if p not in words]] if len(words) < len(
-        page_ids
-    ) else []
     return [c for c in clusters if c]
 
 

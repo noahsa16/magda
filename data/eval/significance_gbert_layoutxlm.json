@@ -1,25 +1,25 @@
 {
-  "created": "2026-08-02T22:31:23",
+  "created": "2026-08-02T23:36:07",
   "labels_from": "sonnet-5",
   "pages": 100,
   "clusters": 43,
   "cluster_threshold": 0.7,
   "per_model": {
     "gbert": {
-      "f1": 0.8915,
+      "f1": 0.8938,
       "ci95": [
-        0.8518,
-        0.927
+        0.8484,
+        0.9306
       ],
       "clusters": 43,
       "pages": 100,
       "resamples": 10000
     },
     "layoutxlm": {
-      "f1": 0.8783,
+      "f1": 0.8952,
       "ci95": [
-        0.8119,
-        0.9284
+        0.8418,
+        0.9366
       ],
       "clusters": 43,
       "pages": 100,
@@ -27,12 +27,12 @@
     }
   },
   "paired": {
-    "difference": 0.0132,
+    "difference": -0.0014,
     "ci95": [
-      -0.0077,
-      0.0425
+      -0.0164,
+      0.0108
     ],
-    "p_value": 0.4349,
+    "p_value": 0.8431,
     "significant": false,
     "clusters": 43
   }

@@ -50,6 +50,7 @@ LABELED_DIR = DATA_DIR / "labeled"
 SPLITS_DIR = DATA_DIR / "splits"    # train/dev/test-Aufteilung
 EVAL_DIR = DATA_DIR / "eval"        # Evaluations-Reports als JSON (fürs Frontend)
 RUNS_DIR = DATA_DIR / "runs"        # Lauf-Historie: je Lauf Metadaten-JSON + Log
+AUDIT_DIR = DATA_DIR / "audit"      # Handprüfung einzelner Labels (Kandidaten + Urteile)
 # Seiten, die magda dedupe als Beinah-Duplikat aussortiert hat. Löschen
 # allein genügt nicht: Schritt 02 erzeugt sie aus data/raw jederzeit neu, weil
 # sein eigener Filter nur exakt gleiche Wortlisten erkennt.

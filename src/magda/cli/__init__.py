@@ -40,6 +40,7 @@ VERGLEICH = (
     Befehl("gold", "compare", "Labeling-Modelle gegen die Handannotation messen"),
     Befehl("agreement", "agreement", "Zwei Labeling-Modelle gegeneinander halten"),
     Befehl("queue", "queue", "Welche Gold-Seiten als Nächstes durchzusehen sind"),
+    Befehl("audit", "audit", "Ein Label zur Handprüfung vorsortieren (Kandidaten)"),
     Befehl("significance", "significance",
            "Konfidenzintervall und gepaarter Modellvergleich über Cluster"),
 )

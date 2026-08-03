@@ -17,6 +17,7 @@ src/magda/   Kern-Package – hier liegt die Logik (inkl. api.py, FastAPI fürs 
 frontend/    React-SPA (Vite, Tailwind, shadcn) – liest data/ über src/magda/api.py
 tests/       pytest (Labels, Alignment, API)
 gold/        handannotierte Referenz (versioniert)
+data/audit/  Handprüfung einzelner Labels: Kandidaten + menschliche Urteile
 data/        versioniert (PDFs, Wörter, Labels, Bilder, Splits)
 checkpoints/ lokal, gitignored
 docs/        Proposal, RunPod-Anleitung, Ursprungs-Prototyp
@@ -64,6 +65,7 @@ magda significance --labels-from sonnet-5   # Konfidenzintervall, gepaarter Verg
 magda flair --reference gold        # Flair-Vergleichsarm
 magda gold --per-label              # Labeling-Modelle gegen Gold messen
 magda agreement qwen3.5-397b-a17b mistral-medium-3.5-128b
+magda audit APP_PRICE --labels-from sonnet-5   # Label zur Handprüfung vorsortieren
 magda bundle --labels-from sonnet-5 # Trainingspaket für eine fremde GPU
 magda serve --frontend              # API (8000) und Oberfläche (5173)
 magda serve                         # nur die API
@@ -164,9 +166,10 @@ eine Liste auszugeben.
 - **Der `words_hash` in Gold-Dateien** ist die Absicherung des
   Wortreihenfolge-Vertrags. Ändert sich Schritt 02, zeigen die Span-Indizes
   auf andere Wörter, ohne dass etwas kaputtgeht. Die API lehnt dann mit 409 ab.
-- **Die API ist nicht mehr read-only.** Geschrieben wird an drei aufgezählten
+- **Die API ist nicht mehr read-only.** Geschrieben wird an vier aufgezählten
   Stellen: `gold/` (handannotierte Referenz), `catalogs.json`
-  (Katalog-Verzeichnis) und `data/runs/` (Lauf-Historie). Eine Erlaubnisliste,
+  (Katalog-Verzeichnis), `data/runs/` (Lauf-Historie) und `data/audit/`
+  (Urteile der Handprüfung – niemals `data/labeled/` selbst). Eine Erlaubnisliste,
   kein freier Schreibzugriff – dieselbe enge Beschränkung wie beim Runner.
 - **Der Runner-Vertrag lautet „nur deklarierte Parameter", nicht „nur
   Varianten".** `jobs.build_command` lehnt unbekannte Jobs, unbekannte
@@ -347,6 +350,35 @@ eine Liste auszugeben.
   **Konsequenz für die Priorisierung:** mehr Daten und größere Modelle bringen
   hier nichts, konsistentere Labels schon. Was mechanisch entscheidbar ist,
   gehört als Regel in den Code – wie bei `labeling.trim_spans()`.
+- **Ein fehlendes `data/words` machte den Signifikanztest zur Punktschätzung.**
+  `significance.test_clusters` fiel bei fehlenden Wortlisten auf einen
+  Sammel-Cluster zurück. Auf dem Trainings-Pod – wo das Bundle `data/words`
+  nicht mitliefert – hieß das: alle 100 Testseiten in *einem* Cluster,
+  Konfidenzintervall der Breite null, p = 0.0. Also die Optik eines
+  hochsignifikanten Befunds an genau der Stelle, die Unsicherheit ausweisen
+  soll. Bricht jetzt ab, statt zu schätzen. Der Schritt gehört dorthin, wo
+  `data/words` vollständig ist, nicht auf die GPU.
+- **Stand 03.08.2026 nach dem Repair-Lauf** (Referenz: sonnet-5 mit
+  Fußnotenregel, 5080 Entities statt vorher 5107 – die KW32-Labels waren nie
+  durch `trim_spans` gelaufen, deshalb sind die Zahlen mit dem Vorlauf **nicht**
+  direkt vergleichbar):
+  GBERT **0.8938** [0.8484, 0.9306], LayoutXLM **0.8952** [0.8418, 0.9366],
+  Differenz −0.0014 [−0.0164, +0.0108] bei **p = 0.843**. Das Vorzeichen hat
+  gegenüber dem Vorlauf gewechselt (vorher GBERT +0.0132, p = 0.435) – genau
+  das Verhalten eines Effekts, der die Null überdeckt. Der Layout-Negativbefund
+  ist damit bestätigt, nicht widerlegt.
+- **LayoutXLM sieht das Seitenbild und löst den visuellen Fall trotzdem nicht.**
+  Bei APP_PRICE erreicht es 0.554 gegen GBERTs 0.660 – schlechter, obwohl nur
+  es den blauen Kasten sehen könnte. Der Grund steht in der Architektur:
+  `image_feature_pool_shape` ist `[7, 7, 256]`, also **49 visuelle Token für
+  die ganze Seite**. Eine Gitterzelle deckt 142 × 251 px des Originals ab; der
+  App-Kasten (~230 × 80 px) fällt mit Produktfoto und Nachbarpreis in dieselbe
+  Zelle. Dazu hängen die 49 Token als *globale* Sequenz an – es gibt keine
+  Verknüpfung „dieses Wort steht auf blauem Grund". **Größere Eingabebilder
+  ändern daran nichts**, weil der Processor ohnehin auf 224 × 224 skaliert
+  (`bundle.py` nimmt ihm das nur vorweg, mit demselben Filter). Wer den
+  Layout-Arm verteidigen will, braucht eine Architektur mit lokaler
+  Wort-Bild-Verknüpfung, nicht mehr Pixel.
 - **`magda eval` misst in drei Protokollen, und nur eines davon ist ehrlich.**
   Das alte Protokoll wertete nur die Tensorpositionen aus, die ins 512er-Fenster
   passten. Entities dahinter fehlten damit nicht als Falsch-Negative, sondern
@@ -463,55 +495,61 @@ eine Liste auszugeben.
 
 ## Offene Entscheidungen (nicht eigenmächtig festlegen)
 
-- **APP_PRICE-Regel: Badge-Variante mitlabeln?** *Größter bekannter Hebel,
-  Stand 02.08.2026.* Penny schreibt den App-Preis in zwei Formen: mit dem Text
-  „mit PENNY App" daneben, oder nur mit der hochgestellten Fußnote „2" hinter
-  der Zahl. Gemessen über die Testwoche ist das Muster `<preis> 2` **1× als
-  APP_PRICE und 60× als O** gelabelt – sonnet-5 kennt praktisch nur die
-  Textvariante, und das Modell hat genau das gelernt (Precision 1.000, Recall
-  0.133, **null reine Falsch-Negative**: es findet jeden App-Preis und nennt
-  ihn nur PRICE oder OLD_PRICE).
+- **APP_PRICE: die Kennzeichnung ist Grafik, kein Text.** *Der Befund vom
+  03.08.2026 räumt die alte Fassung dieses Punktes ab.* Penny zeichnet den
+  App-Preis auf zwei Arten aus: mit dem Text „mit PENNY App" daneben, oder mit
+  einem türkisblauen Kasten samt Logo und der Zeile „Nur mit App". **Der Kasten
+  steht nicht im Textlayer.** Auf `1347375_p5` liefert PyMuPDF an der Stelle
+  `Aktion 1.99 1.69 1 Kernarm` – das Wort „App" kommt auf der ganzen Seite
+  nicht vor, obwohl `1.69` dort ein App-Preis ist. Acht Seiten sind so.
 
-  Warum das so viel bringt: Der Fehler zählt doppelt. Er drückt APP_PRICE auf
-  F1 0.234 *und* PRICE auf Precision 0.766 – von rund 263 PRICE-Falsch-Positiven
-  sind 74 Referenz-APP_PRICEs und mindestens 60 die ungelabelten Badge-Preise.
-  Die Metrik bestraft dort Vorhersagen, die richtiger sind als die Referenz.
-  Erwartbar: APP_PRICE deutlich über 0.8, PRICE-Precision Richtung 0.9,
-  micro-F1 grob +2 Punkte.
+  Gemessen über alle 296 Seiten: bei **73 von 224** APP_PRICE-Spans (33 %)
+  steht „App" nicht im Fenster ±8 Wörter. Für diese Fälle ist das Label aus
+  dem Text **prinzipiell nicht ableitbar** – weder von GBERT noch von einer
+  Prompt- oder Code-Regel. Das Labeling-Modell kann es, weil es das Seitenbild
+  sieht. Das ist eine strukturelle Obergrenze, keine Datenmenge-Frage.
 
-  **Die naheliegende Regel „Preis plus 2 ist ein App-Preis" reicht nicht.**
-  Ausgezählt über alle 296 Seiten stehen hinter einem Preis: 101× eine „1",
-  113× eine „2", 27× eine „3". Die Ziffer allein trägt also nichts – „1" ist
-  fast genauso häufig. Was trägt, ist die Kombination mit der Seite: von den
-  113 „2" stehen **99 auf Seiten, die „App" erwähnen** (88 %), bei „1" sind es
-  nur 67 von 101 (66 %). Die Fußnotenlegende steht im Kleingedruckten, die
-  Ziffer verweist also seitenweise auf verschiedene Bedeutungen.
+  Die Farbe an der Wortposition trennt dagegen sauber. Verifiziert am Kasten
+  auf `1347375_p5`: **rgb(0, 124, 132)** gegen das Preisgelb **rgb(255, 212, 0)**
+  direkt daneben. Ein grober Test „Blaukanal über Rotkanal" reicht *nicht* – er
+  fängt die hellblauen Kacheln (196, 227, 248), und die stehen ausgerechnet
+  neben „ohne PENNY App". Deshalb Abstand zum verifizierten Ton
+  (`label_audit.APP_BACKGROUND`, Toleranz 60).
 
-  Belegte Kontexte – die Zahl *vor* der Fußnote ist der reduzierte Preis:
-  ```
-  1-kg-Beutel Aktion 1.69 → 1.49 ²      (1342812_p3)
-  0.44 UVP 0.79 → 0.39 ² -50% MÜLLER    (1342821_p11)
-  9.49 UVP 17.99 → 8.49 ² -52% HASSERÖDER
-  ```
+  **Was die Fußnotenregel wirklich getan hat** (Lauf vom 02.08.2026): Sie hat
+  67 Spans von PRICE auf APP_PRICE umgewidmet, **alle in Train und Dev, keinen
+  einzigen im Test**. Der Grund ist banal: In KW32 steht die Fußnote meist
+  *vor* dem Preis (`-37% 1 0.99`), die Regel sucht sie dahinter. Die
+  Verbesserung von F1 0.234 auf 0.660 kommt also allein aus den zusätzlichen
+  Trainingsbeispielen (57 → 115), nicht aus einer veränderten Testreferenz –
+  sauberer als befürchtet. Die Precision fiel dabei von 1.000 auf 0.630: das
+  Modell überproduziert jetzt, und darunter sind Fehlgriffe der Regel auf
+  Aufzählungsziffern (`Aktion 1.99 1 2 3`, `2 Jahre Garantie`, `3 Paar`).
 
-  Umsetzung, wenn das Team zustimmt (ein Nachmittag, GBERT trainiert in 96 s):
-  1. Regel in `labeling.py`: Preis-Span mit folgender alleinstehender „2"
-     **und** „App" auf derselben Seite wird APP_PRICE. Gehört zu `trim_spans()`,
-     weil mechanisch entscheidbar – „Was mechanisch entscheidbar ist, gehört in
-     Code statt in den Prompt." Sauberer wäre, die Fußnotenlegende der Seite
-     auszulesen statt die Seitenbedingung als Näherung zu nehmen; das ist mehr
-     Arbeit und sollte vorher an den 14 Gegenbeispielen geprüft werden
-     („2" hinter Preis, aber kein „App" auf der Seite).
-  2. `magda label --model sonnet-5 --repair` über die bestehenden Labels, statt
-     neu zu labeln – die Maschinerie dafür existiert.
-  3. `magda train gbert --labels-from sonnet-5`, `magda eval`, `magda predict`,
-     dann `magda significance` gegen den alten Stand.
+  **Der Lehrer ist an dieser Stelle inkonsistent.** Preise mit Ziffer daneben
+  auf einer App-Seite labelt sonnet-5 zu 35,5 % als O, 33,0 % als PRICE und
+  29,0 % als APP_PRICE. Das ist nahezu Zufall – aber kein Modellfehler,
+  sondern die Folge davon, dass die Ziffer allein nichts trägt und der Kasten
+  im Text fehlt.
 
-  Vorsicht: Das ändert die **Referenzdefinition**, also auch alle Zahlen davor.
-  Alte und neue Werte sind nur mit Angabe des Labelstands vergleichbar. Und die
-  Regel ist eine Heuristik, keine Ableitung – wer sie einbaut, zählt hinterher
-  aus, wie viele Spans sie umgewidmet hat, so wie es `trim_spans()` für seine
-  drei Grenzen dokumentiert.
+  **Offen bleibt die Entscheidung, was daraus folgt.** Zwei Wege, die
+  verschiedene Fragen beantworten und einander nicht ersetzen:
+
+  *A – Referenz bereinigen.* Farbe schlägt vor, ein Mensch entscheidet, die
+  Urteile werden übernommen. Macht die Zahlen **ehrlicher, nicht besser**: Wenn
+  jeder Kasten APP_PRICE wird, verlangt man von GBERT eine Vorhersage über ein
+  Merkmal, das in seiner Eingabe nicht vorkommt – die Metrik fällt. Genau
+  deshalb ist der heutige Wert 0.660 teilweise Zufallstreffer auf Textmustern.
+
+  *B – dem Modell das Merkmal geben.* Dieselbe Farbmessung als zusätzliche
+  Eingabe je Wort. Löst das Problem tatsächlich, weicht aber vom Proposal ab,
+  wo LayoutXLM den Layout-Anteil beisteuern soll.
+
+  Ohne A lässt sich nicht messen, was B gebracht hat. Vorbereitet ist A:
+  `magda audit APP_PRICE --labels-from sonnet-5` sortiert vor, durchgesehen
+  wird unter `/audit`. **Kein Schritt schreibt dabei nach `data/labeled/`** –
+  ein Klick in der Oberfläche darf die Referenz nicht stillschweigend ändern,
+  gegen die anschließend gemessen wird.
 - **Sortenangaben und Gebinde-Komposita** (`50-ml-Fläschchen`, `0,33-l-Dose`,
   `1-l-Sonderedition`): unverändert offen, und mit 106 von 135 PRODUCT-Fehlern
   jetzt beziffert. Prüfen per Auszählung je Wortlaut über den Korpus, nicht

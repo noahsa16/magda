@@ -1,5 +1,6 @@
 import type {
   Agreement, EvalReport, GoldAnnotation, GoldSummary,
+  AuditReport, AuditSummary,
   JobDef, LabelDistribution, Labeler, LabelSource, LabelsVsGold, ModelStatus, PageDetail, PageSummary,
   PipelineStatus,
   RunDetail, RunRecord, RunStatus, Span,
@@ -65,4 +66,24 @@ export const api = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     }),
+  audits: () => fetchJson<{ audits: (AuditSummary & { label: string; labels_from: string })[] }>("/api/audit"),
+  audit: (label: string) => fetchJson<AuditReport>(`/api/audit/${label}`),
+  saveVerdict: (
+    label: string,
+    key: string,
+    payload: {
+      verdict: "correct" | "wrong" | "unsure"
+      should_be?: string
+      note?: string
+      apply_to_duplicates?: boolean
+    },
+  ) =>
+    fetchJson<{ key: string; applied_to: number; summary: AuditSummary }>(
+      `/api/audit/${label}/${encodeURIComponent(key)}`,
+      {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      },
+    ),
 }

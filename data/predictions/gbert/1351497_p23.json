@@ -6,7 +6,7 @@
   "height": 841.89,
   "model": "gbert",
   "labels_from": "sonnet-5",
-  "created": "2026-08-02T20:15:23",
+  "created": "2026-08-02T21:26:35",
   "num_words": 111,
   "num_words_predicted": 111,
   "truncated": false,
@@ -21,7 +21,7 @@
         778.67
       ],
       "label": "B-PRICE",
-      "confidence": 0.9927
+      "confidence": 0.9968
     },
     {
       "i": 1,
@@ -33,7 +33,7 @@
         750.94
       ],
       "label": "B-BRAND",
-      "confidence": 0.9983
+      "confidence": 0.9989
     },
     {
       "i": 2,
@@ -57,7 +57,7 @@
         765.94
       ],
       "label": "I-PRODUCT",
-      "confidence": 0.9981
+      "confidence": 0.999
     },
     {
       "i": 4,
@@ -69,7 +69,7 @@
         773.41
       ],
       "label": "I-PRODUCT",
-      "confidence": 0.9929
+      "confidence": 0.9307
     },
     {
       "i": 5,
@@ -81,7 +81,7 @@
         773.41
       ],
       "label": "I-PRODUCT",
-      "confidence": 0.9975
+      "confidence": 0.999
     },
     {
       "i": 6,
@@ -93,7 +93,7 @@
         780.91
       ],
       "label": "O",
-      "confidence": 0.9988
+      "confidence": 0.9992
     },
     {
       "i": 7,
@@ -105,7 +105,7 @@
         780.91
       ],
       "label": "B-QUANTITY",
-      "confidence": 0.9989
+      "confidence": 0.9995
     },
     {
       "i": 8,
@@ -117,7 +117,7 @@
         780.91
       ],
       "label": "I-QUANTITY",
-      "confidence": 0.9988
+      "confidence": 0.9992
     },
     {
       "i": 9,
@@ -129,7 +129,7 @@
         788.41
       ],
       "label": "B-UNIT_PRICE",
-      "confidence": 0.9988
+      "confidence": 0.9991
     },
     {
       "i": 10,
@@ -165,7 +165,7 @@
         788.41
       ],
       "label": "I-UNIT_PRICE",
-      "confidence": 0.9993
+      "confidence": 0.9994
     },
     {
       "i": 13,
@@ -177,7 +177,7 @@
         778.67
       ],
       "label": "B-PRICE",
-      "confidence": 0.9968
+      "confidence": 0.9982
     },
     {
       "i": 14,
@@ -189,7 +189,7 @@
         673.17
       ],
       "label": "B-BRAND",
-      "confidence": 0.9985
+      "confidence": 0.9989
     },
     {
       "i": 15,
@@ -201,7 +201,7 @@
         680.67
       ],
       "label": "B-PRODUCT",
-      "confidence": 0.9989
+      "confidence": 0.9991
     },
     {
       "i": 16,
@@ -213,7 +213,7 @@
         688.17
       ],
       "label": "I-PRODUCT",
-      "confidence": 0.9974
+      "confidence": 0.9983
     },
     {
       "i": 17,
@@ -225,7 +225,7 @@
         695.64
       ],
       "label": "I-PRODUCT",
-      "confidence": 0.8693
+      "confidence": 0.7267
     },
     {
       "i": 18,
@@ -237,7 +237,7 @@
         695.64
       ],
       "label": "I-PRODUCT",
-      "confidence": 0.517
+      "confidence": 0.5865
     },
     {
       "i": 19,
@@ -249,7 +249,7 @@
         703.14
       ],
       "label": "I-PRODUCT",
-      "confidence": 0.8009
+      "confidence": 0.7561
     },
     {
       "i": 20,
@@ -261,7 +261,7 @@
         710.64
       ],
       "label": "I-PRODUCT",
-      "confidence": 0.7712
+      "confidence": 0.888
     },
     {
       "i": 21,
@@ -273,7 +273,7 @@
         718.14
       ],
       "label": "O",
-      "confidence": 0.9988
+      "confidence": 0.9993
     },
     {
       "i": 22,
@@ -285,7 +285,7 @@
         718.14
       ],
       "label": "B-QUANTITY",
-      "confidence": 0.9989
+      "confidence": 0.9994
     },
     {
       "i": 23,
@@ -297,7 +297,7 @@
         718.14
       ],
       "label": "I-QUANTITY",
-      "confidence": 0.9988
+      "confidence": 0.9992
     },
     {
       "i": 24,
@@ -309,7 +309,7 @@
         725.64
       ],
       "label": "B-UNIT_PRICE",
-      "confidence": 0.9987
+      "confidence": 0.9991
     },
     {
       "i": 25,
@@ -357,7 +357,7 @@
         578.83
       ],
       "label": "B-PRICE",
-      "confidence": 0.9958
+      "confidence": 0.9976
     },
     {
       "i": 29,
@@ -369,7 +369,7 @@
         558.6
       ],
       "label": "B-BRAND",
-      "confidence": 0.9983
+      "confidence": 0.9989
     },
     {
       "i": 30,
@@ -381,7 +381,7 @@
         566.1
       ],
       "label": "B-PRODUCT",
-      "confidence": 0.9987
+      "confidence": 0.999
     },
     {
       "i": 31,
@@ -393,7 +393,7 @@
         573.57
       ],
       "label": "I-PRODUCT",
-      "confidence": 0.9957
+      "confidence": 0.9785
     },
     {
       "i": 32,
@@ -405,7 +405,7 @@
         573.57
       ],
       "label": "I-PRODUCT",
-      "confidence": 0.9975
+      "confidence": 0.999
     },
     {
       "i": 33,
@@ -417,7 +417,7 @@
         581.07
       ],
       "label": "O",
-      "confidence": 0.9988
+      "confidence": 0.9993
     },
     {
       "i": 34,
@@ -429,7 +429,7 @@
         581.07
       ],
       "label": "B-QUANTITY",
-      "confidence": 0.9989
+      "confidence": 0.9994
     },
     {
       "i": 35,
@@ -441,7 +441,7 @@
         581.07
       ],
       "label": "I-QUANTITY",
-      "confidence": 0.9988
+      "confidence": 0.9992
     },
     {
       "i": 36,
@@ -453,7 +453,7 @@
         588.57
       ],
       "label": "B-UNIT_PRICE",
-      "confidence": 0.9986
+      "confidence": 0.9991
     },
     {
       "i": 37,
@@ -489,7 +489,7 @@
         588.57
       ],
       "label": "I-UNIT_PRICE",
-      "confidence": 0.9993
+      "confidence": 0.9994
     },
     {
       "i": 40,
@@ -501,7 +501,7 @@
         778.57
       ],
       "label": "B-PRICE",
-      "confidence": 0.996
+      "confidence": 0.9982
     },
     {
       "i": 41,
@@ -513,7 +513,7 @@
         765.94
       ],
       "label": "B-BRAND",
-      "confidence": 0.998
+      "confidence": 0.9987
     },
     {
       "i": 42,
@@ -525,7 +525,7 @@
         773.44
       ],
       "label": "B-PRODUCT",
-      "confidence": 0.9985
+      "confidence": 0.9983
     },
     {
       "i": 43,
@@ -537,7 +537,7 @@
         780.91
       ],
       "label": "O",
-      "confidence": 0.9982
+      "confidence": 0.9988
     },
     {
       "i": 44,
@@ -549,7 +549,7 @@
         780.91
       ],
       "label": "B-QUANTITY",
-      "confidence": 0.9987
+      "confidence": 0.9994
     },
     {
       "i": 45,
@@ -561,7 +561,7 @@
         780.91
       ],
       "label": "I-QUANTITY",
-      "confidence": 0.9984
+      "confidence": 0.9991
     },
     {
       "i": 46,
@@ -573,7 +573,7 @@
         780.91
       ],
       "label": "I-QUANTITY",
-      "confidence": 0.9979
+      "confidence": 0.9984
     },
     {
       "i": 47,
@@ -585,7 +585,7 @@
         780.91
       ],
       "label": "I-QUANTITY",
-      "confidence": 0.9987
+      "confidence": 0.9991
     },
     {
       "i": 48,
@@ -597,7 +597,7 @@
         788.41
       ],
       "label": "B-UNIT_PRICE",
-      "confidence": 0.9986
+      "confidence": 0.9991
     },
     {
       "i": 49,
@@ -609,7 +609,7 @@
         788.41
       ],
       "label": "I-UNIT_PRICE",
-      "confidence": 0.9995
+      "confidence": 0.9994
     },
     {
       "i": 50,
@@ -645,7 +645,7 @@
         404.5
       ],
       "label": "B-PRICE",
-      "confidence": 0.9965
+      "confidence": 0.9983
     },
     {
       "i": 53,
@@ -657,7 +657,7 @@
         391.77
       ],
       "label": "B-BRAND",
-      "confidence": 0.998
+      "confidence": 0.9988
     },
     {
       "i": 54,
@@ -669,7 +669,7 @@
         391.77
       ],
       "label": "I-BRAND",
-      "confidence": 0.9873
+      "confidence": 0.9957
     },
     {
       "i": 55,
@@ -681,7 +681,7 @@
         399.27
       ],
       "label": "B-PRODUCT",
-      "confidence": 0.999
+      "confidence": 0.9989
     },
     {
       "i": 56,
@@ -693,7 +693,7 @@
         406.74
       ],
       "label": "O",
-      "confidence": 0.9984
+      "confidence": 0.999
     },
     {
       "i": 57,
@@ -705,7 +705,7 @@
         406.74
       ],
       "label": "B-QUANTITY",
-      "confidence": 0.9987
+      "confidence": 0.9994
     },
     {
       "i": 58,
@@ -717,7 +717,7 @@
         406.74
       ],
       "label": "I-QUANTITY",
-      "confidence": 0.9985
+      "confidence": 0.9991
     },
     {
       "i": 59,
@@ -729,7 +729,7 @@
         406.74
       ],
       "label": "I-QUANTITY",
-      "confidence": 0.998
+      "confidence": 0.9978
     },
     {
       "i": 60,
@@ -741,7 +741,7 @@
         406.74
       ],
       "label": "I-QUANTITY",
-      "confidence": 0.9988
+      "confidence": 0.9991
     },
     {
       "i": 61,
@@ -753,7 +753,7 @@
         414.24
       ],
       "label": "B-UNIT_PRICE",
-      "confidence": 0.9988
+      "confidence": 0.9991
     },
     {
       "i": 62,
@@ -765,7 +765,7 @@
         414.24
       ],
       "label": "I-UNIT_PRICE",
-      "confidence": 0.9995
+      "confidence": 0.9996
     },
     {
       "i": 63,
@@ -801,7 +801,7 @@
         578.83
       ],
       "label": "B-PRICE",
-      "confidence": 0.996
+      "confidence": 0.9975
     },
     {
       "i": 66,
@@ -813,7 +813,7 @@
         558.6
       ],
       "label": "B-BRAND",
-      "confidence": 0.998
+      "confidence": 0.9988
     },
     {
       "i": 67,
@@ -825,7 +825,7 @@
         566.1
       ],
       "label": "B-PRODUCT",
-      "confidence": 0.999
+      "confidence": 0.9989
     },
     {
       "i": 68,
@@ -837,7 +837,7 @@
         573.57
       ],
       "label": "I-PRODUCT",
-      "confidence": 0.9955
+      "confidence": 0.9876
     },
     {
       "i": 69,
@@ -849,7 +849,7 @@
         573.57
       ],
       "label": "I-PRODUCT",
-      "confidence": 0.9974
+      "confidence": 0.999
     },
     {
       "i": 70,
@@ -861,7 +861,7 @@
         581.07
       ],
       "label": "O",
-      "confidence": 0.9987
+      "confidence": 0.9993
     },
     {
       "i": 71,
@@ -873,7 +873,7 @@
         581.07
       ],
       "label": "B-QUANTITY",
-      "confidence": 0.9987
+      "confidence": 0.9994
     },
     {
       "i": 72,
@@ -885,7 +885,7 @@
         581.07
       ],
       "label": "I-QUANTITY",
-      "confidence": 0.9987
+      "confidence": 0.9992
     },
     {
       "i": 73,
@@ -897,7 +897,7 @@
         588.57
       ],
       "label": "B-UNIT_PRICE",
-      "confidence": 0.9987
+      "confidence": 0.9991
     },
     {
       "i": 74,
@@ -945,7 +945,7 @@
         578.83
       ],
       "label": "B-PRICE",
-      "confidence": 0.996
+      "confidence": 0.9977
     },
     {
       "i": 78,
@@ -957,7 +957,7 @@
         551.1
       ],
       "label": "B-BRAND",
-      "confidence": 0.998
+      "confidence": 0.9989
     },
     {
       "i": 79,
@@ -981,7 +981,7 @@
         566.1
       ],
       "label": "I-PRODUCT",
-      "confidence": 0.9983
+      "confidence": 0.999
     },
     {
       "i": 81,
@@ -993,7 +993,7 @@
         573.57
       ],
       "label": "I-PRODUCT",
-      "confidence": 0.9948
+      "confidence": 0.9735
     },
     {
       "i": 82,
@@ -1005,7 +1005,7 @@
         573.57
       ],
       "label": "I-PRODUCT",
-      "confidence": 0.9976
+      "confidence": 0.999
     },
     {
       "i": 83,
@@ -1017,7 +1017,7 @@
         581.07
       ],
       "label": "O",
-      "confidence": 0.9987
+      "confidence": 0.9993
     },
     {
       "i": 84,
@@ -1029,7 +1029,7 @@
         581.07
       ],
       "label": "B-QUANTITY",
-      "confidence": 0.9988
+      "confidence": 0.9994
     },
     {
       "i": 85,
@@ -1041,7 +1041,7 @@
         581.07
       ],
       "label": "I-QUANTITY",
-      "confidence": 0.9987
+      "confidence": 0.9992
     },
     {
       "i": 86,
@@ -1053,7 +1053,7 @@
         588.57
       ],
       "label": "B-UNIT_PRICE",
-      "confidence": 0.9988
+      "confidence": 0.9991
     },
     {
       "i": 87,
@@ -1101,7 +1101,7 @@
         404.5
       ],
       "label": "B-PRICE",
-      "confidence": 0.9965
+      "confidence": 0.9981
     },
     {
       "i": 91,
@@ -1113,7 +1113,7 @@
         336.49
       ],
       "label": "B-BRAND",
-      "confidence": 0.9981
+      "confidence": 0.9989
     },
     {
       "i": 92,
@@ -1125,7 +1125,7 @@
         336.49
       ],
       "label": "I-BRAND",
-      "confidence": 0.9872
+      "confidence": 0.9956
     },
     {
       "i": 93,
@@ -1137,7 +1137,7 @@
         343.99
       ],
       "label": "B-PRODUCT",
-      "confidence": 0.999
+      "confidence": 0.9989
     },
     {
       "i": 94,
@@ -1161,7 +1161,7 @@
         351.46
       ],
       "label": "O",
-      "confidence": 0.9982
+      "confidence": 0.999
     },
     {
       "i": 96,
@@ -1173,7 +1173,7 @@
         351.46
       ],
       "label": "B-QUANTITY",
-      "confidence": 0.9988
+      "confidence": 0.9995
     },
     {
       "i": 97,
@@ -1185,7 +1185,7 @@
         351.46
       ],
       "label": "I-QUANTITY",
-      "confidence": 0.9988
+      "confidence": 0.9992
     },
     {
       "i": 98,
@@ -1197,7 +1197,7 @@
         358.96
       ],
       "label": "B-UNIT_PRICE",
-      "confidence": 0.9989
+      "confidence": 0.999
     },
     {
       "i": 99,
@@ -1209,7 +1209,7 @@
         358.96
       ],
       "label": "I-UNIT_PRICE",
-      "confidence": 0.9994
+      "confidence": 0.9995
     },
     {
       "i": 100,
@@ -1245,7 +1245,7 @@
         72.76
       ],
       "label": "O",
-      "confidence": 0.9993
+      "confidence": 0.9992
     },
     {
       "i": 103,
@@ -1257,7 +1257,7 @@
         93.76
       ],
       "label": "O",
-      "confidence": 0.9991
+      "confidence": 0.9988
     },
     {
       "i": 104,
@@ -1269,7 +1269,7 @@
         93.76
       ],
       "label": "O",
-      "confidence": 0.9994
+      "confidence": 0.9992
     },
     {
       "i": 105,
@@ -1281,7 +1281,7 @@
         114.76
       ],
       "label": "O",
-      "confidence": 0.9994
+      "confidence": 0.9995
     },
     {
       "i": 106,
@@ -1305,7 +1305,7 @@
         796.77
       ],
       "label": "O",
-      "confidence": 0.9976
+      "confidence": 0.9983
     },
     {
       "i": 108,
@@ -1317,7 +1317,7 @@
         30.92
       ],
       "label": "B-VALID",
-      "confidence": 0.9855
+      "confidence": 0.992
     },
     {
       "i": 109,
@@ -1329,7 +1329,7 @@
         31.09
       ],
       "label": "I-VALID",
-      "confidence": 0.9962
+      "confidence": 0.9975
     },
     {
       "i": 110,
@@ -1341,7 +1341,7 @@
         30.92
       ],
       "label": "I-VALID",
-      "confidence": 0.9961
+      "confidence": 0.9971
     }
   ],
   "entities": [
@@ -1356,7 +1356,7 @@
         294.85,
         778.67
       ],
-      "confidence": 0.9927
+      "confidence": 0.9968
     },
     {
       "label": "BRAND",
@@ -1369,7 +1369,7 @@
         202.22,
         750.94
       ],
-      "confidence": 0.9983
+      "confidence": 0.9989
     },
     {
       "label": "PRODUCT",
@@ -1382,7 +1382,7 @@
         216.26,
         773.41
       ],
-      "confidence": 0.9969
+      "confidence": 0.9819
     },
     {
       "label": "QUANTITY",
@@ -1395,7 +1395,7 @@
         194.23,
         780.91
       ],
-      "confidence": 0.9989
+      "confidence": 0.9993
     },
     {
       "label": "UNIT_PRICE",
@@ -1408,7 +1408,7 @@
         209.2,
         788.41
       ],
-      "confidence": 0.9992
+      "confidence": 0.9993
     },
     {
       "label": "PRICE",
@@ -1421,7 +1421,7 @@
         143.67,
         778.67
       ],
-      "confidence": 0.9968
+      "confidence": 0.9982
     },
     {
       "label": "BRAND",
@@ -1434,7 +1434,7 @@
         156.3,
         673.17
       ],
-      "confidence": 0.9985
+      "confidence": 0.9989
     },
     {
       "label": "PRODUCT",
@@ -1460,7 +1460,7 @@
         148.31,
         718.14
       ],
-      "confidence": 0.9989
+      "confidence": 0.9993
     },
     {
       "label": "UNIT_PRICE",
@@ -1473,7 +1473,7 @@
         144.42,
         733.14
       ],
-      "confidence": 0.9992
+      "confidence": 0.9993
     },
     {
       "label": "PRICE",
@@ -1486,7 +1486,7 @@
         440.36,
         578.83
       ],
-      "confidence": 0.9958
+      "confidence": 0.9976
     },
     {
       "label": "BRAND",
@@ -1499,7 +1499,7 @@
         353.4,
         558.6
       ],
-      "confidence": 0.9983
+      "confidence": 0.9989
     },
     {
       "label": "PRODUCT",
@@ -1512,7 +1512,7 @@
         367.62,
         573.57
       ],
-      "confidence": 0.9973
+      "confidence": 0.9922
     },
     {
       "label": "QUANTITY",
@@ -1525,7 +1525,7 @@
         341.21,
         581.07
       ],
-      "confidence": 0.9989
+      "confidence": 0.9993
     },
     {
       "label": "UNIT_PRICE",
@@ -1538,7 +1538,7 @@
         360.38,
         588.57
       ],
-      "confidence": 0.9992
+      "confidence": 0.9993
     },
     {
       "label": "PRICE",
@@ -1551,7 +1551,7 @@
         440.36,
         778.57
       ],
-      "confidence": 0.996
+      "confidence": 0.9982
     },
     {
       "label": "BRAND",
@@ -1564,7 +1564,7 @@
         353.4,
         765.94
       ],
-      "confidence": 0.998
+      "confidence": 0.9987
     },
     {
       "label": "PRODUCT",
@@ -1577,7 +1577,7 @@
         348.07,
         773.44
       ],
-      "confidence": 0.9985
+      "confidence": 0.9983
     },
     {
       "label": "QUANTITY",
@@ -1590,7 +1590,7 @@
         356.41,
         780.91
       ],
-      "confidence": 0.9984
+      "confidence": 0.999
     },
     {
       "label": "UNIT_PRICE",
@@ -1603,7 +1603,7 @@
         360.38,
         788.41
       ],
-      "confidence": 0.9992
+      "confidence": 0.9993
     },
     {
       "label": "PRICE",
@@ -1616,7 +1616,7 @@
         209.72,
         404.5
       ],
-      "confidence": 0.9965
+      "confidence": 0.9983
     },
     {
       "label": "BRAND",
@@ -1629,7 +1629,7 @@
         49.78,
         391.77
       ],
-      "confidence": 0.9927
+      "confidence": 0.9972
     },
     {
       "label": "PRODUCT",
@@ -1642,7 +1642,7 @@
         61.54,
         399.27
       ],
-      "confidence": 0.999
+      "confidence": 0.9989
     },
     {
       "label": "QUANTITY",
@@ -1655,7 +1655,7 @@
         58.45,
         406.74
       ],
-      "confidence": 0.9985
+      "confidence": 0.9989
     },
     {
       "label": "UNIT_PRICE",
@@ -1668,7 +1668,7 @@
         52.1,
         414.24
       ],
-      "confidence": 0.9993
+      "confidence": 0.9994
     },
     {
       "label": "PRICE",
@@ -1681,7 +1681,7 @@
         294.85,
         578.83
       ],
-      "confidence": 0.996
+      "confidence": 0.9975
     },
     {
       "label": "BRAND",
@@ -1694,7 +1694,7 @@
         202.22,
         558.6
       ],
-      "confidence": 0.998
+      "confidence": 0.9988
     },
     {
       "label": "PRODUCT",
@@ -1707,7 +1707,7 @@
         216.44,
         573.57
       ],
-      "confidence": 0.9973
+      "confidence": 0.9952
     },
     {
       "label": "QUANTITY",
@@ -1720,7 +1720,7 @@
         194.23,
         581.07
       ],
-      "confidence": 0.9987
+      "confidence": 0.9993
     },
     {
       "label": "UNIT_PRICE",
@@ -1733,7 +1733,7 @@
         209.2,
         588.57
       ],
-      "confidence": 0.9993
+      "confidence": 0.9994
     },
     {
       "label": "PRICE",
@@ -1746,7 +1746,7 @@
         143.67,
         578.83
       ],
-      "confidence": 0.996
+      "confidence": 0.9977
     },
     {
       "label": "BRAND",
@@ -1759,7 +1759,7 @@
         56.7,
         551.1
       ],
-      "confidence": 0.998
+      "confidence": 0.9989
     },
     {
       "label": "PRODUCT",
@@ -1772,7 +1772,7 @@
         70.92,
         573.57
       ],
-      "confidence": 0.9974
+      "confidence": 0.9926
     },
     {
       "label": "QUANTITY",
@@ -1785,7 +1785,7 @@
         48.72,
         581.07
       ],
-      "confidence": 0.9988
+      "confidence": 0.9993
     },
     {
       "label": "UNIT_PRICE",
@@ -1811,7 +1811,7 @@
         446.03,
         404.5
       ],
-      "confidence": 0.9965
+      "confidence": 0.9981
     },
     {
       "label": "BRAND",
@@ -1824,7 +1824,7 @@
         432.79,
         336.49
       ],
-      "confidence": 0.9927
+      "confidence": 0.9972
     },
     {
       "label": "PRODUCT",
@@ -1837,7 +1837,7 @@
         459.19,
         343.99
       ],
-      "confidence": 0.9986
+      "confidence": 0.9985
     },
     {
       "label": "QUANTITY",
@@ -1850,7 +1850,7 @@
         415.52,
         351.46
       ],
-      "confidence": 0.9988
+      "confidence": 0.9993
     },
     {
       "label": "UNIT_PRICE",
@@ -1876,7 +1876,7 @@
         291.62,
         31.09
       ],
-      "confidence": 0.9926
+      "confidence": 0.9955
     }
   ]
 }

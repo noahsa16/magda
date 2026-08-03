@@ -90,3 +90,19 @@ def test_beide_modelle_sehen_dieselben_cluster():
 
     assert ergebnis["difference"] > 0
     assert ergebnis["significant"] is True
+
+
+def test_bricht_ab_wenn_wortlisten_fehlen(tmp_path, monkeypatch):
+    """Ohne data/words darf nicht heimlich ein einziger Cluster entstehen.
+
+    Genau das passierte auf dem Trainings-Pod: das Bundle enthält data/words
+    nicht, der alte Fallback warf alle 100 Seiten in einen Cluster, und der
+    Bericht wies ein Intervall der Breite null mit p = 0.0 aus.
+    """
+    import pytest
+    from magda.cli import significance as cli
+
+    monkeypatch.setattr(cli, "WORDS_DIR", tmp_path)
+    with pytest.raises(SystemExit) as abbruch:
+        cli.test_clusters(["a_p1", "a_p2"])
+    assert "Wortlisten fehlen" in str(abbruch.value)

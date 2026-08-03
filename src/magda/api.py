@@ -24,6 +24,7 @@ from pydantic import BaseModel
 from magda import (
     agreement, catalog_meta, catalogs, config, dedupe, jobs, runner, runs, scraping,
 )
+from magda import label_audit
 from magda.gold import count_by_status, words_hash
 from magda.labels import ENTITY_TYPES, validate_spans
 
@@ -677,3 +678,83 @@ def get_label_distribution(model: str | None = None):
         "total": sum(counts.values()),
         "model": labeler,
     }
+
+
+# ---------------------------------------------------------------------------
+# Handprüfung einzelner Labels (data/audit/, vorsortiert von `magda audit`)
+# ---------------------------------------------------------------------------
+
+
+class AuditVerdict(BaseModel):
+    verdict: Literal["correct", "wrong", "unsure"]
+    should_be: str = ""
+    note: str = ""
+    # Ein Urteil über einen Fall, den 44 Regionalausgaben teilen, gilt für alle
+    # – sonst beurteilt ein Mensch fünfmal denselben Wortlaut.
+    apply_to_duplicates: bool = True
+
+
+@app.get("/api/audit")
+def list_audits():
+    """Welche Labels sind vorsortiert? Ohne `magda audit` ist die Liste leer."""
+    if not config.AUDIT_DIR.is_dir():
+        return {"audits": []}
+    audits = []
+    for path in sorted(config.AUDIT_DIR.glob("*.json")):
+        data = label_audit.load_audit(path.stem)
+        audits.append({
+            "label": data.get("label", path.stem),
+            "labels_from": data.get("labels_from", ""),
+            **label_audit.summarize(data),
+        })
+    return {"audits": audits}
+
+
+@app.get("/api/audit/{label}")
+def get_audit(label: str):
+    data = label_audit.load_audit(label.upper())
+    if not data["candidates"]:
+        raise HTTPException(
+            404,
+            f"Für '{label.upper()}' ist nichts vorsortiert. "
+            f"Erst `magda audit {label.upper()}` laufen lassen.",
+        )
+    return {**data, "summary": label_audit.summarize(data)}
+
+
+@app.put("/api/audit/{label}/{key}")
+def put_audit_verdict(label: str, key: str, payload: AuditVerdict):
+    """Ein Urteil festhalten – die Labels selbst bleiben unberührt.
+
+    Hier wird bewusst nur die Meinung des Menschen gespeichert, nicht
+    `data/labeled/` umgeschrieben. Was aus den Urteilen wird, entscheidet ein
+    eigener Schritt: Ein Klick in der Oberfläche soll nicht unbemerkt die
+    Referenz verändern, gegen die anschließend gemessen wird.
+    """
+    label = label.upper()
+    data = label_audit.load_audit(label)
+    if not data["candidates"]:
+        raise HTTPException(404, f"Für '{label}' ist nichts vorsortiert.")
+
+    target = next((c for c in data["candidates"] if c["key"] == key), None)
+    if target is None:
+        raise HTTPException(404, f"Unbekannter Kandidat: {key}")
+    if payload.should_be and payload.should_be not in ENTITY_TYPES:
+        raise HTTPException(422, f"Unbekanntes Label: {payload.should_be}")
+
+    record = {
+        **payload.model_dump(exclude={"apply_to_duplicates"}),
+        "updated": datetime.now().isoformat(timespec="seconds"),
+    }
+    affected = [target["key"]]
+    if payload.apply_to_duplicates:
+        signature = (target["context"], target["current_label"])
+        affected = [
+            c["key"] for c in data["candidates"]
+            if (c["context"], c["current_label"]) == signature
+        ]
+    for affected_key in affected:
+        data["verdicts"][affected_key] = record
+
+    label_audit.save_audit(data)
+    return {"key": key, "applied_to": len(affected), "summary": label_audit.summarize(data)}
