@@ -262,6 +262,30 @@ def get_evaluation():
     return reports
 
 
+@app.get("/api/significance")
+def get_significance():
+    """Der gepaarte Bootstrap-Vergleich aus `magda significance`.
+
+    Eigener Endpunkt statt eines Feldes in /api/evaluation: Die Datei gehört
+    keiner der beiden Varianten, sondern dem Vergleich zwischen ihnen. Sie
+    fällt in `get_evaluation` deshalb durch die Formprüfung – sie hat weder
+    `variant` noch `report`.
+
+    Für die Seite ist sie trotzdem die wichtigste Datei im Ordner: eine
+    Differenz ohne Intervall behauptet mehr, als 43 Cluster hergeben.
+    """
+    results = []
+    for f in sorted(config.EVAL_DIR.glob("significance_*.json")):
+        try:
+            with open(f) as fh:
+                data = json.load(fh)
+        except (json.JSONDecodeError, OSError):
+            continue
+        if isinstance(data, dict) and isinstance(data.get("paired"), dict):
+            results.append(data)
+    return results
+
+
 def _training_state(variant: str) -> dict:
     """Trainingsstand aus dem jüngsten Checkpoint.
 

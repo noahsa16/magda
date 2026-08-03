@@ -279,7 +279,12 @@ eine Liste auszugeben.
   `labels_vs_gold.json` und `agreement_*.json`. `/api/evaluation` prüft
   deshalb die *Form* (`variant` + `report`), nicht den Dateinamen – vorher
   reichte es alles durch und die Evaluationsseite starb an
-  `Object.entries(undefined)`.
+  `Object.entries(undefined)`. Aus demselben Grund hat der Bootstrap-Vergleich
+  einen **eigenen Endpunkt `/api/significance`**: `significance_*.json` gehört
+  keiner der beiden Varianten, hat weder `variant` noch `report` und fällt
+  durch dieselbe Formprüfung. Für die Seite ist er trotzdem die wichtigste
+  Datei im Ordner – die Differenz ohne Intervall ist genau die Behauptung, die
+  wir nicht aufstellen wollen.
 - **Übereinstimmung ist keine Richtigkeit.** `src/magda/agreement.py` misst, wo
   sich zwei Labeling-Modelle widersprechen – über alle 196 Seiten statt über
   die drei annotierten. Nützlich ist vor allem die Rangfolge: die uneinigsten

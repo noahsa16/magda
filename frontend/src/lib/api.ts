@@ -3,7 +3,7 @@ import type {
   AuditReport, AuditSummary,
   JobDef, LabelDistribution, Labeler, LabelSource, LabelsVsGold, ModelStatus, PageDetail, PageSummary,
   PipelineStatus,
-  RunDetail, RunRecord, RunStatus, Span,
+  RunDetail, RunRecord, RunStatus, SignificanceReport, Span,
 } from "./types"
 
 async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
@@ -39,6 +39,7 @@ export const api = {
     ),
   pageImageUrl: (id: string) => `/api/pages/${id}/image`,
   evaluation: () => fetchJson<EvalReport[]>("/api/evaluation"),
+  significance: () => fetchJson<SignificanceReport[]>("/api/significance"),
   model: () => fetchJson<ModelStatus[]>("/api/model"),
   run: () => fetchJson<RunStatus>("/api/run"),
   startRun: (job: string, args: Record<string, string> = {}) =>

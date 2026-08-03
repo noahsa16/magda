@@ -811,6 +811,43 @@ def test_evaluation_ignoriert_fremde_dateien_im_eval_ordner(client):
     assert [r["variant"] for r in body] == ["layoutxlm"]
 
 
+def test_signifikanz_kommt_ueber_einen_eigenen_endpunkt(client):
+    """Die Datei gehört keiner Variante und fällt in /api/evaluation durch die Formprüfung.
+
+    Für die Evaluationsseite ist sie trotzdem die wichtigste im Ordner: eine
+    Differenz ohne Intervall behauptet mehr, als die Cluster hergeben.
+    """
+    result = {
+        "created": "2026-08-02T23:36:07",
+        "labels_from": "sonnet-5",
+        "pages": 100,
+        "clusters": 43,
+        "cluster_threshold": 0.7,
+        "per_model": {
+            "gbert": {"f1": 0.8938, "ci95": [0.8484, 0.9306]},
+            "layoutxlm": {"f1": 0.8952, "ci95": [0.8418, 0.9366]},
+        },
+        "paired": {"difference": -0.0014, "ci95": [-0.0164, 0.0108],
+                   "p_value": 0.8431, "significant": False, "clusters": 43},
+    }
+    with open(config.EVAL_DIR / "significance_gbert_layoutxlm.json", "w") as f:
+        json.dump(result, f)
+
+    assert client.get("/api/evaluation").json() == []
+    body = client.get("/api/significance").json()
+
+    assert len(body) == 1
+    assert body[0]["paired"]["p_value"] == 0.8431
+
+
+def test_signifikanz_ignoriert_dateien_ohne_paired_block(client):
+    with open(config.EVAL_DIR / "significance_kaputt.json", "w") as f:
+        json.dump({"created": "2026-08-02T23:36:07", "clusters": 43}, f)
+    (config.EVAL_DIR / "significance_leer.json").write_text("{ nicht json")
+
+    assert client.get("/api/significance").json() == []
+
+
 def test_sources_trennt_modelle_von_handannotation(client):
     _write_labeled("462828_p1", {"tags": ["O"]}, model="alpha")
     _write_labeled("462828_p2", {"tags": ["O"]}, model="alpha")

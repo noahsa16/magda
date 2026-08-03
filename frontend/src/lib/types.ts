@@ -130,12 +130,65 @@ export interface EntityMetrics {
   support: number
 }
 
+/**
+ * Zählwerk eines Matching-Schemas nach SemEval-2013 Task 9.1.
+ *
+ * COR/INC/PAR/MIS/SPU sind die MUC-5-Kategorien: korrekt, falscher Typ,
+ * teilweise, übersehen, erfunden. Sie stehen hier, weil erst sie erklären,
+ * *warum* ein F1 fällt – ein Modell mit vielen MIS hat ein anderes Problem
+ * als eines mit vielen SPU.
+ */
+export interface SchemeCounts {
+  precision: number
+  recall: number
+  f1: number
+  correct: number
+  incorrect: number
+  partial: number
+  missing: number
+  spurious: number
+  possible: number
+  actual: number
+}
+
+export type SchemeKey = "strict" | "exact" | "partial" | "type"
+
+/** Die drei Auswertungsprotokolle aus `magda eval`. */
+export type ProtocolKey = "report" | "report_no_windows" | "report_truncated"
+
 export interface EvalReport {
   variant: "gbert" | "layoutxlm"
   split: string
   num_pages: number
   created: string
   report: Record<string, EntityMetrics>
+  // Alles ab hier ist optional: ältere Reports aus data/eval/ kennen die
+  // Felder nicht, und die Seite darf daran nicht scheitern.
+  protocol?: string
+  window_stride?: number
+  words_without_prediction_unwindowed?: number
+  report_no_windows?: Record<string, EntityMetrics>
+  report_truncated?: Record<string, EntityMetrics>
+  matching_schemes?: Record<SchemeKey, SchemeCounts>
+  matching_scheme_source?: string
+  matching_per_label_type?: Record<string, SchemeCounts>
+}
+
+/** Gepaarter Cluster-Bootstrap aus `magda significance`. */
+export interface SignificanceReport {
+  created: string
+  labels_from: string
+  pages: number
+  clusters: number
+  cluster_threshold: number
+  per_model: Record<string, { f1: number; ci95: [number, number]; clusters: number; pages: number; resamples: number }>
+  paired: {
+    difference: number
+    ci95: [number, number]
+    p_value: number
+    significant: boolean
+    clusters: number
+  }
 }
 
 export interface ModelStatus {
