@@ -260,6 +260,57 @@ def _split_multi_product(component: list[Entity], page: dict) -> list[list[Entit
     return [component]
 
 
+def _attach_orphan_descriptions(blocks: list[list[Entity]], page: dict) -> list[list[Entity]]:
+    """Haengt Mengen-/Grundpreiszeilen an den Produktblock darueber an.
+
+    Das Naehe-Clustering trennt bei jeder Luecke ueber 2 % der Seitenhoehe,
+    und zwischen Produkttext und Mengenzeile steht oft unbeschrifteter Text
+    ("je", Fussnoten) - der Block reisst dann mitten im Angebot. Uebrig bleibt
+    eine Mengenzeile ohne Produkt, die anschliessend den Preis abfaengt, der
+    eigentlich zum Produkt darueber gehoert (belegter Fall: FANTA/COCA-COLA
+    auf 1351497_p1, "2 l" und "(1 l = 0.65)" getrennt vom Markennamen).
+
+    Gemessen ueber den Korpus ist die Fortsetzung derselben Kachel an zwei
+    Merkmalen erkennbar: die linke Textkante fluchtet exakt (Median 0.0 px),
+    und die Luecke betraegt rund eine Zeilenhoehe. Gueltigkeitsbanner, die
+    ebenfalls ohne Produkt dastehen, liegen dagegen 240 bis 739 px entfernt
+    und werden von der Abstandsgrenze zuverlaessig ausgeschlossen. VALID-only
+    Rumpfbloecke bleiben ohnehin aussen vor - ein Banner gehoert der Seite,
+    nicht einem Angebot.
+    """
+    width = max(1.0, float(page.get("width") or 1.0))
+    height = max(1.0, float(page.get("height") or 1.0))
+
+    with_product = [b for b in blocks if any(e.type in ("PRODUCT", "BRAND") for e in b)]
+    if not with_product:
+        return blocks
+
+    result: list[list[Entity]] = []
+    for block in blocks:
+        if any(e.type in ("PRODUCT", "BRAND") for e in block):
+            result.append(block)
+            continue
+        if not any(e.type in ("QUANTITY", "UNIT_PRICE") for e in block):
+            result.append(block)
+            continue
+
+        bbox = _union_bbox([e.bbox for e in block])
+        candidates = []
+        for target in with_product:
+            tbox = _union_bbox([e.bbox for e in target])
+            if abs(bbox[0] - tbox[0]) / width > 0.012:
+                continue
+            gap = bbox[1] - tbox[3]  # nur nach unten: die Menge steht unter dem Produkt
+            if 0 <= gap / height <= 0.05:
+                candidates.append((gap, target))
+        if candidates:
+            candidates.sort(key=lambda c: c[0])
+            candidates[0][1].extend(block)
+        else:
+            result.append(block)
+    return result
+
+
 def _split_multi_price(component: list[Entity], page: dict) -> list[list[Entity]]:
     """Trennt einen Preis-Block mit mehreren PRICE- oder APP_PRICE-Entities.
 
@@ -448,10 +499,13 @@ def cluster_page(page: dict) -> list[Offer]:
     description = [e for e in entities if e.type in DESCRIPTION_TYPES]
     badge_entities = [e for e in entities if e.type in BADGE_TYPES]
 
-    blocks: list[Offer] = []
+    groups: list[list[Entity]] = []
     for component in _cluster_tight(description, page):
-        for sub in _split_multi_product(component, page):
-            blocks.append(_make_offer(page_id, len(blocks), sub))
+        groups.extend(_split_multi_product(component, page))
+    blocks = [
+        _make_offer(page_id, i, group)
+        for i, group in enumerate(_attach_orphan_descriptions(groups, page))
+    ]
 
     badges: list[Offer] = []
     for component in _cluster_tight(badge_entities, page):
