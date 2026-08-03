@@ -550,6 +550,31 @@ eine Liste auszugeben.
   wird unter `/audit`. **Kein Schritt schreibt dabei nach `data/labeled/`** –
   ein Klick in der Oberfläche darf die Referenz nicht stillschweigend ändern,
   gegen die anschließend gemessen wird.
+- **Die Handprüfung von APP_PRICE ist durch** (03.08.2026, Noah): 374 von 374
+  Kandidaten in 267 Vorlagen beurteilt, Urteile in `data/audit/APP_PRICE.json`.
+  Drei Befunde, und sie sind alle drei nützlich.
+  **Sonnets Präzision ist praktisch perfekt: 223 von 224 bestätigt.** Der eine
+  Fehlgriff ist `Aktion «1.99» 1 2 3` – eine Aufzählungsziffer, die die
+  Fußnotenregel für eine Fußnote hielt, also genau der vermutete Fehlermodus,
+  aber einmal unter 224. Die berichtete Precision von 0.630 ist eine
+  Eigenschaft des *Modells*, nicht der Referenz: GBERT überproduziert.
+  **Sonnets Recall ist es nicht: 81 App-Preise fehlen, rund ein Viertel**
+  (223 von 304). Alle in derselben Situation – im Kasten, ohne Text daneben.
+  **Die Prioritätsheuristik hat gehalten.** 67 von 67 OLD_PRICE auf App-Grund
+  bleiben OLD_PRICE (der durchgestrichene Preis im Kasten), und die Farbe
+  trifft in der Gruppe „fehlt vermutlich" zu 97,6 % (81/83). Die zwei
+  Ausreißer stehen beide neben „ohne PENNY App", also der Verneinung – genau
+  der Fall, wegen dem `is_bluish` durch den Abstand zu `APP_BACKGROUND`
+  ersetzt wurde.
+  **Wo eine Übernahme landen würde: 72 in Train, 9 in Dev, null im Test.**
+  Der Testsatz enthält keinen Preis auf App-Grund, der nicht schon APP_PRICE
+  heißt. Damit gilt dasselbe wie für die Fußnotenregel – die Messlatte bleibt
+  liegen, nur das Training wächst, bei APP_PRICE um 62 % (115 → 186).
+  Einschränkung: Die Prüfung findet nur, was *farblich* auffällt. Ein im Test
+  fehlender, nur per Text ausgezeichneter App-Preis wäre ihr entgangen; eine
+  Gegenprobe über die Textumgebung ergab keinen solchen Fall, ist aber
+  schwächer als die Farbprüfung.
+  **Die Übernahme selbst ist weiter nicht gebaut und bleibt Teamentscheidung.**
 - **Sortenangaben und Gebinde-Komposita** (`50-ml-Fläschchen`, `0,33-l-Dose`,
   `1-l-Sonderedition`): unverändert offen, und mit 106 von 135 PRODUCT-Fehlern
   jetzt beziffert. Prüfen per Auszählung je Wortlaut über den Korpus, nicht
