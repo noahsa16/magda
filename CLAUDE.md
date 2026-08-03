@@ -497,6 +497,36 @@ eine Liste auszugeben.
   17 MB. Ohne `split.json` bricht der Export ab – sonst würfelt die fremde
   Maschine klaglos einen eigenen und die Zahlen sind unvergleichbar.
   Anleitung: `docs/runpod.md`.
+- **Angebote lassen sich nicht über Boxabstände gruppieren – gemessen, nicht
+  vermutet.** Über alle 296 Seiten geometrisch gekachelt und die
+  Distanzschwelle durchgefahren (0,8× bis 13× Medianworthöhe): der Anteil
+  sauberer Kacheln (genau 1 PRODUCT, 1 PRICE) erreicht bei 4× sein Maximum von
+  **18,5 %** und bildet dort ein Plateau, keine Spitze. Der Grund steht im
+  Layout: Penny setzt den Preis in einen gelben Kasten, der weiter vom
+  zugehörigen Produktnamen entfernt liegt als vom Nachbarangebot. Wer an
+  Schwellwerten dreht, arbeitet gegen die Seitengestaltung. Dazu 4,7 % Blöcke
+  der Form „ein Produktname, mehrere Varianten mit je eigenem Preis"
+  (`Pfanne: 20 cm 9.99 / 24 cm 14.99 / 28 cm 17.99`) – die sind auch bei
+  perfekter Kachelung nicht durch Nähe auflösbar.
+- **Gruppieren ist eine Relation, Labeln eine Klassifikation.** BIO-Tags können
+  ausdrücken „dieses Wort ist ein Preis", aber nicht „dieser Preis gehört zu
+  jenem Produkt". `ENTITY_TYPES` zu erweitern bringt der Frage deshalb
+  grundsätzlich nichts – das Vokabular enthält die Relation nicht. Wer das
+  Clustern lösen will, braucht eine **zweite, parallele Tag-Folge**
+  (`B-OFFER`/`I-OFFER`) über die ganze Kachel, nicht einen weiteren
+  Entity-Typ: `OFFER` läge über PRODUCT und PRICE, und flaches BIO kann keine
+  Verschachtelung. Machbar ist es – **92,7 % der visuellen Wortgruppen sind
+  genau ein zusammenhängender Lauf** in der Wortliste (3728 von 4022, der Rest
+  zerfällt fast immer in genau zwei). Ein Span-Label kann nur zusammenfassen,
+  was benachbart ist; diese Zahl ist die Vorbedingung.
+- **54,5 % aller Wörter sind `O`** (32102 von 58956 in `sonnet-5`), und die
+  Masse ist nicht Füllwerk. Ausgezählt über alle 296 Seiten: Mengenaktionen
+  (`je`, `2für`, `3er-Set`) 3411 Treffer auf 287 Seiten – `je` allein ist mit
+  2666 das häufigste ungelabelte Wort überhaupt; Pfand (`zzgl. 0.25 Pfand`)
+  777 auf 91 Seiten; Kleingedrucktes 511 auf 130; Herkunft und Güteklasse
+  (`Deutschland`, `Kl. I`, `Haltungsform`) 215 auf 84. **`UVP` ist geprüft und
+  kein Kandidat**: der Preis dahinter trägt bereits in 833 von 855 Fällen
+  `OLD_PRICE`, dort geht nichts verloren.
 
 ## Offene Entscheidungen (nicht eigenmächtig festlegen)
 
@@ -593,6 +623,35 @@ eine Liste auszugeben.
   Backbone und ist bei 175 Trainingsseiten gutmütiger; ein Lauf würde den
   Layout-Negativbefund gegen den Einwand „falsche Layout-Architektur"
   absichern. Weicht vom Proposal ab → Teamentscheidung.
+- **Weitere Label – aufgekommen, weil das Zusammensetzen der Angebote hakt**
+  (Frage von Bogdan und Kjell, 03.08.2026). Die Messung dazu steht oben; sie
+  sagt vor allem, was ein neues Label **nicht** leistet: das Clustern löst es
+  nicht, dafür bräuchte es die OFFER-Sequenz. Unabhängig davon lohnen sich vier
+  Kandidaten, nach Nutzen sortiert:
+  - `PROMO` (`je`, `2für`, `3er-Set`) – 287 von 296 Seiten. Nicht nur Masse,
+    sondern semantisch nötig: `2für 1.99` gegen `je 1.99` ändert, was der Preis
+    bedeutet. Ohne das ist der Preis selbst in einem korrekt gebildeten Cluster
+    mehrdeutig.
+  - `DEPOSIT` (`zzgl. 0.25 Pfand`) – 91 Seiten. Echtes Feld, geht heute
+    verloren; ohne es stimmt der Endpreis nicht. Steht immer am Preis.
+  - `LEGAL` (Kleingedrucktes) – 130 Seiten. Wirkt durch **Ausschluss**:
+    „Abgabe nur in haushaltsüblichen Mengen" steht räumlich zwischen den
+    Angeboten und gehört zu keinem, zieht also jede Nachbarschaftsheuristik
+    schief.
+  - `ORIGIN` (`Deutschland`, `Kl. I`, `Haltungsform 3`) – 84 Seiten. Echtes
+    Feld, in der Annotationsanweisung bisher ausdrücklich aus PRODUCT
+    ausgeschlossen. Hilft beim Gruppieren nicht.
+
+  Der Preis dafür ist jedes Mal derselbe: `ENTITY_TYPES` hinten anhängen, den
+  **kompletten Korpus neu labeln** (~3,5 h LLM-Zeit für 296 Seiten), Prompt
+  überarbeiten, mit `magda gold` nachmessen; alte Checkpoints passen nicht
+  mehr, weil der Klassifikationskopf wächst. Deshalb nicht alle vier auf
+  einmal – naheliegend wäre `PROMO` und `DEPOSIT` in einem Durchgang.
+  Entscheidung steht aus.
+- **OFFER als zweite Tag-Folge?** Der einzige Weg, der das Gruppieren wirklich
+  löst (92,7 % Machbarkeit, siehe oben). Ist aber ein zusätzlicher Modellkopf,
+  kein weiteres Label, und weicht vom Proposal ab → Teamentscheidung. Vor einer
+  GPU-Miete gehört ein Machbarkeitstest auf den Gold-Seiten davor.
 - Label-Set ist ein Entwurf und wird nach Sichtung der ersten gelabelten Seiten
   finalisiert.
 
