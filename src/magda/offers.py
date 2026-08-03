@@ -381,12 +381,11 @@ def _reconcile_prices(offers: list[Offer], page: dict) -> list[Offer]:
     """
     expected = {id(offer): _expected_prices(offer, page) for offer in offers}
 
-    pool: list[Entity] = []
+    pool: list[tuple[Entity, list[Entity], Offer]] = []
     for offer in offers:
         own_expected = expected[id(offer)]
-        for entity in list(offer.entities):
-            if entity.type not in PRICE_TYPES:
-                continue
+        price_entities = [e for e in offer.entities if e.type in PRICE_TYPES]
+        for entity in price_entities:
             value = _price_value(entity.text)
             if value is None:
                 continue
@@ -396,9 +395,20 @@ def _reconcile_prices(offers: list[Offer], page: dict) -> list[Offer]:
             elif not _is_orphan_badge(offer):
                 continue
             offer.entities.remove(entity)
-            pool.append(entity)
+            # OLD_PRICE/DISCOUNT gehoeren zu genau diesem Preis-Sticker, nicht
+            # zum Zielangebot - sie muessen mitziehen, sonst bleiben sie als
+            # Rumpf ohne Preis zurueck. Nur eindeutig, wenn das Angebot ohnehin
+            # bloss einen Preis hatte; bei mehreren (PRICE + APP_PRICE) bleiben
+            # sie beim verbleibenden Preis, statt geraten zu werden.
+            companions = []
+            if len(price_entities) == 1:
+                for companion in list(offer.entities):
+                    if companion.type in ("OLD_PRICE", "DISCOUNT"):
+                        offer.entities.remove(companion)
+                        companions.append(companion)
+            pool.append((entity, companions, offer))
 
-    for entity in pool:
+    for entity, companions, source in pool:
         value = _price_value(entity.text)
         candidates = [
             o for o in offers
@@ -408,7 +418,18 @@ def _reconcile_prices(offers: list[Offer], page: dict) -> list[Offer]:
         ]
         if candidates:
             target = min(candidates, key=lambda o: _distance_to_offer(entity, o, page))
+        elif not any(e.type == entity.type for e in source.entities):
+            # kein besseres Ziel gefunden - zurueck ins Ursprungsangebot,
+            # aber nur wenn das nicht inzwischen (durch einen anderen Preis
+            # aus dem Pool) selbst schon einen Preis desselben Typs bekommen
+            # hat. Sonst entstuende genau das Duplikat, das die Pruefung oben
+            # verhindern soll.
+            target = source
+        else:
+            target = None
+        if target is not None:
             target.entities.append(entity)
+            target.entities.extend(companions)
 
     remaining = [offer for offer in offers if offer.entities]
     for offer in remaining:
