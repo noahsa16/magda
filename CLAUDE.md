@@ -1196,7 +1196,13 @@ eine Liste auszugeben.
 - **Weitere Label – aufgekommen, weil das Zusammensetzen der Angebote hakt**
   (Frage von Bogdan und Kjell, 03.08.2026). Die Messung dazu steht oben; sie
   sagt vor allem, was ein neues Label **nicht** leistet: das Clustern löst es
-  nicht, dafür bräuchte es die OFFER-Sequenz. Unabhängig davon lohnen sich vier
+  nicht, dafür bräuchte es die OFFER-Sequenz. Von den vier Kandidaten unten
+  wirkt nur `LEGAL` überhaupt aufs Gruppieren, und auch nur durch Ausschluss.
+  `PROMO`, `DEPOSIT` und `ORIGIN` sitzen alle schon direkt neben dem Wort, zu
+  dem sie gehören (Pfand am Preis, `je` am Preis, Herkunft am Produkt) – ihr
+  räumliches Zuordnungsproblem existiert gar nicht. Sie verbessern die
+  Vollständigkeit eines bereits korrekt gruppierten Angebots, lösen aber nicht,
+  warum das Gruppieren heute hakt. Unabhängig davon lohnen sich vier
   Kandidaten, nach Nutzen sortiert:
   - `PROMO` (`je`, `2für`, `3er-Set`) – 287 von 296 Seiten. Nicht nur Masse,
     sondern semantisch nötig: `2für 1.99` gegen `je 1.99` ändert, was der Preis
@@ -1273,6 +1279,32 @@ eine Liste auszugeben.
   als Primärzahl, dazu Feld-F1 unter Gruppen-Matching im DocILE-Protokoll –
   das ist die Zahl, die „Zeile in der Datenbank stimmt" entspricht. Test
   einmal am Ende, je eine Seite pro der 43 unabhängigen Cluster.
+- **`Aktion` als möglicher Anker für den Angebots-Beginn – kostet kein
+  Relabeling.** Ausgezählt über `data/labeled/sonnet-5/` (Erstbefund
+  03.08.2026 über 296 Seiten mit 755/656, nachgerechnet am 24.08.2026 über
+  alle 422): das Wort steht **1142-mal als `O` auf 316 Seiten**, und in **968
+  der 1142 Fälle (84,8 %)** folgt direkt ein `B-PRICE`. Anders als
+  `PROMO`/`DEPOSIT`/`ORIGIN` trägt es vermutlich keine verlorene Information –
+  es markiert nur, dass gleich ein neuer Preisblock beginnt. Damit kein
+  Kandidat für `ENTITY_TYPES`, aber ein möglicher textueller Signalgeber
+  für `offers.py`, robuster als Boxabstand und ohne LLM-Zeit zu kosten, weil
+  die Information schon in den bestehenden O-Tags steckt. Ungeprüft: ob das
+  über die 43 Test-Cluster hinweg tatsächlich zuverlässiger trennt als die
+  18,5-%-Distanzheuristik. Nachzählen ohne eigenes Kommando:
+
+  ```python
+  import json
+  from magda import config
+  total = vor_preis = 0
+  for path in sorted(config.labeled_dir("sonnet-5").glob("*.json")):
+      payload = json.loads(path.read_text())
+      words, tags = payload["words"], payload["tags"]
+      for i, (word, tag) in enumerate(zip(words, tags)):
+          if word["text"].strip().rstrip(":").lower() == "aktion" and tag == "O":
+              total += 1
+              vor_preis += i + 1 < len(tags) and tags[i + 1] == "B-PRICE"
+  print(total, vor_preis)
+  ```
 - Label-Set ist ein Entwurf und wird nach Sichtung der ersten gelabelten Seiten
   finalisiert.
 
