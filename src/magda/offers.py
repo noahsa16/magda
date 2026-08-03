@@ -197,37 +197,73 @@ def _cluster_tight(entities: list[Entity], page: dict) -> list[list[Entity]]:
     return list(groups.values())
 
 
-def _split_multi_brand(component: list[Entity], page: dict) -> list[list[Entity]]:
-    """Trennt einen Block mit mehreren Marken in einzelne Produkte auf.
+def _split_multi_product(component: list[Entity], page: dict) -> list[list[Entity]]:
+    """Trennt einen Block mit mehreren Produkten in einzelne Angebote auf.
 
-    Nur wenn jede Marke ihre EIGENE Menge in der Naehe hat: SOLVEL x3 sind
-    drei echte Produkte, jedes mit eigener Menge und eigenem Grundpreis
-    (1351497_p13). Fanta/Coca-Cola dagegen ist EIN Angebot mit zwei
-    Markennamen und einer gemeinsamen Menge ("2 l") - das bleibt ein Block,
-    sonst reisst der Split ein echtes Mehrmarken-Angebot auseinander.
+    Zwei Ebenen, in dieser Reihenfolge: zuerst ueber mehrere Marken, sonst
+    ueber mehrere PRODUCT-Entities. Beide nur, wenn jeder Anker seine EIGENE
+    Menge in der Naehe hat: SOLVEL x3 sind drei echte Produkte, jedes mit
+    eigener Menge und eigenem Grundpreis (1351497_p13). Fanta/Coca-Cola
+    dagegen ist EIN Angebot mit zwei Markennamen und einer gemeinsamen Menge
+    ("2 l") - das bleibt ein Block, sonst reisst der Split ein echtes
+    Mehrmarken-Angebot auseinander.
+
+    Die zweite Ebene (PRODUCT statt BRAND) deckt Faelle ab, in denen zwei
+    Produkte ein Foto teilen, aber nur eines eine eigene Marke hat - Hähnchen
+    und Trauben unter einem Foto, nur das Hähnchen mit MÜHLENHOF (1351497_p1):
+    zwei BRAND-Entities gibt es dort nicht, aber zwei PRODUCT-Entities mit je
+    eigener Menge und eigenem Grundpreis.
+
+    Rekursiv, weil der Marken-Split allein hier nicht reicht: die MÜHLENHOF-
+    Gruppe hat nach der Trennung von HARIBO immer noch Hähnchen *und* Trauben
+    zusammen (Trauben hat keine eigene Marke), und "hat eine Menge" ist als
+    Abbruchkriterium erfuellt, obwohl innerhalb der Gruppe noch zwei Produkte
+    stecken. Jede entstehende Untergruppe wird deshalb erneut versucht zu
+    splitten, bis keine Ebene mehr greift.
+
+    Eigene Menge reicht als Kriterium allein nicht: HARIBO Goldbären und
+    Pico-Balla haben je ihre eigene Menge (205 g / 190 g), teilen sich aber
+    einen Preis ("je 205 g oder 190 g, 0.69"). Getrennt bekaeme nur eine
+    Variante den Preis. Erst wenn die erwarteten Preise (Menge x Grundpreis)
+    zwischen den Gruppen wirklich verschieden sind, ist der Split gerechtfertigt.
     """
-    brands = [e for e in component if e.type == "BRAND"]
-    if len(brands) < 2:
-        return [component]
-
-    def nearest_brand(entity: Entity) -> Entity:
-        return min(brands, key=lambda b: _distance_to_anchor(entity, b, page))
-
-    by_brand: dict[int, list[Entity]] = {b.id: [b] for b in brands}
-    for entity in component:
-        if entity.type == "BRAND":
+    for anchor_type in ("BRAND", "PRODUCT"):
+        anchors = [e for e in component if e.type == anchor_type]
+        if len(anchors) < 2:
             continue
-        by_brand[nearest_brand(entity).id].append(entity)
 
-    if not all(any(e.type == "QUANTITY" for e in members) for members in by_brand.values()):
-        return [component]
-    return list(by_brand.values())
+        def nearest(entity: Entity, anchors: list[Entity] = anchors) -> Entity:
+            return min(anchors, key=lambda a: _distance_to_anchor(entity, a, page))
+
+        by_anchor: dict[int, list[Entity]] = {a.id: [a] for a in anchors}
+        for entity in component:
+            if entity.type == anchor_type:
+                continue
+            by_anchor[nearest(entity).id].append(entity)
+
+        groups = list(by_anchor.values())
+        if not all(any(e.type == "QUANTITY" for e in members) for members in groups):
+            continue
+
+        price_sets = [set(_expected_prices(_make_offer("_tmp", 0, m), page)) for m in groups]
+        shares_price = any(
+            a & b for i, a in enumerate(price_sets) for b in price_sets[i + 1:]
+        )
+        if shares_price:
+            continue
+
+        result: list[list[Entity]] = []
+        for members in groups:
+            result.extend(_split_multi_product(members, page))
+        return result
+
+    return [component]
 
 
 def _split_multi_price(component: list[Entity], page: dict) -> list[list[Entity]]:
     """Trennt einen Preis-Block mit mehreren PRICE- oder APP_PRICE-Entities.
 
-    Anders als bei Marken (`_split_multi_brand`) braucht es keine
+    Anders als bei Produkten (`_split_multi_product`) braucht es keine
     Zusatzpruefung: ein einzelnes Angebot hat nie zwei verschiedene reguläre
     Preise gleichzeitig, waehrend Preis-Sticker benachbarter Produkte auf
     dichten Seiten durchaus nah genug beieinander liegen koennen, um von der
@@ -396,7 +432,7 @@ def cluster_page(page: dict) -> list[Offer]:
     Zwei getrennte Clustering-Durchlaeufe: Beschreibungs-Entities (PRODUCT,
     BRAND, QUANTITY, UNIT_PRICE, VALID) werden rein nach visueller Naehe zu
     Bloecken zusammengefasst (`_cluster_tight`, anschliessend
-    `_split_multi_brand` fuer Bloecke mit mehreren Marken), Preis-Badges
+    `_split_multi_product` fuer Bloecke mit mehreren Marken/Produkten), Preis-Badges
     (PRICE, APP_PRICE, OLD_PRICE, DISCOUNT) ebenso, aber separat. Erst danach
     ordnet `_match_badges` jedes Badge dem passenden Block zu, bevorzugt ueber
     Menge x Grundpreis. Preis-Entities beeinflussen so nie, welcher
@@ -414,7 +450,7 @@ def cluster_page(page: dict) -> list[Offer]:
 
     blocks: list[Offer] = []
     for component in _cluster_tight(description, page):
-        for sub in _split_multi_brand(component, page):
+        for sub in _split_multi_product(component, page):
             blocks.append(_make_offer(page_id, len(blocks), sub))
 
     badges: list[Offer] = []
