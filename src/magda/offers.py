@@ -260,6 +260,123 @@ def _split_multi_product(component: list[Entity], page: dict) -> list[list[Entit
     return [component]
 
 
+def _x_columns(entities: list[Entity], page: dict) -> list[list[Entity]]:
+    """Zerlegt eine Entity-Menge an den senkrechten Weissraum-Korridoren.
+
+    Projektionsprofil auf die x-Achse, geschnitten an jeder Luecke ueber der
+    Mindestbreite - der Standardweg fuer Spaltenlayouts (XY-Cut). Gemessen an
+    den Non-Food-Legenden liegen die Spaltenluecken bei 6 bis 66 px, waehrend
+    innerhalb einer Spalte hoechstens 4 px frei bleiben; die Grenze bei rund
+    6 px trennt beide Faelle sauber.
+    """
+    if not entities:
+        return []
+    width = max(1.0, float(page.get("width") or 1.0))
+    min_gap = max(5.0, 0.012 * width)
+
+    spans = sorted((e.bbox[0], e.bbox[2]) for e in entities)
+    bands = [list(spans[0])]
+    for x0, x1 in spans[1:]:
+        if x0 - bands[-1][1] <= min_gap:
+            bands[-1][1] = max(bands[-1][1], x1)
+        else:
+            bands.append([x0, x1])
+
+    columns: list[list[Entity]] = [[] for _ in bands]
+    for entity in entities:
+        center = (entity.bbox[0] + entity.bbox[2]) / 2
+        index = min(
+            range(len(bands)),
+            key=lambda i: 0.0 if bands[i][0] <= center <= bands[i][1]
+            else min(abs(center - bands[i][0]), abs(center - bands[i][1])),
+        )
+        columns[index].append(entity)
+    return [c for c in columns if c]
+
+
+def _reading_order_groups(column: list[Entity]) -> list[list[Entity]]:
+    """Teilt eine Spalte in Angebote: ein Produkt nach einem Preis beginnt ein neues.
+
+    In der Legende steht je Spalte Produktname ueber Preis, streng abwechselnd
+    (gemessen als Lesereihenfolge, z.B. `P P $ P $ P $ P $` auf 1351497_p28).
+    Damit braucht die Trennung keine Menge je Gruppe - genau die fehlt bei
+    Non-Food-Artikeln, weshalb `_split_multi_product` dort nicht greift.
+    Mengen- und Grundpreiszeilen zaehlen nicht als Kopf: sie stehen zwischen
+    Produkt und Preis und wuerden sonst mitten im Angebot schneiden.
+
+    Ein zweiter Preis desselben Typs schneidet ebenfalls, auch ohne Produkt
+    dazwischen. Das faengt Produktnamen ab, die das Naehe-Clustering in einen
+    anderen Block gezogen hat und die in der Spalte deshalb fehlen: ohne den
+    Schnitt sammelte die Vorgaengergruppe beide Preiszeilen ein und behauptete
+    zwei Preise fuer ein Produkt. Als eigenes Fragment ist die verwaiste
+    Preiszeile wenigstens richtig - ihr Produkt steht anderswo.
+    """
+    groups: list[list[Entity]] = []
+    current: list[Entity] = []
+    seen: set[str] = set()
+    for entity in sorted(column, key=lambda e: (e.bbox[1], e.bbox[0], e.start)):
+        starts_offer = entity.type in ("PRODUCT", "BRAND") and seen
+        repeats_price = entity.type in PRICE_TYPES and entity.type in seen
+        if (starts_offer or repeats_price) and current:
+            groups.append(current)
+            current = []
+            seen = set()
+        current.append(entity)
+        if entity.type in PRICE_TYPES:
+            seen.add(entity.type)
+    if current:
+        groups.append(current)
+    return groups
+
+
+def _segment_legend(
+    block: list[Entity], badge_entities: list[Entity], page: dict
+) -> tuple[list[list[Entity]], list[Entity]] | None:
+    """Zerlegt eine Sammel-Legende in einzelne Angebote, oder None.
+
+    Non-Food-Seiten zeigen oben ein Fotoraster mit freistehenden Preis-Stickern
+    und unten eine Legende, in der alle Produkttexte spaltenweise dicht gepackt
+    stehen. Das Naehe-Clustering fasst diese Legende zu einem Block mit ueber
+    zwanzig Produkten zusammen, und `_split_multi_product` trennt ihn nicht,
+    weil Non-Food-Artikel keine Menge tragen.
+
+    Preis-Entities innerhalb des Blocks werden hier mitgenommen statt
+    `_match_badges` ueberlassen: in der Legende steht der Preis naeher am
+    *folgenden* Produkt als am eigenen (gemessen auf 1351497_p30: 2.2 px
+    gegen 6.0 px), Naehe allein ordnet ihn also falsch zu. Die Lesereihenfolge
+    weiss es besser.
+
+    Gibt None zurueck, wenn eine der beiden Bedingungen fehlt:
+
+    - Mindestens zwei Preise *innerhalb* des Blocks. Das trennt Legende von
+      Produktzeile: in der Legende steht der Preis zwischen den Produkttexten,
+      auf einer Lebensmittelseite dagegen als Sticker auf dem Foto weit
+      darueber, ausserhalb des Blocks. Ohne diese Bedingung zerlegte die
+      Lesereihenfolge auch die Obst- und Suesswarenzeile auf 1351497_p1, wo
+      Goldbären und Pico-Balla zusammengehoeren.
+    - Mehr als eine Spalte. Sonst ist es ein normales Angebot mit mehreren
+      Produkt- oder Markenzeilen untereinander (FANTA/COCA-COLA), und der
+      uebliche Weg ueber `_match_badges` bleibt zustaendig.
+    """
+    bbox = _union_bbox([e.bbox for e in block])
+    inside = [
+        b for b in badge_entities
+        if bbox[0] <= (b.bbox[0] + b.bbox[2]) / 2 <= bbox[2]
+        and bbox[1] <= (b.bbox[1] + b.bbox[3]) / 2 <= bbox[3]
+    ]
+    if sum(1 for b in inside if b.type in PRICE_TYPES) < 2:
+        return None
+
+    columns = _x_columns(block + inside, page)
+    if len(columns) < 2:
+        return None
+
+    groups: list[list[Entity]] = []
+    for column in columns:
+        groups.extend(_reading_order_groups(column))
+    return groups, inside
+
+
 def _attach_orphan_descriptions(blocks: list[list[Entity]], page: dict) -> list[list[Entity]]:
     """Haengt Mengen-/Grundpreiszeilen an den Produktblock darueber an.
 
@@ -502,17 +619,35 @@ def cluster_page(page: dict) -> list[Offer]:
     groups: list[list[Entity]] = []
     for component in _cluster_tight(description, page):
         groups.extend(_split_multi_product(component, page))
-    blocks = [
-        _make_offer(page_id, i, group)
-        for i, group in enumerate(_attach_orphan_descriptions(groups, page))
-    ]
+    groups = _attach_orphan_descriptions(groups, page)
+
+    # Sammel-Legenden zuerst: sie sind ueber die Lesereihenfolge trennbar, aber
+    # nicht ueber Mengen, und bringen ihre Preise selbst mit. Was hier zerlegt
+    # wird, geht nicht mehr durch `_match_badges`.
+    legend_groups: list[list[Entity]] = []
+    consumed: set[int] = set()
+    rest: list[list[Entity]] = []
+    for group in groups:
+        if sum(1 for e in group if e.type in ("PRODUCT", "BRAND")) < 3:
+            rest.append(group)
+            continue
+        segmented = _segment_legend(group, [b for b in badge_entities if b.id not in consumed], page)
+        if segmented is None:
+            rest.append(group)
+        else:
+            parts, used = segmented
+            legend_groups.extend(parts)
+            consumed.update(b.id for b in used)
+
+    blocks = [_make_offer(page_id, i, group) for i, group in enumerate(rest)]
 
     badges: list[Offer] = []
-    for component in _cluster_tight(badge_entities, page):
+    for component in _cluster_tight([b for b in badge_entities if b.id not in consumed], page):
         for sub in _split_multi_price(component, page):
             badges.append(_make_offer(page_id, len(badges), sub))
 
     offers = _match_badges(blocks, badges, page)
+    offers.extend(_make_offer(page_id, 0, group) for group in legend_groups)
     if not offers:
         return []
 
