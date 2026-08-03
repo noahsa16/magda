@@ -9,6 +9,24 @@ eigenes layout-aware Modell. Grundlage ist `docs/proposal/IE_ProjectProposal_Mag
 
 Ausführliche Erklärung der Pipeline: `EXPLANATION.md` (lokal, nicht im Repo).
 
+## Nicht ohne Rücksprache
+
+Sechs Dinge, die man nicht nebenbei ändert. Sie stehen weiter unten ausführlich
+begründet – hier nur, damit niemand erst 100 Zeilen lesen muss, um zu wissen,
+wo es weh tut.
+
+- **`ENTITY_TYPES` nur hinten erweitern.** Einfügen in der Mitte macht jeden
+  bestehenden Checkpoint ungültig.
+- **`data/splits/split.json` ist eingefroren.** Neu würfeln heißt: alle
+  bisherigen Zahlen sind nicht mehr vergleichbar.
+- **Nichts schreibt nach `data/labeled/`.** Weder API noch Frontend noch die
+  Handprüfung. Das ist die Referenz, gegen die gemessen wird.
+- **Die Wortreihenfolge aus Schritt 02 ist ein Vertrag.** Ändert sie sich, zeigen
+  alle Label-Indizes auf andere Wörter – auch die in `gold/`.
+- **Kein freies Argument-Textfeld im Frontend.** `jobs.build_command` nimmt nur
+  deklarierte Parameter; alles andere wäre praktisch eine Remote-Shell.
+- **Nichts direkt nach `main`.** Siehe Branch-Workflow unter *Konventionen*.
+
 ## Struktur
 
 ```
@@ -100,6 +118,22 @@ eine Liste auszugeben.
   Argumente parsen, Dateien lesen/schreiben, Fortschritt anzeigen – sonst nichts.
 - Skripte bleiben idempotent: bereits verarbeitete Seiten überspringen. Ein Lauf
   über mehrere tausend Seiten darf nach einem Abbruch nicht von vorn beginnen.
+- **Keine Zahl ohne das Skript, das sie erzeugt.** Wer eine Messung berichtet –
+  im Bericht, im Chat, in einer Commit-Nachricht –, legt den Code dazu ins Repo.
+  Sonst kann sie in vier Wochen niemand nachrechnen, und wer sie liest, muss
+  glauben statt prüfen. Zweite Hälfte der Regel: dazuschreiben, *woran* gemessen
+  wurde. Eine Heuristik an dem Kriterium zu messen, nach dem sie selbst
+  zuordnet, ergibt eine hohe Zahl und keine Erkenntnis.
+- **Der Testsplit ist zum Messen da, nicht zum Entwickeln.** Heuristiken,
+  Schwellwerte und Konstanten werden an Train/Dev entwickelt; Test wird einmal
+  am Ende angefasst. Wer eine Regel an Testseiten baut und danach an denselben
+  misst, bekommt eine In-Sample-Zahl – auch dann, wenn das *Modell* die Seiten
+  nie gesehen hat. Das ist beim Clustering schon passiert.
+- **Ein belegter Fall im Docstring gehört als Test ins Repo.** Wer schreibt
+  „belegter Fall: FREIXENET/HARIBO auf 1351497_p1", hat die Arbeit schon
+  gemacht – die Seite liegt in `data/words/`, die Erwartung steht im Text.
+  Ohne Test schützt die Begründung nichts: die nächste Änderung an einer
+  Konstante macht den Fall still wieder kaputt, und alle Tests bleiben grün.
 - **Nichts wird direkt nach `main` gemergt – auch nichts Kleines, auch nicht
   bei grünen Tests.** Der Weg ist: Feature-Branch → Pull Request nach
   `development` → von dort gesammelt nach `main`. Ein Feature-Branch darf auch
