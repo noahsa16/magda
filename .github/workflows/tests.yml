@@ -1,0 +1,32 @@
+name: Tests
+
+# Laeuft bei jedem PR nach development/main sowie bei Pushes dorthin (z.B.
+# der Fast-Forward-Merge development -> main). Ohne das bestaetigt ein
+# Approval nur "jemand hat draufgeschaut", nicht "die Tests sind gruen".
+on:
+  pull_request:
+    branches: [development, main]
+  push:
+    branches: [development, main]
+
+concurrency:
+  group: tests-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  pytest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+
+      # editable Installation legt auch den Befehl `magda` an, den einzelne
+      # Tests (test_cli.py) direkt aufrufen.
+      - run: pip install -e '.[dev]'
+
+      - run: pytest -q
