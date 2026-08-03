@@ -519,6 +519,32 @@ eine Liste auszugeben.
   genau ein zusammenhängender Lauf** in der Wortliste (3728 von 4022, der Rest
   zerfällt fast immer in genau zwei). Ein Span-Label kann nur zusammenfassen,
   was benachbart ist; diese Zahl ist die Vorbedingung.
+- **Menge × Grundpreis prüft sich selbst – Boxabstände nicht.** `0,205 kg ×
+  3,37 €/kg = 0,69 €` stimmt oder stimmt nicht; das ist Arithmetik und braucht
+  keine Handannotation. Deshalb ordnet `offers.py` Preise bevorzugt darüber zu
+  statt über Nähe. Nützlicher ist die Umkehrung: geht die Rechnung in einem
+  Block *nicht* auf, ist der Block verdächtig. Auf `1351497_p20` steht
+  `900 g | 750 ml | 313,5 g` bei Preis 4.49, aber nur 0,75 × 5,99 trifft ihn –
+  keine Varianten, sondern drei zusammengeworfene Nachbarprodukte. Das findet
+  Clustering-Fehler ohne Gold. Grenze: es gibt Grundpreise nur bei Lebensmitteln,
+  Non-Food trägt allein die Lesereihenfolge.
+- **Größenvarianten paaren sich positionsweise** – gemessen über die 1283
+  Angebote aus `magda offers --predictions gbert`: von 43 Blöcken mit mehreren
+  Mengen *und* mehreren Grundpreisen gehen 26 positionsweise auf (i-te Menge zur
+  i-ten Grundpreisangabe), **0 nur in einer anderen Reihenfolge**, 11 in keiner,
+  6 haben ungleich viele. Wenn die Rechnung überhaupt aufgeht, geht sie in
+  Lesereihenfolge auf – die Zuordnung Größe→Preis braucht also weder ein neues
+  Label noch Geometrie. Die 11 Fehlschläge sind meist falsch geclusterte
+  Nachbarprodukte oder Mehrfachpackungen (`2 x 350 g`, deren Multiplikator die
+  Mengenerkennung noch ignoriert).
+- **Das Angebots-Schema plättet Varianten.** `offers` hat eine Zeile je Angebot
+  und joint mehrere Mengen als `"205 g | 190 g"` in ein Textfeld. Bei einem
+  gemeinsamen Preis („je 205 g oder 190 g, 0.69") trägt das noch; bei drei
+  Größen mit drei Preisen nicht, weil `_match_badges` jedem Block höchstens ein
+  PRICE gibt und die übrigen als Fragment liegen bleiben. Von 1283 Datensätzen
+  haben 777 Produkt *und* Preis, 506 sind Bruchstücke. Nötig ist `offer` 1:n
+  `variant(quantity, price, old_price, unit_price)` – ohne das kann auch eine
+  bessere Heuristik ihr Ergebnis nicht ablegen. Anmerkungen dazu in Issue #6.
 - **54,5 % aller Wörter sind `O`** (32102 von 58956 in `sonnet-5`), und die
   Masse ist nicht Füllwerk. Ausgezählt über alle 296 Seiten: Mengenaktionen
   (`je`, `2für`, `3er-Set`) 3411 Treffer auf 287 Seiten – `je` allein ist mit
