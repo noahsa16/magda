@@ -100,6 +100,16 @@ eine Liste auszugeben.
   Argumente parsen, Dateien lesen/schreiben, Fortschritt anzeigen – sonst nichts.
 - Skripte bleiben idempotent: bereits verarbeitete Seiten überspringen. Ein Lauf
   über mehrere tausend Seiten darf nach einem Abbruch nicht von vorn beginnen.
+- **Nichts wird direkt nach `main` gemergt – auch nichts Kleines, auch nicht
+  bei grünen Tests.** Der Weg ist: Feature-Branch → Pull Request nach
+  `development` → von dort gesammelt nach `main`. Ein Feature-Branch darf auch
+  einfach liegen bleiben, bis jemand draufgeschaut hat; ungemergte Arbeit
+  kostet nichts, ein ungeprüfter Merge schon. Der Grund ist nicht Bürokratie:
+  `main` trägt die Zahlen, die im Bericht stehen. Wer dort direkt hineinmergt,
+  verschiebt die Grundlage einer Messung ohne zweites Augenpaar – und Fehler in
+  Heuristiken sehen von innen genau wie Verbesserungen aus, solange niemand
+  gegengerechnet hat. Direkt auf `main` committen oder pushen entsprechend
+  auch nicht.
 
 ## Projektwissen, das nicht im Code steht
 
