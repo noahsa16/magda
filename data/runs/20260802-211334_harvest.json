@@ -1,0 +1,19 @@
+{
+ "run_id": "20260802-211334_harvest",
+ "job": "harvest",
+ "title": "Woche ernten",
+ "args": {
+  "seed": ""
+ },
+ "command": [
+  "/Users/bogdanroth/PycharmProjects/magda/.venv/bin/python",
+  "-u",
+  "-m",
+  "magda",
+  "harvest"
+ ],
+ "started": "2026-08-02T21:13:34",
+ "finished": "2026-08-02T21:13:50",
+ "exit_code": -15,
+ "duration": 15.9
+}
