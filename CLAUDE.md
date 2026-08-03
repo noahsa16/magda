@@ -9,6 +9,25 @@ eigenes layout-aware Modell. Grundlage ist `docs/proposal/IE_ProjectProposal_Mag
 
 Ausführliche Erklärung der Pipeline: `EXPLANATION.md` (lokal, nicht im Repo).
 
+## Nicht ohne Rücksprache
+
+Sechs Dinge, die man nicht nebenbei ändert. Sie stehen weiter unten ausführlich
+begründet – hier nur, damit niemand erst 100 Zeilen lesen muss, um zu wissen,
+wo es weh tut.
+
+- **`ENTITY_TYPES` nur hinten erweitern.** Einfügen in der Mitte macht jeden
+  bestehenden Checkpoint ungültig.
+- **`data/splits/split.json` ist eingefroren.** Neu würfeln heißt: alle
+  bisherigen Zahlen sind nicht mehr vergleichbar.
+- **Nichts schreibt nach `data/labeled/`.** Weder API noch Frontend noch die
+  Handprüfung. Das ist die Referenz, gegen die gemessen wird.
+- **Die Wortreihenfolge aus Schritt 02 ist ein Vertrag.** Ändert sie sich, zeigen
+  alle Label-Indizes auf andere Wörter – auch die in `gold/`.
+- **Kein freies Argument-Textfeld im Frontend.** `jobs.build_command` nimmt nur
+  deklarierte Parameter; alles andere wäre praktisch eine Remote-Shell.
+- **Auf `main` wird nicht gearbeitet.** Kein Commit, kein Push, kein Merge
+  direkt dorthin – siehe Branch-Workflow unter *Konventionen*.
+
 ## Struktur
 
 ```
@@ -100,6 +119,34 @@ eine Liste auszugeben.
   Argumente parsen, Dateien lesen/schreiben, Fortschritt anzeigen – sonst nichts.
 - Skripte bleiben idempotent: bereits verarbeitete Seiten überspringen. Ein Lauf
   über mehrere tausend Seiten darf nach einem Abbruch nicht von vorn beginnen.
+- **Keine Zahl ohne das Skript, das sie erzeugt.** Wer eine Messung berichtet –
+  im Bericht, im Chat, in einer Commit-Nachricht –, legt den Code dazu ins Repo.
+  Sonst kann sie in vier Wochen niemand nachrechnen, und wer sie liest, muss
+  glauben statt prüfen. Zweite Hälfte der Regel: dazuschreiben, *woran* gemessen
+  wurde. Eine Heuristik an dem Kriterium zu messen, nach dem sie selbst
+  zuordnet, ergibt eine hohe Zahl und keine Erkenntnis.
+- **Der Testsplit ist zum Messen da, nicht zum Entwickeln.** Heuristiken,
+  Schwellwerte und Konstanten werden an Train/Dev entwickelt; Test wird einmal
+  am Ende angefasst. Wer eine Regel an Testseiten baut und danach an denselben
+  misst, bekommt eine In-Sample-Zahl – auch dann, wenn das *Modell* die Seiten
+  nie gesehen hat. Das ist beim Clustering schon passiert.
+- **Ein belegter Fall im Docstring gehört als Test ins Repo.** Wer schreibt
+  „belegter Fall: FREIXENET/HARIBO auf 1351497_p1", hat die Arbeit schon
+  gemacht – die Seite liegt in `data/words/`, die Erwartung steht im Text.
+  Ohne Test schützt die Begründung nichts: die nächste Änderung an einer
+  Konstante macht den Fall still wieder kaputt, und alle Tests bleiben grün.
+- **Auf `main` wird nicht gearbeitet: kein Commit, kein Push, kein Merge direkt
+  dorthin** – auch nichts Kleines, auch nicht bei grünen Tests. Wer versehentlich
+  auf `main` ausgecheckt ist und schon Änderungen im Arbeitsverzeichnis hat,
+  nimmt sie mit auf einen Branch (`git switch -c <name>`), statt zu committen
+  und hinterher aufzuräumen. Der Weg ist: Feature-Branch → Pull Request nach
+  `development` → von dort gesammelt nach `main`. Ein Feature-Branch darf auch
+  einfach liegen bleiben, bis jemand draufgeschaut hat; ungemergte Arbeit
+  kostet nichts, ein ungeprüfter Merge schon. Der Grund ist nicht Bürokratie:
+  `main` trägt die Zahlen, die im Bericht stehen. Wer dort direkt hineinmergt,
+  verschiebt die Grundlage einer Messung ohne zweites Augenpaar – und Fehler in
+  Heuristiken sehen von innen genau wie Verbesserungen aus, solange niemand
+  gegengerechnet hat.
 
 ## Projektwissen, das nicht im Code steht
 
@@ -497,6 +544,62 @@ eine Liste auszugeben.
   17 MB. Ohne `split.json` bricht der Export ab – sonst würfelt die fremde
   Maschine klaglos einen eigenen und die Zahlen sind unvergleichbar.
   Anleitung: `docs/runpod.md`.
+- **Angebote lassen sich nicht über Boxabstände gruppieren – gemessen, nicht
+  vermutet.** Über alle 296 Seiten geometrisch gekachelt und die
+  Distanzschwelle durchgefahren (0,8× bis 13× Medianworthöhe): der Anteil
+  sauberer Kacheln (genau 1 PRODUCT, 1 PRICE) erreicht bei 4× sein Maximum von
+  **18,5 %** und bildet dort ein Plateau, keine Spitze. Der Grund steht im
+  Layout: Penny setzt den Preis in einen gelben Kasten, der weiter vom
+  zugehörigen Produktnamen entfernt liegt als vom Nachbarangebot. Wer an
+  Schwellwerten dreht, arbeitet gegen die Seitengestaltung. Dazu 4,7 % Blöcke
+  der Form „ein Produktname, mehrere Varianten mit je eigenem Preis"
+  (`Pfanne: 20 cm 9.99 / 24 cm 14.99 / 28 cm 17.99`) – die sind auch bei
+  perfekter Kachelung nicht durch Nähe auflösbar.
+- **Gruppieren ist eine Relation, Labeln eine Klassifikation.** BIO-Tags können
+  ausdrücken „dieses Wort ist ein Preis", aber nicht „dieser Preis gehört zu
+  jenem Produkt". `ENTITY_TYPES` zu erweitern bringt der Frage deshalb
+  grundsätzlich nichts – das Vokabular enthält die Relation nicht. Wer das
+  Clustern lösen will, braucht eine **zweite, parallele Tag-Folge**
+  (`B-OFFER`/`I-OFFER`) über die ganze Kachel, nicht einen weiteren
+  Entity-Typ: `OFFER` läge über PRODUCT und PRICE, und flaches BIO kann keine
+  Verschachtelung. Machbar ist es – **92,7 % der visuellen Wortgruppen sind
+  genau ein zusammenhängender Lauf** in der Wortliste (3728 von 4022, der Rest
+  zerfällt fast immer in genau zwei). Ein Span-Label kann nur zusammenfassen,
+  was benachbart ist; diese Zahl ist die Vorbedingung.
+- **Menge × Grundpreis prüft sich selbst – Boxabstände nicht.** `0,205 kg ×
+  3,37 €/kg = 0,69 €` stimmt oder stimmt nicht; das ist Arithmetik und braucht
+  keine Handannotation. Deshalb ordnet `offers.py` Preise bevorzugt darüber zu
+  statt über Nähe. Nützlicher ist die Umkehrung: geht die Rechnung in einem
+  Block *nicht* auf, ist der Block verdächtig. Auf `1351497_p20` steht
+  `900 g | 750 ml | 313,5 g` bei Preis 4.49, aber nur 0,75 × 5,99 trifft ihn –
+  keine Varianten, sondern drei zusammengeworfene Nachbarprodukte. Das findet
+  Clustering-Fehler ohne Gold. Grenze: es gibt Grundpreise nur bei Lebensmitteln,
+  Non-Food trägt allein die Lesereihenfolge.
+- **Größenvarianten paaren sich positionsweise** – gemessen über die 1283
+  Angebote aus `magda offers --predictions gbert`: von 43 Blöcken mit mehreren
+  Mengen *und* mehreren Grundpreisen gehen 26 positionsweise auf (i-te Menge zur
+  i-ten Grundpreisangabe), **0 nur in einer anderen Reihenfolge**, 11 in keiner,
+  6 haben ungleich viele. Wenn die Rechnung überhaupt aufgeht, geht sie in
+  Lesereihenfolge auf – die Zuordnung Größe→Preis braucht also weder ein neues
+  Label noch Geometrie. Die 11 Fehlschläge sind meist falsch geclusterte
+  Nachbarprodukte oder Mehrfachpackungen (`2 x 350 g`, deren Multiplikator die
+  Mengenerkennung noch ignoriert).
+- **Das Angebots-Schema plättet Varianten.** `offers` hat eine Zeile je Angebot
+  und joint mehrere Mengen als `"205 g | 190 g"` in ein Textfeld. Bei einem
+  gemeinsamen Preis („je 205 g oder 190 g, 0.69") trägt das noch; bei drei
+  Größen mit drei Preisen nicht, weil `_match_badges` jedem Block höchstens ein
+  PRICE gibt und die übrigen als Fragment liegen bleiben. Von 1283 Datensätzen
+  haben 777 Produkt *und* Preis, 506 sind Bruchstücke. Nötig ist `offer` 1:n
+  `variant(quantity, price, old_price, unit_price)` – ohne das kann auch eine
+  bessere Heuristik ihr Ergebnis nicht ablegen. Anmerkungen dazu in Issue #6.
+- **54,5 % aller Wörter sind `O`** (32102 von 58956 in `sonnet-5`), und die
+  Masse ist nicht Füllwerk. Ausgezählt über alle 296 Seiten: Mengenaktionen
+  (`je`, `2für`, `3er-Set`) 3411 Treffer auf 287 Seiten – `je` allein ist mit
+  2666 das häufigste ungelabelte Wort überhaupt; Pfand (`zzgl. 0.25 Pfand`)
+  777 auf 91 Seiten; Kleingedrucktes 511 auf 130; Herkunft und Güteklasse
+  (`Deutschland`, `Kl. I`, `Haltungsform`) 215 auf 84. **`UVP` ist geprüft und
+  kein Kandidat**: der Preis dahinter trägt bereits in 833 von 855 Fällen
+  `OLD_PRICE`, dort geht nichts verloren.
 
 ## Offene Entscheidungen (nicht eigenmächtig festlegen)
 
@@ -593,6 +696,35 @@ eine Liste auszugeben.
   Backbone und ist bei 175 Trainingsseiten gutmütiger; ein Lauf würde den
   Layout-Negativbefund gegen den Einwand „falsche Layout-Architektur"
   absichern. Weicht vom Proposal ab → Teamentscheidung.
+- **Weitere Label – aufgekommen, weil das Zusammensetzen der Angebote hakt**
+  (Frage von Bogdan und Kjell, 03.08.2026). Die Messung dazu steht oben; sie
+  sagt vor allem, was ein neues Label **nicht** leistet: das Clustern löst es
+  nicht, dafür bräuchte es die OFFER-Sequenz. Unabhängig davon lohnen sich vier
+  Kandidaten, nach Nutzen sortiert:
+  - `PROMO` (`je`, `2für`, `3er-Set`) – 287 von 296 Seiten. Nicht nur Masse,
+    sondern semantisch nötig: `2für 1.99` gegen `je 1.99` ändert, was der Preis
+    bedeutet. Ohne das ist der Preis selbst in einem korrekt gebildeten Cluster
+    mehrdeutig.
+  - `DEPOSIT` (`zzgl. 0.25 Pfand`) – 91 Seiten. Echtes Feld, geht heute
+    verloren; ohne es stimmt der Endpreis nicht. Steht immer am Preis.
+  - `LEGAL` (Kleingedrucktes) – 130 Seiten. Wirkt durch **Ausschluss**:
+    „Abgabe nur in haushaltsüblichen Mengen" steht räumlich zwischen den
+    Angeboten und gehört zu keinem, zieht also jede Nachbarschaftsheuristik
+    schief.
+  - `ORIGIN` (`Deutschland`, `Kl. I`, `Haltungsform 3`) – 84 Seiten. Echtes
+    Feld, in der Annotationsanweisung bisher ausdrücklich aus PRODUCT
+    ausgeschlossen. Hilft beim Gruppieren nicht.
+
+  Der Preis dafür ist jedes Mal derselbe: `ENTITY_TYPES` hinten anhängen, den
+  **kompletten Korpus neu labeln** (~3,5 h LLM-Zeit für 296 Seiten), Prompt
+  überarbeiten, mit `magda gold` nachmessen; alte Checkpoints passen nicht
+  mehr, weil der Klassifikationskopf wächst. Deshalb nicht alle vier auf
+  einmal – naheliegend wäre `PROMO` und `DEPOSIT` in einem Durchgang.
+  Entscheidung steht aus.
+- **OFFER als zweite Tag-Folge?** Der einzige Weg, der das Gruppieren wirklich
+  löst (92,7 % Machbarkeit, siehe oben). Ist aber ein zusätzlicher Modellkopf,
+  kein weiteres Label, und weicht vom Proposal ab → Teamentscheidung. Vor einer
+  GPU-Miete gehört ein Machbarkeitstest auf den Gold-Seiten davor.
 - Label-Set ist ein Entwurf und wird nach Sichtung der ersten gelabelten Seiten
   finalisiert.
 
