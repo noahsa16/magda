@@ -129,6 +129,36 @@ def _nearest_anchor(entity: Entity, anchors: list[Entity], page: dict) -> Entity
     return min(anchors, key=lambda anchor: (_distance_to_anchor(entity, anchor, page), anchor.id))
 
 
+def _column_bands(entities: list[Entity], page_width: float) -> list[tuple[float, float]]:
+    """Fasst x-Bereiche zu Spalten zusammen, getrennt durch eine Mindestluecke.
+
+    `_distance_to_anchor` gewichtet die Hoehe so stark (Faktor 2.8 gegen 0.55),
+    dass ein Preis der Nachbarspalte naeher wirken kann als der eigene, sobald
+    beide etwa auf gleicher Hoehe liegen. Spalten wirken als harte Vorauswahl
+    *vor* diesem Distanzvergleich: eine Entity darf nur dann in eine andere
+    Spalte greifen, wenn ihre eigene keinen Preis-Anker enthaelt.
+    """
+    if not entities:
+        return []
+    gap = max(20.0, 0.05 * page_width)
+    spans = sorted((e.bbox[0], e.bbox[2]) for e in entities)
+    bands = [list(spans[0])]
+    for x0, x1 in spans[1:]:
+        if x0 - bands[-1][1] <= gap:
+            bands[-1][1] = max(bands[-1][1], x1)
+        else:
+            bands.append([x0, x1])
+    return [tuple(b) for b in bands]
+
+
+def _band_of(bbox: tuple[float, float, float, float], bands: list[tuple[float, float]]) -> int:
+    center = (bbox[0] + bbox[2]) / 2
+    for i, (b0, b1) in enumerate(bands):
+        if b0 <= center <= b1:
+            return i
+    return min(range(len(bands)), key=lambda i: min(abs(center - bands[i][0]), abs(center - bands[i][1])))
+
+
 def _close_to_offer(entity: Entity, offer_entities: list[Entity], page: dict) -> bool:
     height = max(1.0, float(page.get("height") or 1.0))
     nearest = min(_vertical_distance(entity, other, height) for other in offer_entities)
@@ -140,9 +170,11 @@ def cluster_page(page: dict) -> list[Offer]:
 
     Preise sind die staerksten Anker, weil fast jedes Angebot einen sichtbaren
     Preisblock hat. Produkt, Marke, Menge und Grundpreis werden dem vertikal
-    naechsten Preisanker zugeordnet; weit entfernte Rest-Entities bilden eigene
-    Cluster. VALID bleibt meist ein Seitenfeld und wird nur aufgenommen, wenn es
-    nah an einem Angebot steht.
+    naechsten Preisanker zugeordnet, aber nur innerhalb der eigenen Spalte
+    (siehe `_column_bands`) – erst wenn die eigene Spalte keinen Preis
+    enthaelt, darf eine Entity ueber die Spaltengrenze greifen. Weit entfernte
+    Rest-Entities bilden eigene Cluster. VALID bleibt meist ein Seitenfeld und
+    wird nur aufgenommen, wenn es nah an einem Angebot steht.
     """
     page_id = page.get("page_id") or "unknown"
     entities = [e for e in entities_from_page(page) if e.type in VALUE_TYPES]
@@ -153,12 +185,19 @@ def cluster_page(page: dict) -> list[Offer]:
     if not price_anchors:
         return _fallback_clusters(page_id, entities)
 
+    width = float(page.get("width") or 1.0)
+    bands = _column_bands(entities, width)
+    anchor_band = {anchor.id: _band_of(anchor.bbox, bands) for anchor in price_anchors}
+
     by_anchor: dict[int, list[Entity]] = {anchor.id: [anchor] for anchor in price_anchors}
     leftovers: list[Entity] = []
     for entity in entities:
         if entity.type in PRICE_TYPES:
             continue
-        anchor = _nearest_anchor(entity, price_anchors, page)
+        own_band = _band_of(entity.bbox, bands)
+        same_column = [a for a in price_anchors if anchor_band[a.id] == own_band]
+        candidates = same_column or price_anchors
+        anchor = _nearest_anchor(entity, candidates, page)
         distance = _distance_to_anchor(entity, anchor, page)
         limit = 0.74
         if entity.type in PRICE_NEIGHBORS:
