@@ -25,7 +25,8 @@ wo es weh tut.
   alle Label-Indizes auf andere Wörter – auch die in `gold/`.
 - **Kein freies Argument-Textfeld im Frontend.** `jobs.build_command` nimmt nur
   deklarierte Parameter; alles andere wäre praktisch eine Remote-Shell.
-- **Nichts direkt nach `main`.** Siehe Branch-Workflow unter *Konventionen*.
+- **Auf `main` wird nicht gearbeitet.** Kein Commit, kein Push, kein Merge
+  direkt dorthin – siehe Branch-Workflow unter *Konventionen*.
 
 ## Struktur
 
@@ -134,16 +135,18 @@ eine Liste auszugeben.
   gemacht – die Seite liegt in `data/words/`, die Erwartung steht im Text.
   Ohne Test schützt die Begründung nichts: die nächste Änderung an einer
   Konstante macht den Fall still wieder kaputt, und alle Tests bleiben grün.
-- **Nichts wird direkt nach `main` gemergt – auch nichts Kleines, auch nicht
-  bei grünen Tests.** Der Weg ist: Feature-Branch → Pull Request nach
+- **Auf `main` wird nicht gearbeitet: kein Commit, kein Push, kein Merge direkt
+  dorthin** – auch nichts Kleines, auch nicht bei grünen Tests. Wer versehentlich
+  auf `main` ausgecheckt ist und schon Änderungen im Arbeitsverzeichnis hat,
+  nimmt sie mit auf einen Branch (`git switch -c <name>`), statt zu committen
+  und hinterher aufzuräumen. Der Weg ist: Feature-Branch → Pull Request nach
   `development` → von dort gesammelt nach `main`. Ein Feature-Branch darf auch
   einfach liegen bleiben, bis jemand draufgeschaut hat; ungemergte Arbeit
   kostet nichts, ein ungeprüfter Merge schon. Der Grund ist nicht Bürokratie:
   `main` trägt die Zahlen, die im Bericht stehen. Wer dort direkt hineinmergt,
   verschiebt die Grundlage einer Messung ohne zweites Augenpaar – und Fehler in
   Heuristiken sehen von innen genau wie Verbesserungen aus, solange niemand
-  gegengerechnet hat. Direkt auf `main` committen oder pushen entsprechend
-  auch nicht.
+  gegengerechnet hat.
 
 ## Projektwissen, das nicht im Code steht
 
