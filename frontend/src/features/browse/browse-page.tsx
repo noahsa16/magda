@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query"
-import { useSearchParams } from "react-router-dom"
+import { Link, useSearchParams } from "react-router-dom"
 import { Crumbs } from "@/components/crumbs"
 import { FolderGrid, type FolderItem } from "@/components/folder-grid"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -27,6 +27,9 @@ export function BrowsePage() {
   const annotator = searchParams.get("annotator")
 
   const sources = useQuery({ queryKey: ["sources"], queryFn: () => api.sources() })
+  // Nur anbieten, was auch vorsortiert ist: ohne `magda audit` führte der Link
+  // auf eine leere Seite mit einer Kommandozeile darauf.
+  const audits = useQuery({ queryKey: ["audits"], queryFn: api.audits })
 
   // Ist eine Quelle gewählt, übernimmt die zuständige Seite vollständig –
   // samt eigener Brotkrumen, Blättern und Tastatursteuerung.
@@ -139,6 +142,18 @@ export function BrowsePage() {
       >
         … Handannotation öffnen
       </button>
+      {/* Die Label-Prüfung hängt hier statt in der Hauptnavigation: sie gilt
+          einem einzelnen Label und ist zwischen zwei Messungen relevant, nicht
+          dauerhaft. /audit bleibt der direkte Weg. */}
+      {(audits.data?.audits.length ?? 0) > 0 && (
+        <Link
+          to="/audit"
+          className="self-start font-mono text-xs text-muted-foreground underline-offset-4 hover:underline"
+        >
+          … {audits.data?.audits[0].label} von Hand prüfen (
+          {(audits.data?.audits[0].total ?? 0) - (audits.data?.audits[0].judged ?? 0)} offen)
+        </Link>
+      )}
     </div>
   )
 }

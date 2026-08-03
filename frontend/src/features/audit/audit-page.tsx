@@ -44,8 +44,23 @@ export function AuditPage() {
   })
 
   const save = useMutation({
-    mutationFn: ({ key, verdict }: { key: string; verdict: "correct" | "wrong" | "unsure" }) =>
-      api.saveVerdict(LABEL, key, { verdict, apply_to_duplicates: true }),
+    mutationFn: ({
+      key,
+      verdict,
+      source,
+    }: {
+      key: string
+      verdict: "correct" | "wrong" | "unsure"
+      source: "labeled" | "candidate"
+    }) =>
+      api.saveVerdict(LABEL, key, {
+        verdict,
+        // Bei einem Vorschlag ist das Ziel eindeutig: er soll das geprüfte
+        // Label bekommen. Bei einer gelabelten Zeile heißt "falsch" nur, dass
+        // es nicht stimmt – wohin, entscheidet die Übernahme, nicht der Klick.
+        should_be: verdict === "wrong" && source === "candidate" ? LABEL : "",
+        apply_to_duplicates: true,
+      }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["audit", LABEL] }),
   })
 
@@ -128,7 +143,9 @@ export function AuditPage() {
               candidate={candidate}
               verdict={data.verdicts[candidate.key]?.verdict}
               pending={save.isPending && save.variables?.key === candidate.key}
-              onJudge={(verdict) => save.mutate({ key: candidate.key, verdict })}
+              onJudge={(verdict) =>
+                save.mutate({ key: candidate.key, verdict, source: candidate.source })
+              }
             />
           ))}
         </div>
@@ -200,30 +217,39 @@ function CandidateRow({
           )}
         </div>
 
-        <div className="flex gap-2">
+        {/* Die Knöpfe nennen das Ergebnis, nicht das Urteil. "Stimmt/Falsch"
+            wäre zweideutig: bei einem Vorschlag urteilt man über PRICE, bei
+            einer gelabelten Zeile über APP_PRICE – und was "falsch" dann
+            heißt, müsste man sich jedes Mal neu überlegen. Gespeichert wird
+            beide Male die Aussage über das *aktuelle* Label: "correct" heißt,
+            es bleibt stehen. */}
+        <div className="flex shrink-0 flex-col gap-2">
           <Button
             size="sm"
+            className="justify-start"
             variant={verdict === "correct" ? "default" : "outline"}
             disabled={pending}
             onClick={() => onJudge("correct")}
           >
-            Stimmt
+            bleibt {candidate.current_label}
           </Button>
           <Button
             size="sm"
+            className="justify-start"
             variant={verdict === "wrong" ? "destructive" : "outline"}
             disabled={pending}
             onClick={() => onJudge("wrong")}
           >
-            Falsch
+            {candidate.source === "labeled" ? `kein ${LABEL}` : `ist ${LABEL}`}
           </Button>
           <Button
             size="sm"
+            className="justify-start"
             variant={verdict === "unsure" ? "secondary" : "outline"}
             disabled={pending}
             onClick={() => onJudge("unsure")}
           >
-            Unsicher
+            unsicher
           </Button>
         </div>
       </CardContent>

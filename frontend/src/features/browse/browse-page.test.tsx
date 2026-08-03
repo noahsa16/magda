@@ -20,8 +20,15 @@ const SOURCES: LabelSource[] = [
   },
 ]
 
-function setup(route = "/labels") {
+function setup(route = "/labels", audits: { label: string; total: number; judged: number }[] = []) {
   vi.spyOn(api, "sources").mockResolvedValue(SOURCES)
+  vi.spyOn(api, "audits").mockResolvedValue({
+    audits: audits.map((a) => ({
+      labels_from: "sonnet-5",
+      labeled: 0, candidate: 0, correct: 0, wrong: 0, unsure: 0,
+      ...a,
+    })),
+  } as Awaited<ReturnType<typeof api.audits>>)
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   const router = createMemoryRouter([{ path: "/labels", element: <BrowsePage /> }], {
     initialEntries: [route],
@@ -72,5 +79,23 @@ describe("BrowsePage — Ordnerebenen", () => {
     expect(screen.getByText("ungeprüft")).toBeInTheDocument()
     // Geprüfte Handarbeit trägt das Kennzeichen nicht.
     expect(screen.getAllByText("ungeprüft")).toHaveLength(1)
+  })
+})
+
+
+describe("BrowsePage — Label-Prüfung", () => {
+  it("bietet die Prüfung nur an, wenn etwas vorsortiert ist", async () => {
+    setup()
+    // Ohne `magda audit` führte der Link auf eine leere Seite mit einer
+    // Kommandozeile darauf – das ist keine Einladung, sondern eine Sackgasse.
+    expect(await screen.findByText("Modell-Labels")).toBeInTheDocument()
+    expect(screen.queryByText(/von Hand prüfen/)).not.toBeInTheDocument()
+  })
+
+  it("nennt die offenen Fälle, nicht die Gesamtzahl", async () => {
+    setup("/labels", [{ label: "APP_PRICE", total: 374, judged: 74 }])
+    // 300 offen, nicht 374 – die Zahl soll sagen, was noch zu tun ist.
+    expect(await screen.findByText(/APP_PRICE von Hand prüfen/)).toBeInTheDocument()
+    expect(screen.getByText(/300 offen/)).toBeInTheDocument()
   })
 })

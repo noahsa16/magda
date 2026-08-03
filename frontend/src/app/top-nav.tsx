@@ -12,9 +12,6 @@ const items = [
   // Labeling-Läufe gibt, ist "wessen Labels?" die erste Frage, und die
   // beantwortet sich in einer Ordnerebene besser als in zwei Menüpunkten.
   { title: "Daten", url: "/labels" },
-  // Eigener Punkt statt unter "Daten": hier wird die Referenz selbst
-  // geprüft, nicht in ihr geblättert.
-  { title: "Prüfung", url: "/audit" },
   { title: "Ergebnis", url: "/evaluation" },
 ]
 
