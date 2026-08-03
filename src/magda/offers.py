@@ -9,6 +9,7 @@ Spans heuristisch zu Angebotsbloecken und persistiert sie als relationale Daten.
 from __future__ import annotations
 
 import json
+import re
 import sqlite3
 from dataclasses import dataclass
 from pathlib import Path
@@ -174,7 +175,9 @@ def cluster_page(page: dict) -> list[Offer]:
     (siehe `_column_bands`) – erst wenn die eigene Spalte keinen Preis
     enthaelt, darf eine Entity ueber die Spaltengrenze greifen. Weit entfernte
     Rest-Entities bilden eigene Cluster. VALID bleibt meist ein Seitenfeld und
-    wird nur aufgenommen, wenn es nah an einem Angebot steht.
+    wird nur aufgenommen, wenn es nah an einem Angebot steht. Ein letzter
+    Durchlauf (`_reconcile_prices`) korrigiert Preise, die geometrisch beim
+    falschen Angebot gelandet sind, ueber Menge x Grundpreis.
     """
     page_id = page.get("page_id") or "unknown"
     entities = [e for e in entities_from_page(page) if e.type in VALUE_TYPES]
@@ -225,6 +228,8 @@ def cluster_page(page: dict) -> list[Offer]:
         else:
             offers.append(_make_offer(page_id, len(offers), [entity]))
 
+    offers = _reconcile_prices(offers, page)
+
     for offer in offers:
         offer.entities.sort(key=lambda e: (e.bbox[1], e.bbox[0], e.start))
         offer.bbox = _union_bbox([e.bbox for e in offer.entities])
@@ -245,6 +250,170 @@ def _make_offer(page_id: str, offer_id: int, members: list[Entity]) -> Offer:
         bbox=_union_bbox([entity.bbox for entity in members]),
         entities=sorted(members, key=lambda e: (e.bbox[1], e.bbox[0], e.start)),
     )
+
+
+_QUANTITY_RE = re.compile(r"(\d+(?:[.,]\d+)?)\s*-?\s*(kg|g|ml|l)\b", re.IGNORECASE)
+_UNIT_PRICE_RE = re.compile(r"1\s*(kg|l)\s*=\s*(\d+(?:[.,]\d+)?)", re.IGNORECASE)
+_NUMBER_RE = re.compile(r"(\d+(?:[.,]\d+)?)")
+
+
+def _to_float(text: str) -> float:
+    return float(text.replace(",", "."))
+
+
+def _price_value(text: str) -> float | None:
+    match = _NUMBER_RE.search(text)
+    return _to_float(match.group(1)) if match else None
+
+
+def _quantity_in_unit(text: str, unit: str) -> float | None:
+    """Menge in derselben Einheit wie ein Grundpreis, z.B. "800-g-Packung" -> 0.8 fuer unit="kg".
+
+    Mehrfachpackungen ("6 x 1,5 l") werden nicht erkannt - das Regex liest nur
+    das erste Zahl-Einheit-Paar, ohne den Multiplikator. Bewusst kein Fehler:
+    ein falscher Erwartungswert findet dann einfach keinen passenden Preis und
+    aendert nichts, statt eine falsche Zuordnung zu erzwingen.
+    """
+    match = _QUANTITY_RE.search(text)
+    if not match:
+        return None
+    value, found_unit = _to_float(match.group(1)), match.group(2).lower()
+    if unit == "kg" and found_unit == "g":
+        return value / 1000
+    if unit == "l" and found_unit == "ml":
+        return value / 1000
+    return value if found_unit == unit else None
+
+
+def _expected_prices(offer: Offer, page: dict) -> list[float]:
+    """Menge x Grundpreis je QUANTITY, nur fuer UNIT_PRICE-Entities in der Naehe.
+
+    Kein Kreuzprodukt aus allen QUANTITY- und UNIT_PRICE-Entities: landen durch
+    einen Clustering-Fehler in Pass 1 mehrere Produkte im selben Angebot (siehe
+    1351497_p13, wo Grundpreise eines dritten Produkts ohne eigene Menge
+    mithineinrutschen), erzeugt das Kreuzprodukt Zufallstreffer aus Menge und
+    fremdem Grundpreis. Die Naehe-Schwelle nimmt trotzdem ALLE nahen Treffer,
+    nicht nur den naechsten: ein Produkt mit regulaerem und App-Preis zeigt
+    oft zwei Grundpreise auf gleicher Hoehe nebeneinander (belegter Fall:
+    1351497_p10, Burger Patties), und beide gehoeren zur selben Menge.
+    """
+    width = max(1.0, float(page.get("width") or 1.0))
+    height = max(1.0, float(page.get("height") or 1.0))
+
+    unit_prices = []
+    for entity in offer.entities:
+        if entity.type != "UNIT_PRICE":
+            continue
+        match = _UNIT_PRICE_RE.search(entity.text)
+        if match:
+            unit_prices.append((entity, match.group(1).lower(), _to_float(match.group(2))))
+    if not unit_prices:
+        return []
+
+    expected = []
+    for entity in offer.entities:
+        if entity.type != "QUANTITY":
+            continue
+        qx, qy = _center(entity.bbox)
+        for up_entity, unit, per_unit in unit_prices:
+            qty = _quantity_in_unit(entity.text, unit)
+            if qty is None:
+                continue
+            ux, uy = _center(up_entity.bbox)
+            if abs(qy - uy) / height <= 0.05 and abs(qx - ux) / width <= 0.18:
+                expected.append(round(qty * per_unit, 2))
+    return expected
+
+
+def _price_matches(value: float, expected: list[float]) -> bool:
+    return any(abs(value - exp) <= max(0.02, 0.015 * exp) for exp in expected)
+
+
+def _is_orphan_badge(offer: Offer) -> bool:
+    """Ein Angebot ohne PRODUCT/BRAND ist nur ein losgeloester Preis-Sticker."""
+    return not any(e.type in ("PRODUCT", "BRAND") for e in offer.entities)
+
+
+def _is_trustworthy_target(offer: Offer, page: dict) -> bool:
+    """Nur ein geometrisch zusammenhaengendes Angebot darf einen Preis dazugewinnen.
+
+    Reines Zaehlen (genau ein PRODUCT) haette Angebote ausgeschlossen, deren
+    Produkttext nur durch einen Zeilenumbruch in zwei PRODUCT-Spans zerfaellt
+    (z.B. "getraenk," + "versch. Sorten," auf zwei Zeilen desselben Angebots).
+    Entscheidend ist stattdessen, ob PRODUCT/BRAND eng beieinander liegen: bei
+    einem echten Clustering-Fehler aus Pass 1, der mehrere Produkte vermischt
+    (siehe 1351497_p13), liegen sie ueber mehrere Zeilenabstaende auseinander.
+    Ein Ziel ganz ohne PRODUCT/BRAND haette ohnehin keinen erkennbaren Bezug.
+    """
+    height = max(1.0, float(page.get("height") or 1.0))
+    markers = [e for e in offer.entities if e.type in ("PRODUCT", "BRAND")]
+    if not markers:
+        return False
+    y0 = min(e.bbox[1] for e in markers)
+    y1 = max(e.bbox[3] for e in markers)
+    return (y1 - y0) / height <= 0.1
+
+
+def _reconcile_prices(offers: list[Offer], page: dict) -> list[Offer]:
+    """Verschiebt Preise zu dem Angebot, zu dem sie laut Grundpreis gehoeren.
+
+    Preisbadges sitzen auf manchen Seiten weiter von ihrem eigenen Produkt
+    entfernt als vom Preisbadge des Nachbarprodukts (belegter Fall:
+    1351497_p10, Grundpreis widerlegt die geometrisch naheliegende
+    Zuordnung). Geometrie kann das nicht sicher trennen, Arithmetik schon:
+    Menge x Grundpreis ergibt fast immer wieder den Verkaufspreis, und dieses
+    Signal ist unabhaengig von der Position auf der Seite.
+
+    Ein Angebot ohne eigene Menge/Grundpreis-Angabe (expected == []) hat keinen
+    pruefbaren Erwartungswert - das heisst nicht "falsch", sondern "unbekannt".
+    Ein echtes Angebot mit PRODUCT oder BRAND bleibt in diesem Fall unangetastet,
+    sonst wuerde ein zufaellig gleicher Preis anderswo (z.B. zwei Artikel bei
+    5.99) es leerraeumen. Nur reine Preis-Sticker ohne Produkt duerfen umziehen,
+    wenn irgendwo ein Angebot ihren Wert rechnerisch erwartet.
+
+    Erst einsammeln, dann verteilen, statt live waehrend der Iteration zu
+    verschieben: sonst haengt das Ergebnis von der zufaelligen Reihenfolge der
+    Angebote ab, in der ein bereits leergeraeumtes Angebot als Ziel erscheint
+    oder nicht. Passen mehrere Angebote rechnerisch zum selben Preis (zwei
+    Artikel erwarten beide 1.29), entscheidet die geometrische Naehe zur
+    urspruenglichen Position - der Grundpreis sagt nur, wer in Frage kommt,
+    nicht wer es tatsaechlich ist.
+    """
+    expected = {id(offer): _expected_prices(offer, page) for offer in offers}
+
+    pool: list[Entity] = []
+    for offer in offers:
+        own_expected = expected[id(offer)]
+        for entity in list(offer.entities):
+            if entity.type not in PRICE_TYPES:
+                continue
+            value = _price_value(entity.text)
+            if value is None:
+                continue
+            if own_expected:
+                if _price_matches(value, own_expected):
+                    continue
+            elif not _is_orphan_badge(offer):
+                continue
+            offer.entities.remove(entity)
+            pool.append(entity)
+
+    for entity in pool:
+        value = _price_value(entity.text)
+        candidates = [
+            o for o in offers
+            if _is_trustworthy_target(o, page)
+            and not any(e.type == entity.type for e in o.entities)
+            and _price_matches(value, expected[id(o)])
+        ]
+        if candidates:
+            target = min(candidates, key=lambda o: _distance_to_offer(entity, o, page))
+            target.entities.append(entity)
+
+    remaining = [offer for offer in offers if offer.entities]
+    for offer in remaining:
+        offer.bbox = _union_bbox([e.bbox for e in offer.entities])
+    return remaining
 
 
 def _fallback_clusters(page_id: str, entities: list[Entity]) -> list[Offer]:
