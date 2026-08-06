@@ -85,6 +85,8 @@ magda flair --reference gold        # Flair-Vergleichsarm
 magda gold --per-label              # Labeling-Modelle gegen Gold messen
 magda agreement qwen3.5-397b-a17b mistral-medium-3.5-128b
 magda audit APP_PRICE --labels-from sonnet-5   # Label zur Handprüfung vorsortieren
+magda offers                        # Entities zu Angeboten clustern, als SQLite
+magda offers-report                 # Clustering per Ablation messen (Train+Dev)
 magda bundle --labels-from sonnet-5 # Trainingspaket für eine fremde GPU
 magda serve --frontend              # API (8000) und Oberfläche (5173)
 magda serve                         # nur die API
@@ -135,6 +137,15 @@ eine Liste auszugeben.
   gemacht – die Seite liegt in `data/words/`, die Erwartung steht im Text.
   Ohne Test schützt die Begründung nichts: die nächste Änderung an einer
   Konstante macht den Fall still wieder kaputt, und alle Tests bleiben grün.
+- **Ein Test, der nie rot wird, schützt nichts – das prüft man nach.** Beim
+  Festschreiben der acht Clustering-Fälle waren vier von sieben verstellten
+  Konstanten *ohne jede Wirkung* auf die Tests, darunter beide des
+  Legenden-Pfads. Die Pins sahen aus wie Schutz und waren keiner. Wer einen
+  Regressionstest schreibt, verstellt danach einmal die Konstante, die er
+  schützen soll, und sieht nach, ob wirklich etwas bricht. Zwei Minuten Arbeit,
+  und sie unterscheiden einen Test von einer Behauptung. Übrig bleibt bei
+  `offers.py` weiterhin die dy-Schwelle in `_same_block`: um das Fünffache
+  verstellbar, ohne dass ein Test es merkt.
 - **Auf `main` wird nicht gearbeitet: kein Commit, kein Push, kein Merge direkt
   dorthin** – auch nichts Kleines, auch nicht bei grünen Tests. Wer versehentlich
   auf `main` ausgecheckt ist und schon Änderungen im Arbeitsverzeichnis hat,
@@ -592,6 +603,47 @@ eine Liste auszugeben.
   haben 777 Produkt *und* Preis, 506 sind Bruchstücke. Nötig ist `offer` 1:n
   `variant(quantity, price, old_price, unit_price)` – ohne das kann auch eine
   bessere Heuristik ihr Ergebnis nicht ablegen. Anmerkungen dazu in Issue #6.
+- **Das Clustering ließ sich lange nicht ehrlich messen, weil das Messkriterium
+  das Zuordnungskriterium war.** „Wie oft landet ein Preis bei einem Produkt"
+  zählt Fragmentierung, nicht Korrektheit – ein Preis am *falschen* Produkt
+  geht als Erfolg durch. Und der naheliegende Ausweg trägt nicht: die
+  Zuordnungen nach arithmetisch und geometrisch zu trennen und die Rechnung
+  über die geometrischen Fälle urteilen zu lassen, ergibt garantiert „falsch".
+  `_match_badges` betritt den geometrischen Zweig **nur, wenn kein Block
+  arithmetisch gepasst hat** – das Urteil steht fest, bevor es gefällt wird.
+  Der Ausweg ist eine **Ablation**: `cluster_page(page, arithmetic=False)`
+  schaltet die Rechnung zum Messen ab, die Geometrie ordnet allein zu, und
+  erst danach wird nachgerechnet. Das ist das allgemeine Muster – halte das
+  Merkmal zurück, mit dem du hinterher richten willst.
+- **Der geometrische Rückfall trifft in 0,56 bis 0,68 der prüfbaren Fälle**
+  (`magda offers-report`, 06.08.2026, Train + Dev, 196 Seiten, `sonnet-5`):
+  462 bestätigt, 215 bis 361 widerlegt, 678 bis 532 nicht beurteilbar. Er
+  trägt dabei 652 von 1373 Zuordnungen, also knapp die Hälfte. Zwei Zahlen,
+  weil eine Frage offen ist: zählt ein Block, der diesen Preistyp schon trägt,
+  noch als rechnerische Alternative? Beide Antworten sind vertretbar und
+  trennen 146 Fälle; `confirmed` ist unter beiden identisch. Eine Lesart zur
+  richtigen zu erklären hieße, eine Genauigkeit zu behaupten, die die Messung
+  nicht hergibt – deshalb das Intervall, wie beim Layout-Vergleich.
+  Damit ist auch der Ertrag des arithmetischen Abgleichs beziffert: das sind
+  genau die Fehler, die er abfängt.
+- **Wo kein Grundpreis steht, ist die Zuordnung nicht nur schlechter, sondern
+  unprüfbar.** 532 bis 678 der Urteile lauten „nicht beurteilbar", und das
+  deckt sich fast mit Non-Food. Dort ist die Geometrie alleinige Instanz *und*
+  ohne Kontrolle. Diese Lücke schließt keine Heuristik und kein Schwellwert,
+  sondern nur eine handannotierte Gruppierungsreferenz. Der Grund ist
+  derselbe wie bei APP_PRICE: wo eine Kachel endet, steht in Rahmen,
+  Hintergrundfarbe und gelbem Sticker – **im Bild, nicht in den
+  Wortkoordinaten**. Ein fehlendes Merkmal lässt sich nicht kalibrieren.
+- **Der Legenden-Pfad kostet ~115 Zeilen und greift auf einer Seitenvorlage.**
+  `_segment_legend` zerlegt in `data/labeled/sonnet-5/` 3 von 162 Seiten, in
+  `data/predictions/gbert/` 6 von 66 – und dort ausschließlich auf `_p30`,
+  also einer Vorlage in mehreren Regionalfassungen. Kein Grund, ihn zu
+  entfernen; er löst eine Layout-Klasse, die weder Nähe noch Arithmetik
+  können. Aber wer ihn anfasst, sollte wissen, wie schmal die Basis ist.
+  Dazu: `_reading_order_groups` nennt `1351497_p28` als belegten Fall, doch
+  dort liefert `_segment_legend` `None` – der Code läuft auf dieser Seite gar
+  nicht, weder mit sonnet-5-Labels noch mit den gbert-Vorhersagen. Der
+  Regressionstest sitzt deshalb auf `1351518_p30`.
 - **54,5 % aller Wörter sind `O`** (32102 von 58956 in `sonnet-5`), und die
   Masse ist nicht Füllwerk. Ausgezählt über alle 296 Seiten: Mengenaktionen
   (`je`, `2für`, `3er-Set`) 3411 Treffer auf 287 Seiten – `je` allein ist mit
@@ -725,6 +777,40 @@ eine Liste auszugeben.
   löst (92,7 % Machbarkeit, siehe oben). Ist aber ein zusätzlicher Modellkopf,
   kein weiteres Label, und weicht vom Proposal ab → Teamentscheidung. Vor einer
   GPU-Miete gehört ein Machbarkeitstest auf den Gold-Seiten davor.
+
+  **Einordnung (Literaturrecherche 06.08.2026).** Das Problem heißt in der
+  Fachliteratur *Line Item Recognition* und ist der Kern des DocILE-Benchmarks
+  (ICDAR 2023, arXiv:2302.05658): Felder zu Tupeln je Objektinstanz gruppieren.
+  Ein Angebot ist ein Line Item mit Kachel- statt Tabellengeometrie. DocILE
+  kennt dafür zwei Standardlösungen, und eine davon ist **genau die
+  OFFER-Tag-Folge** – sie ist also kein Sonderweg. Die zweite ist paarweise
+  Relationsklassifikation im FUNSD-Stil (LiLT arXiv:2202.13669, GeoLayoutLM
+  arXiv:2304.10759, SPADE arXiv:2005.00642). Wichtig für die Aufwandsfrage:
+  **FUNSD trainiert mit 149 Dokumenten** – die Sorge, 196 Seiten seien zu
+  wenig, ist literaturseitig unbegründet.
+
+  **Vorgeschlagene Reihenfolge, falls das Team zustimmt:**
+  1. *Gruppierungsreferenz von Hand*, 30–50 Seiten aus Train/Dev, clusterweise
+     gezogen (`magda queue`-Logik), Non-Food überrepräsentiert. Der einzige
+     Schritt ohne Alternative – ohne ihn ist keine Variante messbar, auch die
+     jetzige Heuristik nicht. Format: `offer_id` je Gold-Span, mit
+     `words_hash` abgesichert wie in `gold/`.
+  2. *Vision-LLM als Gruppierungs-Teacher*: der Labeling-Prompt gibt Spans
+     künftig gruppiert aus, gemessen gegen die Referenz wie `magda gold` fürs
+     Labeling. Das ist zugleich der geforderte Machbarkeitstest vor der
+     GPU-Miete. Als **Teacher** richtig, als Deployment falsch – 44,8 s gegen
+     0,264 s je Seite ist die Projektfrage selbst.
+  3. *OFFER-Kopf auf GBERT.* Paarweise Relationsklassifikation nur als Ausbau,
+     falls die Referenz zeigt, dass die 7,3 % nicht zusammenhängenden Gruppen
+     den Feldwert spürbar deckeln.
+  4. *Arithmetik und positionsweise Variantenpaarung bleiben als harte
+     Nachprüfung* über jeder gelernten Gruppierung. Sie sind das einzige
+     Signal im System, das sich selbst beweist.
+
+  Als Metriken sind üblich: Paar-F1 über Entity-Paare („gleiches Angebot")
+  als Primärzahl, dazu Feld-F1 unter Gruppen-Matching im DocILE-Protokoll –
+  das ist die Zahl, die „Zeile in der Datenbank stimmt" entspricht. Test
+  einmal am Ende, je eine Seite pro der 43 unabhängigen Cluster.
 - Label-Set ist ein Entwurf und wird nach Sichtung der ersten gelabelten Seiten
   finalisiert.
 
