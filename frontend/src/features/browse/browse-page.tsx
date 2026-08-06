@@ -142,6 +142,16 @@ export function BrowsePage() {
       >
         … Handannotation öffnen
       </button>
+      {/* Zweite Handarbeit neben den Spans: welche Entities ein Angebot
+          bilden. Getrennter Weg, weil es eine getrennte Referenz ist -
+          gold/offers/ statt gold/, und `magda offers-gold` misst dagegen.
+          `magda offers-queue` sagt, welche Seite als Nächstes drankommt. */}
+      <Link
+        to="/group"
+        className="self-start font-mono text-xs text-muted-foreground underline-offset-4 hover:underline"
+      >
+        … Angebote gruppieren (Referenz fürs Clustering)
+      </Link>
       {/* Die Label-Prüfung hängt hier statt in der Hauptnavigation: sie gilt
           einem einzelnen Label und ist zwischen zwei Messungen relevant, nicht
           dauerhaft. /audit bleibt der direkte Weg. */}
