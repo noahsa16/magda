@@ -190,3 +190,56 @@ def test_collect_summiert_ueber_seiten():
     assert report.contradicted == 1
     assert report.judged == 2
     assert report.geometric_accuracy == 0.5
+
+
+# --------------------------------------------------- Die Grenze des Urteils
+
+
+def _zweiter_preis_auf_belegten_block():
+    """Zwei gleich teure Angebote, nur eines mit Grundpreis.
+
+    0,5 kg x 4.00 EUR/kg = 2.00 passt rechnerisch zu AAA. AAA bekommt seinen
+    eigenen Preis zuerst; der zweite 2.00 gehoert zu BBB, das gar keinen
+    Grundpreis traegt. Ist das ein Widerspruch der Rechnung oder schlicht kein
+    Urteil? Die Antwort haengt daran, ob ein bereits belegter Block noch als
+    Alternative zaehlt - und genau darueber gehen zwei Lesarten auseinander.
+    """
+    return {
+        "page_id": "1_p4",
+        "width": 500,
+        "height": 800,
+        "words": [
+            _word("AAA", 40, 100, 90, 112),
+            _word("500 g", 40, 116, 90, 128),
+            _word("(1 kg = 4.00)", 40, 130, 140, 142),
+            _word("2.00", 200, 100, 250, 140),
+            _word("BBB", 40, 600, 90, 612),
+            _word("2.00", 200, 600, 250, 640),
+        ],
+        "tags": [
+            "B-BRAND",
+            "B-QUANTITY",
+            "B-UNIT_PRICE",
+            "B-PRICE",
+            "B-BRAND",
+            "B-PRICE",
+        ],
+    }
+
+
+def test_belegter_block_zaehlt_streng_als_alternative_nachsichtig_nicht():
+    """Beide Lesarten werden berichtet, statt eine zur richtigen zu erklaeren."""
+    from magda.offers_report import judge_page
+
+    verdict = judge_page(_zweiter_preis_auf_belegten_block())
+
+    assert verdict.contradicted_strict == verdict.contradicted + 1
+    assert verdict.unjudgeable_strict == verdict.unjudgeable - 1
+
+
+def test_die_strenge_lesart_liefert_die_untere_schranke():
+    from magda.offers_report import collect
+
+    report = collect([_zweiter_preis_auf_belegten_block()])
+
+    assert report.geometric_accuracy_strict <= report.geometric_accuracy

@@ -550,9 +550,19 @@ _NEARBY_LIMIT = 0.6
 class BadgeMatch:
     """Wie ein Preis-Badge zu seinem Block kam - die Buchfuehrung fuer `magda offers-report`.
 
-    `arithmetic_targets` wird immer gefuellt, auch wenn die Zuordnung geometrisch
-    fiel. Genau daraus zieht der Report sein Urteil: hat die Geometrie denselben
-    Block gewaehlt, den die Rechnung waehlt?
+    Beide Kandidatenlisten werden immer gefuellt, auch wenn die Zuordnung
+    geometrisch fiel. Daraus zieht der Report sein Urteil - und er zieht es
+    zweimal, weil die Frage "welchen Block nennt die Rechnung?" zwei
+    vertretbare Antworten hat:
+
+    - `arithmetic_targets` zaehlt nur Bloecke, die diesen Preistyp noch frei
+      haben - dieselbe Bedingung, unter der die Zuordnung selbst laeuft.
+    - `arithmetic_targets_any` ignoriert die Belegung und fragt rein
+      rechnerisch. Passt ein Preis zu einem schon belegten Block, ist das ein
+      schwaecheres, aber echtes Gegensignal.
+
+    Der Unterschied ist keine Spitzfindigkeit: ueber Train+Dev trennt er 146
+    Faelle, und die Trefferquote schwankt dadurch zwischen 0.561 und 0.682.
     """
 
     page_id: str
@@ -561,6 +571,7 @@ class BadgeMatch:
     path: str  # "arithmetic" | "geometric" | "unmatched"
     target: int | None
     arithmetic_targets: tuple[int, ...]
+    arithmetic_targets_any: tuple[int, ...]
     distance: float | None
 
 
@@ -601,13 +612,15 @@ def _match_badges(
         def free_of_type(block: Offer, price_type: str = price_type) -> bool:
             return not any(e.type == price_type for e in block.entities)
 
-        grundpreis_candidates = [
+        # Rein rechnerisch, ohne Ruecksicht auf Belegung - die strenge Lesart
+        # des Reports. Immer mitgeschrieben, auch wenn `arithmetic` aus ist.
+        math_matches = [
             block for block in blocks
-            if value is not None and free_of_type(block) and _price_matches(value, expected[id(block)])
+            if value is not None and _price_matches(value, expected[id(block)])
         ]
-        # Immer mitgeschrieben, auch wenn `arithmetic` aus ist: der Report
-        # vergleicht die geometrische Wahl gegen genau diese Liste.
+        grundpreis_candidates = [b for b in math_matches if free_of_type(b)]
         arithmetic_targets = tuple(index_of[id(b)] for b in grundpreis_candidates)
+        arithmetic_targets_any = tuple(index_of[id(b)] for b in math_matches)
 
         target: Offer | None = None
         path = "unmatched"
@@ -633,6 +646,7 @@ def _match_badges(
                     path=path,
                     target=index_of[id(target)] if target is not None else None,
                     arithmetic_targets=arithmetic_targets,
+                    arithmetic_targets_any=arithmetic_targets_any,
                     distance=distance,
                 )
             )

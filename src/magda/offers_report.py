@@ -50,6 +50,8 @@ class PageVerdict:
     confirmed: int = 0
     contradicted: int = 0
     unjudgeable: int = 0
+    contradicted_strict: int = 0
+    unjudgeable_strict: int = 0
     arithmetic_assignments: int = 0
     geometric_assignments: int = 0
     unmatched: int = 0
@@ -67,6 +69,8 @@ class Report:
     confirmed: int = 0
     contradicted: int = 0
     unjudgeable: int = 0
+    contradicted_strict: int = 0
+    unjudgeable_strict: int = 0
     arithmetic_assignments: int = 0
     geometric_assignments: int = 0
     unmatched: int = 0
@@ -80,8 +84,12 @@ class Report:
         return self.confirmed + self.contradicted
 
     @property
+    def judged_strict(self) -> int:
+        return self.confirmed + self.contradicted_strict
+
+    @property
     def geometric_accuracy(self) -> float | None:
-        """Anteil bestaetigter Zuordnungen - None statt 0.0, wenn nichts beurteilbar war.
+        """Nachsichtige Lesart - None statt 0.0, wenn nichts beurteilbar war.
 
         Der Unterschied ist keine Kosmetik: 0.0 hiesse "alles falsch", None
         heisst "hier war nichts zu messen".
@@ -90,10 +98,24 @@ class Report:
             return None
         return self.confirmed / self.judged
 
+    @property
+    def geometric_accuracy_strict(self) -> float | None:
+        """Strenge Lesart: auch ein belegter Block zaehlt als Alternative.
+
+        Zusammen mit `geometric_accuracy` die untere und obere Schranke. Eine
+        der beiden zur richtigen zu erklaeren, hiesse eine Genauigkeit zu
+        behaupten, die die Messung nicht hergibt.
+        """
+        if self.judged_strict == 0:
+            return None
+        return self.confirmed / self.judged_strict
+
     def to_dict(self) -> dict:
         result = {f.name: getattr(self, f.name) for f in fields(self)}
         result["judged"] = self.judged
+        result["judged_strict"] = self.judged_strict
         result["geometric_accuracy"] = self.geometric_accuracy
+        result["geometric_accuracy_strict"] = self.geometric_accuracy_strict
         return result
 
 
@@ -132,12 +154,21 @@ def judge_page(page: dict) -> PageVerdict:
     for match in ablated:
         if match.path != "geometric":
             continue
-        if not match.arithmetic_targets:
-            verdict.unjudgeable += 1
-        elif match.target in match.arithmetic_targets:
+        if match.target in match.arithmetic_targets:
             verdict.confirmed += 1
+        elif not match.arithmetic_targets:
+            verdict.unjudgeable += 1
         else:
             verdict.contradicted += 1
+
+        # Zweite Lesart, nur in den beiden Gegenkategorien verschieden:
+        # `confirmed` faellt unter beiden gleich aus, weil das gewaehlte Ziel
+        # zum Zeitpunkt der Zuordnung immer frei war.
+        if match.target not in match.arithmetic_targets_any:
+            if match.arithmetic_targets_any:
+                verdict.contradicted_strict += 1
+            else:
+                verdict.unjudgeable_strict += 1
 
     regular: list = []
     offers = cluster_page(page, trace=regular)

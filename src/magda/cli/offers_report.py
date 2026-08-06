@@ -78,8 +78,8 @@ def main(argv=None):
     with open(out_path, "w") as f:
         json.dump(payload, f, indent=2, ensure_ascii=False)
 
-    accuracy = report.geometric_accuracy
-    accuracy_text = "nicht messbar (0 beurteilbare Zuordnungen)" if accuracy is None else f"{accuracy:.3f}"
+    def _rate(value):
+        return "nicht messbar" if value is None else f"{value:.3f}"
 
     print(f"Quelle: {source}   Splits: {', '.join(splits)}   Seiten: {report.pages}")
     if missing:
@@ -87,9 +87,19 @@ def main(argv=None):
     print()
     print("Ablation - Geometrie ordnet allein zu, die Rechnung urteilt:")
     print(f"  bestaetigt          {report.confirmed}")
-    print(f"  widerlegt           {report.contradicted}")
-    print(f"  nicht beurteilbar   {report.unjudgeable}   (kein Grundpreis)")
-    print(f"  Trefferquote        {accuracy_text}")
+    print()
+    print("  nachsichtig (nur unbelegte Bloecke zaehlen als Alternative):")
+    print(f"    widerlegt           {report.contradicted}")
+    print(f"    nicht beurteilbar   {report.unjudgeable}")
+    print(f"    Trefferquote        {_rate(report.geometric_accuracy)}")
+    print()
+    print("  streng (auch belegte Bloecke zaehlen als Alternative):")
+    print(f"    widerlegt           {report.contradicted_strict}")
+    print(f"    nicht beurteilbar   {report.unjudgeable_strict}")
+    print(f"    Trefferquote        {_rate(report.geometric_accuracy_strict)}")
+    print()
+    print(f"  Die Trefferquote liegt zwischen {_rate(report.geometric_accuracy_strict)} "
+          f"und {_rate(report.geometric_accuracy)}.")
     print()
     print("Normalbetrieb - wie die Preise tatsaechlich zugeordnet werden:")
     print(f"  ueber die Rechnung  {report.arithmetic_assignments}")
