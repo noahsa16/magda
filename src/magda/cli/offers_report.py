@@ -44,12 +44,22 @@ def main(argv=None):
                         help="Variante unter data/predictions/ statt data/labeled/ (z.B. gbert)")
     parser.add_argument("--splits", default="train,dev",
                         help="Komma-getrennt. Default train,dev - test ist zulaessig, aber nicht Default")
+    parser.add_argument("--pages-from", dest="pages_from", default=None,
+                        help="Nur Seiten messen, die diese Quelle unter data/offer_groups/ "
+                             "gruppiert hat - fuer den Vergleich auf gleicher Grundmenge")
     args = parser.parse_args(argv)
 
     splits = [s.strip() for s in args.splits.split(",") if s.strip()]
     if not splits:
         parser.error("--splits ist leer")
     selected = _selected_page_ids(splits, parser)
+
+    if args.pages_from:
+        from magda import offer_teacher
+        grouped = offer_teacher.grouped_page_ids(args.pages_from)
+        if not grouped:
+            parser.exit(1, f"Keine Gruppierung unter data/offer_groups/{args.pages_from}.\n")
+        selected &= grouped
 
     if args.predictions:
         source = args.predictions

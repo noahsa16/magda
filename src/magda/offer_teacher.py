@@ -45,6 +45,21 @@ def teacher_dir(source: str):
     return config.OFFER_GROUPS_DIR / config.model_slug(source)
 
 
+def grouped_page_ids(source: str) -> set[str]:
+    """Welche Seiten diese Quelle gruppiert hat.
+
+    Damit laesst sich jede andere Messung auf dieselbe Grundmenge
+    einschraenken. Ohne das stuende die Genauigkeit der LLM-Gruppierung ueber
+    wenige Seiten neben der der Heuristik ueber alle 196 - zwei Zahlen ueber
+    verschiedene Grundmengen, nebeneinandergestellt als waeren sie eine
+    Gegenueberstellung.
+    """
+    directory = teacher_dir(source)
+    if not directory.is_dir():
+        return set()
+    return {path.stem for path in directory.glob("*.json")}
+
+
 def build_task(page: dict) -> dict:
     """Die Aufgabe fuer eine Seite: nummerierte Entities plus Seitenbild.
 

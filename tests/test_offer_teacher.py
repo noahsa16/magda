@@ -158,3 +158,24 @@ def test_handannotation_bleibt_der_default(dirs, monkeypatch, tmp_path):
     offer_teacher.save_grouping(page, [[0, 1, 2]], source="sonnet-5")
 
     assert offers_gold.load_reference().assignments == {}
+
+
+def test_gruppierte_seiten_lassen_sich_auflisten(dirs):
+    """Damit `magda offers-report` an genau denselben Seiten messen kann.
+
+    Ohne diese Einschraenkung stuende die Genauigkeit der LLM-Gruppierung
+    (wenige Seiten) neben der Genauigkeit der Heuristik (alle 196) - zwei
+    Zahlen ueber verschiedene Grundmengen, nebeneinandergestellt als waeren
+    sie vergleichbar.
+    """
+    words_dir, _ = dirs
+    for page_id in ("p1", "p2"):
+        page = _page(page_id)
+        _write_words(words_dir, page)
+        offer_teacher.save_grouping(page, [[0, 1, 2]], source="sonnet-5")
+
+    assert offer_teacher.grouped_page_ids("sonnet-5") == {"p1", "p2"}
+
+
+def test_unbekannte_quelle_ist_leer_statt_ein_fehler(dirs):
+    assert offer_teacher.grouped_page_ids("gibtsnicht") == set()
