@@ -42,11 +42,19 @@ def test_hilfe_laedt_keine_schweren_module():
     zehn Sekunden. Der Dispatcher importiert erst beim konkreten Aufruf."""
     import sys
 
-    for modul in ("torch", "transformers"):
-        sys.modules.pop(modul, None)
-    cli.main(["--help"])
-
-    assert "torch" not in sys.modules
+    entfernt = {name: sys.modules.pop(name, None) for name in ("torch", "transformers")}
+    try:
+        cli.main(["--help"])
+        assert "torch" not in sys.modules
+    finally:
+        # Zurückstellen, nicht nur entfernen: Ein zweiter echter Import von
+        # torch registriert dieselben C-Extensions noch einmal und stirbt an
+        # "Only a single TORCH_LIBRARY can be used to register the namespace
+        # triton". Getroffen hätte es jeden späteren Test, der torch benutzt –
+        # also alles rund um `offer_model`.
+        for name, modul in entfernt.items():
+            if modul is not None:
+                sys.modules[name] = modul
 
 
 @pytest.mark.parametrize("befehl", sorted(cli.BEFEHLE))

@@ -61,6 +61,8 @@ WERKZEUGE = (
            "Angebots-Clustering per Ablation messen (Default Train+Dev)"),
     Befehl("offers-teacher", "offers_teacher",
            "Angebote von einem Vision-Modell gruppieren lassen"),
+    Befehl("offers-model", "offers_model",
+           "Paarmodell auf einer Gruppierung trainieren und messen"),
     Befehl("bundle", "export", "Trainingspaket für eine fremde GPU schnüren"),
     Befehl("import-gold", "import_gold", "Handannotationen als Labelordner ablegen"),
 )

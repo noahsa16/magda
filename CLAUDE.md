@@ -92,6 +92,8 @@ magda offers-gold --labels-from sonnet-5    # Gruppierung gegen gold/offers/ mes
 magda offers-teacher pages --limit 40       # Seiten fürs LLM-Gruppieren
 magda offers-teacher task 1342821_p10       # Aufgabe einer Seite (Entities + Bild)
 magda offers-verify --reference-from claude-sonnet-5   # Gruppierung nachrechnen
+magda offers-model train --labels-from sonnet-5        # Paarmodell lernen (mit Kalibrierung)
+magda offers-model eval --labels-from sonnet-5         # gegen Lehrer und Arithmetik messen
 magda offers-sequence               # fasst eine flache OFFER-Folge das Angebot?
 magda bundle --labels-from sonnet-5 # Trainingspaket für eine fremde GPU
 magda serve --frontend              # API (8000) und Oberfläche (5173)
@@ -766,6 +768,58 @@ eine Liste auszugeben.
   Schwellwert repariert das nicht, er verschiebt nur die Stelle. Kein
   Regressionstest, weil hier ein Fehler festgeschrieben würde, keine
   Zusicherung – der Fall gehört in die Fehleranalyse, nicht in die Pins.
+- **Ein gelerntes Paarmodell schlägt die Heuristik – gemessen, aber knapp und
+  auf 21 Dev-Seiten.** `magda offers-model` klassifiziert jedes Entity-Paar
+  („gehören die zusammen?"), verschmilzt die Kanten oberhalb einer Schwelle
+  zu Zusammenhangskomponenten und ist damit die zweite Standardlösung aus
+  DocILE. Gelernt aus `data/offer_groups/claude-sonnet-5/` (jetzt 51 Seiten:
+  30 Train, 21 Dev), 4097 Parameter, **16,8 s Training auf CPU** – eine GPU
+  lohnt hier nicht, der Grund für RunPod war LayoutXLMs RAM-Bedarf, nicht
+  Rechenzeit. Stand 06.08.2026 auf Dev, Schwelle 0.94:
+
+  | | Paar-F1 | Gruppen-F1 | Angebote |
+  |---|---|---|---|
+  | Paarmodell | **0.742** | **0.477** | 138 |
+  | Heuristik | 0.683 | 0.436 | 185 |
+  | Lehrer (Referenz) | – | – | 122 |
+
+  Das Modell ist in beiden Zahlen vorn *und* fragmentiert weniger. Die
+  arithmetische Gegenprobe stützt das: 0.864 gegen 0.802 der Heuristik –
+  und die Rechnung ist beim Modell wirklich unbeteiligt, während
+  `cluster_page` teilweise selbst arithmetisch zuordnet.
+  **Drei Einschränkungen, die mitgehören:** 21 Dev-Seiten in 14 Clustern
+  sind dünn, ein Konfidenzintervall gibt es noch nicht. Der Lehrer ist ein
+  LLM, also misst „Übereinstimmung", nicht Richtigkeit. Und die Abdeckung
+  der Gegenprobe liegt bei 0.589 – die Non-Food-Hälfte bleibt ungeprüft.
+- **Die Rechnung Menge × Grundpreis ist bewusst kein Merkmal des
+  Paarmodells.** Sie ist das einzige Signal, das sich selbst beweist, und
+  damit der einzige unbestechliche Richter. Als Eingabe gefüttert bewertete
+  sie sich hinterher selbst – derselbe Zirkelschluss, gegen den
+  `offers_report` die Ablation braucht. Das allgemeine Muster: halte das
+  Merkmal zurück, mit dem du hinterher richten willst. Ein Test in
+  `test_offer_pairs.py` hält das fest, indem er die Merkmalsnamen prüft.
+- **Die Schwelle wird out-of-fold kalibriert, nicht geraten – und 0.5 ist
+  grob falsch.** `pos_weight` gleicht die Schieflage aus (4553 positive
+  gegen 46359 negative Paare) und schiebt dabei alle Wahrscheinlichkeiten
+  nach oben: bei 0.5 entstanden 83 Gruppen statt 268, bei 0.94 dann 253.
+  Kalibriert wird über 5 Folds auf Train, und die Folds gehen über ganze
+  Duplikat-Cluster – sonst bewertet ein Fold-Modell eine Vorlage, die es in
+  einer anderen Regionalfassung im Training hatte.
+  **Die beiden Kriterien wählen verschiedene Schwellen**, und das ist die
+  interessantere Hälfte des Befunds: Paar-F1 ist bei 0.98 maximal (0.740
+  out-of-fold), aber Gruppen-F1 bricht dort auf 0.175 bei 463 Angeboten ein.
+  Paar-F1 belohnt Vorsicht, weil kleine Gruppen wenige Paare zu verlieren
+  haben. Default ist deshalb `--objective group_f1` – die Zahl, die „die
+  Zeile in der Datenbank stimmt" entspricht. **Offenlegung:** Diese Wahl
+  fiel, nachdem beide Schwellen auf Dev gemessen waren; die Dev-Zahl ist
+  dadurch leicht optimistisch. Der Testsplit ist unangetastet.
+- **`test_hilfe_laedt_keine_schweren_module` hat torch aus `sys.modules`
+  genommen und nicht zurückgestellt.** Ein zweiter echter Import registriert
+  dieselben C-Extensions erneut und stirbt an „Only a single TORCH_LIBRARY
+  can be used to register the namespace triton". Aufgefallen ist es erst,
+  als mit `test_offer_model.py` der erste Test *nach* `test_cli.py` torch
+  benutzte – elf Fehlschläge, die einzeln alle grün waren. Wer Module aus
+  `sys.modules` nimmt, stellt sie im `finally` zurück.
 - **Der Legenden-Pfad kostet ~115 Zeilen und greift auf einer Seitenvorlage.**
   `_segment_legend` zerlegt in `data/labeled/sonnet-5/` 3 von 162 Seiten, in
   `data/predictions/gbert/` 6 von 66 – und dort ausschließlich auf `_p30`,
@@ -941,6 +995,17 @@ eine Liste auszugeben.
   3. *OFFER-Kopf auf GBERT.* Paarweise Relationsklassifikation nur als Ausbau,
      falls die Referenz zeigt, dass die 7,3 % nicht zusammenhängenden Gruppen
      den Feldwert spürbar deckeln.
+     **Schritt 3 ist teilweise erledigt, aber anders als geplant:** gebaut ist
+     die paarweise Klassifikation (`magda offers-model`), und zwar
+     *eigenständig* auf Merkmalen statt als Kopf auf GBERTs Embeddings. Sie
+     schlägt die Heuristik auf Dev (Gruppen-F1 0.477 gegen 0.436). Was das
+     Modell nicht bekommt, ist die Bildinformation – und genau dort sitzt der
+     gemessene blinde Fleck. Der naheliegende nächste Schritt ist deshalb
+     nicht ein größeres Netz, sondern **Farbmerkmale je Paar**: Hintergrund
+     an beiden Wortpositionen und der Farbwechsel dazwischen, analog zu
+     `label_audit.APP_BACKGROUND`, das bei der App-Preis-Prüfung 97,6 %
+     traf. Vier Zahlen statt eines visuellen Backbones – und LayoutXLM hat
+     gezeigt, dass ein Backbone über die ganze Seite hier nichts bringt.
   4. *Arithmetik und positionsweise Variantenpaarung bleiben als harte
      Nachprüfung* über jeder gelernten Gruppierung. Sie sind das einzige
      Signal im System, das sich selbst beweist.
