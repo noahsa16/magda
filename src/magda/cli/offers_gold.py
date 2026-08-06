@@ -22,7 +22,7 @@ Aussage: "alles falsch" statt "nichts gemessen".
 import argparse
 import json
 
-from magda import config, offers_gold
+from magda import config, offer_teacher, offers_gold
 from magda.cli.offers import _load_labeled_pages, _load_predicted_pages
 
 
@@ -32,6 +32,8 @@ def main(argv=None):
                         help="Labelordner unter data/labeled/. Default: konfiguriertes/groesstes Modell")
     parser.add_argument("--predictions", default=None,
                         help="Variante unter data/predictions/ statt data/labeled/")
+    parser.add_argument("--reference-from", dest="reference_from", default=None,
+                        help="Gruppierung unter data/offer_groups/ als Referenz statt gold/offers/")
     args = parser.parse_args(argv)
 
     if args.predictions:
@@ -45,15 +47,23 @@ def main(argv=None):
             parser.error(f"Labelquelle nicht gefunden: {source}")
         pages = _load_labeled_pages(source)
 
-    reference = offers_gold.load_reference()
+    if args.reference_from:
+        directory = offer_teacher.teacher_dir(args.reference_from)
+        reference = offers_gold.load_reference(directory)
+        basis = f"data/offer_groups/{config.model_slug(args.reference_from)}"
+    else:
+        reference = offers_gold.load_reference()
+        basis = "gold/offers"
     if not reference.assignments:
-        parser.exit(1, "Keine fertige Referenzseite unter gold/offers/. "
+        parser.exit(1, f"Keine fertige Referenzseite in {basis}. "
                        "`magda offers-queue` sagt, womit anzufangen ist.\n")
 
     report = offers_gold.collect(pages, reference)
     payload = report.to_dict()
     payload.update({
         "source": source,
+        "basis": basis,
+        "provenance": sorted(set(reference.provenance.values())),
         "reference_pages": sorted(reference.assignments),
         "stale": reference.stale,
         "in_progress": reference.in_progress,
@@ -62,14 +72,18 @@ def main(argv=None):
 
     out_dir = config.EVAL_DIR
     out_dir.mkdir(parents=True, exist_ok=True)
-    out_path = out_dir / f"offers_gold_{config.model_slug(source)}.json"
+    suffix = config.model_slug(args.reference_from) if args.reference_from else "gold"
+    out_path = out_dir / f"offers_gold_{config.model_slug(source)}_vs_{suffix}.json"
     with open(out_path, "w") as f:
         json.dump(payload, f, indent=2, ensure_ascii=False)
 
     def _rate(value):
         return "nicht messbar" if value is None else f"{value:.3f}"
 
-    print(f"Quelle: {source}   Referenzseiten: {report.pages}")
+    print(f"Quelle: {source}   Referenz: {basis}   Referenzseiten: {report.pages}")
+    if "llm" in set(reference.provenance.values()):
+        print("  Maschinell erzeugte Referenz: das hier ist Uebereinstimmung,")
+        print("  nicht Richtigkeit. Gegenprobe: `magda offers-verify`.")
     for name, ids in (("veraltet", reference.stale), ("offen", reference.in_progress),
                       ("kaputt", reference.broken)):
         if ids:

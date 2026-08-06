@@ -50,6 +50,10 @@ class Reference:
     stale: list[str] = field(default_factory=list)
     in_progress: list[str] = field(default_factory=list)
     broken: list[str] = field(default_factory=list)
+    # "human" oder "llm", je Seite. Eine maschinell erzeugte Referenz misst
+    # Uebereinstimmung statt Richtigkeit; das gehoert in den Report und nicht
+    # in die Erinnerung dessen, der den Ordner ausgewaehlt hat.
+    provenance: dict[str, str] = field(default_factory=dict)
 
 
 def reference_dir():
@@ -90,14 +94,18 @@ def _assignment(groups: list[list[int]], num_words: int) -> dict[int, int] | Non
     return {i: group_id for group_id, group in enumerate(groups) for i in group}
 
 
-def load_reference() -> Reference:
-    """Laedt die fertigen Gruppierungsseiten unter gold/offers/.
+def load_reference(directory=None) -> Reference:
+    """Laedt die fertigen Gruppierungsseiten, per Default aus gold/offers/.
 
     Dieselben drei Ausschluesse wie in `gold.load_gold_pages`, aus denselben
     Gruenden - dazu die doppelt vergebenen Woerter.
+
+    `directory` macht die Quelle austauschbar, damit dieselben Metriken auch
+    ueber eine maschinell erzeugte Gruppierung laufen. Der Default bleibt die
+    Handannotation: wer eine LLM-Referenz will, muss sie hinschreiben.
     """
     reference = Reference()
-    directory = reference_dir()
+    directory = reference_dir() if directory is None else directory
     if not directory.is_dir():
         return reference
 
@@ -124,6 +132,7 @@ def load_reference() -> Reference:
             reference.broken.append(page_id)
             continue
         reference.assignments[page_id] = assignment
+        reference.provenance[page_id] = annotation.get("provenance", {}).get("kind", "human")
 
     return reference
 
@@ -164,6 +173,26 @@ def _reference_group(entity, assignment: dict[int, int]) -> int | None:
         return None
     best = max(votes.values())
     return min(group for group, count in votes.items() if count == best)
+
+
+def offers_from_reference(page: dict, assignment: dict[int, int]) -> list[Offer]:
+    """Die Angebote, wie die Referenz sie sieht - als `Offer`, nicht als Indizes.
+
+    Damit laesst sich eine Handannotation oder eine LLM-Gruppierung in jede
+    Funktion reichen, die sonst `cluster_page` bekommt.
+    """
+    from magda.offers import _make_offer
+
+    members: dict[int, list] = {}
+    for entity in entities_from_page(page):
+        if entity.type not in VALUE_TYPES:
+            continue
+        group = _reference_group(entity, assignment)
+        if group is not None:
+            members.setdefault(group, []).append(entity)
+    page_id = page.get("page_id") or "unknown"
+    return [_make_offer(page_id, index, entities)
+            for index, entities in enumerate(members.values())]
 
 
 def judge_page(page: dict, assignment: dict[int, int], offers: list[Offer]) -> PageScore:

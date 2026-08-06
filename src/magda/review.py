@@ -148,7 +148,8 @@ def queue(model_a: str | None = None, model_b: str | None = None,
     return vorschlaege[:limit]
 
 
-def offer_queue(pages: list[dict], limit: int = 40) -> list[dict]:
+def offer_queue(pages: list[dict], limit: int = 40,
+                annotated: set[str] | None = None) -> list[dict]:
     """Welche Seiten die Gruppierungsreferenz zuerst braucht.
 
     Anders als `queue()` sortiert das nicht nach Uneinigkeit zweier Modelle,
@@ -164,6 +165,11 @@ def offer_queue(pages: list[dict], limit: int = 40) -> list[dict]:
 
     Train und Dev, nie Test: eine Referenz, an der Heuristiken entwickelt
     werden, gehoert nicht auf die Seiten, an denen am Ende gemessen wird.
+
+    `annotated` sagt, was schon erledigt ist. Default ist die Handannotation
+    unter gold/offers/; ein LLM-Teacher schreibt woandershin und reicht seinen
+    eigenen Bestand herein, sonst bekommt er im zweiten Lauf dieselben Seiten
+    noch einmal vorgeschlagen.
     """
     from magda import offers_gold, offers_report
 
@@ -179,7 +185,8 @@ def offer_queue(pages: list[dict], limit: int = 40) -> list[dict]:
 
     texts = {p["page_id"]: [w["text"] for w in p["words"]] for p in eligible}
     clusters = dedupe.group(texts, threshold=CLUSTER_THRESHOLD)
-    annotated = {f.stem for f in offers_gold.reference_dir().glob("*.json")}
+    if annotated is None:
+        annotated = {f.stem for f in offers_gold.reference_dir().glob("*.json")}
 
     verdicts = {p["page_id"]: offers_report.judge_page(p) for p in eligible}
 

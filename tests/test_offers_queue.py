@@ -132,3 +132,20 @@ def test_ohne_split_wird_nicht_geraten(daten):
     """Ohne split.json ist "nur Train und Dev" nicht durchsetzbar."""
     with pytest.raises(FileNotFoundError):
         review.offer_queue([food("f1")])
+
+
+def test_bereits_gruppierte_seiten_lassen_sich_von_aussen_ausschliessen(daten):
+    """Der LLM-Teacher schreibt nicht nach gold/offers/, braucht aber dieselbe Queue.
+
+    Ohne den Parameter liest `offer_queue` nur die Handannotation und schlaegt
+    dem Teacher im zweiten Lauf genau die Seiten wieder vor, die er im ersten
+    schon bearbeitet hat.
+    """
+    pages = [nonfood("n1"), nonfood("n2", "Heckenschere"), food("f1"),
+             food("f2", "Weihenstephan")]
+    splits(daten, train=["n1", "n2", "f1", "f2"], dev=[], test=[])
+
+    ohne = review.offer_queue(pages, limit=10)
+    mit = review.offer_queue(pages, limit=10, annotated={ohne[0]["page_id"]})
+
+    assert ohne[0]["page_id"] not in [c["page_id"] for c in mit]

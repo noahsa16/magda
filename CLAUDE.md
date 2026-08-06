@@ -89,6 +89,9 @@ magda offers                        # Entities zu Angeboten clustern, als SQLite
 magda offers-report                 # Clustering per Ablation messen (Train+Dev)
 magda offers-queue                  # welche Seiten die Referenz zuerst braucht
 magda offers-gold --labels-from sonnet-5    # Gruppierung gegen gold/offers/ messen
+magda offers-teacher pages --limit 40       # Seiten fürs LLM-Gruppieren
+magda offers-teacher task 1342821_p10       # Aufgabe einer Seite (Entities + Bild)
+magda offers-verify --reference-from claude-sonnet-5   # Gruppierung nachrechnen
 magda offers-sequence               # fasst eine flache OFFER-Folge das Angebot?
 magda bundle --labels-from sonnet-5 # Trainingspaket für eine fremde GPU
 magda serve --frontend              # API (8000) und Oberfläche (5173)
@@ -686,6 +689,42 @@ eine Liste auszugeben.
   Handarbeit genau das ab, was die Rechnung ohnehin prüft. Stand 06.08.2026
   decken die ersten 40 Vorschläge 125 der 196 Train/Dev-Seiten ab, hälftig aus
   beiden Ranglisten. Train und Dev, nie Test.
+- **Die Handannotation findet nicht statt – ein Vision-Modell gruppiert**
+  (Teamentscheidung, 06.08.2026). 30 bis 50 Seiten von Hand sprengen den
+  Projektrahmen. Das Ergebnis liegt deshalb in `data/offer_groups/<quelle>/`
+  und **nicht** in `gold/offers/`, mit `provenance: {"kind": "llm", …}` in
+  jeder Datei. Der getrennte Pfad ist der eigentliche Punkt: `magda
+  offers-gold --reference-from claude-sonnet-5` misst damit
+  **Übereinstimmung, nicht Richtigkeit** – dieselbe Einschränkung wie bei
+  `magda agreement`, und die Ausgabe sagt es dazu. Was den Vergleich trotzdem
+  tragfähig macht, sind die verschiedenen Informationsquellen: die Heuristik
+  kennt nur Wortkoordinaten, das Modell sieht den gelben Preiskasten. Wo
+  beide sich einig sind, ist das ein Argument; wo nicht, zeigt es auf eine
+  Seite zum Nachsehen. `gold/offers/` bleibt als Format bestehen und ist
+  weiter der Default – wer später doch Stichproben von Hand macht, misst
+  ohne Codeänderung dagegen.
+- **`magda offers-verify` ist die einzige unabhängige Kontrolle über eine
+  maschinelle Referenz.** Menge × Grundpreis beweist sich selbst, und ein
+  Modell, das nach dem Seitenbild gruppiert, hat dabei nie gerechnet. Genau
+  deshalb braucht dieser Weg **keine Ablation**, anders als `magda
+  offers-report`: dort ordnet `_match_badges` teilweise selbst arithmetisch
+  zu, das Urteil stünde vor der Frage fest. Vier Urteile statt drei, und die
+  Trennung ist wesentlich: `unresolved` (Grundpreis da, Rechnung geht
+  nirgends auf) getrennt von `contradicted` (Rechnung zeigt auf eine andere
+  Gruppe). Ein Preis, der zu keiner Gruppe passt, belegt nichts gegen die
+  Zuordnung – die Ursache ist meist eine Mehrfachpackung (`2 x 350 g`, deren
+  Multiplikator `_quantity_in_unit` ignoriert) oder ein fehlendes Label. Wer
+  ihn als widerlegt zählte, schriebe Labelfehler dem Gruppieren zu.
+  Zusammen mit `accuracy` gehört immer `coverage` berichtet: eine Genauigkeit
+  von 0.9 über ein Fünftel der Preise ist eine Aussage über ein Fünftel.
+- **Der Teacher antwortet in Entity-Nummern, gespeichert werden Wortindizes.**
+  Entities sind die Einheit, in der auch der Annotator klickt – ein Angebot
+  hat schnell zwölf Wörter, und wortweise zu antworten vervielfacht die
+  Ausgabe ohne Gewinn an Ausdruckskraft. Wortindizes sind die Einheit, die
+  den nächsten Labeling-Lauf überlebt. `offer_teacher.expand_entity_groups`
+  lehnt unbekannte und doppelt vergebene Nummern ab, statt sie zu
+  überspringen: eine halbe Antwort als ganze zu speichern macht die Referenz
+  um genau den Betrag falsch, den niemand sieht.
 - **Der Legenden-Pfad kostet ~115 Zeilen und greift auf einer Seitenvorlage.**
   `_segment_legend` zerlegt in `data/labeled/sonnet-5/` 3 von 162 Seiten, in
   `data/predictions/gbert/` 6 von 66 – und dort ausschließlich auf `_p30`,

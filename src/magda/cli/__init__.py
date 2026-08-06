@@ -45,6 +45,8 @@ VERGLEICH = (
            "Welche Seiten die Gruppierungsreferenz zuerst braucht"),
     Befehl("offers-gold", "offers_gold",
            "Eine Gruppierung gegen die handannotierte Referenz messen"),
+    Befehl("offers-verify", "offers_verify",
+           "Eine Gruppierung arithmetisch nachrechnen (Menge x Grundpreis)"),
     Befehl("offers-sequence", "offers_sequence",
            "Kann eine flache OFFER-Tag-Folge die Angebote ausdrücken?"),
     Befehl("significance", "significance",
@@ -57,6 +59,8 @@ WERKZEUGE = (
     Befehl("offers", "offers", "Gelabelte Entities zu Angeboten clustern und als SQLite speichern"),
     Befehl("offers-report", "offers_report",
            "Angebots-Clustering per Ablation messen (Default Train+Dev)"),
+    Befehl("offers-teacher", "offers_teacher",
+           "Angebote von einem Vision-Modell gruppieren lassen"),
     Befehl("bundle", "export", "Trainingspaket für eine fremde GPU schnüren"),
     Befehl("import-gold", "import_gold", "Handannotationen als Labelordner ablegen"),
 )
