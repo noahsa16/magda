@@ -725,6 +725,47 @@ eine Liste auszugeben.
   lehnt unbekannte und doppelt vergebene Nummern ab, statt sie zu
   überspringen: eine halbe Antwort als ganze zu speichern macht die Referenz
   um genau den Betrag falsch, den niemand sieht.
+- **Erste Messung gegen die LLM-Gruppierung** (06.08.2026, 33 Train/Dev-Seiten,
+  1634 Entities, `claude-sonnet-5` als Subagent mit Seitenbild). Alle drei
+  Zahlen über dieselbe Seitenmenge, sonst wären sie nicht vergleichbar –
+  dafür gibt es `magda offers-report --pages-from`:
+
+  | | Trefferquote | beurteilte Preise |
+  |---|---|---|
+  | Heuristik, Geometrie allein (Ablation) | 0.463 – 0.620 | 100 – 134 |
+  | LLM, sieht das Seitenbild | **0.925** | 159 |
+
+  Richter ist beide Male die Rechnung Menge × Grundpreis, und sie ist an
+  beiden Zuordnungen unbeteiligt: die Heuristik läuft unter Ablation, das
+  LLM hat nie gerechnet. **`offers_verify` zählt dabei nach der strengeren
+  Regel** – jede andere Gruppe gilt als Gegenbeleg, ohne Rücksicht darauf,
+  ob sie diesen Preistyp schon trägt. Das entspricht dem strengen Ende der
+  Heuristik-Spanne (0.463), das LLM wird also nicht bessergestellt.
+  Übereinstimmung insgesamt: **Paar-F1 0.723, Gruppen-F1 0.331.** Die Lücke
+  zwischen beiden ist die Aussage – Teile eines Angebots trifft die Heuristik
+  oft, das vollständige Angebot nur bei knapp jedem dritten. Gruppen-F1 ist
+  die Zahl, die „die Zeile in der Datenbank stimmt" entspricht.
+  **Einschränkung, die immer mitgehört:** Abdeckung 0.429. Über die Hälfte
+  der Preise trägt keinen Grundpreis, dort schweigt die Rechnung – und das
+  deckt sich mit Non-Food, also mit genau dem Bereich, für den die
+  Gruppierung gebraucht wird. Die 0.925 gelten für die prüfbare Hälfte.
+- **Die Heuristik fragmentiert messbar: 417 Angebote gegen 296.** Über
+  dieselben 33 Seiten bildet `cluster_page` 41 % mehr „Angebote" als das LLM,
+  davon 147 Fragmente ohne Produkt-und-Preis. Das erklärt auch, warum das LLM
+  *mehr* beurteilbare Fälle hat (159 gegen 100–134): wo ein Preis als
+  Bruchstück liegen bleibt, entsteht keine Rechnung, die man prüfen könnte.
+  Ein Verfahren, das seltener zuordnet, sieht in einer Genauigkeitszahl
+  besser aus, als es ist – deshalb gehört die Zahl der Zuordnungen daneben.
+- **Belegter Fall für den blinden Fleck: `1347387_p31`.** Non-Food-Legende,
+  kein Grundpreis, also für `magda offers-report` grundsätzlich unbeurteilbar.
+  Im Seitenbild steht „④ Pflanztopf-Set – je Set 8.99" und „⑤
+  Fensterdoppelrollo – je Stück 9.99"; die Heuristik ordnet beide vertauscht
+  zu, das LLM richtig. Die Fehlerform ist kein Zufall, sondern ein **Versatz
+  über eine ganze Legendenspalte**: jeder Preis greift zum nächstgelegenen
+  Namen, und wenn der Abstand einmal kippt, kippt die Kette mit. Ein anderer
+  Schwellwert repariert das nicht, er verschiebt nur die Stelle. Kein
+  Regressionstest, weil hier ein Fehler festgeschrieben würde, keine
+  Zusicherung – der Fall gehört in die Fehleranalyse, nicht in die Pins.
 - **Der Legenden-Pfad kostet ~115 Zeilen und greift auf einer Seitenvorlage.**
   `_segment_legend` zerlegt in `data/labeled/sonnet-5/` 3 von 162 Seiten, in
   `data/predictions/gbert/` 6 von 66 – und dort ausschließlich auf `_p30`,

@@ -1,0 +1,79 @@
+{
+  "page_id": "1347375_p27",
+  "words_hash": "d19ed7246f4a248917f8c669c41c9713659c794316bd359eecf8a71b054bd56f",
+  "status": "done",
+  "annotator": "claude-sonnet-5",
+  "provenance": {
+    "kind": "llm",
+    "source": "claude-sonnet-5",
+    "model": "claude-sonnet-5",
+    "prompt_version": 1
+  },
+  "notes": "Seite im nummerierten Listenformat: 8 Angebote (Items 1-5 oben links, Items 1-3 unten links) haben Produktname+Beschreibung mit Preis als kleiner Fließtext ('je Stück/Set X.XX') direkt im eigenen Textblock; die grossen bunten Aktion-Kreise darueber/darunter sind bei diesen rein grafisch ohne eigenen Text-Layer-Eintrag (analog zum APP_PRICE-Befund), daher jeweils nur ein PRICE-Entity pro Produkt. Die uebrigen 5 Angebote (Haengende Pflanzenkoerbe, LED-Wandbeleuchtung, 3-in-1-Tischlampe, Schuhregal, Beistelltisch) sind einzelne Produktkacheln ohne Aufzaehlungstext; deren Preis liegt als grosser Aktion-Badge (bzw. bei LED-Wandbeleuchtung als schlichter Preistext) vor und wurde per Bildlage dem jeweils direkt zugehoerigen Produktnamen zugeordnet. Entity 26 (Datumsbanner 'Ab Do, 30.7.') gehoert zu keinem Angebot und bleibt unzugeordnet.",
+  "groups": [
+    [
+      276,
+      277,
+      278,
+      279,
+      303
+    ],
+    [
+      249,
+      250,
+      251,
+      275
+    ],
+    [
+      206,
+      227
+    ],
+    [
+      8,
+      39
+    ],
+    [
+      141,
+      172
+    ],
+    [
+      66,
+      67,
+      86
+    ],
+    [
+      87,
+      88,
+      112
+    ],
+    [
+      115,
+      140
+    ],
+    [
+      40,
+      41,
+      42,
+      43,
+      313
+    ],
+    [
+      202,
+      205
+    ],
+    [
+      173,
+      201
+    ],
+    [
+      228,
+      308
+    ],
+    [
+      315,
+      316,
+      317,
+      318
+    ]
+  ]
+}
