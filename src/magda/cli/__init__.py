@@ -41,6 +41,12 @@ VERGLEICH = (
     Befehl("agreement", "agreement", "Zwei Labeling-Modelle gegeneinander halten"),
     Befehl("queue", "queue", "Welche Gold-Seiten als Nächstes durchzusehen sind"),
     Befehl("audit", "audit", "Ein Label zur Handprüfung vorsortieren (Kandidaten)"),
+    Befehl("offers-queue", "offers_queue",
+           "Welche Seiten die Gruppierungsreferenz zuerst braucht"),
+    Befehl("offers-gold", "offers_gold",
+           "Eine Gruppierung gegen die handannotierte Referenz messen"),
+    Befehl("offers-sequence", "offers_sequence",
+           "Kann eine flache OFFER-Tag-Folge die Angebote ausdrücken?"),
     Befehl("significance", "significance",
            "Konfidenzintervall und gepaarter Modellvergleich über Cluster"),
 )
@@ -68,7 +74,7 @@ def _hilfe() -> str:
     zeilen = ["magda <befehl> [optionen]", ""]
     for titel, befehle in GRUPPEN:
         zeilen.append(f"{titel}:")
-        zeilen += [f"  {b.name:<12} {b.hilfe}" for b in befehle]
+        zeilen += [f"  {b.name:<15} {b.hilfe}" for b in befehle]
         zeilen.append("")
     zeilen.append("magda <befehl> --help zeigt die Optionen eines Schritts.")
     return "\n".join(zeilen)

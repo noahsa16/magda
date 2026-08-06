@@ -87,6 +87,9 @@ magda agreement qwen3.5-397b-a17b mistral-medium-3.5-128b
 magda audit APP_PRICE --labels-from sonnet-5   # Label zur Handprüfung vorsortieren
 magda offers                        # Entities zu Angeboten clustern, als SQLite
 magda offers-report                 # Clustering per Ablation messen (Train+Dev)
+magda offers-queue                  # welche Seiten die Referenz zuerst braucht
+magda offers-gold --labels-from sonnet-5    # Gruppierung gegen gold/offers/ messen
+magda offers-sequence               # fasst eine flache OFFER-Folge das Angebot?
 magda bundle --labels-from sonnet-5 # Trainingspaket für eine fremde GPU
 magda serve --frontend              # API (8000) und Oberfläche (5173)
 magda serve                         # nur die API
@@ -224,11 +227,18 @@ eine Liste auszugeben.
 - **Der `words_hash` in Gold-Dateien** ist die Absicherung des
   Wortreihenfolge-Vertrags. Ändert sich Schritt 02, zeigen die Span-Indizes
   auf andere Wörter, ohne dass etwas kaputtgeht. Die API lehnt dann mit 409 ab.
-- **Die API ist nicht mehr read-only.** Geschrieben wird an vier aufgezählten
-  Stellen: `gold/` (handannotierte Referenz), `catalogs.json`
-  (Katalog-Verzeichnis), `data/runs/` (Lauf-Historie) und `data/audit/`
-  (Urteile der Handprüfung – niemals `data/labeled/` selbst). Eine Erlaubnisliste,
-  kein freier Schreibzugriff – dieselbe enge Beschränkung wie beim Runner.
+- **Die API ist nicht mehr read-only.** Geschrieben wird an fünf aufgezählten
+  Stellen: `gold/` (handannotierte Spans), `gold/offers/`
+  (Gruppierungsreferenz), `catalogs.json` (Katalog-Verzeichnis), `data/runs/`
+  (Lauf-Historie) und `data/audit/` (Urteile der Handprüfung – niemals
+  `data/labeled/` selbst). Eine Erlaubnisliste, kein freier Schreibzugriff –
+  dieselbe enge Beschränkung wie beim Runner.
+- **Spans und Gruppen liegen in getrennten Dateien**, obwohl beide von Hand
+  entstehen: `gold/<seite>.json` sagt, *was* ein Wort ist,
+  `gold/offers/<seite>.json`, *wozu* es gehört. In einer Datei zöge eine
+  halbfertige Gruppierung die fertigen Spans derselben Seite in den Status
+  `in_progress` – und damit aus
+  jeder Messung heraus, die `status: done` verlangt.
 - **Der Runner-Vertrag lautet „nur deklarierte Parameter", nicht „nur
   Varianten".** `jobs.build_command` lehnt unbekannte Jobs, unbekannte
   Parameternamen, nicht konvertierbare Werte und Werte außerhalb von `choices`
@@ -573,10 +583,24 @@ eine Liste auszugeben.
   Clustern lösen will, braucht eine **zweite, parallele Tag-Folge**
   (`B-OFFER`/`I-OFFER`) über die ganze Kachel, nicht einen weiteren
   Entity-Typ: `OFFER` läge über PRODUCT und PRICE, und flaches BIO kann keine
-  Verschachtelung. Machbar ist es – **92,7 % der visuellen Wortgruppen sind
-  genau ein zusammenhängender Lauf** in der Wortliste (3728 von 4022, der Rest
-  zerfällt fast immer in genau zwei). Ein Span-Label kann nur zusammenfassen,
-  was benachbart ist; diese Zahl ist die Vorbedingung.
+  Verschachtelung. Ein Span-Label kann nur zusammenfassen, was benachbart ist –
+  wie weit das trägt, misst `magda offers-sequence`.
+- **Eine flache OFFER-Folge fasst die Beschreibung, den Preis nicht mit.**
+  Nachgerechnet über 293 Seiten (`magda offers-sequence --labels-from
+  sonnet-5`, 06.08.2026): Von 3066 Angeboten der Heuristik sind **2080 ein
+  einziger Lauf – 0.678**. Lässt man die Preis-Badges weg, sind es **2530 von
+  2637, also 0.959**. Die Differenz ist die ganze Aussage: Penny setzt den
+  Preis in einen gelben Kasten, und der steht im Textlayer weit weg vom
+  Produktnamen – auf `1342815_p21` liegt der Preis bei Wort 6, sein Produkt
+  bei Wort 166. Ein flacher Span kann beide nicht zusammenfassen, ohne alles
+  dazwischen mitzunehmen.
+  **Das ersetzt die frühere Zahl 92,7 % (3728 von 4022) nicht, sondern
+  ergänzt sie:** die zählte *visuelle Wortgruppen* aus dem Kachelversuch, also
+  eine andere Einheit, und hatte kein Skript im Repo. Für die OFFER-Frage
+  zählt die Einheit „Angebot", und dort ist 0.678 die Obergrenze, nicht 0.927.
+  Einschränkung: gerechnet über die Gruppierung der *Heuristik*, deren Fehler
+  also mitgezählt. `--reference` rechnet dieselbe Zahl gegen die
+  Handannotation, sobald `gold/offers/` gefüllt ist.
 - **Menge × Grundpreis prüft sich selbst – Boxabstände nicht.** `0,205 kg ×
   3,37 €/kg = 0,69 €` stimmt oder stimmt nicht; das ist Arithmetik und braucht
   keine Handannotation. Deshalb ordnet `offers.py` Preise bevorzugt darüber zu
@@ -634,6 +658,34 @@ eine Liste auszugeben.
   derselbe wie bei APP_PRICE: wo eine Kachel endet, steht in Rahmen,
   Hintergrundfarbe und gelbem Sticker – **im Bild, nicht in den
   Wortkoordinaten**. Ein fehlendes Merkmal lässt sich nicht kalibrieren.
+- **Die Gruppierungsreferenz gruppiert Wortindizes, keine Entity-Spans**
+  (`gold/offers/`, seit 06.08.2026). Ein Span gehört immer einem Labelordner;
+  eine Referenz darüber wäre nach dem nächsten Labeling-Lauf wertlos und
+  könnte die gbert-Vorhersagen gar nicht beurteilen, weil deren Spans anders
+  liegen. Über Wortindizes beurteilt dieselbe Annotation die Heuristik, einen
+  LLM-Teacher und einen OFFER-Kopf – abgesichert mit `words_hash` wie `gold/`.
+  Gemessen wird mit `magda offers-gold`: **Paar-F1** über Entity-Paare (die
+  übliche Primärzahl der Line-Item-Literatur) und **Gruppen-F1** über exakt
+  getroffene Angebote, also „die Zeile in der Datenbank stimmt". Zwei Regeln,
+  die leicht falsch gebaut werden: Die Entity-Grundmenge kommt aus der *Seite*,
+  nicht aus der Systemausgabe – sonst verbessert ein System seinen Recall,
+  indem es Entities weglässt. Und was der Mensch keinem Angebot zugeordnet hat
+  (Kleingedrucktes, Seitenkopf), bewegt keine Zahl, sondern wird als
+  `unassignable` ausgewiesen.
+- **Annotiert wird aus dem Seitenbild, nicht durch Korrigieren der Heuristik.**
+  Eine vorbefüllte Gruppierung wäre bequem und wiederholte genau den Fehler,
+  gegen den `magda offers-report` gebaut wurde: Wer die Ausgabe des Verfahrens
+  korrigiert, ankert daran und misst hinterher teilweise sich selbst. Ein Klick
+  im Annotator nimmt dafür die ganze Entity statt eines Wortes – wortweise wäre
+  die Referenz genauso ausdrucksstark, aber ein Angebot hat schnell zwölf
+  Wörter.
+- **`magda offers-queue` wählt die 30 bis 50 Seiten**, abwechselnd nach dem
+  gemessenen blinden Fleck (kein Grundpreis, also kein Urteil der Ablation
+  möglich) und nach der Clustergröße. Nur nach dem blinden Fleck sortiert
+  entstünde eine reine Non-Food-Referenz; nur nach der Größe deckte die
+  Handarbeit genau das ab, was die Rechnung ohnehin prüft. Stand 06.08.2026
+  decken die ersten 40 Vorschläge 125 der 196 Train/Dev-Seiten ab, hälftig aus
+  beiden Ranglisten. Train und Dev, nie Test.
 - **Der Legenden-Pfad kostet ~115 Zeilen und greift auf einer Seitenvorlage.**
   `_segment_legend` zerlegt in `data/labeled/sonnet-5/` 3 von 162 Seiten, in
   `data/predictions/gbert/` 6 von 66 – und dort ausschließlich auf `_p30`,
@@ -773,10 +825,16 @@ eine Liste auszugeben.
   mehr, weil der Klassifikationskopf wächst. Deshalb nicht alle vier auf
   einmal – naheliegend wäre `PROMO` und `DEPOSIT` in einem Durchgang.
   Entscheidung steht aus.
-- **OFFER als zweite Tag-Folge?** Der einzige Weg, der das Gruppieren wirklich
-  löst (92,7 % Machbarkeit, siehe oben). Ist aber ein zusätzlicher Modellkopf,
-  kein weiteres Label, und weicht vom Proposal ab → Teamentscheidung. Vor einer
-  GPU-Miete gehört ein Machbarkeitstest auf den Gold-Seiten davor.
+- **OFFER als zweite Tag-Folge?** Ist ein zusätzlicher Modellkopf, kein
+  weiteres Label, und weicht vom Proposal ab → Teamentscheidung. Der
+  Machbarkeitstest ist inzwischen gelaufen und fällt **zweigeteilt** aus
+  (siehe oben): Eine flache Folge fasst die *Beschreibung* zu 0.959, das
+  vollständige Angebot samt Preis nur zu 0.678. Wer den Preis mit
+  hineinnehmen will, braucht paarweise Relationsklassifikation – oder behält
+  den bestehenden zweistufigen Weg, in dem `_match_badges` den Preis
+  nachträglich zuordnet. Letzteres ist naheliegender, als es klingt: Die
+  Architektur von `offers.py` trennt heute schon aus genau diesem Grund
+  Beschreibungsblöcke von Preis-Badges.
 
   **Einordnung (Literaturrecherche 06.08.2026).** Das Problem heißt in der
   Fachliteratur *Line Item Recognition* und ist der Kern des DocILE-Benchmarks

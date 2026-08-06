@@ -148,6 +148,76 @@ def queue(model_a: str | None = None, model_b: str | None = None,
     return vorschlaege[:limit]
 
 
+def offer_queue(pages: list[dict], limit: int = 40) -> list[dict]:
+    """Welche Seiten die Gruppierungsreferenz zuerst braucht.
+
+    Anders als `queue()` sortiert das nicht nach Uneinigkeit zweier Modelle,
+    sondern nach dem gemessenen blinden Fleck: `magda offers-report` urteilt
+    nur, wo ein Grundpreis steht, und ueber die Haelfte der Zuordnungen bleibt
+    deshalb unbeurteilt. Dort ist Handarbeit alternativlos.
+
+    Nur nach dieser Luecke zu sortieren, ergaebe aber eine reine
+    Non-Food-Referenz - ueber Lebensmittel sagte sie nichts, und gerade dort
+    liegt die Masse der Seiten. Deshalb kommen zwei Ranglisten abwechselnd zum
+    Zug: die groesste Luecke und die groesste Vorlage. Welche einen Vorschlag
+    hervorgebracht hat, steht als `reason` dabei.
+
+    Train und Dev, nie Test: eine Referenz, an der Heuristiken entwickelt
+    werden, gehoert nicht auf die Seiten, an denen am Ende gemessen wird.
+    """
+    from magda import offers_gold, offers_report
+
+    roles = _split_rollen()
+    if not roles:
+        raise FileNotFoundError(
+            f"{config.SPLITS_DIR / 'split.json'} fehlt. Erst `magda split` laufen lassen."
+        )
+
+    eligible = [p for p in pages if roles.get(p.get("page_id")) in ("train", "dev")]
+    if not eligible:
+        return []
+
+    texts = {p["page_id"]: [w["text"] for w in p["words"]] for p in eligible}
+    clusters = dedupe.group(texts, threshold=CLUSTER_THRESHOLD)
+    annotated = {f.stem for f in offers_gold.reference_dir().glob("*.json")}
+
+    verdicts = {p["page_id"]: offers_report.judge_page(p) for p in eligible}
+
+    candidates = []
+    for group in clusters:
+        if set(group) & annotated:
+            continue  # Ein fertiger Vertreter deckt den Cluster ab
+        representative = min(
+            group, key=lambda pid: (-verdicts[pid].unjudgeable, pid)
+        )
+        verdict = verdicts[representative]
+        candidates.append({
+            "page_id": representative,
+            "split": roles.get(representative, "?"),
+            "cluster_size": len(group),
+            "unjudgeable": verdict.unjudgeable,
+            "judgeable": verdict.confirmed + verdict.contradicted,
+            "represents": sorted(p for p in group if p != representative),
+        })
+
+    by_gap = sorted(candidates, key=lambda c: (-c["unjudgeable"], -c["cluster_size"], c["page_id"]))
+    by_mass = sorted(candidates, key=lambda c: (-c["cluster_size"], -c["judgeable"], c["page_id"]))
+
+    selection, taken = [], set()
+    for rank in range(len(candidates)):
+        for ranking, reason in ((by_gap, "luecke"), (by_mass, "masse")):
+            if rank >= len(ranking):
+                continue
+            entry = ranking[rank]
+            if entry["page_id"] in taken:
+                continue
+            taken.add(entry["page_id"])
+            selection.append({**entry, "reason": reason})
+            if len(selection) >= limit:
+                return selection
+    return selection
+
+
 def abdeckung() -> dict:
     """Wie viel des Testsplits ist durch freigegebene Seiten schon abgedeckt?"""
     rollen = _split_rollen()
