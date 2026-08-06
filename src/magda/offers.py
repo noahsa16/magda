@@ -546,7 +546,37 @@ def _price_matches(value: float, expected: list[float]) -> bool:
 _NEARBY_LIMIT = 0.6
 
 
-def _match_badges(blocks: list[Offer], badges: list[Offer], page: dict) -> list[Offer]:
+@dataclass
+class BadgeMatch:
+    """Protokolliert, wie ein Preis-Badge einem Beschreibungsblock zugeordnet wurde.
+
+    Nur fuer die Messung in `offers_report.py` gedacht - der normale Aufruf
+    (arithmetic=True, trace=None) erzeugt keine Instanzen davon.
+
+    `confirmed` ist das Urteil der Arithmetik ueber den tatsaechlich gewaehlten
+    Block, unabhaengig davon, ueber welchen Weg (`path`) er gewaehlt wurde:
+    True, wenn der Preiswert zu dessen Menge-x-Grundpreis-Rechnung passt,
+    False, wenn er zu einem *anderen* Block der Seite passen wuerde, None,
+    wenn keine Rechnung vorliegt (kein Grundpreis in der Naehe) oder kein
+    Block gewaehlt wurde (`path == "unmatched"`).
+    """
+
+    path: str  # "arithmetic" | "geometric" | "unmatched"
+    price_type: str
+    value: float | None
+    target_block: Offer | None
+    distance: float | None
+    confirmed: bool | None
+
+
+def _match_badges(
+    blocks: list[Offer],
+    badges: list[Offer],
+    page: dict,
+    *,
+    arithmetic: bool = True,
+    trace: list[BadgeMatch] | None = None,
+) -> list[Offer]:
     """Ordnet Preis-Badges den Beschreibungsbloecken zu, denen sie gehoeren.
 
     Zuerst ueber Menge x Grundpreis: das Signal ist unabhaengig von der
@@ -559,6 +589,11 @@ def _match_badges(blocks: list[Offer], badges: list[Offer], page: dict) -> list[
     Ein Block bekommt hoechstens ein PRICE und hoechstens ein APP_PRICE -
     ein zweiter Preis desselben Typs bedeutet, dieser Block ist nicht das
     richtige Ziel, auch wenn der Wert rechnerisch passen wuerde.
+
+    `arithmetic=False` ueberspringt den Menge-x-Grundpreis-Zweig komplett,
+    jedes Badge geht ueber die geometrische Naehe (oder bleibt unmatched) -
+    fuer die Ablationsmessung in `offers_report.py`. `trace` bekommt dabei,
+    unabhaengig vom Schalter, je Preis-Badge einen `BadgeMatch` angehaengt.
     """
     expected = {id(block): _expected_prices(block, page) for block in blocks}
     unmatched: list[Offer] = []
@@ -574,27 +609,56 @@ def _match_badges(blocks: list[Offer], badges: list[Offer], page: dict) -> list[
         def free_of_type(block: Offer, price_type: str = price_type) -> bool:
             return not any(e.type == price_type for e in block.entities)
 
-        grundpreis_candidates = [
+        # Blocks, deren Menge-x-Grundpreis-Rechnung zum Wert passt - unabhaengig
+        # von Belegung (free_of_type) und vom `arithmetic`-Schalter. Dient nur
+        # dem Urteil im Trace; die tatsaechliche Zuordnung nutzt die engere,
+        # belegungsgepruefte Variante weiter unten.
+        math_matches = [
             block for block in blocks
-            if value is not None and free_of_type(block) and _price_matches(value, expected[id(block)])
+            if value is not None and _price_matches(value, expected[id(block)])
         ]
+        grundpreis_candidates = [b for b in math_matches if free_of_type(b)] if arithmetic else []
+
+        target: Offer | None = None
+        distance: float | None = None
+        path = "unmatched"
+
         if grundpreis_candidates:
             target = min(grundpreis_candidates, key=lambda b: _distance_between_offers(badge, b, page))
-            target.entities.extend(badge.entities)
-            continue
+            distance = _distance_between_offers(badge, target, page)
+            path = "arithmetic"
+        else:
+            nearby = [b for b in blocks if free_of_type(b)]
+            if nearby:
+                nearest = min(nearby, key=lambda b: _distance_between_offers(badge, b, page))
+                nearest_distance = _distance_between_offers(badge, nearest, page)
+                if nearest_distance <= _NEARBY_LIMIT:
+                    target, distance, path = nearest, nearest_distance, "geometric"
 
-        nearby = [block for block in blocks if free_of_type(block)]
-        if nearby:
-            target = min(nearby, key=lambda b: _distance_between_offers(badge, b, page))
-            if _distance_between_offers(badge, target, page) <= _NEARBY_LIMIT:
-                target.entities.extend(badge.entities)
-                continue
-        unmatched.append(badge)
+        if target is not None:
+            target.entities.extend(badge.entities)
+        else:
+            unmatched.append(badge)
+
+        if trace is not None:
+            confirmed = target in math_matches if (target is not None and math_matches) else None
+            trace.append(
+                BadgeMatch(
+                    path=path,
+                    price_type=price_type,
+                    value=value,
+                    target_block=target,
+                    distance=distance,
+                    confirmed=confirmed,
+                )
+            )
 
     return blocks + unmatched
 
 
-def cluster_page(page: dict) -> list[Offer]:
+def cluster_page(
+    page: dict, *, arithmetic: bool = True, trace: list[BadgeMatch] | None = None
+) -> list[Offer]:
     """Gruppiert die gelabelten Entities einer Seite zu Angebotsdatensaetzen.
 
     Zwei getrennte Clustering-Durchlaeufe: Beschreibungs-Entities (PRODUCT,
@@ -607,6 +671,10 @@ def cluster_page(page: dict) -> list[Offer]:
     Beschreibungsblock zu welchem gehoert - andernfalls kann ein Preis, der
     zufaellig naeher an der Marke des Nachbarprodukts liegt als am eigenen,
     diese Marke buchstaeblich abwerben.
+
+    `arithmetic` und `trace` reichen unveraendert an `_match_badges` durch -
+    fuer die Ablationsmessung in `offers_report.py`, siehe dort. Ohne sie
+    verhaelt sich diese Funktion wie vorher.
     """
     page_id = page.get("page_id") or "unknown"
     entities = [e for e in entities_from_page(page) if e.type in VALUE_TYPES]
@@ -646,7 +714,7 @@ def cluster_page(page: dict) -> list[Offer]:
         for sub in _split_multi_price(component, page):
             badges.append(_make_offer(page_id, len(badges), sub))
 
-    offers = _match_badges(blocks, badges, page)
+    offers = _match_badges(blocks, badges, page, arithmetic=arithmetic, trace=trace)
     offers.extend(_make_offer(page_id, 0, group) for group in legend_groups)
     if not offers:
         return []

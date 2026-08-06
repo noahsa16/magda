@@ -49,6 +49,7 @@ WERKZEUGE = (
     Befehl("serve", "serve", "API starten (--frontend startet auch die Oberfläche)"),
     Befehl("cluster", "cluster", "Prospektseiten explorativ nach Textinhalt clustern"),
     Befehl("offers", "offers", "Gelabelte Entities zu Angeboten clustern und als SQLite speichern"),
+    Befehl("offers-report", "offers_report", "Angebots-Clustering per Ablation messen (Train+Dev)"),
     Befehl("bundle", "export", "Trainingspaket für eine fremde GPU schnüren"),
     Befehl("import-gold", "import_gold", "Handannotationen als Labelordner ablegen"),
 )
