@@ -546,7 +546,32 @@ def _price_matches(value: float, expected: list[float]) -> bool:
 _NEARBY_LIMIT = 0.6
 
 
-def _match_badges(blocks: list[Offer], badges: list[Offer], page: dict) -> list[Offer]:
+@dataclass(frozen=True)
+class BadgeMatch:
+    """Wie ein Preis-Badge zu seinem Block kam - die Buchfuehrung fuer `magda offers-report`.
+
+    `arithmetic_targets` wird immer gefuellt, auch wenn die Zuordnung geometrisch
+    fiel. Genau daraus zieht der Report sein Urteil: hat die Geometrie denselben
+    Block gewaehlt, den die Rechnung waehlt?
+    """
+
+    page_id: str
+    price_type: str
+    value: float | None
+    path: str  # "arithmetic" | "geometric" | "unmatched"
+    target: int | None
+    arithmetic_targets: tuple[int, ...]
+    distance: float | None
+
+
+def _match_badges(
+    blocks: list[Offer],
+    badges: list[Offer],
+    page: dict,
+    *,
+    arithmetic: bool = True,
+    trace: list[BadgeMatch] | None = None,
+) -> list[Offer]:
     """Ordnet Preis-Badges den Beschreibungsbloecken zu, denen sie gehoeren.
 
     Zuerst ueber Menge x Grundpreis: das Signal ist unabhaengig von der
@@ -561,6 +586,8 @@ def _match_badges(blocks: list[Offer], badges: list[Offer], page: dict) -> list[
     richtige Ziel, auch wenn der Wert rechnerisch passen wuerde.
     """
     expected = {id(block): _expected_prices(block, page) for block in blocks}
+    index_of = {id(block): i for i, block in enumerate(blocks)}
+    page_id = page.get("page_id") or "unknown"
     unmatched: list[Offer] = []
 
     for badge in badges:
@@ -578,24 +605,58 @@ def _match_badges(blocks: list[Offer], badges: list[Offer], page: dict) -> list[
             block for block in blocks
             if value is not None and free_of_type(block) and _price_matches(value, expected[id(block)])
         ]
-        if grundpreis_candidates:
-            target = min(grundpreis_candidates, key=lambda b: _distance_between_offers(badge, b, page))
-            target.entities.extend(badge.entities)
-            continue
+        # Immer mitgeschrieben, auch wenn `arithmetic` aus ist: der Report
+        # vergleicht die geometrische Wahl gegen genau diese Liste.
+        arithmetic_targets = tuple(index_of[id(b)] for b in grundpreis_candidates)
 
-        nearby = [block for block in blocks if free_of_type(block)]
-        if nearby:
-            target = min(nearby, key=lambda b: _distance_between_offers(badge, b, page))
-            if _distance_between_offers(badge, target, page) <= _NEARBY_LIMIT:
-                target.entities.extend(badge.entities)
-                continue
-        unmatched.append(badge)
+        target: Offer | None = None
+        path = "unmatched"
+        distance: float | None = None
+
+        if arithmetic and grundpreis_candidates:
+            target = min(grundpreis_candidates, key=lambda b: _distance_between_offers(badge, b, page))
+            path = "arithmetic"
+        else:
+            nearby = [block for block in blocks if free_of_type(block)]
+            if nearby:
+                closest = min(nearby, key=lambda b: _distance_between_offers(badge, b, page))
+                closest_distance = _distance_between_offers(badge, closest, page)
+                if closest_distance <= _NEARBY_LIMIT:
+                    target, path, distance = closest, "geometric", closest_distance
+
+        if trace is not None:
+            trace.append(
+                BadgeMatch(
+                    page_id=page_id,
+                    price_type=price_type,
+                    value=value,
+                    path=path,
+                    target=index_of[id(target)] if target is not None else None,
+                    arithmetic_targets=arithmetic_targets,
+                    distance=distance,
+                )
+            )
+
+        if target is None:
+            unmatched.append(badge)
+        else:
+            target.entities.extend(badge.entities)
 
     return blocks + unmatched
 
 
-def cluster_page(page: dict) -> list[Offer]:
+def cluster_page(
+    page: dict,
+    *,
+    arithmetic: bool = True,
+    trace: list[BadgeMatch] | None = None,
+) -> list[Offer]:
     """Gruppiert die gelabelten Entities einer Seite zu Angebotsdatensaetzen.
+
+    `arithmetic=False` und `trace` dienen allein der Messung (`magda
+    offers-report`): abgeschaltet ordnet nur die Geometrie zu, und der Trace
+    haelt fest, wohin die Rechnung gezeigt haette. Im Normalbetrieb bleibt
+    beides unberuehrt.
 
     Zwei getrennte Clustering-Durchlaeufe: Beschreibungs-Entities (PRODUCT,
     BRAND, QUANTITY, UNIT_PRICE, VALID) werden rein nach visueller Naehe zu
@@ -646,7 +707,7 @@ def cluster_page(page: dict) -> list[Offer]:
         for sub in _split_multi_price(component, page):
             badges.append(_make_offer(page_id, len(badges), sub))
 
-    offers = _match_badges(blocks, badges, page)
+    offers = _match_badges(blocks, badges, page, arithmetic=arithmetic, trace=trace)
     offers.extend(_make_offer(page_id, 0, group) for group in legend_groups)
     if not offers:
         return []
