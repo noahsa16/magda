@@ -53,6 +53,8 @@ VERGLEICH = (
            "Kann eine flache OFFER-Tag-Folge die Angebote ausdrücken?"),
     Befehl("significance", "significance",
            "Konfidenzintervall und gepaarter Modellvergleich über Cluster"),
+    Befehl("taxonomy", "taxonomy",
+           "Fehlerklassen des Schülers ordnen, je Klasse mit Lösbarkeit"),
     Befehl("blackbox-eval", "blackbox_eval",
            "Die LLM-Blackbox gegen die eigene Pipeline stellen (Angebot gegen Angebot)"),
 )
