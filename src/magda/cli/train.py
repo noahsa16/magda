@@ -40,12 +40,14 @@ from magda.dataset import (
     get_or_create_splits,
     load_labeled_pages,
     select_split,
+    subset_by_clusters,
 )
 from magda.evaluation import compute_metrics
 from magda.labels import LABELS, id2label, label2id
 
 
-def build_datasets(variant: str, labels_from: str | None):
+def build_datasets(variant: str, labels_from: str | None,
+                   train_pages: int | None = None):
     model = labels_from or default_labeled_model()
     if model is None:
         sys.exit("Keine gelabelten Seiten in data/labeled/. Erst `magda label` laufen lassen.")
@@ -58,8 +60,18 @@ def build_datasets(variant: str, labels_from: str | None):
         )
 
     splits = get_or_create_splits(pages)
-    train_pages = select_split(pages, splits, "train")
+    train_split = select_split(pages, splits, "train")
     dev_pages = select_split(pages, splits, "dev")
+
+    # Die Lernkurve zieht clusterweise. Dev bleibt in jedem Fall vollständig –
+    # sonst wechselte mit der Trainingsmenge auch das Auswahlkriterium für den
+    # Checkpoint, und die Kurve mischte zwei Effekte.
+    if train_pages is not None:
+        wanted = set(subset_by_clusters(train_split, train_pages))
+        train_split = [p for p in train_split if p["page_id"] in wanted]
+        print(f"Lernkurve: {len(train_split)} von {len(splits['train'])} "
+              f"Trainingsseiten, clusterweise gezogen.")
+    train_pages_list = train_split
 
     # Welches Modell die Labels geliefert hat, gehört in die Ausgabe: sonst
     # steht am Ende ein F1-Wert im Bericht, dessen Trainingsdaten niemand mehr
@@ -68,7 +80,7 @@ def build_datasets(variant: str, labels_from: str | None):
     # extrahierten Seiten ab, auch die noch ungelabelten.
     print(
         f"{len(pages)} Seiten geladen, Labels von {model} "
-        f"(train={len(train_pages)}/{len(splits['train'])}, "
+        f"(train={len(train_pages_list)}/{len(splits['train'])}, "
         f"dev={len(dev_pages)}/{len(splits['dev'])}, "
         f"test={len(select_split(pages, splits, 'test'))}/{len(splits['test'])})"
     )
@@ -79,9 +91,36 @@ def build_datasets(variant: str, labels_from: str | None):
         model_name, dataset_cls = LAYOUT_MODEL, LayoutDataset
 
     tokenizer = AutoTokenizer.from_pretrained(model_name)
-    train_ds = dataset_cls(train_pages, tokenizer, MAX_SEQ_LENGTH)
+    train_ds = dataset_cls(train_pages_list, tokenizer, MAX_SEQ_LENGTH)
     dev_ds = dataset_cls(dev_pages, tokenizer, MAX_SEQ_LENGTH)
     return model_name, train_ds, dev_ds
+
+
+def checkpoint_name(variant: str, labels_from: str | None,
+                    train_pages: int | None) -> str:
+    """Ordnername unter `checkpoints/` – abweichende Läufe bekommen einen eigenen.
+
+    `checkpoints/gbert` trägt den eingefrorenen KW30/31-Stand, an dem die
+    berichteten Zahlen hängen und auf dem die Drift-Messung aufsetzt. Ohne
+    diese Namensgebung überschriebe ihn jeder Nebenlauf – der APP_PRICE-Arm
+    genau das Modell, gegen das er verglichen werden soll, und jeder
+    Kurvenpunkt den vorigen.
+
+    Der Standardlauf behält seinen Namen: eine Umbenennung machte alle
+    bisherigen Zahlen unreproduzierbar. `--labels-from sonnet-5` *ist* der
+    Standardlauf und zählt deshalb nicht als Abweichung – Anker ist
+    `config.CANONICAL_LABELS`, nicht `default_labeled_model()`. Letzteres
+    folgt `CHAT_AI_VISION_MODEL` und zeigt auf ein Modell, mit dem hier gar
+    nicht gelabelt wird.
+    """
+    from magda.config import CANONICAL_LABELS, model_slug
+
+    name = variant
+    if labels_from and model_slug(labels_from) != model_slug(CANONICAL_LABELS):
+        name += f"-{model_slug(labels_from)}"
+    if train_pages is not None:
+        name += f"-p{train_pages}"
+    return name
 
 
 def main(argv=None):
@@ -95,9 +134,16 @@ def main(argv=None):
         help="Modellordner unter data/labeled/, dessen Labels trainiert werden. "
         "Ohne Angabe das konfigurierte Vision-Modell, sonst der größte Ordner.",
     )
+    parser.add_argument(
+        "--train-pages",
+        type=int,
+        help="Trainingsseiten auf N begrenzen, clusterweise gezogen – für die "
+        "Lernkurve. Schreibt in einen eigenen Checkpoint-Ordner.",
+    )
     args = parser.parse_args(argv)
 
-    model_name, train_ds, dev_ds = build_datasets(args.variant, args.labels_from)
+    model_name, train_ds, dev_ds = build_datasets(
+        args.variant, args.labels_from, args.train_pages)
 
     model = AutoModelForTokenClassification.from_pretrained(
         model_name,
@@ -106,7 +152,8 @@ def main(argv=None):
         label2id=label2id,
     )
 
-    output_dir = CHECKPOINTS_DIR / args.variant
+    output_dir = CHECKPOINTS_DIR / checkpoint_name(
+        args.variant, args.labels_from, args.train_pages)
     training_args = TrainingArguments(
         output_dir=str(output_dir),
         num_train_epochs=args.epochs,

@@ -115,6 +115,7 @@ def main(argv=None):
         help="Datei mit page_ids statt eines Splits – für Seitenmengen, die "
         "in keinem Split stehen (Woche 4 als unberührte Frischwoche).",
     )
+    parser.add_argument("--checkpoint", help="Checkpoint-Ordner unter checkpoints/, falls nicht der gleichnamige. Fuer Nebenlaeufe: gbert-sonnet-5-app, gbert-p50.")
     parser.add_argument(
         "--labels-from",
         help="Modellordner unter data/labeled/. Muss derselbe sein wie beim "
@@ -122,7 +123,7 @@ def main(argv=None):
     )
     args = parser.parse_args(argv)
 
-    model_dir = CHECKPOINTS_DIR / args.variant / "best"
+    model_dir = CHECKPOINTS_DIR / (args.checkpoint or args.variant) / "best"
     if not model_dir.exists():
         sys.exit(f"Kein trainiertes Modell unter {model_dir}. Erst `magda train` laufen lassen.")
 
@@ -219,11 +220,12 @@ def main(argv=None):
     print(full_report(censored, np.array([e["labels"] for e in plain_ds.encodings])))
 
     EVAL_DIR.mkdir(parents=True, exist_ok=True)
-    out_file = EVAL_DIR / f"{args.variant}_{scope}.json"
+    out_file = EVAL_DIR / f"{args.checkpoint or args.variant}_{scope}.json"
     with open(out_file, "w") as f:
         json.dump(
             {
                 "variant": args.variant,
+                "checkpoint": args.checkpoint or args.variant,
                 "split": scope,
                 "scope_kind": "pages" if args.pages else "split",
                 "num_pages": len(eval_pages),

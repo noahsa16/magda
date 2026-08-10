@@ -77,6 +77,11 @@ def main(argv=None):
         "--labels-from",
         help="Modellordner unter data/labeled/. Muss derselbe sein wie beim Training.",
     )
+    parser.add_argument(
+        "--checkpoint",
+        help="Checkpoint-Ordner unter checkpoints/, falls nicht der "
+        "gleichnamige. Für Nebenläufe: gbert-sonnet-5-app, gbert-p50.",
+    )
     parser.add_argument("--out", help="Zielordner (Standard: data/predictions/<variante>)")
     parser.add_argument(
         "--no-windows", action="store_true",
@@ -85,7 +90,7 @@ def main(argv=None):
     )
     args = parser.parse_args(argv)
 
-    model_dir = CHECKPOINTS_DIR / args.variant / "best"
+    model_dir = CHECKPOINTS_DIR / (args.checkpoint or args.variant) / "best"
     if not model_dir.exists():
         sys.exit(f"Kein trainiertes Modell unter {model_dir}. Erst `magda train` laufen lassen.")
 

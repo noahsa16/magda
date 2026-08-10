@@ -198,6 +198,49 @@ def select_split(pages: list[dict], splits: dict, name: str) -> list[dict]:
     return [p for p in pages if p["page_id"] in wanted]
 
 
+def subset_by_clusters(pages: list[dict], limit: int) -> list[str]:
+    """Höchstens `limit` Seiten, aber nur in ganzen Duplikat-Clustern.
+
+    Für die Lernkurve: seitenweise gezogen zählen elf Regionalfassungen
+    derselben Vorlage als elf Datenpunkte, und die Kurve sähe steiler aus,
+    als sie ist – derselbe Fehler, der schon den Seiten-Split lecken ließ.
+
+    Die Cluster stehen in einer festen Reihenfolge (große zuerst, bei
+    Gleichstand nach `page_id`), und genommen wird das längste **Präfix**,
+    das unter die Grenze passt. Nicht das gierigste Paket: ein Präfix ist
+    ineinandergeschachtelt, gieriges Auffüllen nicht. Bei den Clustergrößen
+    3/2/1 nähme die gierige Variante zu 4 die Cluster 3+1 und zu 5 die
+    Cluster 3+2 – der zweite Kurvenpunkt enthielte den ersten dann nicht
+    mehr, und die Kurve vergliche verschiedene Stichproben statt mehr von
+    derselben.
+
+    Passt schon der größte Cluster nicht, wird abgebrochen statt eine leere
+    Menge zurückzugeben: ein Training über null Seiten läuft sonst durch und
+    liefert eine Zahl.
+    """
+    from magda.dedupe import group
+
+    words = {p["page_id"]: [w["text"] for w in (p.get("words") or [])] for p in pages}
+    clusters = [sorted(c) for c in group(words, threshold=0.7)]
+    known = {page_id for cluster in clusters for page_id in cluster}
+    clusters += [[p["page_id"]] for p in pages if p["page_id"] not in known]
+    clusters.sort(key=lambda c: (-len(c), c[0]))
+
+    if clusters and len(clusters[0]) > limit:
+        raise ValueError(
+            f"Grenze {limit} liegt unter dem größten Duplikat-Cluster "
+            f"({len(clusters[0])} Seiten). Clusterweise ziehen heißt: ganz "
+            f"oder gar nicht."
+        )
+
+    chosen: list[str] = []
+    for cluster in clusters:
+        if len(chosen) + len(cluster) > limit:
+            break
+        chosen.extend(cluster)
+    return sorted(chosen)
+
+
 class TextDataset(Dataset):
     """Dataset für die text-only Baseline (GBERT). Nur Wörter, keine Positionen.
 

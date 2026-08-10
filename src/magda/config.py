@@ -160,6 +160,17 @@ def labeled_page_ids() -> set[str]:
     return {f.stem for m in labeled_models() for f in (LABELED_DIR / m).glob("*.json")}
 
 
+# Die Referenz des Projekts (Teamentscheidung, 30.07.2026), bekräftigt am
+# 10.08.2026: gelabelt wird mit sonnet-5, nie mit mistral oder qwen. Alle
+# berichteten Zahlen hängen daran, dass dieselbe Quelle benutzt wurde.
+#
+# Bewusst *nicht* `default_labeled_model()`: das gibt CHAT_AI_VISION_MODEL den
+# Vorrang und liefert deshalb `mistral-medium-3.5-128b`. Wer den kanonischen
+# Lauf daran festmacht, gibt dem Inhalt einer .env Namensgewalt über
+# Checkpoints, an denen berichtete Zahlen hängen.
+CANONICAL_LABELS = "sonnet-5"
+
+
 def default_labeled_model() -> str | None:
     """Welche Labels nimmt ein Schritt, der keinen Modellnamen bekommen hat?
 

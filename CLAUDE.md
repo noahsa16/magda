@@ -813,6 +813,59 @@ eine Liste auszugeben.
   Zeile in der Datenbank stimmt" entspricht. **Offenlegung:** Diese Wahl
   fiel, nachdem beide Schwellen auf Dev gemessen waren; die Dev-Zahl ist
   dadurch leicht optimistisch. Der Testsplit ist unangetastet.
+- **Die Kette ist erstmals ende-zu-ende gemessen – und die Zahl steigt, weil
+  das Problem schrumpft.** Bis zum 10.08.2026 war das unmöglich:
+  `data/predictions/gbert` hatte 101 Seiten (alle Test),
+  `data/offer_groups/claude-sonnet-5` 51 (alle Train/Dev), **Schnittmenge
+  null**. Nach `magda predict gbert --split dev` treffen sich beide auf 21
+  Seiten. Gemessen mit `magda offers-grid --predictions gbert
+  --train-labels-from sonnet-5` (das Paarmodell lernt an Lehrer-Entities,
+  weil nur die gruppiert sind, und arbeitet auf denen des Schülers – der
+  Einsatzfall):
+
+  | Entities | Basis | +Geometrie | +Farbe | beide |
+  |---|---|---|---|---|
+  | Lehrer (sonnet-5) | 0.477 | 0.540 | 0.472 | 0.492 |
+  | Schüler (gbert) | 0.504 | 0.556 | 0.504 | 0.502 |
+
+  **Die zweite Zeile ist nicht besser, sie ist auf einem kleineren Nenner
+  gemessen.** GBERT findet 717 statt 730 Entities (0.982), aber nur **1855
+  der 1996 Referenzpaare** überleben (0.929) – 7,1 % der Gruppierungsaufgabe
+  verschwinden, und zwar die Paare, deren Entity der Schüler nicht gefunden
+  hat. Die Regel aus `offers-gold` („die Entity-Grundmenge kommt aus der
+  Seite, nicht aus der Systemausgabe") greift hier nicht, weil die *Seite*
+  in diesem Lauf die Vorhersagedatei ist. Wer die +0.027 als Verbesserung
+  liest, hat den Nenner nicht angesehen.
+  **Was die Zahl trägt:** Die Gruppierung bricht mit Schüler-Entities nicht
+  zusammen. Die Zahl der Referenzgruppen bleibt bei 122, das Verfahren
+  bildet 136 statt 138 Angebote, und Stufe 1 → Stufe 2 kostet auf Dev
+  weniger als das Konfidenzintervall breit ist. Mehr sagt sie nicht –
+  **Dev stammt aus den Trainingswochen, die Entity-Qualität ist dort
+  in-distribution-optimistisch, die Zahl ist eine Obergrenze.**
+- **Im blinden Fleck liegt die Farbe vorn – auf beiden Entity-Quellen.**
+  Über alle Paare ist zwischen den Varianten nichts zu unterscheiden. Im
+  Bereich ohne Grundpreis, für den die Farbmerkmale gebaut wurden, ist
+  `beide` (39 Merkmale) dagegen zweimal die beste Variante: Paar-F1 0.782
+  gegen 0.737 der Basis auf Lehrer-Entities, 0.740 gegen 0.640 auf
+  Vorhersagen, bei jeweils den wenigsten gebildeten Angeboten (48 bzw. 43).
+  Zwei unabhängige Entity-Quellen mit demselben Vorzeichen sind mehr als ein
+  Zufallstreffer – **aber kein Befund**: die Intervalle im blinden Fleck
+  reichen bis 1.000, weil viele der 14 Dev-Cluster dort gar keine Paare
+  haben. Das ist genau die Lücke, die `magda offers-queue` und eine größere
+  Referenz schließen müssten, nicht der nächste Merkmalsblock.
+- **`checkpoints/gbert` ist der eingefrorene KW30/31-Stand, und bis zum
+  10.08.2026 hätte ihn jeder Nebenlauf überschrieben.** `magda train`
+  schrieb nach `CHECKPOINTS_DIR / variant`, ohne Rücksicht auf
+  `--labels-from`. Ein APP_PRICE-Nachtraining hätte damit genau das Modell
+  gelöscht, gegen das es verglichen werden soll, und jeder Punkt einer
+  Lernkurve den vorigen. Jetzt vergibt `cli/train.checkpoint_name()` eigene
+  Ordner (`gbert-sonnet-5-app`, `gbert-p50`); `magda eval` und `magda
+  predict` erreichen sie über `--checkpoint`. Anker für „der kanonische
+  Lauf" ist `config.CANONICAL_LABELS` (= `sonnet-5`), **nicht**
+  `default_labeled_model()` – das folgt `CHAT_AI_VISION_MODEL` und liefert
+  `mistral-medium-3.5-128b`, also ein Modell, mit dem hier gar nicht
+  gelabelt wird. Sonst hätte der Inhalt einer `.env` Namensgewalt über
+  Checkpoints, an denen berichtete Zahlen hängen.
 - **`test_hilfe_laedt_keine_schweren_module` hat torch aus `sys.modules`
   genommen und nicht zurückgestellt.** Ein zweiter echter Import registriert
   dieselben C-Extensions erneut und stirbt an „Only a single TORCH_LIBRARY
