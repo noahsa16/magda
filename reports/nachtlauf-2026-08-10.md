@@ -120,12 +120,32 @@ sonst verschöbe sich die Grundlage aller früheren Zahlen.
 kein einziger Testspan ändert sich. Nur das Trainingssignal des schwächsten
 Labels wächst.
 
-Zwei Stellen, an denen der geplante Code falsch gewesen wäre:
+
 
 - Er hätte nur das beurteilte **Wort** umgeschrieben und damit
   `B-APP_PRICE I-PRICE` erzeugt — eine BIO-Folge, die `bio_to_spans` in zwei
   Entities zerlegt. Umgetragen wird jetzt der ganze Span; beurteilt hat der
   Mensch die Entity, nicht das Token.
+**Gemessen auf Dev**, jeder Arm gegen die Referenz, auf der er trainiert
+wurde (`magda eval gbert --checkpoint gbert-sonnet-5-app`):
+
+| | micro-F1 | APP_PRICE | Support |
+|---|---:|---:|---:|
+| `sonnet-5` | 0.926 | 0.909 | 11 |
+| `sonnet-5-app` | 0.927 | 0.947 | 20 |
+
+**Das ist Rauschen, und mehr war nicht zu erwarten** — auf Dev ändern sich
+neun Spans. Die beiden APP_PRICE-Zahlen stehen außerdem auf verschiedenen
+Nennern und sind nicht direkt vergleichbar.
+
+**Die Pointe liegt im Test:** Die Übernahme ändert dort **null** Spans. Beide
+Arme können also im Schlussbatch gegen eine *identische* Referenz gemessen
+werden — dieselbe Messlatte, nur unterschiedlich viel Trainingssignal. Das
+ist ein sauberes Experiment, wie es sonst selten zu haben ist, und es kostet
+im Schlussbatch nur einen zusätzlichen Lauf.
+
+Zwei Stellen im geplanten Code wären falsch gewesen:
+
 - Ein Urteil hat kein Zielabel: `1342881_p31:165`, „Aktion «1.99» 1 2 3" —
   APP_PRICE verworfen, kein Ersatz genannt. Der geplante Code hätte das
   ungültige Tag `B-` geschrieben. Jetzt bleibt das Label stehen und der Fall
