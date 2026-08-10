@@ -31,6 +31,21 @@ LayoutXLM braucht zusätzlich detectron2 (visueller Backbone von LayoutLMv2).
 Die Installation ist plattformabhängig; für das Training auf einer gemieteten
 GPU siehe [docs/runpod.md](docs/runpod.md).
 
+## Rohdaten
+
+Die Original-PDFs (`data/raw/`) und die gerenderten Seitenbilder
+(`data/images/`) liegen **nicht im Repo**, sondern in einem geteilten
+Google-Drive-Ordner – zusammen 1,57 GB gegen ~32 MB für alles andere unter
+`data/`. Wer trainiert oder auswertet, braucht sie nicht: `data/words/` und
+`data/labeled/` bleiben versioniert.
+
+```bash
+shasum -a 256 -c docs/archive/data-raw.sha256   # heruntergeladenes Archiv prüfen
+magda extract                                   # Seitenbilder daraus neu rendern
+```
+
+Details, Begründung und der Weg zum Ordner: [docs/archive/](docs/archive/README.md).
+
 ## Pipeline
 
 ```bash

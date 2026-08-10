@@ -1,13 +1,30 @@
 # ---------------------------------------------------------------------------
 # Magda-spezifisch: checkpoints/ bleibt lokal (Modellgewichte, >100MB je
 # Datei -> GitHub lehnt den Push sowieso ab), nur die Ordnerstruktur
-# (.gitkeep) wird versioniert. data/ ist bewusst NICHT mehr ausgeschlossen,
-# damit Teammates die Prospektdaten per git statt per Pipeline-Neulauf
-# bekommen.
+# (.gitkeep) wird versioniert.
+#
+# data/ bleibt versioniert, damit Teammates die Prospektdaten per git statt
+# per Pipeline-Neulauf bekommen -- mit zwei Ausnahmen, die den Zweck nicht
+# antasten und zusammen 1,57 GB von ~32 MB trennen:
+#
+#   data/raw/     Original-PDFs, unersetzlich (Pennys API kennt nur die
+#                 laufende Woche), aber nur fuer Schritt 02 gebraucht.
+#                 Liegt im Drive-Archiv, Pruefsummen in docs/archive/.
+#   data/images/  aus data/raw/ deterministisch gerendert (cli/extract.py),
+#                 also eine Ableitung -- in git wie ein eingecheckter
+#                 Build-Ordner. `magda extract` erzeugt sie neu.
+#
+# Wer trainiert oder misst, braucht beide nicht: data/words/ und
+# data/labeled/ bleiben versioniert. Begruendung: docs/archive/README.md
 # ---------------------------------------------------------------------------
 checkpoints/**
 !checkpoints/**/
 !checkpoints/.gitkeep
+
+data/raw/**
+!data/raw/.gitkeep
+data/images/**
+!data/images/.gitkeep
 
 # persönliche Notizen, bleiben lokal
 EXPLANATION.md
