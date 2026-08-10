@@ -22,14 +22,19 @@ updates:
     target-branch: "development"
     schedule:
       interval: "weekly"
-    ignore:
-      # transformers 5.x hat die Slow-Tokenizer entfernt; deepset/gbert-base
-      # liefert nur vocab.txt und laesst sich dort nicht mehr laden. Der Pin in
-      # pyproject.toml ist Absicht, nicht Nachlaessigkeit - Dependabot soll
-      # deshalb keine 5.x-PRs mehr aufmachen, die niemand mergen kann.
-      # Die offenen Warnungen dazu bleiben sichtbar und sind bewusst getragen.
-      - dependency-name: "transformers"
-        versions: [">=5.0.0"]
+    # 0 schaltet die *Versions*-PRs ab, nicht die Sicherheitsupdates - die
+    # laufen ueber Dependabot Security Updates und ignorieren dieses Limit.
+    # Genau das ist hier gewollt: Der erste Lauf hat vier PRs erzeugt, die
+    # nur Untergrenzen anheben (accelerate, setuptools, flair, transformers)
+    # und keine einzige Sicherheitswarnung schliessen. #28 etwa hob
+    # transformers auf >=4.57.6,<5 - korrekt unter 5, aber die vier hohen
+    # Warnungen sitzen bei 5.3/5.5 und bleiben davon unberuehrt.
+    #
+    # Dazu kommt, dass ein Versionssprung hier nicht nebenbei passiert:
+    # pyproject.toml:50-52 verlangt vor jedem einen Test gegen das venv,
+    # weil torch/transformers/tokenizers die Messungen verschieben koennen.
+    # Ein woechentlicher Bot-PR kann diese Pruefung nicht leisten.
+    open-pull-requests-limit: 0
 
   - package-ecosystem: "github-actions"
     directory: "/"
