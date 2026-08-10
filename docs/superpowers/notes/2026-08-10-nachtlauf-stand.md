@@ -90,3 +90,45 @@ Typverwechslungen 0.065, Lehrerlücken 0.000.
 
 `.venv/bin/` statt `python`. Nie auf `main`. Testsplit einmal, am Ende.
 Labelquelle **immer sonnet-5**, nie mistral oder qwen.
+
+---
+
+## Nachtrag 11.08.2026 — was das Review geändert hat
+
+Fable hat gegengelesen. Drei Fehler behoben (Commit `e088019`), keiner hätte
+einen Test rot gemacht:
+
+1. **`subset_by_clusters` sortierte nach Clustergröße** und packte die
+   Duplikate zuerst ins Budget: Grenze 25 → 23 Seiten aus **drei** Vorlagen.
+   Jetzt nach `page_id`: 9/16/50/93 Cluster. Der bereits gelaufene
+   Kurvenpunkt `gbert-p25` wurde verworfen und neu gestartet.
+2. **`magda train gbert` ohne `--labels-from` hätte `checkpoints/gbert`
+   überschrieben** — mit Mistral-Labels, weil `build_datasets` über
+   `default_labeled_model()` auflöst. Aufgelöst wird jetzt vor der
+   Namensvergabe.
+3. **`blackbox-eval --dry-run` gab eine Quote aus**, und das Docstring-Beispiel
+   zeigte die Testseitenliste. Der Probelauf schweigt jetzt.
+
+Dazu: die Paarung in `error_taxonomy` nimmt jetzt die stärkste Überlappung
+statt der ersten. Auf Dev ändert das nichts an den Zahlen.
+
+### Drei Dinge, die Noah entscheiden muss
+
+- **Blackbox-Referenz vor dem Schlussbatch.** Heute sind es
+  `cluster_page`-Angebote aus den Lehrer-Labels, also dieselbe Heuristik wie
+  auf der eigenen Seite — der Vergleich wäre strukturell zugunsten der
+  eigenen Pipeline verzerrt. Alternative: `data/offer_groups/`. Der Testlauf
+  ist nicht wiederholbar.
+- **Kontingent für die Gruppierungsreferenz 51 → 80.** Der Schritt mit dem
+  höchsten Ertrag.
+- **Woche 4 labeln oder nicht.** 126 Seiten über den Subagenten-Weg, weil
+  `magda label` nur GWDG-Modelle kennt und die Labelquelle sonnet ist.
+
+### Noch offen aus dem Review, nicht behoben
+
+- `test_blind_haengt_an_der_referenz_nicht_an_der_vorhersage` prüft die
+  falsche Invarianz (variiert nur die Gruppierung, nie die Typquelle).
+- `blackbox_eval.match_deals` paart gierig in Systemreihenfolge statt
+  optimal; kann Treffer verschenken, Richtung unklar.
+- `error_taxonomy.teacher_gap_reason` nennt jede ein- bis zweistellige
+  Ziffer ±2 Wörter eine Fußnote — eher locker als konservativ.

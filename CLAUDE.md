@@ -848,11 +848,31 @@ eine Liste auszugeben.
   `beide` (39 Merkmale) dagegen zweimal die beste Variante: Paar-F1 0.782
   gegen 0.737 der Basis auf Lehrer-Entities, 0.740 gegen 0.640 auf
   Vorhersagen, bei jeweils den wenigsten gebildeten Angeboten (48 bzw. 43).
-  Zwei unabhängige Entity-Quellen mit demselben Vorzeichen sind mehr als ein
-  Zufallstreffer – **aber kein Befund**: die Intervalle im blinden Fleck
-  reichen bis 1.000, weil viele der 14 Dev-Cluster dort gar keine Paare
-  haben. Das ist genau die Lücke, die `magda offers-queue` und eine größere
-  Referenz schließen müssten, nicht der nächste Merkmalsblock.
+  **Das ist kein Befund, und drei Gegenrechnungen machen es noch schwächer**
+  (Review vom 11.08.2026): Die beiden Quellen sind *nicht* unabhängig – GBERT
+  ist auf sonnet-5 trainiert, 98 % der Entities und 93 % der Referenzpaare
+  sind dieselben. Die beiden Zeilen messen *nicht dieselbe Aufgabe* – die
+  Einteilung blind/prüfbar hängt an den Entity-Typen der jeweiligen Quelle,
+  und die blinden Referenzpaare fallen von 606 auf 444 (−27 %), während die
+  prüfbaren steigen. Und die Paar-Precision ist im blinden Fleck in **allen
+  acht Zellen exakt 1.000**: die Unterschiede sind reiner Recall, „Farbe
+  findet die richtige Kachel" und „Farbe macht das Verschmelzen mutiger"
+  sind damit nicht unterscheidbar. Dazu Intervalle bis 1.000, weil viele der
+  14 Dev-Cluster dort gar keine Paare haben. Die Konsequenz bleibt: größere
+  Referenz, nicht der nächste Merkmalsblock.
+  **Nebenbefund für alle künftigen Blind-Auswertungen:**
+  `test_blind_haengt_an_der_referenz_nicht_an_der_vorhersage` prüft die
+  falsche Invarianz – es variiert nur die Gruppierung, nie die Typquelle.
+  Die Eigenschaft, die sein Name behauptet, schützt es nicht.
+- **Clusterweise ziehen heißt nicht automatisch fair ziehen.**
+  `dataset.subset_by_clusters` sortierte zuerst nach absteigender
+  Clustergröße – naheliegend und genau falschherum: die Duplikate landen
+  dann zuerst im Budget. Auf den 175 Trainingsseiten (93 Cluster) ergab die
+  Grenze 25 damit **23 Seiten aus drei Vorlagen**, also genau das, was
+  clusterweises Ziehen verhindern soll. Nach `page_id` sortiert sind es
+  9/16/50/93 Cluster statt 3/9/25/93. Zu jedem Kurvenpunkt gehört die
+  **Clusterzahl** – „p25" allein ist eine Seitenzahl ohne das, woran
+  gemessen wurde.
 - **`checkpoints/gbert` ist der eingefrorene KW30/31-Stand, und bis zum
   10.08.2026 hätte ihn jeder Nebenlauf überschrieben.** `magda train`
   schrieb nach `CHECKPOINTS_DIR / variant`, ohne Rücksicht auf
