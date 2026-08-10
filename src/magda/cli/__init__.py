@@ -41,6 +41,8 @@ VERGLEICH = (
     Befehl("agreement", "agreement", "Zwei Labeling-Modelle gegeneinander halten"),
     Befehl("queue", "queue", "Welche Gold-Seiten als Nächstes durchzusehen sind"),
     Befehl("audit", "audit", "Ein Label zur Handprüfung vorsortieren (Kandidaten)"),
+    Befehl("audit-apply", "audit_apply",
+           "Urteile der Handprüfung als neuen Labelordner ablegen"),
     Befehl("offers-queue", "offers_queue",
            "Welche Seiten die Gruppierungsreferenz zuerst braucht"),
     Befehl("offers-gold", "offers_gold",
