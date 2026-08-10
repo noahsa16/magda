@@ -58,20 +58,26 @@ class PairClassifier:
     """Ein trainiertes Paarmodell samt Merkmalsvertrag und Herkunft."""
 
     def __init__(self, network, feature_names: list[str], provenance: dict | None = None,
-                 hidden: tuple[int, ...] = HIDDEN, threshold: float = 0.5):
+                 hidden: tuple[int, ...] = HIDDEN, threshold: float = 0.5,
+                 blocks: tuple[str, ...] = offer_pairs.DEFAULT_BLOCKS):
         self.network = network
         self.feature_names = feature_names
         self.provenance = provenance or {}
         self.hidden = tuple(hidden)
+        # Welche Merkmalsbloecke dieses Modell erwartet. Gehoert zum
+        # Checkpoint, sonst rechnet ein Modell mit vertauschten Spalten
+        # weiter und faellt durch keine Pruefung auf.
+        self.blocks = tuple(blocks)
         # Die out-of-fold gewaehlte Schwelle gehoert zum Modell, nicht zum
         # Aufruf: wer sie beim Messen neu setzt, misst ein anderes System.
         self.threshold = threshold
 
-    def score_page(self, page: dict) -> dict[tuple[int, int], float]:
+    def score_page(self, page: dict, pixels=None) -> dict[tuple[int, int], float]:
         """Wahrscheinlichkeit je Entity-Paar, dass beide zum selben Angebot gehoeren."""
         import torch
 
-        pairs = offer_pairs.page_pairs(page)
+        pairs = offer_pairs.page_pairs(
+            page, pixels=_pixels_for(page, self.blocks, pixels), blocks=self.blocks)
         if not pairs.index_pairs:
             return {}
         self.network.eval()
@@ -80,19 +86,22 @@ class PairClassifier:
             scores = torch.sigmoid(logits).squeeze(-1)
         return dict(zip(pairs.index_pairs, (round(float(s), 6) for s in scores)))
 
-    def group_page(self, page: dict, threshold: float = 0.5) -> list[list[int]]:
+    def group_page(self, page: dict, threshold: float = 0.5, pixels=None) -> list[list[int]]:
         """Entity-Gruppen der Seite."""
-        pairs = offer_pairs.page_pairs(page)
+        pixels = _pixels_for(page, self.blocks, pixels)
+        pairs = offer_pairs.page_pairs(page, pixels=pixels, blocks=self.blocks)
         if not pairs.index_pairs:
             # Eine einzelne Entity ist ein Angebot, keine Entity ist keines.
             return [[0]] if pairs.entities else []
         return offer_pairs.groups_from_edges(
-            len(pairs.entities), self.score_page(page), threshold
+            len(pairs.entities), self.score_page(page, pixels), threshold
         )
 
-    def group_page_words(self, page: dict, threshold: float = 0.5) -> list[list[int]]:
+    def group_page_words(self, page: dict, threshold: float = 0.5,
+                         pixels=None) -> list[list[int]]:
         """Dieselben Gruppen als Wortindizes - die Einheit, die gespeichert wird."""
-        return offer_pairs.entity_groups_to_words(page, self.group_page(page, threshold))
+        return offer_pairs.entity_groups_to_words(
+            page, self.group_page(page, threshold, pixels))
 
     def save(self, path) -> Path:
         import torch
@@ -103,6 +112,7 @@ class PairClassifier:
             {
                 "state_dict": self.network.state_dict(),
                 "feature_names": list(self.feature_names),
+                "blocks": list(self.blocks),
                 "hidden": list(self.hidden),
                 "threshold": float(self.threshold),
                 "provenance": dict(self.provenance),
@@ -112,7 +122,19 @@ class PairClassifier:
         return path
 
 
-def _examples(pages: list[dict], reference: dict[str, dict[int, int]]):
+def _pixels_for(page: dict, blocks, pixels=None):
+    """Das Seitenbild, aber nur wenn der Farbblock es braucht.
+
+    Ohne Farbmerkmale wird nichts von der Platte gelesen - die 30 alten
+    Merkmale kommen wie bisher ohne `data/images/` aus.
+    """
+    if "color" not in blocks or pixels is not None:
+        return pixels
+    return offer_pairs.load_pixels(page.get("page_id") or "")
+
+
+def _examples(pages: list[dict], reference: dict[str, dict[int, int]],
+              blocks=offer_pairs.DEFAULT_BLOCKS):
     """Merkmale und Labels aller trainierbaren Paare, ueber alle Seiten."""
     features: list[list[float]] = []
     labels: list[float] = []
@@ -121,7 +143,8 @@ def _examples(pages: list[dict], reference: dict[str, dict[int, int]]):
         assignment = reference.get(page.get("page_id"))
         if assignment is None:
             continue
-        pairs = offer_pairs.page_pairs(page, assignment)
+        pairs = offer_pairs.page_pairs(
+            page, assignment, pixels=_pixels_for(page, blocks), blocks=blocks)
         for row, label in zip(pairs.features, pairs.labels):
             if label is None:
                 skipped += 1
@@ -151,7 +174,8 @@ def training_stats(pages: list[dict], reference: dict[str, dict[int, int]]) -> d
 
 def train(pages: list[dict], reference: dict[str, dict[int, int]],
           epochs: int = 300, seed: int = 0, provenance: dict | None = None,
-          hidden: tuple[int, ...] = HIDDEN) -> PairClassifier:
+          hidden: tuple[int, ...] = HIDDEN,
+          blocks=offer_pairs.DEFAULT_BLOCKS) -> PairClassifier:
     """Trainiert das Paarmodell auf einer vorhandenen Gruppierung.
 
     Voller Batch statt Minibatches: Die Datenmenge passt in den Speicher, und
@@ -162,7 +186,8 @@ def train(pages: list[dict], reference: dict[str, dict[int, int]],
     import torch
     from torch import nn
 
-    features, labels, _ = _examples(pages, reference)
+    names = offer_pairs.feature_names(blocks)
+    features, labels, _ = _examples(pages, reference, blocks)
     if not labels:
         raise ValueError(
             "Kein einziges trainierbares Paar. Liegt fuer die Seiten eine "
@@ -176,7 +201,7 @@ def train(pages: list[dict], reference: dict[str, dict[int, int]],
     positive = float(y.sum())
     pos_weight = torch.tensor([(len(labels) - positive) / positive]) if positive else None
 
-    network = _build_network(len(offer_pairs.FEATURE_NAMES), hidden)
+    network = _build_network(len(names), hidden)
     loss_fn = nn.BCEWithLogitsLoss(pos_weight=pos_weight)
     optimizer = torch.optim.Adam(network.parameters(), lr=LEARNING_RATE)
 
@@ -187,7 +212,7 @@ def train(pages: list[dict], reference: dict[str, dict[int, int]],
         loss.backward()
         optimizer.step()
 
-    return PairClassifier(network, list(offer_pairs.FEATURE_NAMES), provenance, hidden)
+    return PairClassifier(network, names, provenance, hidden, blocks=blocks)
 
 
 def page_folds(pages: list[dict], folds: int = 5) -> list[list[str]]:
@@ -219,7 +244,8 @@ def calibrate(pages: list[dict], reference: dict[str, dict[int, int]],
               folds: int = 5, epochs: int = 300, seed: int = 0,
               hidden: tuple[int, ...] = HIDDEN,
               thresholds: list[float] | None = None,
-              objective: str = "pair_f1") -> dict:
+              objective: str = "pair_f1",
+              blocks=offer_pairs.DEFAULT_BLOCKS) -> dict:
     """Die Schwelle out-of-fold waehlen, statt sie zu raten.
 
     0.5 waere nur dann der natuerliche Schnitt, wenn die Klassen gleich
@@ -246,10 +272,11 @@ def calibrate(pages: list[dict], reference: dict[str, dict[int, int]],
         outer = [p for p in pages if p["page_id"] in held_out]
         if not inner or not outer:
             continue
-        model = train(inner, reference, epochs, seed, hidden=hidden)
+        model = train(inner, reference, epochs, seed, hidden=hidden, blocks=blocks)
         for page in outer:
             entities = offer_pairs.page_pairs(page).entities
             scored.append((page, model.score_page(page), len(entities)))
+
 
     if not scored:
         raise ValueError("Zu wenige Seiten fuer eine Kalibrierung.")
@@ -314,13 +341,17 @@ def load(path) -> PairClassifier:
 
     payload = torch.load(path, weights_only=True)
     stored = list(payload.get("feature_names") or [])
-    if stored != list(offer_pairs.FEATURE_NAMES):
+    # Aeltere Checkpoints kennen keine Bloecke - die stammen aus der Zeit
+    # der 30 Merkmale und werden ueber die Namensliste ohnehin geprueft.
+    blocks = tuple(payload.get("blocks") or offer_pairs.DEFAULT_BLOCKS)
+    expected = offer_pairs.feature_names(blocks)
+    if stored != expected:
         raise ValueError(
             f"Der Checkpoint erwartet andere Merkmale ({len(stored)} statt "
-            f"{len(offer_pairs.FEATURE_NAMES)}). Neu trainieren."
+            f"{len(expected)}). Neu trainieren."
         )
     hidden = tuple(payload.get("hidden") or HIDDEN)
     network = _build_network(len(stored), hidden)
     network.load_state_dict(payload["state_dict"])
     return PairClassifier(network, stored, payload.get("provenance") or {}, hidden,
-                          float(payload.get("threshold", 0.5)))
+                          float(payload.get("threshold", 0.5)), blocks=blocks)

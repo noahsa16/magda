@@ -25,6 +25,7 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass, field
+from functools import lru_cache
 
 from magda.offers import VALUE_TYPES, entities_from_page
 
@@ -58,7 +59,7 @@ CONTEXT_NAMES = [
 
 COLOR_NAMES = [
     "bg_distance",       # RGB-Abstand der Hintergruende: gleiche Kachel?
-    "color_crossings",   # Farbwechsel auf der Verbindungslinie: Kachelgrenze
+    "path_same_bg",      # Anteil der Verbindungslinie in einem der Hintergruende
     "bg_offpage_i",      # steht die Entity auf einer Kachel oder auf Grund?
     "bg_offpage_j",
 ]
@@ -68,10 +69,13 @@ COLOR_NAMES = [
 # deshalb *nicht* zuverlaessig (deshalb kein `prices_between`).
 ANCHOR_TYPES = frozenset({"PRODUCT", "BRAND"})
 
-# Kappungen. Ungekappt fittet das MLP Ausreisser - Farbwechsel auf
-# Fotoflaechen, Abstandsverhaeltnisse am Seitenrand.
+# Kappung des Abstandsverhaeltnisses. Ungekappt fittet das MLP Ausreisser
+# am Seitenrand, wo die naechste Alternative sehr weit weg liegt.
 RATIO_CAP = 5.0
-CROSSING_CAP = 5
+
+# Wie viele Punkte auf der Verbindungslinie hoechstens abgetastet werden.
+# Mehr kostet nur Zeit: die Linie ist selten laenger als eine halbe Seite.
+PATH_SAMPLES = 200
 
 # Groesster moeglicher RGB-Abstand, damit `bg_distance` in [0, 1] liegt.
 COLOR_MAX = math.sqrt(3 * 255 ** 2)
@@ -263,6 +267,30 @@ def _context_features(entity_i, entity_j, index_i: int, index_j: int,
     ]
 
 
+@lru_cache(maxsize=32)
+def load_pixels(page_id: str):
+    """Das gerenderte Seitenbild als RGB-Array, oder None wenn es fehlt.
+
+    Seit der Auslagerung liegt `data/images/` nicht mehr im Repo (siehe
+    docs/archive/). Wer hier None bekommt und Farbmerkmale braucht, laesst
+    `magda extract` laufen - `page_pairs` sagt das im Abbruch auch so.
+
+    Der Cache ist bewusst klein: Ein Seitenbild belegt entpackt rund 5 MB,
+    die Kalibrierung laeuft aber fuenfmal ueber dieselben Trainingsseiten.
+    32 Bilder decken einen Fold ab und kosten ~160 MB - alle 51 waeren 266.
+    """
+    import numpy as np
+    from PIL import Image
+
+    from magda import config
+
+    path = config.IMAGES_DIR / f"{page_id}.png"
+    if not path.exists():
+        return None
+    with Image.open(path) as image:
+        return np.array(image.convert("RGB"))
+
+
 def _nearest_points(a, b) -> tuple[tuple[float, float], tuple[float, float]]:
     """Die naechstliegenden Punkte zweier Rechtecke.
 
@@ -295,26 +323,40 @@ def _patch_color(pixels, x: float, y: float, scale_x: float, scale_y: float):
     return np.median(patch.reshape(-1, 3), axis=0)
 
 
-def _crossings(pixels, box_i, box_j, scale_x: float, scale_y: float) -> int:
-    """Deutliche Farbwechsel auf der Verbindungslinie, gekappt.
+def _path_same_bg(pixels, box_i, box_j, color_i,
+                  scale_x: float, scale_y: float) -> float:
+    """Anteil der Verbindungslinie, der im Hintergrund von *i* bleibt.
 
-    Gezaehlt wird gegen die zuletzt *stabile* Farbe, nicht gegen den
-    Vorgaenger - sonst zaehlt ein einzelner Ausreisser doppelt (hin und
-    zurueck).
+    Gemessen wird gegen **einen** Hintergrund, nicht gegen beide: Wer
+    Farben akzeptiert, die zu i *oder* j passen, erklaert einen Pfad von
+    Weiss in eine gelbe Kachel zum durchgehenden - obwohl er genau die
+    Kachelgrenze quert, um die es geht. Die Paare stehen in Lesereihenfolge,
+    die Wahl von i ist also deterministisch; dass die beiden Hintergruende
+    ueberhaupt verschieden sind, sagt `bg_distance` daneben.
+
+    **Der Vorgaenger zaehlte Farbwechsel und war unbrauchbar:** Auf echten
+    Prospektseiten sind 92 % aller Paare am Anschlag von fuenf Wechseln, und
+    auch bei vervierfachter Toleranz noch 80 % - eine Prospektseite ist
+    visuell dicht, jede Linie kreuzt Fotos, Text und Kacheln. Gemessen an
+    gemalten Testkacheln sah das Merkmal gut aus, an echten Seiten war es
+    faktisch eine Konstante.
+
+    Ein Anteil saettigt nicht. Liegen beide Entities in derselben Kachel,
+    bleibt die Linie ueberwiegend in deren Farbe; fuehrt sie ueber eine
+    Kachelgrenze, faellt der Anteil.
     """
     from magda.label_audit import COLOR_TOLERANCE
 
     start, end = _nearest_points(box_i, box_j)
     length = math.dist(start, end)
     if length <= 0:
-        return 0
+        return 1.0                        # die Boxen beruehren sich
 
-    steps = min(int(length * max(scale_x, scale_y)), 200)
+    steps = min(int(length * max(scale_x, scale_y)), PATH_SAMPLES)
     if steps < 2:
-        return 0
+        return 1.0
 
-    reference = None
-    crossings = 0
+    hits = 0
     for step in range(steps + 1):
         t = step / steps
         color = _patch_color(
@@ -323,15 +365,9 @@ def _crossings(pixels, box_i, box_j, scale_x: float, scale_y: float) -> int:
             start[1] + t * (end[1] - start[1]),
             scale_x, scale_y,
         )
-        if reference is None:
-            reference = color
-            continue
-        if math.dist(color, reference) > COLOR_TOLERANCE:
-            crossings += 1
-            reference = color
-            if crossings >= CROSSING_CAP:
-                break
-    return crossings
+        if math.dist(color, color_i) <= COLOR_TOLERANCE:
+            hits += 1
+    return hits / (steps + 1)
 
 
 def _page_colors(entities: list, pixels, width: float, height: float) -> dict:
@@ -365,9 +401,9 @@ def _color_features(index_i: int, index_j: int, context: dict) -> list[float]:
         return [0.0, 0.0, 0.0, 0.0]
 
     entities = context["entities"]
-    crossings = _crossings(
+    same_bg = _path_same_bg(
         context["pixels"], entities[index_i].bbox, entities[index_j].bbox,
-        context["scale_x"], context["scale_y"],
+        color_i, context["scale_x"], context["scale_y"],
     )
 
     def offpage(color):
@@ -377,7 +413,7 @@ def _color_features(index_i: int, index_j: int, context: dict) -> list[float]:
 
     return [
         math.dist(color_i, color_j) / COLOR_MAX,
-        min(crossings, CROSSING_CAP) / CROSSING_CAP,
+        same_bg,
         offpage(color_i),
         offpage(color_j),
     ]

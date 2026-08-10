@@ -363,17 +363,17 @@ GELB = (255, 212, 0)
 BLAU = (0, 124, 132)
 
 
-def test_gleiche_kachel_heisst_kleiner_farbabstand_und_kein_wechsel():
+def test_gleiche_kachel_heisst_kleiner_farbabstand_und_durchgehender_pfad():
     page = _page()
     pixels = _painted(page, [(5, 5, 99, 145, GELB)])   # eine Kachel ueber beide
 
     pairs = offer_pairs.page_pairs(page, pixels=pixels, blocks=offer_pairs.ALL_BLOCKS)
 
     assert _value(pairs, (0, 3), "bg_distance") == pytest.approx(0.0, abs=1e-6)
-    assert _value(pairs, (0, 3), "color_crossings") == 0
+    assert _value(pairs, (0, 3), "path_same_bg") == pytest.approx(1.0)
 
 
-def test_verschiedene_kacheln_heissen_farbabstand_und_wechsel():
+def test_verschiedene_kacheln_heissen_grosser_farbabstand():
     """Das Merkmal, das die Wortkoordinaten nicht hergeben.
 
     Der Farbabstand steht als ausgerechnete Zahl da, damit die Normierung
@@ -386,29 +386,48 @@ def test_verschiedene_kacheln_heissen_farbabstand_und_wechsel():
     pairs = offer_pairs.page_pairs(page, pixels=pixels, blocks=offer_pairs.ALL_BLOCKS)
 
     assert _value(pairs, (0, 1), "bg_distance") == pytest.approx(0.706, abs=0.005)
-    assert _value(pairs, (0, 1), "color_crossings") > 0
+    # Der Pfad verlaesst den Hintergrund von Entity 0 (Weiss), sobald er die
+    # blaue Kachel erreicht.
+    assert _value(pairs, (0, 1), "path_same_bg") < 1.0
 
 
-def test_zwei_kachelgrenzen_ergeben_zwei_wechsel():
-    """Pinnt den Nenner der Kappung: 2 Wechsel von 5 sind 0.4, nicht 1.0."""
-    page = _spread_page()
-    pixels = _painted(page, [(5, 5, 65, 25, BLAU), (5, 45, 65, 65, BLAU)])
+def test_der_pfadanteil_saettigt_nicht_bei_vielen_farbwechseln():
+    """Der Grund, warum das Zaehlen von Wechseln ersetzt wurde.
 
-    pairs = offer_pairs.page_pairs(page, pixels=pixels, blocks=offer_pairs.ALL_BLOCKS)
-
-    # Von Entity 0 nach Entity 1: Blau -> Weiss -> Blau.
-    assert _value(pairs, (0, 1), "color_crossings") == pytest.approx(0.4)
-
-
-def test_farbwechsel_ist_gekappt():
-    """Ungekappt fittet das MLP Ausreisser auf Fotoflaechen."""
+    Auf echten Prospektseiten waren 92 % aller Paare am Anschlag von fuenf
+    Wechseln, bei vervierfachter Toleranz noch 80 % - eine Seite ist
+    visuell dicht, jede Linie kreuzt Fotos, Text und Kacheln. Ein Anteil
+    bleibt dagegen aussagekraeftig: hier liegt er strikt zwischen 0 und 1.
+    """
     page = _page()
+    einfarbig = _painted(page, [(5, 5, 99, 145, GELB)])
     stripes = [(5, 5 + 6 * i, 99, 8 + 6 * i, GELB if i % 2 else BLAU) for i in range(24)]
-    pixels = _painted(page, stripes)
 
-    pairs = offer_pairs.page_pairs(page, pixels=pixels, blocks=offer_pairs.ALL_BLOCKS)
+    ruhig = _value(offer_pairs.page_pairs(
+        page, pixels=einfarbig, blocks=offer_pairs.ALL_BLOCKS), (0, 3), "path_same_bg")
+    unruhig = _value(offer_pairs.page_pairs(
+        page, pixels=_painted(page, stripes), blocks=offer_pairs.ALL_BLOCKS),
+        (0, 3), "path_same_bg")
 
-    assert _value(pairs, (0, 3), "color_crossings") == 1.0
+    # Der Vorgaenger stand in beiden Faellen bei 1.0 und unterschied nichts.
+    assert ruhig == pytest.approx(1.0)
+    assert unruhig < 0.5
+
+
+def test_eine_fremde_flaeche_dazwischen_senkt_den_pfadanteil():
+    """Zwei Entities auf gleicher Kachelfarbe, aber durch Fremdfarbe getrennt."""
+    page = _spread_page()
+    zusammen = _painted(page, [(5, 5, 65, 65, GELB)])
+    getrennt = _painted(page, [(5, 5, 65, 25, GELB), (5, 45, 65, 65, GELB),
+                               (5, 28, 65, 42, BLAU)])
+
+    a = _value(offer_pairs.page_pairs(page, pixels=zusammen,
+                                      blocks=offer_pairs.ALL_BLOCKS), (0, 1), "path_same_bg")
+    b = _value(offer_pairs.page_pairs(page, pixels=getrennt,
+                                      blocks=offer_pairs.ALL_BLOCKS), (0, 1), "path_same_bg")
+
+    assert a == pytest.approx(1.0)
+    assert b < 0.7
 
 
 def _spread_page():

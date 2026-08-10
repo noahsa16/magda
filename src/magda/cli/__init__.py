@@ -63,6 +63,8 @@ WERKZEUGE = (
            "Angebote von einem Vision-Modell gruppieren lassen"),
     Befehl("offers-model", "offers_model",
            "Paarmodell auf einer Gruppierung trainieren und messen"),
+    Befehl("offers-grid", "offers_grid",
+           "Merkmalsblöcke des Paarmodells einzeln messen (Basis/Geometrie/Farbe)"),
     Befehl("bundle", "export", "Trainingspaket für eine fremde GPU schnüren"),
     Befehl("import-gold", "import_gold", "Handannotationen als Labelordner ablegen"),
 )
