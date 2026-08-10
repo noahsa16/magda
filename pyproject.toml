@@ -21,7 +21,7 @@ dependencies = [
     # transformers 5.x hat die Slow-Tokenizer entfernt; deepset/gbert-base
     # liefert aber nur vocab.txt und laesst sich dort nicht mehr laden.
     "transformers>=4.44,<5",
-    "accelerate>=0.26",   # vom HF-Trainer vorausgesetzt, kommt nicht automatisch mit
+    "accelerate>=1.14.0",   # vom HF-Trainer vorausgesetzt, kommt nicht automatisch mit
     "sentencepiece",
     "pillow",             # Seitenbilder fuer den visuellen Backbone von LayoutXLM
     "numpy",
