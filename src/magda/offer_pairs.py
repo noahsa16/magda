@@ -24,7 +24,7 @@ willst.
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from magda.offers import VALUE_TYPES, entities_from_page
 
@@ -48,11 +48,66 @@ GEOMETRY_NAMES = [
     "entities_between",  # was dazwischen liegt, trennt
 ]
 
-FEATURE_NAMES = (
-    [f"type_i_{t}" for t in TYPES]
-    + [f"type_j_{t}" for t in TYPES]
-    + GEOMETRY_NAMES
-)
+CONTEXT_NAMES = [
+    "products_between",  # ein zweiter Produktanker dazwischen trennt
+    "closer_rivals_i",   # wie viele des eigenen Typs naeher am Partner liegen
+    "closer_rivals_j",
+    "distance_ratio",    # Abstand im Verhaeltnis zur naechsten Alternative
+    "words_between",     # ungelabelte Woerter - Kleingedrucktes trennt
+]
+
+COLOR_NAMES = [
+    "bg_distance",       # RGB-Abstand der Hintergruende: gleiche Kachel?
+    "color_crossings",   # Farbwechsel auf der Verbindungslinie: Kachelgrenze
+    "bg_offpage_i",      # steht die Entity auf einer Kachel oder auf Grund?
+    "bg_offpage_j",
+]
+
+# Anker eines Angebots. Ein Angebot ist ein Stern um genau einen Produktnamen;
+# Preis-Badges schweben dagegen frei, ein fremder PRICE dazwischen trennt
+# deshalb *nicht* zuverlaessig (deshalb kein `prices_between`).
+ANCHOR_TYPES = frozenset({"PRODUCT", "BRAND"})
+
+# Kappungen. Ungekappt fittet das MLP Ausreisser - Farbwechsel auf
+# Fotoflaechen, Abstandsverhaeltnisse am Seitenrand.
+RATIO_CAP = 5.0
+CROSSING_CAP = 5
+
+# Groesster moeglicher RGB-Abstand, damit `bg_distance` in [0, 1] liegt.
+COLOR_MAX = math.sqrt(3 * 255 ** 2)
+
+# Bloecke, weil die Messung sie einzeln an- und abschalten muss (2x2-Gitter:
+# Basis, +Geometrie, +Farbe, +beide). Die Reihenfolge ist fest und neue
+# Bloecke haengen hinten an - sonst zeigt jedes gelernte Gewicht auf eine
+# andere Spalte, und das faellt durch keine Pruefung auf.
+FEATURE_BLOCKS: dict[str, list[str]] = {
+    "types": [f"type_i_{t}" for t in TYPES] + [f"type_j_{t}" for t in TYPES],
+    "geometry_base": GEOMETRY_NAMES,
+    "geometry_plus": CONTEXT_NAMES,
+    "color": COLOR_NAMES,
+}
+BLOCK_ORDER = ("types", "geometry_base", "geometry_plus", "color")
+
+DEFAULT_BLOCKS = ("types", "geometry_base")
+GEOMETRY_BLOCKS = ("types", "geometry_base", "geometry_plus")
+ALL_BLOCKS = BLOCK_ORDER
+
+
+def feature_names(blocks=DEFAULT_BLOCKS) -> list[str]:
+    """Die Merkmalsnamen der gewaehlten Bloecke, in fester Reihenfolge."""
+    unknown = [b for b in blocks if b not in FEATURE_BLOCKS]
+    if unknown:
+        raise ValueError(
+            f"Merkmalsblock unbekannt: {', '.join(unknown)}. "
+            f"Bekannt sind: {', '.join(BLOCK_ORDER)}."
+        )
+    return [name for block in BLOCK_ORDER if block in blocks
+            for name in FEATURE_BLOCKS[block]]
+
+
+# Die heutigen 30 - bleibt als Name bestehen, weil Checkpoints und der
+# Verboten-Test darauf zeigen.
+FEATURE_NAMES = feature_names(DEFAULT_BLOCKS)
 
 
 @dataclass
@@ -70,6 +125,7 @@ class PagePairs:
     index_pairs: list[tuple[int, int]]
     features: list[list[float]]
     labels: list[int | None] | None = None
+    feature_names: list[str] = field(default_factory=lambda: list(FEATURE_NAMES))
 
 
 def _median_word_height(page: dict) -> float:
@@ -93,6 +149,19 @@ def _overlap(a0: float, a1: float, b0: float, b1: float) -> tuple[float, float]:
     return 0.0, -shared
 
 
+def _center(bbox) -> tuple[float, float]:
+    x0, y0, x1, y1 = bbox
+    return ((x0 + x1) / 2, (y0 + y1) / 2)
+
+
+def _enclosing(a, b) -> tuple[float, float, float, float]:
+    return (min(a[0], b[0]), min(a[1], b[1]), max(a[2], b[2]), max(a[3], b[3]))
+
+
+def _inside(point, rect) -> bool:
+    return rect[0] <= point[0] <= rect[2] and rect[1] <= point[1] <= rect[3]
+
+
 def _pair_features(entity_i, entity_j, index_i: int, index_j: int,
                    context: dict) -> list[float]:
     ix0, iy0, ix1, iy1 = entity_i.bbox
@@ -111,7 +180,7 @@ def _pair_features(entity_i, entity_j, index_i: int, index_j: int,
     one_hot[TYPES.index(entity_i.type)] = 1.0
     one_hot[len(TYPES) + TYPES.index(entity_j.type)] = 1.0
 
-    return one_hot + [
+    geometry = [
         (center_j[0] - center_i[0]) / width,
         (center_j[1] - center_i[1]) / height,
         gap_x / width,
@@ -124,6 +193,193 @@ def _pair_features(entity_i, entity_j, index_i: int, index_j: int,
         (index_j - index_i) / max(context["count"], 1),
         (entity_j.start - entity_i.end) / max(context["words"], 1),
         context["between"][(index_i, index_j)] / max(context["count"], 1),
+    ]
+
+    parts = {"types": one_hot, "geometry_base": geometry}
+    if "geometry_plus" in context["blocks"]:
+        parts["geometry_plus"] = _context_features(
+            entity_i, entity_j, index_i, index_j, context)
+    if "color" in context["blocks"]:
+        parts["color"] = _color_features(index_i, index_j, context)
+
+    return [v for block in BLOCK_ORDER if block in parts for v in parts[block]]
+
+
+def _context_features(entity_i, entity_j, index_i: int, index_j: int,
+                      context: dict) -> list[float]:
+    """Anker, Konkurrenz und ungelabelte Woerter zwischen dem Paar.
+
+    Alle fuenf beantworten dieselbe Frage von verschiedenen Seiten: Steht
+    zwischen diesen beiden etwas, das sie trennt - und gibt es einen
+    besseren Kandidaten als den Partner? Der Legendenversatz ist ein
+    Margenproblem, kein Abstandsproblem: der falsche Name ist nur *knapp*
+    naeher.
+    """
+    entities = context["entities"]
+    rect = _enclosing(entity_i.bbox, entity_j.bbox)
+    count = max(context["count"], 1)
+
+    products = sum(
+        1 for k, e in enumerate(entities)
+        if k not in (index_i, index_j)
+        and e.type in ANCHOR_TYPES
+        and _inside(_center(e.bbox), rect)
+    )
+
+    words = sum(
+        1 for w in context["word_boxes"]
+        if _inside(_center(w), rect)
+    ) - (entity_i.end - entity_i.start) - (entity_j.end - entity_j.start)
+
+    center_i, center_j = _center(entity_i.bbox), _center(entity_j.bbox)
+    distance = math.dist(center_i, center_j)
+
+    by_type = context["by_type"]
+    rivals_i = sum(
+        1 for k in by_type.get(entity_i.type, ())
+        if k != index_i and math.dist(_center(entities[k].bbox), center_j) < distance
+    )
+    rivals_j = sum(
+        1 for k in by_type.get(entity_j.type, ())
+        if k != index_j and math.dist(_center(entities[k].bbox), center_i) < distance
+    )
+
+    # Der Abstand zum naechsten Kandidaten vom Typ j - j selbst zaehlt mit,
+    # das Verhaeltnis ist also immer >= 1 und genau dann 1, wenn j der
+    # naechste ist.
+    nearest = min(
+        (math.dist(_center(entities[k].bbox), center_i)
+         for k in by_type.get(entity_j.type, ())),
+        default=distance,
+    )
+    ratio = distance / nearest if nearest > 0 else 1.0
+
+    return [
+        products / count,
+        rivals_i / max(len(by_type.get(entity_i.type, ())), 1),
+        rivals_j / max(len(by_type.get(entity_j.type, ())), 1),
+        min(ratio, RATIO_CAP) / RATIO_CAP,
+        max(words, 0) / max(context["words"], 1),
+    ]
+
+
+def _nearest_points(a, b) -> tuple[tuple[float, float], tuple[float, float]]:
+    """Die naechstliegenden Punkte zweier Rechtecke.
+
+    Mittelpunktslinien laufen bei grossen Boxen mitten durch das
+    Produktfoto und zaehlen dessen Kanten als Kachelgrenzen. Zwischen den
+    Raendern gemessen liegt die Linie im Zwischenraum, wo die Kachelgrenze
+    tatsaechlich sitzt.
+    """
+    def axis(a0, a1, b0, b1):
+        if a1 < b0:
+            return a1, b0
+        if b1 < a0:
+            return a0, b1
+        middle = (max(a0, b0) + min(a1, b1)) / 2
+        return middle, middle
+
+    px, qx = axis(a[0], a[2], b[0], b[2])
+    py, qy = axis(a[1], a[3], b[1], b[3])
+    return (px, py), (qx, qy)
+
+
+def _patch_color(pixels, x: float, y: float, scale_x: float, scale_y: float):
+    """Median eines 3x3-Fensters, damit eine einzelne Glyphe kein Wechsel ist."""
+    import numpy as np
+
+    height, width = pixels.shape[0], pixels.shape[1]
+    col = min(max(int(x * scale_x), 0), width - 1)
+    row = min(max(int(y * scale_y), 0), height - 1)
+    patch = pixels[max(0, row - 1):row + 2, max(0, col - 1):col + 2]
+    return np.median(patch.reshape(-1, 3), axis=0)
+
+
+def _crossings(pixels, box_i, box_j, scale_x: float, scale_y: float) -> int:
+    """Deutliche Farbwechsel auf der Verbindungslinie, gekappt.
+
+    Gezaehlt wird gegen die zuletzt *stabile* Farbe, nicht gegen den
+    Vorgaenger - sonst zaehlt ein einzelner Ausreisser doppelt (hin und
+    zurueck).
+    """
+    from magda.label_audit import COLOR_TOLERANCE
+
+    start, end = _nearest_points(box_i, box_j)
+    length = math.dist(start, end)
+    if length <= 0:
+        return 0
+
+    steps = min(int(length * max(scale_x, scale_y)), 200)
+    if steps < 2:
+        return 0
+
+    reference = None
+    crossings = 0
+    for step in range(steps + 1):
+        t = step / steps
+        color = _patch_color(
+            pixels,
+            start[0] + t * (end[0] - start[0]),
+            start[1] + t * (end[1] - start[1]),
+            scale_x, scale_y,
+        )
+        if reference is None:
+            reference = color
+            continue
+        if math.dist(color, reference) > COLOR_TOLERANCE:
+            crossings += 1
+            reference = color
+            if crossings >= CROSSING_CAP:
+                break
+    return crossings
+
+
+def _page_colors(entities: list, pixels, width: float, height: float) -> dict:
+    """Hintergrundfarbe je Entity und der seitenuebliche Grund.
+
+    Der Seitengrund ist der Median ueber die Entity-Hintergruende, nicht
+    ueber die ganze Seite: So bleibt auch `bg_offpage` relativ und braucht
+    keine Annahme ueber Penny-Weiss.
+    """
+    import numpy as np
+
+    from magda.label_audit import background_color
+
+    colors = [background_color(e.bbox, pixels, width, height) for e in entities]
+    known = [c for c in colors if c]
+    typical = np.median(np.array(known), axis=0) if known else None
+    return {
+        "colors": [c if c else (list(typical) if typical is not None else None)
+                   for c in colors],
+        "typical": typical,
+    }
+
+
+def _color_features(index_i: int, index_j: int, context: dict) -> list[float]:
+    colors = context["colors"]["colors"]
+    typical = context["colors"]["typical"]
+    color_i, color_j = colors[index_i], colors[index_j]
+
+    if color_i is None or color_j is None:
+        # Beide Boxen zu klein zum Messen - neutral, aber paarabhaengig.
+        return [0.0, 0.0, 0.0, 0.0]
+
+    entities = context["entities"]
+    crossings = _crossings(
+        context["pixels"], entities[index_i].bbox, entities[index_j].bbox,
+        context["scale_x"], context["scale_y"],
+    )
+
+    def offpage(color):
+        if typical is None:
+            return 0.0
+        return math.dist(color, typical) / COLOR_MAX
+
+    return [
+        math.dist(color_i, color_j) / COLOR_MAX,
+        min(crossings, CROSSING_CAP) / CROSSING_CAP,
+        offpage(color_i),
+        offpage(color_j),
     ]
 
 
@@ -150,25 +406,59 @@ def _entities_between(entities: list) -> dict[tuple[int, int], int]:
     return result
 
 
-def page_pairs(page: dict, assignment: dict[int, int] | None = None) -> PagePairs:
+def page_pairs(page: dict, assignment: dict[int, int] | None = None, *,
+               pixels=None, blocks=DEFAULT_BLOCKS) -> PagePairs:
     """Alle ungeordneten Entity-Paare einer Seite als Merkmalsvektoren.
 
     Die Paare stehen in Lesereihenfolge (i < j). Erst dadurch duerfen die
     Deltas ein Vorzeichen tragen - ungeordnet muesste jedes Merkmal
     symmetrisch sein und "der Preis steht *unter* dem Produkt" liesse sich
     nicht ausdruecken.
+
+    `pixels` ist das Seitenbild als RGB-Array und nur fuer den Farbblock
+    noetig. Fehlt es dort, bricht der Aufruf ab statt zu schaetzen: Ein
+    Sentinel waere seitenkonstant, und bei ~20 unabhaengigen Vorlagen lernt
+    das Modell daraus "Seiten ohne Bild sehen anders aus" statt einer Regel.
     """
     from magda.offers_gold import _reference_group
 
+    names = feature_names(blocks)
     entities = [e for e in entities_from_page(page) if e.type in VALUE_TYPES]
+    width = max(float(page.get("width") or 0), 1.0)
+    height = max(float(page.get("height") or 0), 1.0)
+
+    if "color" in blocks and pixels is None:
+        raise ValueError(
+            f"Farbmerkmale brauchen das Seitenbild, es fehlt fuer "
+            f"{page.get('page_id') or 'diese Seite'}. "
+            f"Mit `magda extract` neu rendern (braucht data/raw/ aus dem "
+            f"Drive-Archiv, siehe docs/archive/)."
+        )
+
     context = {
-        "width": max(float(page.get("width") or 0), 1.0),
-        "height": max(float(page.get("height") or 0), 1.0),
+        "width": width,
+        "height": height,
         "scale": _median_word_height(page),
         "count": len(entities),
         "words": max(len(page.get("words") or []), 1),
         "between": _entities_between(entities),
+        "blocks": tuple(blocks),
+        "entities": entities,
     }
+    if "geometry_plus" in blocks:
+        by_type: dict[str, list[int]] = {}
+        for k, e in enumerate(entities):
+            by_type.setdefault(e.type, []).append(k)
+        context["by_type"] = by_type
+        context["word_boxes"] = [
+            w["bbox"] for w in (page.get("words") or [])
+            if len(w.get("bbox") or []) == 4
+        ]
+    if "color" in blocks:
+        context["pixels"] = pixels
+        context["scale_x"] = pixels.shape[1] / width
+        context["scale_y"] = pixels.shape[0] / height
+        context["colors"] = _page_colors(entities, pixels, width, height)
 
     groups = None
     if assignment is not None:
@@ -193,6 +483,7 @@ def page_pairs(page: dict, assignment: dict[int, int] | None = None) -> PagePair
         index_pairs=index_pairs,
         features=features,
         labels=labels if assignment is not None else None,
+        feature_names=names,
     )
 
 
