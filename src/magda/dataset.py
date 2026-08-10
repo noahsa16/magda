@@ -198,6 +198,20 @@ def select_split(pages: list[dict], splits: dict, name: str) -> list[dict]:
     return [p for p in pages if p["page_id"] in wanted]
 
 
+def duplicate_clusters(pages: list[dict]) -> list[list[str]]:
+    """Duplikat-Cluster der Seiten (Jaccard 0.7), Einzelseiten eingeschlossen.
+
+    Die unabhängige Einheit des Projekts. Penny gibt je Woche 44 fast
+    gleiche Regionalfassungen heraus; wer Seiten zählt, zählt Kopien.
+    """
+    from magda.dedupe import group
+
+    words = {p["page_id"]: [w["text"] for w in (p.get("words") or [])] for p in pages}
+    clusters = [sorted(c) for c in group(words, threshold=0.7)]
+    known = {page_id for cluster in clusters for page_id in cluster}
+    return clusters + [[p["page_id"]] for p in pages if p["page_id"] not in known]
+
+
 def subset_by_clusters(pages: list[dict], limit: int) -> list[str]:
     """Höchstens `limit` Seiten, aber nur in ganzen Duplikat-Clustern.
 
@@ -205,26 +219,28 @@ def subset_by_clusters(pages: list[dict], limit: int) -> list[str]:
     derselben Vorlage als elf Datenpunkte, und die Kurve sähe steiler aus,
     als sie ist – derselbe Fehler, der schon den Seiten-Split lecken ließ.
 
-    Die Cluster stehen in einer festen Reihenfolge (große zuerst, bei
-    Gleichstand nach `page_id`), und genommen wird das längste **Präfix**,
-    das unter die Grenze passt. Nicht das gierigste Paket: ein Präfix ist
-    ineinandergeschachtelt, gieriges Auffüllen nicht. Bei den Clustergrößen
-    3/2/1 nähme die gierige Variante zu 4 die Cluster 3+1 und zu 5 die
-    Cluster 3+2 – der zweite Kurvenpunkt enthielte den ersten dann nicht
-    mehr, und die Kurve vergliche verschiedene Stichproben statt mehr von
-    derselben.
+    Die Cluster stehen in einer festen Reihenfolge, und genommen wird das
+    längste **Präfix**, das unter die Grenze passt. Nicht das gierigste
+    Paket: ein Präfix ist ineinandergeschachtelt, gieriges Auffüllen nicht.
+    Bei den Clustergrößen 3/2/1 nähme die gierige Variante zu 4 die Cluster
+    3+1 und zu 5 die Cluster 3+2 – der zweite Kurvenpunkt enthielte den
+    ersten dann nicht mehr, und die Kurve vergliche verschiedene Stichproben
+    statt mehr von derselben.
+
+    Sortiert wird nach `page_id`, **nicht nach Clustergröße**. Größe zuerst
+    war der naheliegende Griff und kehrt den Zweck um: auf den 175
+    Trainingsseiten (93 Cluster) ergäbe eine Grenze von 25 dann 23 Seiten
+    aus **drei** Vorlagen – die Duplikate landen zuerst im Budget, und der
+    erste Kurvenpunkt misst elf Regionalfassungen statt Datenmenge. Nach
+    `page_id` sind es 25 Seiten aus 9 Clustern; über alle vier Punkte
+    9/16/50/93 statt 3/9/25/93.
 
     Passt schon der größte Cluster nicht, wird abgebrochen statt eine leere
     Menge zurückzugeben: ein Training über null Seiten läuft sonst durch und
     liefert eine Zahl.
     """
-    from magda.dedupe import group
-
-    words = {p["page_id"]: [w["text"] for w in (p.get("words") or [])] for p in pages}
-    clusters = [sorted(c) for c in group(words, threshold=0.7)]
-    known = {page_id for cluster in clusters for page_id in cluster}
-    clusters += [[p["page_id"]] for p in pages if p["page_id"] not in known]
-    clusters.sort(key=lambda c: (-len(c), c[0]))
+    clusters = duplicate_clusters(pages)
+    clusters.sort(key=lambda c: c[0])
 
     if clusters and len(clusters[0]) > limit:
         raise ValueError(

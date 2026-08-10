@@ -55,11 +55,30 @@ Im Bereich ohne Grundpreis, für den die Farbmerkmale gebaut wurden, ist
 | Paar-F1, Schüler-Entities | 0.640 | **0.740** |
 | gebildete Angebote | 54–58 | **43–48** |
 
-Zwei unabhängige Entity-Quellen mit demselben Vorzeichen sind mehr als ein
-Zufallstreffer. **Ein Befund ist es trotzdem nicht:** die Intervalle im
-blinden Fleck reichen bis 1.000, weil viele der 14 Dev-Cluster dort gar keine
-Paare haben. Der nächste Schritt ist eine größere Referenz, nicht der nächste
-Merkmalsblock.
+**Das ist kein Befund, und es ist sogar schwächer, als es aussieht.** Drei
+Gründe, alle im Review vom 11.08. nachgerechnet:
+
+1. **Die beiden Quellen sind nicht unabhängig.** GBERT ist auf
+   sonnet-5-Labels trainiert; 98 % der Entities und 93 % der Referenzpaare
+   sind dieselben. „Zwei Quellen, dasselbe Vorzeichen" ist im Wesentlichen
+   dieselbe Messung zweimal — bei einem Scheineffekt wäre die
+   Übereinstimmung genauso zu erwarten.
+2. **Die beiden Zeilen messen nicht dieselbe Aufgabe.** Die Einteilung in
+   blind und prüfbar hängt an den Entity-*Typen* der jeweiligen Quelle. Die
+   blinden Referenzpaare fallen von 606 auf 444 (−27 %), während die
+   prüfbaren von 1390 auf 1411 *steigen*: sagt GBERT irgendwo UNIT_PRICE
+   anders vorher als der Lehrer, wechselt die ganze Gruppe die Kategorie.
+3. **Die Paar-Precision ist im blinden Fleck in allen acht Zellen exakt
+   1.000.** Die Unterschiede dort sind reine Recall-Unterschiede: `beide`
+   gewinnt, weil es sich mehr Verschmelzungen traut (48 statt 58 Gruppen
+   bzw. 43 statt 54). „Farbe findet die richtige Kachel" und „Farbe macht
+   das Verschmelzen mutiger" sind mit diesen Daten **nicht
+   unterscheidbar**.
+
+Dazu die Intervalle, die im blinden Fleck bis 1.000 reichen, weil viele der
+14 Dev-Cluster dort gar keine Paare haben. Die Schlussfolgerung bleibt
+dieselbe und wird eher stärker: **mehr Referenz, nicht der nächste
+Merkmalsblock.**
 
 ## 2. Drei Konstruktionsfehler, ohne die Messung 1 falsch gewesen wäre
 
@@ -133,9 +152,14 @@ sitzen bei QUANTITY**, was bisher nirgends stand.
 Die Klasse `lehrerluecke` ist bewusst konservativ: sie verlangt ein belegtes
 Muster im Text (Fußnotenziffer neben einem Preis, „App" im Fenster), nicht
 bloß „die Referenz sagt O". Sonst hieße jede Übervorhersage „der Lehrer war
-schuld", und die Klasse wäre eine Ausrede statt einer Messung. Auf Dev feuert
-sie nicht — was zur Handprüfung passt: von 81 fehlenden App-Preisen lagen 72
-in Train und 9 in Dev.
+schuld", und die Klasse wäre eine Ausrede statt einer Messung.
+
+Auf Dev feuert sie nicht. **Die naheliegende Erklärung stimmt aber nicht:**
+die Fälle aus der Handprüfung sind Referenz = PRICE → APP_PRICE, `lehrerluecke`
+verlangt Referenz = `O`. Die neun Dev-Fälle könnten die Klasse gar nicht
+auslösen. Die Null belegt nur, dass GBERT die textlosen App-Preise ebenfalls
+nicht findet — und das ist konsistent mit dem strukturellen Befund, dass bei
+33 % der APP_PRICE-Spans „App" nicht im Fenster ±8 Wörter steht.
 
 ## 5. Blackbox-Vergleichsarm (Requirements-Stufe „Excellent")
 
@@ -163,6 +187,45 @@ Ein Probelauf auf **Dev** bestätigt die Verdrahtung: die eigene Pipeline
 trifft 118 von 127 Referenzangeboten (F1 0.922). Achtung, das ist ein
 weicheres Kriterium als Gruppen-F1 — Preis exakt, Name unscharf ab 0.6
 Ähnlichkeit.
+
+## 6. Was das Review noch gefunden hat
+
+Fable hat den Lauf gegengelesen und drei Dinge gefunden, die noch in der
+Nacht behoben wurden:
+
+- **Die Lernkurve hätte Duplikate zuerst ins Budget gepackt.**
+  `subset_by_clusters` sortierte nach absteigender Clustergröße — genau
+  falschherum. Auf den echten Trainingsseiten (175 Seiten, 93 Cluster) ergab
+  die Grenze 25 damit **23 Seiten aus drei Vorlagen**. Der erste Kurvenpunkt
+  hätte Regionalfassungen gemessen statt Datenmenge, also den Fehler, den
+  clusterweises Ziehen verhindern soll. Nach `page_id` sortiert sind es
+  9/16/50/93 Cluster statt 3/9/25/93. Der eine bereits gelaufene Kurvenpunkt
+  wurde verworfen. Die Clusterzahl steht jetzt in der Ausgabe — „p25" allein
+  ist eine Seitenzahl ohne das, woran gemessen wurde.
+- **Der Checkpoint-Schutz hatte ein Loch an der wahrscheinlichsten Stelle.**
+  `checkpoint_name` behandelte `--labels-from` ohne Angabe als kanonisch,
+  aber `build_datasets` löst das über `default_labeled_model()` auf — also
+  auf mistral. `magda train gbert` ohne Argumente hätte damit
+  Mistral-Gewichte nach `checkpoints/gbert` geschrieben, den Ordner mit dem
+  eingefrorenen KW30/31-Stand. Genau der Aufruf, den jemand aus Gewohnheit
+  tippt. Aufgelöst wird jetzt vor der Namensvergabe.
+- **`--dry-run` gab eine Quote aus** und das Beispiel im Docstring zeigte
+  ausgerechnet die Testseitenliste. Wer es befolgt hätte, hätte den
+  Testsplit angefasst, bevor der Schlussbatch beginnt. Der Probelauf
+  schweigt jetzt.
+
+Dazu ein latenter Fehler in `error_taxonomy`: gepaart wurde mit dem *ersten*
+überlappenden Referenz-Span statt dem passendsten. Eine PRODUCT-Vorhersage
+über BRAND+PRODUCT wäre als Typverwechslung *plus* Falsch-Negativ gezählt
+worden statt als ein Grenzfehler. Auf Dev ändert die Korrektur **nichts** an
+den Zahlen — die Fehlerform war real, der Fall trat hier nur nicht auf.
+
+**Offen und vor dem Schlussbatch zu entscheiden:** Die „Referenz" im
+Blackbox-Vergleich sind heute `cluster_page`-Angebote aus den Lehrer-Labels
+— also dieselbe Gruppierungsheuristik, die auch auf der eigenen Seite läuft.
+„Eigene gegen Referenz" vergleicht die Heuristik damit weitgehend mit sich
+selbst, und der Dev-Probewert von 0.922 ist entsprechend zu lesen. Die
+Alternative wäre `data/offer_groups/`. Der Testlauf ist nicht wiederholbar.
 
 ## Was nicht passiert ist — und warum
 

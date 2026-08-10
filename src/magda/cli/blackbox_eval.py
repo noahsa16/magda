@@ -1,6 +1,6 @@
 """Die LLM-Blackbox gegen die eigene Pipeline stellen - Produkt gegen Produkt.
 
-    magda blackbox-eval --pages data/eval/test_cluster_pages.txt --dry-run
+    magda blackbox-eval --pages <dev-liste> --dry-run   # nur Verdrahtung
     magda blackbox-eval --pages data/eval/test_cluster_pages.txt
 
 Der Vergleich ist dreispaltig, weil zwei Zahlen die falsche Frage
@@ -21,9 +21,21 @@ Der eigentliche Nebengewinn ist die **Zeit**: die 170x-Zahl des Projekts
 vergleicht bisher Labeling gegen Inferenz, also einen Zwischenschritt gegen
 einen anderen. Hier laufen beide Wege bis zum fertigen Angebot.
 
-`--dry-run` macht alles ausser dem LLM-Aufruf. Damit laesst sich die
-Verdrahtung pruefen, ohne Kontingent zu verbrennen - und ohne den Testsplit
-anzufassen, denn ohne Blackbox-Antwort entsteht keine Zahl.
+`--dry-run` macht alles ausser dem LLM-Aufruf und gibt **keine Quoten** aus.
+Damit laesst sich die Verdrahtung pruefen, ohne Kontingent zu verbrennen.
+Dass der Probelauf schweigt, ist kein Schoenheitsfehler: er rechnet
+"eigene Pipeline gegen Referenz" auch ohne die Blackbox, und wer ihn auf
+`test_cluster_pages.txt` laufen liesse, haette den Testsplit angefasst,
+bevor der Schlussbatch ueberhaupt beginnt.
+
+Vor dem Schlussbatch ist ausserdem zu entscheiden, was "Referenz" heisst.
+Heute sind es `cluster_page`-Angebote aus den Lehrer-Labels - also
+**dieselbe Gruppierungsheuristik**, die auch auf der eigenen Seite laeuft.
+Die Zeile "eigene gegen Referenz" vergleicht damit die Heuristik weitgehend
+mit sich selbst und faellt entsprechend hoch aus; "Blackbox gegen Referenz"
+vergleicht Methode *und* Entities. Die Alternative waere
+`data/offer_groups/`. Der Testlauf ist nicht wiederholbar - die Entscheidung
+faellt vorher.
 """
 
 from __future__ import annotations
@@ -157,6 +169,14 @@ def main(argv=None):
         return blackbox_eval.compare_pages(
             {p: (a.get(p) or [], b.get(p) or []) for p in page_ids})
 
+    if args.dry_run:
+        # Bewusst keine Quote: sie waere eine Zahl ueber die uebergebenen
+        # Seiten, und die koennen Testseiten sein.
+        print(f"Probelauf beendet. {sum(len(v) for v in own.values())} eigene "
+              f"und {sum(len(v) for v in reference.values())} Referenzangebote "
+              f"gebildet - Verdrahtung steht, keine Quote berechnet.")
+        return
+
     comparisons = {"eigene_vs_referenz": paired(own, reference)}
     if blackbox_deals:
         comparisons["blackbox_vs_referenz"] = paired(blackbox_deals, reference)
@@ -193,9 +213,6 @@ def main(argv=None):
     }
     config.EVAL_DIR.mkdir(parents=True, exist_ok=True)
     out_path = config.EVAL_DIR / "blackbox_test.json"
-    if args.dry_run:
-        print("\nProbelauf - kein Report geschrieben.")
-        return
     with open(out_path, "w") as f:
         json.dump(payload, f, indent=2, ensure_ascii=False)
     print(f"\nReport: {out_path}")

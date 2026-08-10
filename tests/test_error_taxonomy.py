@@ -97,6 +97,23 @@ def test_jede_referenz_entity_wird_hoechstens_einmal_verbraucht():
     assert sorted(klassen) == ["echtes_falsch_positiv", "grenzfehler"]
 
 
+def test_gepaart_wird_mit_der_staerksten_ueberlappung_nicht_der_ersten():
+    """Der haeufigste Fall im Prospekt: Marke vor Produktname.
+
+    Sagt der Schueler einen PRODUCT-Span vorher, der BRAND *und* PRODUCT
+    ueberdeckt, ist das ein Grenzfehler. Gierig nach Reihenfolge gepaart
+    waere es eine Typverwechslung (mit BRAND) *plus* ein Falsch-Negativ
+    (PRODUCT) - zwei schwerere Klassen statt einer leichteren, und das
+    systematisch.
+    """
+    klassen = _klassen(["Landliebe", "Butter", "Rahm"],
+                       ["B-BRAND", "B-PRODUCT", "I-PRODUCT"],
+                       ["B-PRODUCT", "I-PRODUCT", "I-PRODUCT"])
+
+    assert "grenzfehler" in klassen
+    assert "typverwechslung" not in klassen
+
+
 def test_die_zusammenfassung_nennt_je_klasse_die_loesbarkeit():
     """Die vierte Spalte ist der Gehalt der Taxonomie, nicht die Haeufigkeit."""
     errors = error_taxonomy.classify_page(["1.29"], ["B-APP_PRICE"], ["B-PRICE"])

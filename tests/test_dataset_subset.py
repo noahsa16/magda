@@ -28,6 +28,38 @@ def test_es_werden_ganze_cluster_gezogen():
     assert set(chosen) in ({"a", "b"}, {"c"})
 
 
+def test_grosse_cluster_kommen_nicht_zuerst_ins_budget():
+    """Der Fehler, den die Sortierung nach Groesse gemacht hat.
+
+    Belegt auf den echten Trainingsseiten (175 Seiten, 93 Cluster): mit
+    Groesse zuerst ergab die Grenze 25 genau **23 Seiten aus drei
+    Vorlagen** - die Duplikate landen zuerst im Budget, und der erste
+    Kurvenpunkt misst Regionalfassungen statt Datenmenge. Genau das, was
+    clusterweises Ziehen verhindern sollte.
+
+    Hier nachgebaut: ein Vierercluster und vier Einzelseiten, Grenze 4.
+    Nach Groesse gaebe das 1 Cluster, nach page_id 4.
+    """
+    vier = ["Butter", "Milch", "Kaese", "Brot"]
+    pages = ([_page(f"z{i}", vier) for i in range(4)]
+             + [_page(f"a{i}", [f"u{i}", f"v{i}", f"w{i}", f"x{i}"]) for i in range(4)])
+
+    chosen = dataset.subset_by_clusters(pages, limit=4)
+
+    assert set(chosen) == {"a0", "a1", "a2", "a3"}
+
+
+def test_die_clusterzahl_ist_die_unabhaengige_einheit():
+    """Die Kurve braucht beide Zahlen. 'p25' allein ist eine Seitenzahl ohne
+    das, woran gemessen wurde."""
+    vier = ["Butter", "Milch", "Kaese", "Brot"]
+    pages = [_page(f"z{i}", vier) for i in range(4)] + [_page("a0", ["u", "v", "w", "x"])]
+
+    cluster = dataset.duplicate_clusters(pages)
+
+    assert sorted(len(c) for c in cluster) == [1, 4]
+
+
 def test_die_grenze_wird_nicht_ueberschritten():
     pages = [_page(str(i), [f"w{i}", "x", "y", "z"]) for i in range(5)]
 
@@ -83,10 +115,31 @@ def test_eine_grenze_ueber_dem_bestand_liefert_alles():
 # ------------------------------------------ Checkpoints kollidieren nicht
 
 
-def test_der_normale_lauf_schreibt_weiter_nach_checkpoints_variant():
+def test_der_kanonische_lauf_schreibt_weiter_nach_checkpoints_variant():
     """Der eingefrorene KW30/31-Checkpoint liegt dort. Wer den Pfad aendert,
     macht alle bisherigen Zahlen unreproduzierbar."""
-    assert train.checkpoint_name("gbert", labels_from=None, train_pages=None) == "gbert"
+    from magda import config
+
+    assert train.checkpoint_name("gbert", config.CANONICAL_LABELS, None) == "gbert"
+
+
+def test_ohne_labelquelle_entscheidet_die_aufgeloeste_quelle(monkeypatch):
+    """`magda train gbert` ohne Argumente trainiert auf dem, was
+    `default_labeled_model()` liefert - und das folgt CHAT_AI_VISION_MODEL,
+    zeigt also auf mistral. Wuerde `None` blind als kanonisch gelten, schriebe
+    dieser Aufruf Mistral-Gewichte nach `checkpoints/gbert`, den Ordner mit
+    dem eingefrorenen KW30/31-Stand. Genau der Aufruf, den jemand aus
+    Gewohnheit tippt.
+    """
+    from magda import config
+
+    monkeypatch.setattr(config, "default_labeled_model",
+                        lambda: "mistral-medium-3.5-128b")
+    assert train.checkpoint_name("gbert", None, None) == "gbert-mistral-medium-3.5-128b"
+
+    monkeypatch.setattr(config, "default_labeled_model",
+                        lambda: config.CANONICAL_LABELS)
+    assert train.checkpoint_name("gbert", None, None) == "gbert"
 
 
 def test_eine_andere_labelquelle_bekommt_einen_eigenen_ordner():

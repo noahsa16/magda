@@ -113,9 +113,17 @@ def classify_page(words: list[str], reference: list[str],
                     break
             continue
 
-        partner = next(((i, o) for i, o in enumerate(ref)
-                        if i not in matched_ref and _overlaps(span, o)), None)
-        if partner is None:
+        # Der *am stärksten* überlappende Referenz-Span, nicht der erste.
+        # Gierig nach Reihenfolge gepaart zerfiele eine PRODUCT-Vorhersage
+        # über BRAND+PRODUCT in eine Typverwechslung (mit BRAND) *plus* ein
+        # Falsch-Negativ (PRODUCT), statt ein Grenzfehler zu sein – die
+        # Klassenverteilung verschöbe sich systematisch zu den schwereren
+        # Klassen hin, und zwar genau dort, wo Marken vor Produktnamen
+        # stehen, also überall im Prospekt.
+        kandidaten = [(min(span["end"], o["end"]) - max(span["start"], o["start"]), -i, i)
+                      for i, o in enumerate(ref)
+                      if i not in matched_ref and _overlaps(span, o)]
+        if not kandidaten:
             reason = teacher_gap_reason(span, words)
             errors.append({
                 "klasse": "lehrerluecke" if reason else "echtes_falsch_positiv",
@@ -125,7 +133,8 @@ def classify_page(words: list[str], reference: list[str],
             })
             continue
 
-        index, other = partner
+        index = max(kandidaten)[2]
+        other = ref[index]
         matched_ref.add(index)
         gleich = other["label"] == span["label"]
         errors.append({

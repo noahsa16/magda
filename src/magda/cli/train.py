@@ -39,6 +39,7 @@ from magda.dataset import (
     TextDataset,
     get_or_create_splits,
     load_labeled_pages,
+    duplicate_clusters,
     select_split,
     subset_by_clusters,
 )
@@ -69,8 +70,13 @@ def build_datasets(variant: str, labels_from: str | None,
     if train_pages is not None:
         wanted = set(subset_by_clusters(train_split, train_pages))
         train_split = [p for p in train_split if p["page_id"] in wanted]
+        # Die Clusterzahl gehört daneben, sonst ist "p25" eine Seitenzahl
+        # ohne das, woran gemessen wurde: 25 Seiten können neun unabhängige
+        # Vorlagen sein oder drei.
         print(f"Lernkurve: {len(train_split)} von {len(splits['train'])} "
-              f"Trainingsseiten, clusterweise gezogen.")
+              f"Trainingsseiten in {len(duplicate_clusters(train_split))} "
+              f"Duplikat-Clustern (von "
+              f"{len(duplicate_clusters(select_split(pages, splits, 'train')))}).")
     train_pages_list = train_split
 
     # Welches Modell die Labels geliefert hat, gehört in die Ausgabe: sonst
@@ -112,12 +118,21 @@ def checkpoint_name(variant: str, labels_from: str | None,
     `config.CANONICAL_LABELS`, nicht `default_labeled_model()`. Letzteres
     folgt `CHAT_AI_VISION_MODEL` und zeigt auf ein Modell, mit dem hier gar
     nicht gelabelt wird.
-    """
-    from magda.config import CANONICAL_LABELS, model_slug
 
+    **`labels_from=None` ist deshalb keine Zusicherung, sondern eine Lücke.**
+    `build_datasets` löst `None` über genau dieses `default_labeled_model()`
+    auf; `magda train gbert` ohne Argumente trainierte also auf
+    Mistral-Labels und schriebe nach `checkpoints/gbert` – den Ordner, an dem
+    die berichteten Zahlen hängen. Aufgelöst wird die Quelle deshalb *vor*
+    dem Namen, und `None` gilt nur dann als kanonisch, wenn die aufgelöste
+    Quelle es auch ist.
+    """
+    from magda.config import CANONICAL_LABELS, default_labeled_model, model_slug
+
+    resolved = labels_from or default_labeled_model()
     name = variant
-    if labels_from and model_slug(labels_from) != model_slug(CANONICAL_LABELS):
-        name += f"-{model_slug(labels_from)}"
+    if resolved and model_slug(resolved) != model_slug(CANONICAL_LABELS):
+        name += f"-{model_slug(resolved)}"
     if train_pages is not None:
         name += f"-p{train_pages}"
     return name
