@@ -31,15 +31,16 @@ mit. Wer eine Zahl nennt, ohne das Kriterium danebenzuschreiben, macht sie
 unvergleichbar; wer sich eine aussucht, weil sie besser aussieht, betreibt
 Metrik-Shopping.
 
-Noch offen (Requirements-Stufe "Excellent"): der Vergleich gegen die
-LLM-Blackbox. Dafür müssen wir erst festlegen, wie wir die Angebots-JSONs
-der Blackbox mit unseren Token-Entities matchen.
+Der Vergleich gegen die LLM-Blackbox (Requirements-Stufe "Excellent")
+steht in `magda blackbox-eval` – er misst Angebote gegen Angebote, nicht
+Token gegen Angebots-JSON, weil nur das Produkt gegen Produkt stellt.
 """
 
 import argparse
 import json
 import sys
 from datetime import datetime
+from pathlib import Path
 
 import numpy as np
 from transformers import AutoModelForTokenClassification, AutoTokenizer, Trainer
@@ -71,6 +72,27 @@ def logits_of(model, dataset) -> np.ndarray:
     return np.asarray(output)
 
 
+def read_page_ids(path) -> list[str]:
+    """Seitenliste aus einer Datei - eine je Zeile, `#` ist Kommentar.
+
+    Gebraucht für Seitenmengen, die in keinem Split stehen: Woche 4 ist die
+    unberührte Frischwoche und soll es bleiben. Die Reihenfolge der Datei
+    bleibt erhalten, damit ein abgebrochener Lauf an derselben Stelle wieder
+    aufsetzt; Doppelnennungen fallen weg, sonst stünde dieselbe Seite zweimal
+    im Nenner.
+    """
+    from pathlib import Path
+
+    seen: dict[str, None] = {}
+    for line in Path(path).read_text().splitlines():
+        page_id = line.split("#")[0].strip()
+        if page_id:
+            seen.setdefault(page_id, None)
+    if not seen:
+        raise ValueError(f"{path} enthält keine Seiten.")
+    return list(seen)
+
+
 def as_tags(tags: list[str | None]) -> list[str]:
     """Ein Wort ohne Vorhersage ist im Ergebnis ein "O".
 
@@ -89,6 +111,11 @@ def main(argv=None):
     parser.add_argument("variant", choices=["gbert", "layoutxlm"])
     parser.add_argument("--split", default="test", choices=["dev", "test"])
     parser.add_argument(
+        "--pages",
+        help="Datei mit page_ids statt eines Splits – für Seitenmengen, die "
+        "in keinem Split stehen (Woche 4 als unberührte Frischwoche).",
+    )
+    parser.add_argument(
         "--labels-from",
         help="Modellordner unter data/labeled/. Muss derselbe sein wie beim "
         "Training – sonst wird gegen andere Labels gemessen als gelernt wurde.",
@@ -100,9 +127,25 @@ def main(argv=None):
         sys.exit(f"Kein trainiertes Modell unter {model_dir}. Erst `magda train` laufen lassen.")
 
     pages = load_labeled_pages(args.labels_from)
-    splits = get_or_create_splits(pages)
-    eval_pages = select_split(pages, splits, args.split)
-    print(f"Evaluiere '{args.variant}' auf {len(eval_pages)} Seiten ({args.split}-Split).")
+    if args.pages:
+        # Bewusst *ohne* get_or_create_splits: die Frischwoche steht in keinem
+        # Split, und der Split bleibt eingefroren.
+        wanted = read_page_ids(args.pages)
+        by_id = {page["page_id"]: page for page in pages}
+        missing = [page_id for page_id in wanted if page_id not in by_id]
+        eval_pages = [by_id[page_id] for page_id in wanted if page_id in by_id]
+        if not eval_pages:
+            sys.exit(f"Keine der {len(wanted)} Seiten aus {args.pages} ist "
+                     f"gelabelt. Erst `magda label` laufen lassen.")
+        scope = Path(args.pages).stem
+        print(f"Evaluiere '{args.variant}' auf {len(eval_pages)} Seiten "
+              f"aus {args.pages}" + (f" ({len(missing)} ohne Labels übergangen)."
+                                     if missing else "."))
+    else:
+        splits = get_or_create_splits(pages)
+        eval_pages = select_split(pages, splits, args.split)
+        scope = args.split
+        print(f"Evaluiere '{args.variant}' auf {len(eval_pages)} Seiten ({args.split}-Split).")
 
     # Tokenizer kommt vom Basismodell, nicht aus dem Checkpoint –
     # wir speichern in `magda train` nur die Modellgewichte.
@@ -176,12 +219,13 @@ def main(argv=None):
     print(full_report(censored, np.array([e["labels"] for e in plain_ds.encodings])))
 
     EVAL_DIR.mkdir(parents=True, exist_ok=True)
-    out_file = EVAL_DIR / f"{args.variant}_{args.split}.json"
+    out_file = EVAL_DIR / f"{args.variant}_{scope}.json"
     with open(out_file, "w") as f:
         json.dump(
             {
                 "variant": args.variant,
-                "split": args.split,
+                "split": scope,
+                "scope_kind": "pages" if args.pages else "split",
                 "num_pages": len(eval_pages),
                 "created": datetime.now().isoformat(timespec="seconds"),
                 "protocol": "windowed",

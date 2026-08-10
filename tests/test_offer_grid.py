@@ -169,3 +169,84 @@ def test_alle_varianten_bauen_auf_denselben_grundmerkmalen_auf():
     basis = offer_pairs.feature_names(offer_grid.VARIANTS["basis"])
     for name, blocks in offer_grid.VARIANTS.items():
         assert offer_pairs.feature_names(blocks)[:len(basis)] == basis, name
+
+
+def test_vorhersagen_und_gruppierung_treffen_sich_auf_dev():
+    """Ohne Schnittmenge ist keine Ende-zu-Ende-Messung moeglich.
+
+    Belegter Ausgangszustand (10.08.2026): 101 Vorhersagen, alle im
+    Testsplit; 51 Gruppierungen, alle in Train/Dev; Schnittmenge null.
+    Die Kette war gebaut, aber nie zusammengeschaltet.
+    """
+    import json
+    from pathlib import Path
+
+    from magda.cli.offers_model import SPLIT_FILE
+
+    prediction_dir = Path("data/predictions/gbert")
+    grouping_dir = Path("data/offer_groups/claude-sonnet-5")
+    if not prediction_dir.is_dir() or not grouping_dir.is_dir():
+        pytest.skip("Vorhersagen oder Gruppierung fehlen")
+
+    split = json.loads(SPLIT_FILE.read_text())
+    dev = set(split["dev"])
+    predicted = {p.stem for p in prediction_dir.glob("*.json")} & dev
+    grouped = {p.stem for p in grouping_dir.glob("*.json")} & dev
+
+    assert predicted & grouped, (
+        "Keine Dev-Seite hat Vorhersage und Gruppierung. "
+        "`magda predict gbert --split dev --labels-from sonnet-5` laufen lassen."
+    )
+
+
+# ------------------------------------------------- Ende-zu-Ende-Verdrahtung
+
+
+def _args(**overrides):
+    import argparse
+
+    base = {"labels_from": "sonnet-5", "predictions": None,
+            "splits": "dev", "train_splits": "train", "train_labels_from": None}
+    return argparse.Namespace(**{**base, **overrides})
+
+
+def test_der_report_traegt_die_entity_quelle_im_namen():
+    """Sonst ueberschreibt der Vorhersagelauf den Lehrerlauf still.
+
+    Beide messen `dev`, beantworten aber verschiedene Fragen: der eine, wie
+    gut gruppiert wird, wenn die Entities stimmen; der andere, was die ganze
+    Kette leistet. Ein gemeinsamer Dateiname macht aus zwei Zahlen eine.
+    """
+    from magda.cli import offers_grid
+
+    auf_labels = offers_grid.report_name(_args())
+    auf_vorhersagen = offers_grid.report_name(_args(predictions="gbert"))
+
+    assert auf_labels != auf_vorhersagen
+    assert "dev" in auf_labels and "dev" in auf_vorhersagen
+
+
+def test_ohne_eigene_trainingsquelle_erbt_das_training_die_messquelle():
+    from magda.cli import offers_grid
+
+    train = offers_grid.train_namespace(_args(predictions="gbert"))
+
+    assert train.predictions == "gbert"
+    assert train.splits == "train"
+
+
+def test_eine_eigene_trainingsquelle_trennt_lehrer_von_schueler():
+    """Der Einsatzfall: das Paarmodell lernt an Lehrer-Entities, weil nur die
+    annotiert sind, und arbeitet zur Laufzeit auf denen des Schuelers.
+
+    Ohne die Trennung traineirte das Gitter auf null Seiten - fuer den
+    Trainingssplit existieren keine Vorhersagen.
+    """
+    from magda.cli import offers_grid
+
+    train = offers_grid.train_namespace(
+        _args(predictions="gbert", train_labels_from="sonnet-5"))
+
+    assert train.predictions is None
+    assert train.labels_from == "sonnet-5"
+    assert train.splits == "train"

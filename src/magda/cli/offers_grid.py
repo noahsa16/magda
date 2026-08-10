@@ -27,6 +27,31 @@ def _interval(bounds) -> str:
     return f"[{bounds['low']:.3f}, {bounds['high']:.3f}]"
 
 
+def report_name(args) -> str:
+    """Dateiname des Reports - die Entity-Quelle gehoert hinein.
+
+    Der Lehrerlauf und der Vorhersagelauf messen beide `dev` und
+    beantworten trotzdem verschiedene Fragen. Unter einem Namen
+    ueberschreibt der zweite den ersten, ohne dass jemand es sieht.
+    """
+    suffix = f"_{config.model_slug(args.predictions)}" if args.predictions else ""
+    return f"offers_grid_{args.splits.replace(',', '-')}{suffix}.json"
+
+
+def train_namespace(args):
+    """Argumente fuer die Trainingsseite des Gitters.
+
+    Der Einsatzfall trennt beide Seiten: annotiert ist die Gruppierung ueber
+    *Lehrer*-Entities, angewandt wird das Paarmodell auf denen des Schuelers.
+    Ohne `--train-labels-from` traineirte ein Vorhersagelauf auf null Seiten,
+    denn fuer den Trainingssplit existieren keine Vorhersagen.
+    """
+    overrides = {"splits": args.train_splits}
+    if args.predictions and getattr(args, "train_labels_from", None):
+        overrides |= {"predictions": None, "labels_from": args.train_labels_from}
+    return argparse.Namespace(**{**vars(args), **overrides})
+
+
 def main(argv=None):
     from magda import offer_grid, offer_model
 
@@ -40,6 +65,9 @@ def main(argv=None):
                         help="Gruppierungsreferenz unter data/offer_groups/")
     parser.add_argument("--train-splits", default="train",
                         help="worauf trainiert und kalibriert wird")
+    parser.add_argument("--train-labels-from",
+                        help="Entity-Quelle fuers Training, wenn --predictions "
+                             "nur die Messseite ersetzen soll")
     parser.add_argument("--splits", default="dev", help="worauf gemessen wird")
     parser.add_argument("--epochs", type=int, default=300)
     parser.add_argument("--seed", type=int, default=0)
@@ -59,15 +87,16 @@ def main(argv=None):
 
     # Erst die Messseiten (setzt args.splits voraus), dann die Trainingsseiten.
     source, eval_pages, reference = _selected(args, parser)
-    train_args = argparse.Namespace(**{**vars(args), "splits": args.train_splits})
-    _, train_pages, _ = _selected(train_args, parser)
+    train_args = train_namespace(args)
+    train_source, train_pages, _ = _selected(train_args, parser)
 
     assignments = reference.assignments
     clusters = offer_grid.clusters_of(eval_pages)
-    print(f"Labelquelle: {source}")
+    print(f"Entities:    {source}" + ("  (Vorhersagen)" if args.predictions else "  (Labels)"))
     print(f"Referenz:    data/offer_groups/{config.model_slug(args.reference_from)}"
           f"  ({', '.join(sorted(set(reference.provenance.values())))})")
-    print(f"Training:    {args.train_splits}, {len(train_pages)} Seiten")
+    print(f"Training:    {args.train_splits}, {len(train_pages)} Seiten "
+          f"aus {train_source}")
     print(f"Messung:     {args.splits}, {len(eval_pages)} Seiten "
           f"in {len(clusters)} Duplikat-Clustern")
     print()
@@ -130,6 +159,8 @@ def main(argv=None):
 
     payload = {
         "source": source,
+        "source_kind": "predictions" if args.predictions else "labels",
+        "train_source": train_source,
         "reference": f"data/offer_groups/{config.model_slug(args.reference_from)}",
         "provenance": sorted(set(reference.provenance.values())),
         "train_splits": args.train_splits,
@@ -141,7 +172,7 @@ def main(argv=None):
         "variants": results,
     }
     config.EVAL_DIR.mkdir(parents=True, exist_ok=True)
-    out_path = config.EVAL_DIR / f"offers_grid_{args.splits.replace(',', '-')}.json"
+    out_path = config.EVAL_DIR / report_name(args)
     with open(out_path, "w") as f:
         json.dump(payload, f, indent=2, ensure_ascii=False)
     print(f"\nReport: {out_path}")
