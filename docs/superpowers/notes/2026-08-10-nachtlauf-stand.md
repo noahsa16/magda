@@ -132,3 +132,42 @@ statt der ersten. Auf Dev ändert das nichts an den Zahlen.
   optimal; kann Treffer verschenken, Richtung unklar.
 - `error_taxonomy.teacher_gap_reason` nennt jede ein- bis zweistellige
   Ziffer ±2 Wörter eine Fußnote — eher locker als konservativ.
+
+---
+
+## Nachtrag 2 — Lernkurve gelaufen (11.08.2026, 23:57)
+
+Vier Punkte durch, mit der korrigierten Sortierung (`magda curve`):
+
+| Punkt | Seiten | Cluster | bestes Dev-F1 |
+|---|---:|---:|---:|
+| p25 | 25 | 9 | 0.8348 |
+| p50 | 50 | 16 | 0.8908 |
+| p100 | 100 | 50 | **0.9247** |
+| p175 | 175 | 93 | 0.9206 |
+
+**Die Kurve sättigt zwischen 100 und 175 Seiten.** Die letzten 43
+unabhängigen Vorlagen bringen nichts mehr — weitere LLM-Zeit für Stufe 1
+kauft kaum noch etwas. Deckt sich mit der Fehleranalyse: die Grenze ist die
+Konsistenz der Referenz, nicht ihre Menge.
+
+Dev-Zahl ist optimistisch (bestes `eval_f1` über zehn Epochen = das
+Auswahlkriterium selbst). Form vergleichbar, Niveau nicht. Belastbar erst im
+Schlussbatch.
+
+**Plan A/2 ist ebenfalls fertig:** micro-F1 0.926 (`sonnet-5`) gegen 0.927
+(`sonnet-5-app`) auf Dev — Rauschen, wie erwartet bei neun geänderten
+Dev-Spans. Der saubere Vergleich wartet im Test, wo die Übernahme null Spans
+ändert und beide Arme dieselbe Messlatte haben.
+
+**Hinweis zur Platte:** `checkpoints/` liegt jetzt bei **20 GB** (vier
+Kurvenpunkte plus der APP_PRICE-Arm, je ~3,3 GB). Gitignored, aber es lohnt
+sich, nach dem Schlussbatch aufzuräumen — gebraucht wird dann nur noch
+`best/` je Lauf.
+
+### Damit ist offen
+
+- **Plan A/3** — Gruppierungsreferenz 51 → 80 (Kontingent-Entscheidung)
+- **Plan A/4** — Woche 4 labeln, blockiert am Labelweg
+- **Plan B/5, B/6** — Handprüfung, dann der eine Testbatch
+- **Plan B/7** — zweiter Händler, braucht Erlaubnis zum Download

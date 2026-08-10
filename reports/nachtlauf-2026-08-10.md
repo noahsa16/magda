@@ -1,6 +1,6 @@
 # Nachtlauf 10./11.08.2026 — Ende-zu-Ende, Labelqualität, Fehleranalyse
 
-Stand: 11.08.2026, Branch `offers/farbmerkmale`, 493 Tests grün (vorher 420).
+Stand: 11.08.2026, Branch `offers/farbmerkmale`, 494 Tests grün (vorher 420).
 
 ## Kurzfassung
 
