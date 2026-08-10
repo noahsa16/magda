@@ -1,0 +1,40 @@
+{
+  "variant": "gbert",
+  "labels_from": "sonnet-5",
+  "metric": "best eval_f1 over epochs, dev split",
+  "descriptive_only": true,
+  "train_pages": 175,
+  "train_clusters": 93,
+  "dev_pages": 21,
+  "dev_clusters": 14,
+  "points": [
+    {
+      "point": 25,
+      "pages": 25,
+      "clusters": 9,
+      "dev_f1": 0.8348271446862996,
+      "checkpoint": "gbert-p25"
+    },
+    {
+      "point": 50,
+      "pages": 50,
+      "clusters": 16,
+      "dev_f1": 0.8907894736842105,
+      "checkpoint": "gbert-p50"
+    },
+    {
+      "point": 100,
+      "pages": 100,
+      "clusters": 50,
+      "dev_f1": 0.924731182795699,
+      "checkpoint": "gbert-p100"
+    },
+    {
+      "point": 175,
+      "pages": 175,
+      "clusters": 93,
+      "dev_f1": 0.9206349206349206,
+      "checkpoint": "gbert-p175"
+    }
+  ]
+}

@@ -179,7 +179,42 @@ auslösen. Die Null belegt nur, dass GBERT die textlosen App-Preise ebenfalls
 nicht findet — und das ist konsistent mit dem strukturellen Befund, dass bei
 33 % der APP_PRICE-Spans „App" nicht im Fenster ±8 Wörter steht.
 
-## 5. Blackbox-Vergleichsarm (Requirements-Stufe „Excellent")
+## 5. Lernkurve — der Schüler sättigt vor dem Ende des Lehrers
+
+Vier Modelle, Trainingsmenge clusterweise gezogen (`magda curve`):
+
+| Punkt | Seiten | **Cluster** | bestes Dev-F1 |
+|---|---:|---:|---:|
+| p25 | 25 | 9 | 0.8348 |
+| p50 | 50 | 16 | 0.8908 |
+| p100 | 100 | 50 | **0.9247** |
+| p175 | 175 | 93 | 0.9206 |
+
+**Die Kurve flacht zwischen 100 und 175 Seiten ab und geht sogar leicht
+zurück.** Die letzten 43 unabhängigen Vorlagen — knapp die Hälfte des
+Trainingsmaterials — bringen nichts mehr. Das ist die ökonomisch
+interessanteste Zahl der Nacht: Sie sagt, dass weitere LLM-Zeit für *Stufe 1*
+kaum noch etwas kauft, und stützt damit von der anderen Seite, was die
+Fehleranalyse schon sagt — die Grenze ist die Konsistenz der Referenz, nicht
+ihre Menge.
+
+**Drei Einschränkungen, die mitgehören:**
+
+- Die x-Achse ist die **Clusterzahl**, nicht die Seitenzahl. 25 Seiten sind
+  hier 9 unabhängige Vorlagen. Wer Seiten zählt, zählt Regionalfassungen.
+- Die Dev-Zahl ist das beste `eval_f1` über zehn Epochen — also genau das
+  Kriterium der Checkpoint-Auswahl, ein Maximum über zehn Ziehungen und damit
+  **optimistisch**. Der Bias ist je Punkt derselbe, die *Form* also
+  vergleichbar, das *Niveau* nicht.
+- Dev hat 21 Seiten in 14 Clustern. Der Rückgang von p100 auf p175
+  (−0.004) liegt weit im Rauschen; „sättigt" ist die Aussage, „wird
+  schlechter" nicht.
+
+**Die Kurve ist deskriptiv, nicht selektiv** — an ihrem Ergebnis hängt keine
+Entscheidung. Nur so ist es regelkonform, vier Checkpoints gegen denselben
+Split zu halten.
+
+## 6. Blackbox-Vergleichsarm (Requirements-Stufe „Excellent")
 
 Gebaut, **nicht gefahren**. `magda blackbox-eval` stellt drei Paarungen
 nebeneinander statt zwei:
@@ -206,7 +241,7 @@ trifft 118 von 127 Referenzangeboten (F1 0.922). Achtung, das ist ein
 weicheres Kriterium als Gruppen-F1 — Preis exakt, Name unscharf ab 0.6
 Ähnlichkeit.
 
-## 6. Was das Review noch gefunden hat
+## 7. Was das Review noch gefunden hat
 
 Fable hat den Lauf gegengelesen und drei Dinge gefunden, die noch in der
 Nacht behoben wurden:
