@@ -50,7 +50,7 @@ magda = "magda.cli:main"
 # Geprueft am 29.07.2026 gegen das Projekt-venv: flair 0.15.1 laesst numpy,
 # torch, transformers und tokenizers unangetastet. Vor einem Versionssprung
 # lohnt derselbe Test:  pip install --dry-run '.[flair]'
-flair = ["flair>=0.13"]
+flair = ["flair>=0.15.1"]
 dev = ["pytest", "httpx"]
 
 [tool.setuptools.packages.find]
