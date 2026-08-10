@@ -1,0 +1,38 @@
+# Ohne diese Datei nimmt Dependabot den Default-Branch als Ziel, also `main`.
+# Gearbeitet wird aber in `development` (Feature-Branch -> PR nach development
+# -> gesammelt nach main). Die Folge waren Update-PRs gegen einen Branch, in
+# den nichts direkt gemergt wird, und Lockfile-Konflikte beim naechsten
+# development-nach-main-Merge.
+
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/frontend"
+    target-branch: "development"
+    schedule:
+      interval: "weekly"
+    groups:
+      # Ein PR je Woche statt einer je Paket. Die bisherigen Einzel-PRs blieben
+      # liegen, weil jeder fuer sich zu unwichtig war, um ihn anzusehen.
+      frontend:
+        patterns: ["*"]
+
+  - package-ecosystem: "pip"
+    directory: "/"
+    target-branch: "development"
+    schedule:
+      interval: "weekly"
+    ignore:
+      # transformers 5.x hat die Slow-Tokenizer entfernt; deepset/gbert-base
+      # liefert nur vocab.txt und laesst sich dort nicht mehr laden. Der Pin in
+      # pyproject.toml ist Absicht, nicht Nachlaessigkeit - Dependabot soll
+      # deshalb keine 5.x-PRs mehr aufmachen, die niemand mergen kann.
+      # Die offenen Warnungen dazu bleiben sichtbar und sind bewusst getragen.
+      - dependency-name: "transformers"
+        versions: [">=5.0.0"]
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    target-branch: "development"
+    schedule:
+      interval: "monthly"
