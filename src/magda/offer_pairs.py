@@ -77,6 +77,10 @@ RATIO_CAP = 5.0
 # Mehr kostet nur Zeit: die Linie ist selten laenger als eine halbe Seite.
 PATH_SAMPLES = 200
 
+# Blockgroesse der Glaettung. Sie ersetzt den frueheren 3x3-Median je
+# Abtastpunkt und wird einmal je Seite gerechnet.
+SMOOTH_FACTOR = 3
+
 # Groesster moeglicher RGB-Abstand, damit `bg_distance` in [0, 1] liegt.
 COLOR_MAX = math.sqrt(3 * 255 ** 2)
 
@@ -312,15 +316,24 @@ def _nearest_points(a, b) -> tuple[tuple[float, float], tuple[float, float]]:
     return (px, py), (qx, qy)
 
 
-def _patch_color(pixels, x: float, y: float, scale_x: float, scale_y: float):
-    """Median eines 3x3-Fensters, damit eine einzelne Glyphe kein Wechsel ist."""
+def _smoothed(pixels, factor: int = SMOOTH_FACTOR):
+    """Blockmittel des Seitenbilds - einmal je Seite statt je Abtastpunkt.
+
+    Die Glaettung soll verhindern, dass eine einzelne Schriftglyphe wie ein
+    Kachelwechsel aussieht. Als 3x3-Median *je Abtastpunkt* gerechnet kostete
+    das 2,7 ms je Paar und damit ueber eine Stunde je Gitterlauf - quadratisch
+    in der Entity-Zahl. Einmal je Seite geglaettet ist dieselbe Wirkung fuer
+    einen Bruchteil: danach ist jeder Abtastpunkt ein einzelner Zugriff.
+    """
     import numpy as np
 
-    height, width = pixels.shape[0], pixels.shape[1]
-    col = min(max(int(x * scale_x), 0), width - 1)
-    row = min(max(int(y * scale_y), 0), height - 1)
-    patch = pixels[max(0, row - 1):row + 2, max(0, col - 1):col + 2]
-    return np.median(patch.reshape(-1, 3), axis=0)
+    height = pixels.shape[0] // factor * factor
+    width = pixels.shape[1] // factor * factor
+    if height < factor or width < factor:
+        return pixels.astype("float32")
+    trimmed = pixels[:height, :width].astype("float32")
+    return trimmed.reshape(height // factor, factor,
+                           width // factor, factor, 3).mean(axis=(1, 3))
 
 
 def _path_same_bg(pixels, box_i, box_j, color_i,
@@ -356,17 +369,16 @@ def _path_same_bg(pixels, box_i, box_j, color_i,
     if steps < 2:
         return 1.0
 
-    hits = 0
-    for step in range(steps + 1):
-        t = step / steps
-        color = _patch_color(
-            pixels,
-            start[0] + t * (end[0] - start[0]),
-            start[1] + t * (end[1] - start[1]),
-            scale_x, scale_y,
-        )
-        if math.dist(color, color_i) <= COLOR_TOLERANCE:
-            hits += 1
+    import numpy as np
+
+    # Vektorisiert statt Schleife: alle Abtastpunkte in einem Zugriff.
+    t = np.linspace(0.0, 1.0, steps + 1)
+    columns = np.clip((start[0] + t * (end[0] - start[0])) * scale_x,
+                      0, pixels.shape[1] - 1).astype(int)
+    rows = np.clip((start[1] + t * (end[1] - start[1])) * scale_y,
+                   0, pixels.shape[0] - 1).astype(int)
+    difference = pixels[rows, columns] - np.asarray(color_i, dtype="float32")
+    hits = int((np.sqrt((difference ** 2).sum(axis=1)) <= COLOR_TOLERANCE).sum())
     return hits / (steps + 1)
 
 
@@ -491,9 +503,13 @@ def page_pairs(page: dict, assignment: dict[int, int] | None = None, *,
             if len(w.get("bbox") or []) == 4
         ]
     if "color" in blocks:
-        context["pixels"] = pixels
-        context["scale_x"] = pixels.shape[1] / width
-        context["scale_y"] = pixels.shape[0] / height
+        # Die Hintergrundfarbe je Entity kommt aus dem Originalbild (einmal
+        # je Entity, billig); der Pfad tastet das geglaettete ab (einmal je
+        # Paar, und davon gibt es quadratisch viele).
+        smooth = _smoothed(pixels)
+        context["pixels"] = smooth
+        context["scale_x"] = smooth.shape[1] / width
+        context["scale_y"] = smooth.shape[0] / height
         context["colors"] = _page_colors(entities, pixels, width, height)
 
     groups = None

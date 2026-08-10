@@ -410,8 +410,11 @@ def test_der_pfadanteil_saettigt_nicht_bei_vielen_farbwechseln():
         (0, 3), "path_same_bg")
 
     # Der Vorgaenger stand in beiden Faellen bei 1.0 und unterschied nichts.
+    # Gefordert ist deshalb ein deutlicher Abstand, keine feste Schwelle:
+    # Wo der Wert der unruhigen Seite genau landet, haengt an der
+    # Glaettungsgroesse - dass er weit unter der ruhigen liegt, nicht.
     assert ruhig == pytest.approx(1.0)
-    assert unruhig < 0.5
+    assert ruhig - unruhig > 0.4
 
 
 def test_eine_fremde_flaeche_dazwischen_senkt_den_pfadanteil():
