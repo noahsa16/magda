@@ -313,6 +313,31 @@ export interface GoldSummary {
   stale: boolean
 }
 
+/** Welche Wörter ein Angebot bilden – die Referenz fürs Gruppieren.
+ *
+ * Wortindizes statt Spans: Ein Span gehört immer einem Labelordner, ein Wort
+ * der Seite. Dieselbe Annotation beurteilt so die Heuristik, einen
+ * LLM-Teacher und später einen OFFER-Kopf.
+ */
+export interface OfferGrouping {
+  page_id: string
+  words_hash: string
+  status: "untouched" | "in_progress" | "done"
+  annotator: string
+  updated: string | null
+  groups: number[][]
+  stale: boolean
+}
+
+export interface OfferGroupingSummary {
+  page_id: string
+  catalog: string
+  status: "untouched" | "in_progress" | "done" | "broken"
+  annotator: string
+  num_offers: number
+  stale: boolean
+}
+
 /** Eine Kachel in der Prospekt-Übersicht. Gleiche Form für beide Werkzeuge. */
 export interface CatalogTile {
   id: string

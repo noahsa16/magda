@@ -4,6 +4,17 @@ Token-Labels sagen nur: dieses Wort ist PRICE, jenes PRODUCT. Fuer die
 eigentliche Information Extraction fehlt der zweite Schritt: Welche dieser
 Entities gehoeren auf der Seite zusammen? Dieses Modul gruppiert die gelabelten
 Spans heuristisch zu Angebotsbloecken und persistiert sie als relationale Daten.
+
+Zweistufig statt Anker-Abstimmung: Zuerst werden Beschreibungs-Entities
+(PRODUCT, BRAND, QUANTITY, UNIT_PRICE, VALID) rein nach visueller Naehe zu
+Bloecken zusammengefasst - unabhaengig davon, wo der Preis am Ende landet.
+Preis-Badges (PRICE, APP_PRICE, OLD_PRICE, DISCOUNT) werden separat und
+ebenso eng geclustert. Erst danach werden Badges den Bloecken zugeordnet,
+bevorzugt ueber Menge x Grundpreis. Der fruehere Ansatz liess jede Entity
+unabhaengig fuer den naechsten Preis-Anker abstimmen - dabei konnte die Marke
+an einen anderen Preis andocken als das Produkt direkt daneben, sobald ein
+Nachbarprodukt zufaellig naeher am selben Anker lag (belegter Fall:
+FREIXENET/HARIBO auf 1351497_p1).
 """
 
 from __future__ import annotations
@@ -29,7 +40,12 @@ VALUE_TYPES = {
 }
 
 PRICE_TYPES = {"PRICE", "APP_PRICE"}
-PRICE_NEIGHBORS = {"OLD_PRICE", "DISCOUNT", "UNIT_PRICE"}
+# OLD_PRICE/DISCOUNT haengen visuell am Preis-Sticker, nicht am Produkttext -
+# sie bilden mit PRICE/APP_PRICE eine eigene Gruppe (Badges). UNIT_PRICE
+# dagegen steht im Layout fast immer direkt unter QUANTITY, beim Produkt, und
+# gehoert deshalb zu den Beschreibungs-Entities.
+BADGE_TYPES = {"PRICE", "APP_PRICE", "OLD_PRICE", "DISCOUNT"}
+DESCRIPTION_TYPES = VALUE_TYPES - BADGE_TYPES
 
 
 @dataclass(frozen=True)
@@ -107,13 +123,9 @@ def _center(bbox: tuple[float, float, float, float]) -> tuple[float, float]:
     return (bbox[0] + bbox[2]) / 2, (bbox[1] + bbox[3]) / 2
 
 
-def _vertical_distance(a: Entity, b: Entity, page_height: float) -> float:
-    _, ay = _center(a.bbox)
-    _, by = _center(b.bbox)
-    return abs(ay - by) / max(1.0, page_height)
-
-
 def _distance_to_anchor(entity: Entity, anchor: Entity, page: dict) -> float:
+    """Gewichtete Distanz, hoehenlastig: zwei Entities auf gleicher Zeile
+    gehoeren eher zusammen als zwei mit gleichem x aber verschiedener Zeile."""
     width = max(1.0, float(page.get("width") or 1.0))
     height = max(1.0, float(page.get("height") or 1.0))
     ex, ey = _center(entity.bbox)
@@ -126,121 +138,321 @@ def _distance_to_anchor(entity: Entity, anchor: Entity, page: dict) -> float:
     return dy * 2.8 + dx * 0.55 + same_band_bonus + left_of_price_bonus
 
 
-def _nearest_anchor(entity: Entity, anchors: list[Entity], page: dict) -> Entity:
-    return min(anchors, key=lambda anchor: (_distance_to_anchor(entity, anchor, page), anchor.id))
+def _distance_between_offers(a: Offer, b: Offer, page: dict) -> float:
+    return min(_distance_to_anchor(ea, eb, page) for ea in a.entities for eb in b.entities)
 
 
-def _column_bands(entities: list[Entity], page_width: float) -> list[tuple[float, float]]:
-    """Fasst x-Bereiche zu Spalten zusammen, getrennt durch eine Mindestluecke.
+def _gap(a: Entity, b: Entity) -> tuple[float, float]:
+    """Pixelluecke zwischen zwei Bounding-Boxen in x und y; 0 bei Ueberlappung."""
+    dx = max(0.0, b.bbox[0] - a.bbox[2], a.bbox[0] - b.bbox[2])
+    dy = max(0.0, b.bbox[1] - a.bbox[3], a.bbox[1] - b.bbox[3])
+    return dx, dy
 
-    `_distance_to_anchor` gewichtet die Hoehe so stark (Faktor 2.8 gegen 0.55),
-    dass ein Preis der Nachbarspalte naeher wirken kann als der eigene, sobald
-    beide etwa auf gleicher Hoehe liegen. Spalten wirken als harte Vorauswahl
-    *vor* diesem Distanzvergleich: eine Entity darf nur dann in eine andere
-    Spalte greifen, wenn ihre eigene keinen Preis-Anker enthaelt.
+
+def _same_block(a: Entity, b: Entity, page: dict) -> bool:
+    """Zwei Entities gehoeren zum selben Textblock, wenn ihre Boxen in beiden
+    Achsen eng beieinander liegen. Anders als bei der Anker-Suche zaehlt hier
+    keine Gewichtung zwischen Achsen: ein grosser x-Abstand trennt genauso
+    zuverlaessig wie ein grosser y-Abstand (belegter Fall: SCHWARTAU/NUTELLA,
+    y-Luecke klein, x-Luecke gross - zwei verschiedene Produkte)."""
+    width = max(1.0, float(page.get("width") or 1.0))
+    height = max(1.0, float(page.get("height") or 1.0))
+    dx, dy = _gap(a, b)
+    return dx / width <= 0.10 and dy / height <= 0.02
+
+
+class _UnionFind:
+    def __init__(self, ids: list[int]) -> None:
+        self._parent = {i: i for i in ids}
+
+    def find(self, x: int) -> int:
+        while self._parent[x] != x:
+            self._parent[x] = self._parent[self._parent[x]]
+            x = self._parent[x]
+        return x
+
+    def union(self, x: int, y: int) -> None:
+        rx, ry = self.find(x), self.find(y)
+        if rx != ry:
+            self._parent[rx] = ry
+
+
+def _cluster_tight(entities: list[Entity], page: dict) -> list[list[Entity]]:
+    """Fasst Entities zu Bloecken zusammen, deren Boxen eng beieinander liegen.
+
+    O(n^2) Paarvergleiche - auf einer Prospektseite mit einigen hundert
+    Entities unproblematisch, eine Rasterung nach Position lohnt sich hier
+    nicht.
     """
     if not entities:
         return []
-    gap = max(20.0, 0.05 * page_width)
+    uf = _UnionFind([e.id for e in entities])
+    for i, a in enumerate(entities):
+        for b in entities[i + 1:]:
+            if _same_block(a, b, page):
+                uf.union(a.id, b.id)
+    groups: dict[int, list[Entity]] = {}
+    for e in entities:
+        groups.setdefault(uf.find(e.id), []).append(e)
+    return list(groups.values())
+
+
+def _split_multi_product(component: list[Entity], page: dict) -> list[list[Entity]]:
+    """Trennt einen Block mit mehreren Produkten in einzelne Angebote auf.
+
+    Zwei Ebenen, in dieser Reihenfolge: zuerst ueber mehrere Marken, sonst
+    ueber mehrere PRODUCT-Entities. Beide nur, wenn jeder Anker seine EIGENE
+    Menge in der Naehe hat: SOLVEL x3 sind drei echte Produkte, jedes mit
+    eigener Menge und eigenem Grundpreis (1351497_p13). Fanta/Coca-Cola
+    dagegen ist EIN Angebot mit zwei Markennamen und einer gemeinsamen Menge
+    ("2 l") - das bleibt ein Block, sonst reisst der Split ein echtes
+    Mehrmarken-Angebot auseinander.
+
+    Die zweite Ebene (PRODUCT statt BRAND) deckt Faelle ab, in denen zwei
+    Produkte ein Foto teilen, aber nur eines eine eigene Marke hat - Hähnchen
+    und Trauben unter einem Foto, nur das Hähnchen mit MÜHLENHOF (1351497_p1):
+    zwei BRAND-Entities gibt es dort nicht, aber zwei PRODUCT-Entities mit je
+    eigener Menge und eigenem Grundpreis.
+
+    Rekursiv, weil der Marken-Split allein hier nicht reicht: die MÜHLENHOF-
+    Gruppe hat nach der Trennung von HARIBO immer noch Hähnchen *und* Trauben
+    zusammen (Trauben hat keine eigene Marke), und "hat eine Menge" ist als
+    Abbruchkriterium erfuellt, obwohl innerhalb der Gruppe noch zwei Produkte
+    stecken. Jede entstehende Untergruppe wird deshalb erneut versucht zu
+    splitten, bis keine Ebene mehr greift.
+
+    Eigene Menge reicht als Kriterium allein nicht: HARIBO Goldbären und
+    Pico-Balla haben je ihre eigene Menge (205 g / 190 g), teilen sich aber
+    einen Preis ("je 205 g oder 190 g, 0.69"). Getrennt bekaeme nur eine
+    Variante den Preis. Erst wenn die erwarteten Preise (Menge x Grundpreis)
+    zwischen den Gruppen wirklich verschieden sind, ist der Split gerechtfertigt.
+    """
+    for anchor_type in ("BRAND", "PRODUCT"):
+        anchors = [e for e in component if e.type == anchor_type]
+        if len(anchors) < 2:
+            continue
+
+        def nearest(entity: Entity, anchors: list[Entity] = anchors) -> Entity:
+            return min(anchors, key=lambda a: _distance_to_anchor(entity, a, page))
+
+        by_anchor: dict[int, list[Entity]] = {a.id: [a] for a in anchors}
+        for entity in component:
+            if entity.type == anchor_type:
+                continue
+            by_anchor[nearest(entity).id].append(entity)
+
+        groups = list(by_anchor.values())
+        if not all(any(e.type == "QUANTITY" for e in members) for members in groups):
+            continue
+
+        price_sets = [set(_expected_prices(_make_offer("_tmp", 0, m), page)) for m in groups]
+        shares_price = any(
+            a & b for i, a in enumerate(price_sets) for b in price_sets[i + 1:]
+        )
+        if shares_price:
+            continue
+
+        result: list[list[Entity]] = []
+        for members in groups:
+            result.extend(_split_multi_product(members, page))
+        return result
+
+    return [component]
+
+
+def _x_columns(entities: list[Entity], page: dict) -> list[list[Entity]]:
+    """Zerlegt eine Entity-Menge an den senkrechten Weissraum-Korridoren.
+
+    Projektionsprofil auf die x-Achse, geschnitten an jeder Luecke ueber der
+    Mindestbreite - der Standardweg fuer Spaltenlayouts (XY-Cut). Gemessen an
+    den Non-Food-Legenden liegen die Spaltenluecken bei 6 bis 66 px, waehrend
+    innerhalb einer Spalte hoechstens 4 px frei bleiben; die Grenze bei rund
+    6 px trennt beide Faelle sauber.
+    """
+    if not entities:
+        return []
+    width = max(1.0, float(page.get("width") or 1.0))
+    min_gap = max(5.0, 0.012 * width)
+
     spans = sorted((e.bbox[0], e.bbox[2]) for e in entities)
     bands = [list(spans[0])]
     for x0, x1 in spans[1:]:
-        if x0 - bands[-1][1] <= gap:
+        if x0 - bands[-1][1] <= min_gap:
             bands[-1][1] = max(bands[-1][1], x1)
         else:
             bands.append([x0, x1])
-    return [tuple(b) for b in bands]
 
-
-def _band_of(bbox: tuple[float, float, float, float], bands: list[tuple[float, float]]) -> int:
-    center = (bbox[0] + bbox[2]) / 2
-    for i, (b0, b1) in enumerate(bands):
-        if b0 <= center <= b1:
-            return i
-    return min(range(len(bands)), key=lambda i: min(abs(center - bands[i][0]), abs(center - bands[i][1])))
-
-
-def _close_to_offer(entity: Entity, offer_entities: list[Entity], page: dict) -> bool:
-    height = max(1.0, float(page.get("height") or 1.0))
-    nearest = min(_vertical_distance(entity, other, height) for other in offer_entities)
-    return nearest <= 0.09
-
-
-def cluster_page(page: dict) -> list[Offer]:
-    """Gruppiert die gelabelten Entities einer Seite zu Angebotsdatensaetzen.
-
-    Preise sind die staerksten Anker, weil fast jedes Angebot einen sichtbaren
-    Preisblock hat. Produkt, Marke, Menge und Grundpreis werden dem vertikal
-    naechsten Preisanker zugeordnet, aber nur innerhalb der eigenen Spalte
-    (siehe `_column_bands`) – erst wenn die eigene Spalte keinen Preis
-    enthaelt, darf eine Entity ueber die Spaltengrenze greifen. Weit entfernte
-    Rest-Entities bilden eigene Cluster. VALID bleibt meist ein Seitenfeld und
-    wird nur aufgenommen, wenn es nah an einem Angebot steht. Ein letzter
-    Durchlauf (`_reconcile_prices`) korrigiert Preise, die geometrisch beim
-    falschen Angebot gelandet sind, ueber Menge x Grundpreis.
-    """
-    page_id = page.get("page_id") or "unknown"
-    entities = [e for e in entities_from_page(page) if e.type in VALUE_TYPES]
-    if not entities:
-        return []
-
-    price_anchors = [e for e in entities if e.type in PRICE_TYPES]
-    if not price_anchors:
-        return _fallback_clusters(page_id, entities)
-
-    width = float(page.get("width") or 1.0)
-    bands = _column_bands(entities, width)
-    anchor_band = {anchor.id: _band_of(anchor.bbox, bands) for anchor in price_anchors}
-
-    by_anchor: dict[int, list[Entity]] = {anchor.id: [anchor] for anchor in price_anchors}
-    leftovers: list[Entity] = []
+    columns: list[list[Entity]] = [[] for _ in bands]
     for entity in entities:
+        center = (entity.bbox[0] + entity.bbox[2]) / 2
+        index = min(
+            range(len(bands)),
+            key=lambda i: 0.0 if bands[i][0] <= center <= bands[i][1]
+            else min(abs(center - bands[i][0]), abs(center - bands[i][1])),
+        )
+        columns[index].append(entity)
+    return [c for c in columns if c]
+
+
+def _reading_order_groups(column: list[Entity]) -> list[list[Entity]]:
+    """Teilt eine Spalte in Angebote: ein Produkt nach einem Preis beginnt ein neues.
+
+    In der Legende steht je Spalte Produktname ueber Preis, streng abwechselnd
+    (gemessen als Lesereihenfolge, z.B. `P P $ P $ P $ P $` auf 1351497_p28).
+    Damit braucht die Trennung keine Menge je Gruppe - genau die fehlt bei
+    Non-Food-Artikeln, weshalb `_split_multi_product` dort nicht greift.
+    Mengen- und Grundpreiszeilen zaehlen nicht als Kopf: sie stehen zwischen
+    Produkt und Preis und wuerden sonst mitten im Angebot schneiden.
+
+    Ein zweiter Preis desselben Typs schneidet ebenfalls, auch ohne Produkt
+    dazwischen. Das faengt Produktnamen ab, die das Naehe-Clustering in einen
+    anderen Block gezogen hat und die in der Spalte deshalb fehlen: ohne den
+    Schnitt sammelte die Vorgaengergruppe beide Preiszeilen ein und behauptete
+    zwei Preise fuer ein Produkt. Als eigenes Fragment ist die verwaiste
+    Preiszeile wenigstens richtig - ihr Produkt steht anderswo.
+    """
+    groups: list[list[Entity]] = []
+    current: list[Entity] = []
+    seen: set[str] = set()
+    for entity in sorted(column, key=lambda e: (e.bbox[1], e.bbox[0], e.start)):
+        starts_offer = entity.type in ("PRODUCT", "BRAND") and seen
+        repeats_price = entity.type in PRICE_TYPES and entity.type in seen
+        if (starts_offer or repeats_price) and current:
+            groups.append(current)
+            current = []
+            seen = set()
+        current.append(entity)
+        if entity.type in PRICE_TYPES:
+            seen.add(entity.type)
+    if current:
+        groups.append(current)
+    return groups
+
+
+def _segment_legend(
+    block: list[Entity], badge_entities: list[Entity], page: dict
+) -> tuple[list[list[Entity]], list[Entity]] | None:
+    """Zerlegt eine Sammel-Legende in einzelne Angebote, oder None.
+
+    Non-Food-Seiten zeigen oben ein Fotoraster mit freistehenden Preis-Stickern
+    und unten eine Legende, in der alle Produkttexte spaltenweise dicht gepackt
+    stehen. Das Naehe-Clustering fasst diese Legende zu einem Block mit ueber
+    zwanzig Produkten zusammen, und `_split_multi_product` trennt ihn nicht,
+    weil Non-Food-Artikel keine Menge tragen.
+
+    Preis-Entities innerhalb des Blocks werden hier mitgenommen statt
+    `_match_badges` ueberlassen: in der Legende steht der Preis naeher am
+    *folgenden* Produkt als am eigenen (gemessen auf 1351497_p30: 2.2 px
+    gegen 6.0 px), Naehe allein ordnet ihn also falsch zu. Die Lesereihenfolge
+    weiss es besser.
+
+    Gibt None zurueck, wenn eine der beiden Bedingungen fehlt:
+
+    - Mindestens zwei Preise *innerhalb* des Blocks. Das trennt Legende von
+      Produktzeile: in der Legende steht der Preis zwischen den Produkttexten,
+      auf einer Lebensmittelseite dagegen als Sticker auf dem Foto weit
+      darueber, ausserhalb des Blocks. Ohne diese Bedingung zerlegte die
+      Lesereihenfolge auch die Obst- und Suesswarenzeile auf 1351497_p1, wo
+      Goldbären und Pico-Balla zusammengehoeren.
+    - Mehr als eine Spalte. Sonst ist es ein normales Angebot mit mehreren
+      Produkt- oder Markenzeilen untereinander (FANTA/COCA-COLA), und der
+      uebliche Weg ueber `_match_badges` bleibt zustaendig.
+    """
+    bbox = _union_bbox([e.bbox for e in block])
+    inside = [
+        b for b in badge_entities
+        if bbox[0] <= (b.bbox[0] + b.bbox[2]) / 2 <= bbox[2]
+        and bbox[1] <= (b.bbox[1] + b.bbox[3]) / 2 <= bbox[3]
+    ]
+    if sum(1 for b in inside if b.type in PRICE_TYPES) < 2:
+        return None
+
+    columns = _x_columns(block + inside, page)
+    if len(columns) < 2:
+        return None
+
+    groups: list[list[Entity]] = []
+    for column in columns:
+        groups.extend(_reading_order_groups(column))
+    return groups, inside
+
+
+def _attach_orphan_descriptions(blocks: list[list[Entity]], page: dict) -> list[list[Entity]]:
+    """Haengt Mengen-/Grundpreiszeilen an den Produktblock darueber an.
+
+    Das Naehe-Clustering trennt bei jeder Luecke ueber 2 % der Seitenhoehe,
+    und zwischen Produkttext und Mengenzeile steht oft unbeschrifteter Text
+    ("je", Fussnoten) - der Block reisst dann mitten im Angebot. Uebrig bleibt
+    eine Mengenzeile ohne Produkt, die anschliessend den Preis abfaengt, der
+    eigentlich zum Produkt darueber gehoert (belegter Fall: FANTA/COCA-COLA
+    auf 1351497_p1, "2 l" und "(1 l = 0.65)" getrennt vom Markennamen).
+
+    Gemessen ueber den Korpus ist die Fortsetzung derselben Kachel an zwei
+    Merkmalen erkennbar: die linke Textkante fluchtet exakt (Median 0.0 px),
+    und die Luecke betraegt rund eine Zeilenhoehe. Gueltigkeitsbanner, die
+    ebenfalls ohne Produkt dastehen, liegen dagegen 240 bis 739 px entfernt
+    und werden von der Abstandsgrenze zuverlaessig ausgeschlossen. VALID-only
+    Rumpfbloecke bleiben ohnehin aussen vor - ein Banner gehoert der Seite,
+    nicht einem Angebot.
+    """
+    width = max(1.0, float(page.get("width") or 1.0))
+    height = max(1.0, float(page.get("height") or 1.0))
+
+    with_product = [b for b in blocks if any(e.type in ("PRODUCT", "BRAND") for e in b)]
+    if not with_product:
+        return blocks
+
+    result: list[list[Entity]] = []
+    for block in blocks:
+        if any(e.type in ("PRODUCT", "BRAND") for e in block):
+            result.append(block)
+            continue
+        if not any(e.type in ("QUANTITY", "UNIT_PRICE") for e in block):
+            result.append(block)
+            continue
+
+        bbox = _union_bbox([e.bbox for e in block])
+        candidates = []
+        for target in with_product:
+            tbox = _union_bbox([e.bbox for e in target])
+            if abs(bbox[0] - tbox[0]) / width > 0.012:
+                continue
+            gap = bbox[1] - tbox[3]  # nur nach unten: die Menge steht unter dem Produkt
+            if 0 <= gap / height <= 0.05:
+                candidates.append((gap, target))
+        if candidates:
+            candidates.sort(key=lambda c: c[0])
+            candidates[0][1].extend(block)
+        else:
+            result.append(block)
+    return result
+
+
+def _split_multi_price(component: list[Entity], page: dict) -> list[list[Entity]]:
+    """Trennt einen Preis-Block mit mehreren PRICE- oder APP_PRICE-Entities.
+
+    Anders als bei Produkten (`_split_multi_product`) braucht es keine
+    Zusatzpruefung: ein einzelnes Angebot hat nie zwei verschiedene reguläre
+    Preise gleichzeitig, waehrend Preis-Sticker benachbarter Produkte auf
+    dichten Seiten durchaus nah genug beieinander liegen koennen, um von der
+    Naehe-Schwelle faelschlich zusammengefasst zu werden.
+    """
+    prices = [e for e in component if e.type == "PRICE"]
+    app_prices = [e for e in component if e.type == "APP_PRICE"]
+    if len(prices) <= 1 and len(app_prices) <= 1:
+        return [component]
+
+    anchors = prices + app_prices
+
+    def nearest_anchor(entity: Entity) -> Entity:
+        return min(anchors, key=lambda a: _distance_to_anchor(entity, a, page))
+
+    by_anchor: dict[int, list[Entity]] = {a.id: [a] for a in anchors}
+    for entity in component:
         if entity.type in PRICE_TYPES:
             continue
-        own_band = _band_of(entity.bbox, bands)
-        same_column = [a for a in price_anchors if anchor_band[a.id] == own_band]
-        candidates = same_column or price_anchors
-        anchor = _nearest_anchor(entity, candidates, page)
-        distance = _distance_to_anchor(entity, anchor, page)
-        limit = 0.74
-        if entity.type in PRICE_NEIGHBORS:
-            limit = 0.55
-        elif entity.type == "VALID":
-            limit = 0.35
-        if distance <= limit:
-            by_anchor[anchor.id].append(entity)
-        else:
-            leftovers.append(entity)
-
-    offers = [
-        _make_offer(page_id, offer_id, members)
-        for offer_id, members in enumerate(by_anchor.values())
-    ]
-
-    # Preislose Entities, die sehr nah an einem Angebot liegen, werden dort
-    # nachtraeglich angehaengt. Der Rest bleibt als unvollstaendiges Angebot
-    # sichtbar, statt beim Export verloren zu gehen.
-    for entity in leftovers:
-        candidate = min(offers, key=lambda offer: _distance_to_offer(entity, offer, page))
-        if _close_to_offer(entity, candidate.entities, page):
-            candidate.entities.append(entity)
-            candidate.bbox = _union_bbox([e.bbox for e in candidate.entities])
-        else:
-            offers.append(_make_offer(page_id, len(offers), [entity]))
-
-    offers = _reconcile_prices(offers, page)
-
-    for offer in offers:
-        offer.entities.sort(key=lambda e: (e.bbox[1], e.bbox[0], e.start))
-        offer.bbox = _union_bbox([e.bbox for e in offer.entities])
-    offers.sort(key=lambda offer: (offer.bbox[1], offer.bbox[0]))
-    for idx, offer in enumerate(offers):
-        offer.id = idx
-    return offers
-
-
-def _distance_to_offer(entity: Entity, offer: Offer, page: dict) -> float:
-    return min(_distance_to_anchor(entity, other, page) for other in offer.entities)
+        by_anchor[nearest_anchor(entity).id].append(entity)
+    return list(by_anchor.values())
 
 
 def _make_offer(page_id: str, offer_id: int, members: list[Entity]) -> Offer:
@@ -288,14 +500,13 @@ def _quantity_in_unit(text: str, unit: str) -> float | None:
 def _expected_prices(offer: Offer, page: dict) -> list[float]:
     """Menge x Grundpreis je QUANTITY, nur fuer UNIT_PRICE-Entities in der Naehe.
 
-    Kein Kreuzprodukt aus allen QUANTITY- und UNIT_PRICE-Entities: landen durch
-    einen Clustering-Fehler in Pass 1 mehrere Produkte im selben Angebot (siehe
-    1351497_p13, wo Grundpreise eines dritten Produkts ohne eigene Menge
-    mithineinrutschen), erzeugt das Kreuzprodukt Zufallstreffer aus Menge und
-    fremdem Grundpreis. Die Naehe-Schwelle nimmt trotzdem ALLE nahen Treffer,
-    nicht nur den naechsten: ein Produkt mit regulaerem und App-Preis zeigt
-    oft zwei Grundpreise auf gleicher Hoehe nebeneinander (belegter Fall:
-    1351497_p10, Burger Patties), und beide gehoeren zur selben Menge.
+    Kein Kreuzprodukt aus allen QUANTITY- und UNIT_PRICE-Entities: landen
+    mehrere Produkte im selben Block (Grenzfall des Naehe-Clusterings),
+    erzeugt das Kreuzprodukt Zufallstreffer aus Menge und fremdem Grundpreis.
+    Die Naehe-Schwelle nimmt trotzdem ALLE nahen Treffer, nicht nur den
+    naechsten: ein Produkt mit regulaerem und App-Preis zeigt oft zwei
+    Grundpreise auf gleicher Hoehe nebeneinander (Burger Patties,
+    1351497_p10), und beide gehoeren zur selben Menge.
     """
     width = max(1.0, float(page.get("width") or 1.0))
     height = max(1.0, float(page.get("height") or 1.0))
@@ -329,108 +540,199 @@ def _price_matches(value: float, expected: list[float]) -> bool:
     return any(abs(value - exp) <= max(0.02, 0.015 * exp) for exp in expected)
 
 
-def _is_orphan_badge(offer: Offer) -> bool:
-    """Ein Angebot ohne PRODUCT/BRAND ist nur ein losgeloester Preis-Sticker."""
-    return not any(e.type in ("PRODUCT", "BRAND") for e in offer.entities)
+# Fallback-Grenze fuer Preis-Badges ohne Grundpreis-Beleg (kein UNIT_PRICE
+# gelabelt): geometrische Naehe allein, dieselbe Groessenordnung wie die
+# frueheren Akzeptanzschwellen der Anker-Suche.
+_NEARBY_LIMIT = 0.6
 
 
-def _is_trustworthy_target(offer: Offer, page: dict) -> bool:
-    """Nur ein geometrisch zusammenhaengendes Angebot darf einen Preis dazugewinnen.
+@dataclass(frozen=True)
+class BadgeMatch:
+    """Wie ein Preis-Badge zu seinem Block kam - die Buchfuehrung fuer `magda offers-report`.
 
-    Reines Zaehlen (genau ein PRODUCT) haette Angebote ausgeschlossen, deren
-    Produkttext nur durch einen Zeilenumbruch in zwei PRODUCT-Spans zerfaellt
-    (z.B. "getraenk," + "versch. Sorten," auf zwei Zeilen desselben Angebots).
-    Entscheidend ist stattdessen, ob PRODUCT/BRAND eng beieinander liegen: bei
-    einem echten Clustering-Fehler aus Pass 1, der mehrere Produkte vermischt
-    (siehe 1351497_p13), liegen sie ueber mehrere Zeilenabstaende auseinander.
-    Ein Ziel ganz ohne PRODUCT/BRAND haette ohnehin keinen erkennbaren Bezug.
+    Beide Kandidatenlisten werden immer gefuellt, auch wenn die Zuordnung
+    geometrisch fiel. Daraus zieht der Report sein Urteil - und er zieht es
+    zweimal, weil die Frage "welchen Block nennt die Rechnung?" zwei
+    vertretbare Antworten hat:
+
+    - `arithmetic_targets` zaehlt nur Bloecke, die diesen Preistyp noch frei
+      haben - dieselbe Bedingung, unter der die Zuordnung selbst laeuft.
+    - `arithmetic_targets_any` ignoriert die Belegung und fragt rein
+      rechnerisch. Passt ein Preis zu einem schon belegten Block, ist das ein
+      schwaecheres, aber echtes Gegensignal.
+
+    Der Unterschied ist keine Spitzfindigkeit: ueber Train+Dev trennt er 146
+    Faelle, und die Trefferquote schwankt dadurch zwischen 0.561 und 0.682.
     """
-    height = max(1.0, float(page.get("height") or 1.0))
-    markers = [e for e in offer.entities if e.type in ("PRODUCT", "BRAND")]
-    if not markers:
-        return False
-    y0 = min(e.bbox[1] for e in markers)
-    y1 = max(e.bbox[3] for e in markers)
-    return (y1 - y0) / height <= 0.1
+
+    page_id: str
+    price_type: str
+    value: float | None
+    path: str  # "arithmetic" | "geometric" | "unmatched"
+    target: int | None
+    arithmetic_targets: tuple[int, ...]
+    arithmetic_targets_any: tuple[int, ...]
+    distance: float | None
 
 
-def _reconcile_prices(offers: list[Offer], page: dict) -> list[Offer]:
-    """Verschiebt Preise zu dem Angebot, zu dem sie laut Grundpreis gehoeren.
+def _match_badges(
+    blocks: list[Offer],
+    badges: list[Offer],
+    page: dict,
+    *,
+    arithmetic: bool = True,
+    trace: list[BadgeMatch] | None = None,
+) -> list[Offer]:
+    """Ordnet Preis-Badges den Beschreibungsbloecken zu, denen sie gehoeren.
 
-    Preisbadges sitzen auf manchen Seiten weiter von ihrem eigenen Produkt
-    entfernt als vom Preisbadge des Nachbarprodukts (belegter Fall:
-    1351497_p10, Grundpreis widerlegt die geometrisch naheliegende
-    Zuordnung). Geometrie kann das nicht sicher trennen, Arithmetik schon:
-    Menge x Grundpreis ergibt fast immer wieder den Verkaufspreis, und dieses
-    Signal ist unabhaengig von der Position auf der Seite.
+    Zuerst ueber Menge x Grundpreis: das Signal ist unabhaengig von der
+    Position auf der Seite und loest Faelle, in denen ein Preis geometrisch
+    naeher am Nachbarprodukt sitzt als am eigenen (belegter Fall:
+    1351497_p10, Burger Patties/Lammspiesse). Fehlt eine pruefbare Menge,
+    zaehlt die geometrische Naehe als Rueckfall, mit einer Mindestnaehe -
+    sonst wuerde jedes uebrig gebliebene Badge irgendeinem Block angehaengt.
 
-    Ein Angebot ohne eigene Menge/Grundpreis-Angabe (expected == []) hat keinen
-    pruefbaren Erwartungswert - das heisst nicht "falsch", sondern "unbekannt".
-    Ein echtes Angebot mit PRODUCT oder BRAND bleibt in diesem Fall unangetastet,
-    sonst wuerde ein zufaellig gleicher Preis anderswo (z.B. zwei Artikel bei
-    5.99) es leerraeumen. Nur reine Preis-Sticker ohne Produkt duerfen umziehen,
-    wenn irgendwo ein Angebot ihren Wert rechnerisch erwartet.
-
-    Erst einsammeln, dann verteilen, statt live waehrend der Iteration zu
-    verschieben: sonst haengt das Ergebnis von der zufaelligen Reihenfolge der
-    Angebote ab, in der ein bereits leergeraeumtes Angebot als Ziel erscheint
-    oder nicht. Passen mehrere Angebote rechnerisch zum selben Preis (zwei
-    Artikel erwarten beide 1.29), entscheidet die geometrische Naehe zur
-    urspruenglichen Position - der Grundpreis sagt nur, wer in Frage kommt,
-    nicht wer es tatsaechlich ist.
+    Ein Block bekommt hoechstens ein PRICE und hoechstens ein APP_PRICE -
+    ein zweiter Preis desselben Typs bedeutet, dieser Block ist nicht das
+    richtige Ziel, auch wenn der Wert rechnerisch passen wuerde.
     """
-    expected = {id(offer): _expected_prices(offer, page) for offer in offers}
+    expected = {id(block): _expected_prices(block, page) for block in blocks}
+    index_of = {id(block): i for i, block in enumerate(blocks)}
+    page_id = page.get("page_id") or "unknown"
+    unmatched: list[Offer] = []
 
-    pool: list[Entity] = []
-    for offer in offers:
-        own_expected = expected[id(offer)]
-        for entity in list(offer.entities):
-            if entity.type not in PRICE_TYPES:
-                continue
-            value = _price_value(entity.text)
-            if value is None:
-                continue
-            if own_expected:
-                if _price_matches(value, own_expected):
-                    continue
-            elif not _is_orphan_badge(offer):
-                continue
-            offer.entities.remove(entity)
-            pool.append(entity)
+    for badge in badges:
+        price_entities = [e for e in badge.entities if e.type in PRICE_TYPES]
+        if not price_entities:
+            unmatched.append(badge)
+            continue
+        price_type = price_entities[0].type
+        value = _price_value(price_entities[0].text)
 
-    for entity in pool:
-        value = _price_value(entity.text)
-        candidates = [
-            o for o in offers
-            if _is_trustworthy_target(o, page)
-            and not any(e.type == entity.type for e in o.entities)
-            and _price_matches(value, expected[id(o)])
+        def free_of_type(block: Offer, price_type: str = price_type) -> bool:
+            return not any(e.type == price_type for e in block.entities)
+
+        # Rein rechnerisch, ohne Ruecksicht auf Belegung - die strenge Lesart
+        # des Reports. Immer mitgeschrieben, auch wenn `arithmetic` aus ist.
+        math_matches = [
+            block for block in blocks
+            if value is not None and _price_matches(value, expected[id(block)])
         ]
-        if candidates:
-            target = min(candidates, key=lambda o: _distance_to_offer(entity, o, page))
-            target.entities.append(entity)
+        grundpreis_candidates = [b for b in math_matches if free_of_type(b)]
+        arithmetic_targets = tuple(index_of[id(b)] for b in grundpreis_candidates)
+        arithmetic_targets_any = tuple(index_of[id(b)] for b in math_matches)
 
-    remaining = [offer for offer in offers if offer.entities]
-    for offer in remaining:
-        offer.bbox = _union_bbox([e.bbox for e in offer.entities])
-    return remaining
+        target: Offer | None = None
+        path = "unmatched"
+        distance: float | None = None
+
+        if arithmetic and grundpreis_candidates:
+            target = min(grundpreis_candidates, key=lambda b: _distance_between_offers(badge, b, page))
+            path = "arithmetic"
+        else:
+            nearby = [block for block in blocks if free_of_type(block)]
+            if nearby:
+                closest = min(nearby, key=lambda b: _distance_between_offers(badge, b, page))
+                closest_distance = _distance_between_offers(badge, closest, page)
+                if closest_distance <= _NEARBY_LIMIT:
+                    target, path, distance = closest, "geometric", closest_distance
+
+        if trace is not None:
+            trace.append(
+                BadgeMatch(
+                    page_id=page_id,
+                    price_type=price_type,
+                    value=value,
+                    path=path,
+                    target=index_of[id(target)] if target is not None else None,
+                    arithmetic_targets=arithmetic_targets,
+                    arithmetic_targets_any=arithmetic_targets_any,
+                    distance=distance,
+                )
+            )
+
+        if target is None:
+            unmatched.append(badge)
+        else:
+            target.entities.extend(badge.entities)
+
+    return blocks + unmatched
 
 
-def _fallback_clusters(page_id: str, entities: list[Entity]) -> list[Offer]:
-    """Preislose Seiten in einfache vertikale Gruppen teilen."""
+def cluster_page(
+    page: dict,
+    *,
+    arithmetic: bool = True,
+    trace: list[BadgeMatch] | None = None,
+) -> list[Offer]:
+    """Gruppiert die gelabelten Entities einer Seite zu Angebotsdatensaetzen.
+
+    `arithmetic=False` und `trace` dienen allein der Messung (`magda
+    offers-report`): abgeschaltet ordnet nur die Geometrie zu, und der Trace
+    haelt fest, wohin die Rechnung gezeigt haette. Im Normalbetrieb bleibt
+    beides unberuehrt.
+
+    Zwei getrennte Clustering-Durchlaeufe: Beschreibungs-Entities (PRODUCT,
+    BRAND, QUANTITY, UNIT_PRICE, VALID) werden rein nach visueller Naehe zu
+    Bloecken zusammengefasst (`_cluster_tight`, anschliessend
+    `_split_multi_product` fuer Bloecke mit mehreren Marken/Produkten), Preis-Badges
+    (PRICE, APP_PRICE, OLD_PRICE, DISCOUNT) ebenso, aber separat. Erst danach
+    ordnet `_match_badges` jedes Badge dem passenden Block zu, bevorzugt ueber
+    Menge x Grundpreis. Preis-Entities beeinflussen so nie, welcher
+    Beschreibungsblock zu welchem gehoert - andernfalls kann ein Preis, der
+    zufaellig naeher an der Marke des Nachbarprodukts liegt als am eigenen,
+    diese Marke buchstaeblich abwerben.
+    """
+    page_id = page.get("page_id") or "unknown"
+    entities = [e for e in entities_from_page(page) if e.type in VALUE_TYPES]
     if not entities:
         return []
-    entities = sorted(entities, key=lambda e: (e.bbox[1], e.bbox[0], e.start))
-    heights = [max(1.0, e.bbox[3] - e.bbox[1]) for e in entities]
-    threshold = max(18.0, sorted(heights)[len(heights) // 2] * 3.0)
-    groups: list[list[Entity]] = [[entities[0]]]
-    for entity in entities[1:]:
-        previous = groups[-1][-1]
-        if entity.bbox[1] - previous.bbox[3] <= threshold:
-            groups[-1].append(entity)
+
+    description = [e for e in entities if e.type in DESCRIPTION_TYPES]
+    badge_entities = [e for e in entities if e.type in BADGE_TYPES]
+
+    groups: list[list[Entity]] = []
+    for component in _cluster_tight(description, page):
+        groups.extend(_split_multi_product(component, page))
+    groups = _attach_orphan_descriptions(groups, page)
+
+    # Sammel-Legenden zuerst: sie sind ueber die Lesereihenfolge trennbar, aber
+    # nicht ueber Mengen, und bringen ihre Preise selbst mit. Was hier zerlegt
+    # wird, geht nicht mehr durch `_match_badges`.
+    legend_groups: list[list[Entity]] = []
+    consumed: set[int] = set()
+    rest: list[list[Entity]] = []
+    for group in groups:
+        if sum(1 for e in group if e.type in ("PRODUCT", "BRAND")) < 3:
+            rest.append(group)
+            continue
+        segmented = _segment_legend(group, [b for b in badge_entities if b.id not in consumed], page)
+        if segmented is None:
+            rest.append(group)
         else:
-            groups.append([entity])
-    return [_make_offer(page_id, idx, group) for idx, group in enumerate(groups)]
+            parts, used = segmented
+            legend_groups.extend(parts)
+            consumed.update(b.id for b in used)
+
+    blocks = [_make_offer(page_id, i, group) for i, group in enumerate(rest)]
+
+    badges: list[Offer] = []
+    for component in _cluster_tight([b for b in badge_entities if b.id not in consumed], page):
+        for sub in _split_multi_price(component, page):
+            badges.append(_make_offer(page_id, len(badges), sub))
+
+    offers = _match_badges(blocks, badges, page, arithmetic=arithmetic, trace=trace)
+    offers.extend(_make_offer(page_id, 0, group) for group in legend_groups)
+    if not offers:
+        return []
+
+    for offer in offers:
+        offer.entities.sort(key=lambda e: (e.bbox[1], e.bbox[0], e.start))
+        offer.bbox = _union_bbox([e.bbox for e in offer.entities])
+    offers.sort(key=lambda offer: (offer.bbox[1], offer.bbox[0]))
+    for idx, offer in enumerate(offers):
+        offer.id = idx
+    return offers
 
 
 def write_sqlite(pages: list[dict], db_path: Path, source: str) -> dict:

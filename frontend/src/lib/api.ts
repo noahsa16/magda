@@ -2,6 +2,7 @@ import type {
   Agreement, EvalReport, GoldAnnotation, GoldSummary,
   AuditReport, AuditSummary,
   JobDef, LabelDistribution, Labeler, LabelSource, LabelsVsGold, ModelStatus, PageDetail, PageSummary,
+  OfferGrouping, OfferGroupingSummary,
   PipelineStatus,
   RunDetail, RunRecord, RunStatus, SignificanceReport, Span,
 } from "./types"
@@ -63,6 +64,22 @@ export const api = {
     payload: { words_hash: string; status: "in_progress" | "done"; annotator: string; spans: Span[] },
   ) =>
     fetchJson<GoldAnnotation>(`/api/gold/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    }),
+  offerGold: () => fetchJson<OfferGroupingSummary[]>("/api/offer-gold"),
+  offerGoldPage: (id: string) => fetchJson<OfferGrouping>(`/api/offer-gold/${id}`),
+  saveOfferGold: (
+    id: string,
+    payload: {
+      words_hash: string
+      status: "in_progress" | "done"
+      annotator: string
+      groups: number[][]
+    },
+  ) =>
+    fetchJson<OfferGrouping>(`/api/offer-gold/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),

@@ -1,0 +1,99 @@
+{
+  "page_id": "1342881_p31",
+  "words_hash": "8a8fcecdb4bf44b98dcb12bb894e82459e3d4c698293574d7e26822850c38ee0",
+  "status": "done",
+  "annotator": "claude-sonnet-5",
+  "provenance": {
+    "kind": "llm",
+    "source": "claude-sonnet-5",
+    "model": "claude-sonnet-5",
+    "prompt_version": 1
+  },
+  "notes": "Vier Entities bewusst nicht zugeordnet: 12, 13 und 51 sind grosse runde 'Aktion ab X.XX'-Kacheln, die als Kachel-weiter Teaser den niedrigsten Preis mehrerer eigenstaendiger Angebote in derselben Bildkachel zusammenfassen (Schultuete-Kachel: Lernkarten/Radierer 2.99, Bälle-Set 3.99, Lernwecker 7.99 -> Badge 'ab 2.99'; Top-Bild: Spardose 9.99, Pausenbegleiter 4.99, Stundenplan 7.99 -> Badge 'ab 4.99'; Schreibwaren-Kachel: Bleistifte 1.99, Buntstifte 2.49, Schreib-Set 2.99, Kugelschreiber 2.99 -> Badge 'ab 1.99'). Da 'ab' eine Preisspanne ueber mehrere Produkte markiert, waere jede Zuordnung zu einem einzelnen Produkt geraten. Anders bei Entity 26 ('Aktion 2.99' ohne 'ab'): hier teilen sich Textmarker/Gelschreiber/Gelschreiber-Set (oder-Alternativen) denselben, nicht gestaffelten Preis, deshalb eine Gruppe. Ebenso bei 0-4: 'Lernkarten-Set oder Radierer' sind echte Alternativen zum selben Preis 2.99/UVP 3.99, also eine Kachel/ein Angebot. Entity 52 (Gueltigkeitsdatum 'Ab Do, 23.7.') betrifft die ganze Seite und wurde keinem Angebot zugeordnet.",
+  "groups": [
+    [
+      74,
+      75,
+      76,
+      83,
+      85
+    ],
+    [
+      91,
+      92,
+      97,
+      98,
+      102,
+      104
+    ],
+    [
+      106,
+      108,
+      114,
+      116
+    ],
+    [
+      4,
+      5,
+      6,
+      8,
+      9,
+      10,
+      13,
+      15
+    ],
+    [
+      16,
+      17,
+      18,
+      19,
+      22,
+      24
+    ],
+    [
+      25,
+      28,
+      30
+    ],
+    [
+      118,
+      119,
+      121,
+      122,
+      123
+    ],
+    [
+      36,
+      38,
+      39,
+      41
+    ],
+    [
+      42,
+      44,
+      45,
+      47
+    ],
+    [
+      48,
+      49,
+      52,
+      54
+    ],
+    [
+      137,
+      138,
+      139,
+      152
+    ],
+    [
+      56,
+      59,
+      60,
+      62,
+      63,
+      66,
+      67
+    ]
+  ]
+}

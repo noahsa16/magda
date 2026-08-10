@@ -85,6 +85,16 @@ magda flair --reference gold        # Flair-Vergleichsarm
 magda gold --per-label              # Labeling-Modelle gegen Gold messen
 magda agreement qwen3.5-397b-a17b mistral-medium-3.5-128b
 magda audit APP_PRICE --labels-from sonnet-5   # Label zur Handprüfung vorsortieren
+magda offers                        # Entities zu Angeboten clustern, als SQLite
+magda offers-report                 # Clustering per Ablation messen (Train+Dev)
+magda offers-queue                  # welche Seiten die Referenz zuerst braucht
+magda offers-gold --labels-from sonnet-5    # Gruppierung gegen gold/offers/ messen
+magda offers-teacher pages --limit 40       # Seiten fürs LLM-Gruppieren
+magda offers-teacher task 1342821_p10       # Aufgabe einer Seite (Entities + Bild)
+magda offers-verify --reference-from claude-sonnet-5   # Gruppierung nachrechnen
+magda offers-model train --labels-from sonnet-5        # Paarmodell lernen (mit Kalibrierung)
+magda offers-model eval --labels-from sonnet-5         # gegen Lehrer und Arithmetik messen
+magda offers-sequence               # fasst eine flache OFFER-Folge das Angebot?
 magda bundle --labels-from sonnet-5 # Trainingspaket für eine fremde GPU
 magda serve --frontend              # API (8000) und Oberfläche (5173)
 magda serve                         # nur die API
@@ -135,6 +145,15 @@ eine Liste auszugeben.
   gemacht – die Seite liegt in `data/words/`, die Erwartung steht im Text.
   Ohne Test schützt die Begründung nichts: die nächste Änderung an einer
   Konstante macht den Fall still wieder kaputt, und alle Tests bleiben grün.
+- **Ein Test, der nie rot wird, schützt nichts – das prüft man nach.** Beim
+  Festschreiben der acht Clustering-Fälle waren vier von sieben verstellten
+  Konstanten *ohne jede Wirkung* auf die Tests, darunter beide des
+  Legenden-Pfads. Die Pins sahen aus wie Schutz und waren keiner. Wer einen
+  Regressionstest schreibt, verstellt danach einmal die Konstante, die er
+  schützen soll, und sieht nach, ob wirklich etwas bricht. Zwei Minuten Arbeit,
+  und sie unterscheiden einen Test von einer Behauptung. Übrig bleibt bei
+  `offers.py` weiterhin die dy-Schwelle in `_same_block`: um das Fünffache
+  verstellbar, ohne dass ein Test es merkt.
 - **Auf `main` wird nicht gearbeitet: kein Commit, kein Push, kein Merge direkt
   dorthin** – auch nichts Kleines, auch nicht bei grünen Tests. Wer versehentlich
   auf `main` ausgecheckt ist und schon Änderungen im Arbeitsverzeichnis hat,
@@ -213,11 +232,18 @@ eine Liste auszugeben.
 - **Der `words_hash` in Gold-Dateien** ist die Absicherung des
   Wortreihenfolge-Vertrags. Ändert sich Schritt 02, zeigen die Span-Indizes
   auf andere Wörter, ohne dass etwas kaputtgeht. Die API lehnt dann mit 409 ab.
-- **Die API ist nicht mehr read-only.** Geschrieben wird an vier aufgezählten
-  Stellen: `gold/` (handannotierte Referenz), `catalogs.json`
-  (Katalog-Verzeichnis), `data/runs/` (Lauf-Historie) und `data/audit/`
-  (Urteile der Handprüfung – niemals `data/labeled/` selbst). Eine Erlaubnisliste,
-  kein freier Schreibzugriff – dieselbe enge Beschränkung wie beim Runner.
+- **Die API ist nicht mehr read-only.** Geschrieben wird an fünf aufgezählten
+  Stellen: `gold/` (handannotierte Spans), `gold/offers/`
+  (Gruppierungsreferenz), `catalogs.json` (Katalog-Verzeichnis), `data/runs/`
+  (Lauf-Historie) und `data/audit/` (Urteile der Handprüfung – niemals
+  `data/labeled/` selbst). Eine Erlaubnisliste, kein freier Schreibzugriff –
+  dieselbe enge Beschränkung wie beim Runner.
+- **Spans und Gruppen liegen in getrennten Dateien**, obwohl beide von Hand
+  entstehen: `gold/<seite>.json` sagt, *was* ein Wort ist,
+  `gold/offers/<seite>.json`, *wozu* es gehört. In einer Datei zöge eine
+  halbfertige Gruppierung die fertigen Spans derselben Seite in den Status
+  `in_progress` – und damit aus
+  jeder Messung heraus, die `status: done` verlangt.
 - **Der Runner-Vertrag lautet „nur deklarierte Parameter", nicht „nur
   Varianten".** `jobs.build_command` lehnt unbekannte Jobs, unbekannte
   Parameternamen, nicht konvertierbare Werte und Werte außerhalb von `choices`
@@ -562,10 +588,24 @@ eine Liste auszugeben.
   Clustern lösen will, braucht eine **zweite, parallele Tag-Folge**
   (`B-OFFER`/`I-OFFER`) über die ganze Kachel, nicht einen weiteren
   Entity-Typ: `OFFER` läge über PRODUCT und PRICE, und flaches BIO kann keine
-  Verschachtelung. Machbar ist es – **92,7 % der visuellen Wortgruppen sind
-  genau ein zusammenhängender Lauf** in der Wortliste (3728 von 4022, der Rest
-  zerfällt fast immer in genau zwei). Ein Span-Label kann nur zusammenfassen,
-  was benachbart ist; diese Zahl ist die Vorbedingung.
+  Verschachtelung. Ein Span-Label kann nur zusammenfassen, was benachbart ist –
+  wie weit das trägt, misst `magda offers-sequence`.
+- **Eine flache OFFER-Folge fasst die Beschreibung, den Preis nicht mit.**
+  Nachgerechnet über 293 Seiten (`magda offers-sequence --labels-from
+  sonnet-5`, 06.08.2026): Von 3066 Angeboten der Heuristik sind **2080 ein
+  einziger Lauf – 0.678**. Lässt man die Preis-Badges weg, sind es **2530 von
+  2637, also 0.959**. Die Differenz ist die ganze Aussage: Penny setzt den
+  Preis in einen gelben Kasten, und der steht im Textlayer weit weg vom
+  Produktnamen – auf `1342815_p21` liegt der Preis bei Wort 6, sein Produkt
+  bei Wort 166. Ein flacher Span kann beide nicht zusammenfassen, ohne alles
+  dazwischen mitzunehmen.
+  **Das ersetzt die frühere Zahl 92,7 % (3728 von 4022) nicht, sondern
+  ergänzt sie:** die zählte *visuelle Wortgruppen* aus dem Kachelversuch, also
+  eine andere Einheit, und hatte kein Skript im Repo. Für die OFFER-Frage
+  zählt die Einheit „Angebot", und dort ist 0.678 die Obergrenze, nicht 0.927.
+  Einschränkung: gerechnet über die Gruppierung der *Heuristik*, deren Fehler
+  also mitgezählt. `--reference` rechnet dieselbe Zahl gegen die
+  Handannotation, sobald `gold/offers/` gefüllt ist.
 - **Menge × Grundpreis prüft sich selbst – Boxabstände nicht.** `0,205 kg ×
   3,37 €/kg = 0,69 €` stimmt oder stimmt nicht; das ist Arithmetik und braucht
   keine Handannotation. Deshalb ordnet `offers.py` Preise bevorzugt darüber zu
@@ -592,6 +632,204 @@ eine Liste auszugeben.
   haben 777 Produkt *und* Preis, 506 sind Bruchstücke. Nötig ist `offer` 1:n
   `variant(quantity, price, old_price, unit_price)` – ohne das kann auch eine
   bessere Heuristik ihr Ergebnis nicht ablegen. Anmerkungen dazu in Issue #6.
+- **Das Clustering ließ sich lange nicht ehrlich messen, weil das Messkriterium
+  das Zuordnungskriterium war.** „Wie oft landet ein Preis bei einem Produkt"
+  zählt Fragmentierung, nicht Korrektheit – ein Preis am *falschen* Produkt
+  geht als Erfolg durch. Und der naheliegende Ausweg trägt nicht: die
+  Zuordnungen nach arithmetisch und geometrisch zu trennen und die Rechnung
+  über die geometrischen Fälle urteilen zu lassen, ergibt garantiert „falsch".
+  `_match_badges` betritt den geometrischen Zweig **nur, wenn kein Block
+  arithmetisch gepasst hat** – das Urteil steht fest, bevor es gefällt wird.
+  Der Ausweg ist eine **Ablation**: `cluster_page(page, arithmetic=False)`
+  schaltet die Rechnung zum Messen ab, die Geometrie ordnet allein zu, und
+  erst danach wird nachgerechnet. Das ist das allgemeine Muster – halte das
+  Merkmal zurück, mit dem du hinterher richten willst.
+- **Der geometrische Rückfall trifft in 0,56 bis 0,68 der prüfbaren Fälle**
+  (`magda offers-report`, 06.08.2026, Train + Dev, 196 Seiten, `sonnet-5`):
+  462 bestätigt, 215 bis 361 widerlegt, 678 bis 532 nicht beurteilbar. Er
+  trägt dabei 652 von 1373 Zuordnungen, also knapp die Hälfte. Zwei Zahlen,
+  weil eine Frage offen ist: zählt ein Block, der diesen Preistyp schon trägt,
+  noch als rechnerische Alternative? Beide Antworten sind vertretbar und
+  trennen 146 Fälle; `confirmed` ist unter beiden identisch. Eine Lesart zur
+  richtigen zu erklären hieße, eine Genauigkeit zu behaupten, die die Messung
+  nicht hergibt – deshalb das Intervall, wie beim Layout-Vergleich.
+  Damit ist auch der Ertrag des arithmetischen Abgleichs beziffert: das sind
+  genau die Fehler, die er abfängt.
+- **Wo kein Grundpreis steht, ist die Zuordnung nicht nur schlechter, sondern
+  unprüfbar.** 532 bis 678 der Urteile lauten „nicht beurteilbar", und das
+  deckt sich fast mit Non-Food. Dort ist die Geometrie alleinige Instanz *und*
+  ohne Kontrolle. Diese Lücke schließt keine Heuristik und kein Schwellwert,
+  sondern nur eine handannotierte Gruppierungsreferenz. Der Grund ist
+  derselbe wie bei APP_PRICE: wo eine Kachel endet, steht in Rahmen,
+  Hintergrundfarbe und gelbem Sticker – **im Bild, nicht in den
+  Wortkoordinaten**. Ein fehlendes Merkmal lässt sich nicht kalibrieren.
+- **Die Gruppierungsreferenz gruppiert Wortindizes, keine Entity-Spans**
+  (`gold/offers/`, seit 06.08.2026). Ein Span gehört immer einem Labelordner;
+  eine Referenz darüber wäre nach dem nächsten Labeling-Lauf wertlos und
+  könnte die gbert-Vorhersagen gar nicht beurteilen, weil deren Spans anders
+  liegen. Über Wortindizes beurteilt dieselbe Annotation die Heuristik, einen
+  LLM-Teacher und einen OFFER-Kopf – abgesichert mit `words_hash` wie `gold/`.
+  Gemessen wird mit `magda offers-gold`: **Paar-F1** über Entity-Paare (die
+  übliche Primärzahl der Line-Item-Literatur) und **Gruppen-F1** über exakt
+  getroffene Angebote, also „die Zeile in der Datenbank stimmt". Zwei Regeln,
+  die leicht falsch gebaut werden: Die Entity-Grundmenge kommt aus der *Seite*,
+  nicht aus der Systemausgabe – sonst verbessert ein System seinen Recall,
+  indem es Entities weglässt. Und was der Mensch keinem Angebot zugeordnet hat
+  (Kleingedrucktes, Seitenkopf), bewegt keine Zahl, sondern wird als
+  `unassignable` ausgewiesen.
+- **Annotiert wird aus dem Seitenbild, nicht durch Korrigieren der Heuristik.**
+  Eine vorbefüllte Gruppierung wäre bequem und wiederholte genau den Fehler,
+  gegen den `magda offers-report` gebaut wurde: Wer die Ausgabe des Verfahrens
+  korrigiert, ankert daran und misst hinterher teilweise sich selbst. Ein Klick
+  im Annotator nimmt dafür die ganze Entity statt eines Wortes – wortweise wäre
+  die Referenz genauso ausdrucksstark, aber ein Angebot hat schnell zwölf
+  Wörter.
+- **`magda offers-queue` wählt die 30 bis 50 Seiten**, abwechselnd nach dem
+  gemessenen blinden Fleck (kein Grundpreis, also kein Urteil der Ablation
+  möglich) und nach der Clustergröße. Nur nach dem blinden Fleck sortiert
+  entstünde eine reine Non-Food-Referenz; nur nach der Größe deckte die
+  Handarbeit genau das ab, was die Rechnung ohnehin prüft. Stand 06.08.2026
+  decken die ersten 40 Vorschläge 125 der 196 Train/Dev-Seiten ab, hälftig aus
+  beiden Ranglisten. Train und Dev, nie Test.
+- **Die Handannotation findet nicht statt – ein Vision-Modell gruppiert**
+  (Teamentscheidung, 06.08.2026). 30 bis 50 Seiten von Hand sprengen den
+  Projektrahmen. Das Ergebnis liegt deshalb in `data/offer_groups/<quelle>/`
+  und **nicht** in `gold/offers/`, mit `provenance: {"kind": "llm", …}` in
+  jeder Datei. Der getrennte Pfad ist der eigentliche Punkt: `magda
+  offers-gold --reference-from claude-sonnet-5` misst damit
+  **Übereinstimmung, nicht Richtigkeit** – dieselbe Einschränkung wie bei
+  `magda agreement`, und die Ausgabe sagt es dazu. Was den Vergleich trotzdem
+  tragfähig macht, sind die verschiedenen Informationsquellen: die Heuristik
+  kennt nur Wortkoordinaten, das Modell sieht den gelben Preiskasten. Wo
+  beide sich einig sind, ist das ein Argument; wo nicht, zeigt es auf eine
+  Seite zum Nachsehen. `gold/offers/` bleibt als Format bestehen und ist
+  weiter der Default – wer später doch Stichproben von Hand macht, misst
+  ohne Codeänderung dagegen.
+- **`magda offers-verify` ist die einzige unabhängige Kontrolle über eine
+  maschinelle Referenz.** Menge × Grundpreis beweist sich selbst, und ein
+  Modell, das nach dem Seitenbild gruppiert, hat dabei nie gerechnet. Genau
+  deshalb braucht dieser Weg **keine Ablation**, anders als `magda
+  offers-report`: dort ordnet `_match_badges` teilweise selbst arithmetisch
+  zu, das Urteil stünde vor der Frage fest. Vier Urteile statt drei, und die
+  Trennung ist wesentlich: `unresolved` (Grundpreis da, Rechnung geht
+  nirgends auf) getrennt von `contradicted` (Rechnung zeigt auf eine andere
+  Gruppe). Ein Preis, der zu keiner Gruppe passt, belegt nichts gegen die
+  Zuordnung – die Ursache ist meist eine Mehrfachpackung (`2 x 350 g`, deren
+  Multiplikator `_quantity_in_unit` ignoriert) oder ein fehlendes Label. Wer
+  ihn als widerlegt zählte, schriebe Labelfehler dem Gruppieren zu.
+  Zusammen mit `accuracy` gehört immer `coverage` berichtet: eine Genauigkeit
+  von 0.9 über ein Fünftel der Preise ist eine Aussage über ein Fünftel.
+- **Der Teacher antwortet in Entity-Nummern, gespeichert werden Wortindizes.**
+  Entities sind die Einheit, in der auch der Annotator klickt – ein Angebot
+  hat schnell zwölf Wörter, und wortweise zu antworten vervielfacht die
+  Ausgabe ohne Gewinn an Ausdruckskraft. Wortindizes sind die Einheit, die
+  den nächsten Labeling-Lauf überlebt. `offer_teacher.expand_entity_groups`
+  lehnt unbekannte und doppelt vergebene Nummern ab, statt sie zu
+  überspringen: eine halbe Antwort als ganze zu speichern macht die Referenz
+  um genau den Betrag falsch, den niemand sieht.
+- **Erste Messung gegen die LLM-Gruppierung** (06.08.2026, 33 Train/Dev-Seiten,
+  1634 Entities, `claude-sonnet-5` als Subagent mit Seitenbild). Alle drei
+  Zahlen über dieselbe Seitenmenge, sonst wären sie nicht vergleichbar –
+  dafür gibt es `magda offers-report --pages-from`:
+
+  | | Trefferquote | beurteilte Preise |
+  |---|---|---|
+  | Heuristik, Geometrie allein (Ablation) | 0.463 – 0.620 | 100 – 134 |
+  | LLM, sieht das Seitenbild | **0.925** | 159 |
+
+  Richter ist beide Male die Rechnung Menge × Grundpreis, und sie ist an
+  beiden Zuordnungen unbeteiligt: die Heuristik läuft unter Ablation, das
+  LLM hat nie gerechnet. **`offers_verify` zählt dabei nach der strengeren
+  Regel** – jede andere Gruppe gilt als Gegenbeleg, ohne Rücksicht darauf,
+  ob sie diesen Preistyp schon trägt. Das entspricht dem strengen Ende der
+  Heuristik-Spanne (0.463), das LLM wird also nicht bessergestellt.
+  Übereinstimmung insgesamt: **Paar-F1 0.723, Gruppen-F1 0.331.** Die Lücke
+  zwischen beiden ist die Aussage – Teile eines Angebots trifft die Heuristik
+  oft, das vollständige Angebot nur bei knapp jedem dritten. Gruppen-F1 ist
+  die Zahl, die „die Zeile in der Datenbank stimmt" entspricht.
+  **Einschränkung, die immer mitgehört:** Abdeckung 0.429. Über die Hälfte
+  der Preise trägt keinen Grundpreis, dort schweigt die Rechnung – und das
+  deckt sich mit Non-Food, also mit genau dem Bereich, für den die
+  Gruppierung gebraucht wird. Die 0.925 gelten für die prüfbare Hälfte.
+- **Die Heuristik fragmentiert messbar: 417 Angebote gegen 296.** Über
+  dieselben 33 Seiten bildet `cluster_page` 41 % mehr „Angebote" als das LLM,
+  davon 147 Fragmente ohne Produkt-und-Preis. Das erklärt auch, warum das LLM
+  *mehr* beurteilbare Fälle hat (159 gegen 100–134): wo ein Preis als
+  Bruchstück liegen bleibt, entsteht keine Rechnung, die man prüfen könnte.
+  Ein Verfahren, das seltener zuordnet, sieht in einer Genauigkeitszahl
+  besser aus, als es ist – deshalb gehört die Zahl der Zuordnungen daneben.
+- **Belegter Fall für den blinden Fleck: `1347387_p31`.** Non-Food-Legende,
+  kein Grundpreis, also für `magda offers-report` grundsätzlich unbeurteilbar.
+  Im Seitenbild steht „④ Pflanztopf-Set – je Set 8.99" und „⑤
+  Fensterdoppelrollo – je Stück 9.99"; die Heuristik ordnet beide vertauscht
+  zu, das LLM richtig. Die Fehlerform ist kein Zufall, sondern ein **Versatz
+  über eine ganze Legendenspalte**: jeder Preis greift zum nächstgelegenen
+  Namen, und wenn der Abstand einmal kippt, kippt die Kette mit. Ein anderer
+  Schwellwert repariert das nicht, er verschiebt nur die Stelle. Kein
+  Regressionstest, weil hier ein Fehler festgeschrieben würde, keine
+  Zusicherung – der Fall gehört in die Fehleranalyse, nicht in die Pins.
+- **Ein gelerntes Paarmodell schlägt die Heuristik – gemessen, aber knapp und
+  auf 21 Dev-Seiten.** `magda offers-model` klassifiziert jedes Entity-Paar
+  („gehören die zusammen?"), verschmilzt die Kanten oberhalb einer Schwelle
+  zu Zusammenhangskomponenten und ist damit die zweite Standardlösung aus
+  DocILE. Gelernt aus `data/offer_groups/claude-sonnet-5/` (jetzt 51 Seiten:
+  30 Train, 21 Dev), 4097 Parameter, **16,8 s Training auf CPU** – eine GPU
+  lohnt hier nicht, der Grund für RunPod war LayoutXLMs RAM-Bedarf, nicht
+  Rechenzeit. Stand 06.08.2026 auf Dev, Schwelle 0.94:
+
+  | | Paar-F1 | Gruppen-F1 | Angebote |
+  |---|---|---|---|
+  | Paarmodell | **0.742** | **0.477** | 138 |
+  | Heuristik | 0.683 | 0.436 | 185 |
+  | Lehrer (Referenz) | – | – | 122 |
+
+  Das Modell ist in beiden Zahlen vorn *und* fragmentiert weniger. Die
+  arithmetische Gegenprobe stützt das: 0.864 gegen 0.802 der Heuristik –
+  und die Rechnung ist beim Modell wirklich unbeteiligt, während
+  `cluster_page` teilweise selbst arithmetisch zuordnet.
+  **Drei Einschränkungen, die mitgehören:** 21 Dev-Seiten in 14 Clustern
+  sind dünn, ein Konfidenzintervall gibt es noch nicht. Der Lehrer ist ein
+  LLM, also misst „Übereinstimmung", nicht Richtigkeit. Und die Abdeckung
+  der Gegenprobe liegt bei 0.589 – die Non-Food-Hälfte bleibt ungeprüft.
+- **Die Rechnung Menge × Grundpreis ist bewusst kein Merkmal des
+  Paarmodells.** Sie ist das einzige Signal, das sich selbst beweist, und
+  damit der einzige unbestechliche Richter. Als Eingabe gefüttert bewertete
+  sie sich hinterher selbst – derselbe Zirkelschluss, gegen den
+  `offers_report` die Ablation braucht. Das allgemeine Muster: halte das
+  Merkmal zurück, mit dem du hinterher richten willst. Ein Test in
+  `test_offer_pairs.py` hält das fest, indem er die Merkmalsnamen prüft.
+- **Die Schwelle wird out-of-fold kalibriert, nicht geraten – und 0.5 ist
+  grob falsch.** `pos_weight` gleicht die Schieflage aus (4553 positive
+  gegen 46359 negative Paare) und schiebt dabei alle Wahrscheinlichkeiten
+  nach oben: bei 0.5 entstanden 83 Gruppen statt 268, bei 0.94 dann 253.
+  Kalibriert wird über 5 Folds auf Train, und die Folds gehen über ganze
+  Duplikat-Cluster – sonst bewertet ein Fold-Modell eine Vorlage, die es in
+  einer anderen Regionalfassung im Training hatte.
+  **Die beiden Kriterien wählen verschiedene Schwellen**, und das ist die
+  interessantere Hälfte des Befunds: Paar-F1 ist bei 0.98 maximal (0.740
+  out-of-fold), aber Gruppen-F1 bricht dort auf 0.175 bei 463 Angeboten ein.
+  Paar-F1 belohnt Vorsicht, weil kleine Gruppen wenige Paare zu verlieren
+  haben. Default ist deshalb `--objective group_f1` – die Zahl, die „die
+  Zeile in der Datenbank stimmt" entspricht. **Offenlegung:** Diese Wahl
+  fiel, nachdem beide Schwellen auf Dev gemessen waren; die Dev-Zahl ist
+  dadurch leicht optimistisch. Der Testsplit ist unangetastet.
+- **`test_hilfe_laedt_keine_schweren_module` hat torch aus `sys.modules`
+  genommen und nicht zurückgestellt.** Ein zweiter echter Import registriert
+  dieselben C-Extensions erneut und stirbt an „Only a single TORCH_LIBRARY
+  can be used to register the namespace triton". Aufgefallen ist es erst,
+  als mit `test_offer_model.py` der erste Test *nach* `test_cli.py` torch
+  benutzte – elf Fehlschläge, die einzeln alle grün waren. Wer Module aus
+  `sys.modules` nimmt, stellt sie im `finally` zurück.
+- **Der Legenden-Pfad kostet ~115 Zeilen und greift auf einer Seitenvorlage.**
+  `_segment_legend` zerlegt in `data/labeled/sonnet-5/` 3 von 162 Seiten, in
+  `data/predictions/gbert/` 6 von 66 – und dort ausschließlich auf `_p30`,
+  also einer Vorlage in mehreren Regionalfassungen. Kein Grund, ihn zu
+  entfernen; er löst eine Layout-Klasse, die weder Nähe noch Arithmetik
+  können. Aber wer ihn anfasst, sollte wissen, wie schmal die Basis ist.
+  Dazu: `_reading_order_groups` nennt `1351497_p28` als belegten Fall, doch
+  dort liefert `_segment_legend` `None` – der Code läuft auf dieser Seite gar
+  nicht, weder mit sonnet-5-Labels noch mit den gbert-Vorhersagen. Der
+  Regressionstest sitzt deshalb auf `1351518_p30`.
 - **54,5 % aller Wörter sind `O`** (32102 von 58956 in `sonnet-5`), und die
   Masse ist nicht Füllwerk. Ausgezählt über alle 296 Seiten: Mengenaktionen
   (`je`, `2für`, `3er-Set`) 3411 Treffer auf 287 Seiten – `je` allein ist mit
@@ -721,10 +959,61 @@ eine Liste auszugeben.
   mehr, weil der Klassifikationskopf wächst. Deshalb nicht alle vier auf
   einmal – naheliegend wäre `PROMO` und `DEPOSIT` in einem Durchgang.
   Entscheidung steht aus.
-- **OFFER als zweite Tag-Folge?** Der einzige Weg, der das Gruppieren wirklich
-  löst (92,7 % Machbarkeit, siehe oben). Ist aber ein zusätzlicher Modellkopf,
-  kein weiteres Label, und weicht vom Proposal ab → Teamentscheidung. Vor einer
-  GPU-Miete gehört ein Machbarkeitstest auf den Gold-Seiten davor.
+- **OFFER als zweite Tag-Folge?** Ist ein zusätzlicher Modellkopf, kein
+  weiteres Label, und weicht vom Proposal ab → Teamentscheidung. Der
+  Machbarkeitstest ist inzwischen gelaufen und fällt **zweigeteilt** aus
+  (siehe oben): Eine flache Folge fasst die *Beschreibung* zu 0.959, das
+  vollständige Angebot samt Preis nur zu 0.678. Wer den Preis mit
+  hineinnehmen will, braucht paarweise Relationsklassifikation – oder behält
+  den bestehenden zweistufigen Weg, in dem `_match_badges` den Preis
+  nachträglich zuordnet. Letzteres ist naheliegender, als es klingt: Die
+  Architektur von `offers.py` trennt heute schon aus genau diesem Grund
+  Beschreibungsblöcke von Preis-Badges.
+
+  **Einordnung (Literaturrecherche 06.08.2026).** Das Problem heißt in der
+  Fachliteratur *Line Item Recognition* und ist der Kern des DocILE-Benchmarks
+  (ICDAR 2023, arXiv:2302.05658): Felder zu Tupeln je Objektinstanz gruppieren.
+  Ein Angebot ist ein Line Item mit Kachel- statt Tabellengeometrie. DocILE
+  kennt dafür zwei Standardlösungen, und eine davon ist **genau die
+  OFFER-Tag-Folge** – sie ist also kein Sonderweg. Die zweite ist paarweise
+  Relationsklassifikation im FUNSD-Stil (LiLT arXiv:2202.13669, GeoLayoutLM
+  arXiv:2304.10759, SPADE arXiv:2005.00642). Wichtig für die Aufwandsfrage:
+  **FUNSD trainiert mit 149 Dokumenten** – die Sorge, 196 Seiten seien zu
+  wenig, ist literaturseitig unbegründet.
+
+  **Vorgeschlagene Reihenfolge, falls das Team zustimmt:**
+  1. *Gruppierungsreferenz von Hand*, 30–50 Seiten aus Train/Dev, clusterweise
+     gezogen (`magda queue`-Logik), Non-Food überrepräsentiert. Der einzige
+     Schritt ohne Alternative – ohne ihn ist keine Variante messbar, auch die
+     jetzige Heuristik nicht. Format: `offer_id` je Gold-Span, mit
+     `words_hash` abgesichert wie in `gold/`.
+  2. *Vision-LLM als Gruppierungs-Teacher*: der Labeling-Prompt gibt Spans
+     künftig gruppiert aus, gemessen gegen die Referenz wie `magda gold` fürs
+     Labeling. Das ist zugleich der geforderte Machbarkeitstest vor der
+     GPU-Miete. Als **Teacher** richtig, als Deployment falsch – 44,8 s gegen
+     0,264 s je Seite ist die Projektfrage selbst.
+  3. *OFFER-Kopf auf GBERT.* Paarweise Relationsklassifikation nur als Ausbau,
+     falls die Referenz zeigt, dass die 7,3 % nicht zusammenhängenden Gruppen
+     den Feldwert spürbar deckeln.
+     **Schritt 3 ist teilweise erledigt, aber anders als geplant:** gebaut ist
+     die paarweise Klassifikation (`magda offers-model`), und zwar
+     *eigenständig* auf Merkmalen statt als Kopf auf GBERTs Embeddings. Sie
+     schlägt die Heuristik auf Dev (Gruppen-F1 0.477 gegen 0.436). Was das
+     Modell nicht bekommt, ist die Bildinformation – und genau dort sitzt der
+     gemessene blinde Fleck. Der naheliegende nächste Schritt ist deshalb
+     nicht ein größeres Netz, sondern **Farbmerkmale je Paar**: Hintergrund
+     an beiden Wortpositionen und der Farbwechsel dazwischen, analog zu
+     `label_audit.APP_BACKGROUND`, das bei der App-Preis-Prüfung 97,6 %
+     traf. Vier Zahlen statt eines visuellen Backbones – und LayoutXLM hat
+     gezeigt, dass ein Backbone über die ganze Seite hier nichts bringt.
+  4. *Arithmetik und positionsweise Variantenpaarung bleiben als harte
+     Nachprüfung* über jeder gelernten Gruppierung. Sie sind das einzige
+     Signal im System, das sich selbst beweist.
+
+  Als Metriken sind üblich: Paar-F1 über Entity-Paare („gleiches Angebot")
+  als Primärzahl, dazu Feld-F1 unter Gruppen-Matching im DocILE-Protokoll –
+  das ist die Zahl, die „Zeile in der Datenbank stimmt" entspricht. Test
+  einmal am Ende, je eine Seite pro der 43 unabhängigen Cluster.
 - Label-Set ist ein Entwurf und wird nach Sichtung der ersten gelabelten Seiten
   finalisiert.
 
