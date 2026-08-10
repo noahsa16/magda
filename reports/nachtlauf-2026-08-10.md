@@ -1,6 +1,6 @@
 # Nachtlauf 10./11.08.2026 — Ende-zu-Ende, Labelqualität, Fehleranalyse
 
-Stand: 11.08.2026, Branch `offers/farbmerkmale`, 489 Tests grün (vorher 420).
+Stand: 11.08.2026, Branch `offers/farbmerkmale`, 493 Tests grün (vorher 420).
 
 ## Kurzfassung
 
@@ -120,12 +120,6 @@ sonst verschöbe sich die Grundlage aller früheren Zahlen.
 kein einziger Testspan ändert sich. Nur das Trainingssignal des schwächsten
 Labels wächst.
 
-
-
-- Er hätte nur das beurteilte **Wort** umgeschrieben und damit
-  `B-APP_PRICE I-PRICE` erzeugt — eine BIO-Folge, die `bio_to_spans` in zwei
-  Entities zerlegt. Umgetragen wird jetzt der ganze Span; beurteilt hat der
-  Mensch die Entity, nicht das Token.
 **Gemessen auf Dev**, jeder Arm gegen die Referenz, auf der er trainiert
 wurde (`magda eval gbert --checkpoint gbert-sonnet-5-app`):
 
@@ -146,6 +140,10 @@ im Schlussbatch nur einen zusätzlichen Lauf.
 
 Zwei Stellen im geplanten Code wären falsch gewesen:
 
+- Er hätte nur das beurteilte **Wort** umgeschrieben und damit
+  `B-APP_PRICE I-PRICE` erzeugt — eine BIO-Folge, die `bio_to_spans` in zwei
+  Entities zerlegt. Umgetragen wird jetzt der ganze Span; beurteilt hat der
+  Mensch die Entity, nicht das Token.
 - Ein Urteil hat kein Zielabel: `1342881_p31:165`, „Aktion «1.99» 1 2 3" —
   APP_PRICE verworfen, kein Ersatz genannt. Der geplante Code hätte das
   ungültige Tag `B-` geschrieben. Jetzt bleibt das Label stehen und der Fall
