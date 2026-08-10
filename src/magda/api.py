@@ -24,7 +24,7 @@ from pydantic import BaseModel
 from magda import (
     agreement, catalog_meta, catalogs, config, dedupe, jobs, runner, runs, scraping,
 )
-from magda import label_audit
+from magda import label_audit, offers_gold
 from magda.gold import count_by_status, words_hash
 from magda.labels import ENTITY_TYPES, validate_spans
 
@@ -528,6 +528,128 @@ def put_gold(page_id: str, payload: GoldPayload):
     # stale gehört nicht in die Datei (abgeleiteter Zustand), aber in die
     # Antwort: Erst damit ist sie formgleich mit der von GET und das Frontend
     # kann sie ohne Nacharbeit in seinen Cache legen.
+    return {**record, "stale": False}
+
+
+# ---------------------------------------------------------------------------
+# Gruppierungsreferenz (welche Entities ein Angebot bilden, gold/offers/)
+# ---------------------------------------------------------------------------
+# Getrennt von den Span-Annotationen, obwohl beide von Hand entstehen: Die
+# Spans sagen, *was* ein Wort ist, die Gruppen, *wozu* es gehört. Beides in
+# einer Datei hieße, dass eine halbfertige Gruppierung die fertigen Spans
+# derselben Seite mit in den Status "in_progress" zieht.
+
+
+class OfferGoldPayload(BaseModel):
+    words_hash: str
+    status: Literal["in_progress", "done"]
+    annotator: str = ""
+    groups: list[list[int]]
+
+
+def _offer_gold_file(page_id: str):
+    return offers_gold.reference_dir() / f"{page_id}.json"
+
+
+@app.get("/api/offer-gold")
+def list_offer_gold():
+    rows = []
+    for words_file in config.WORDS_DIR.glob("*.json"):
+        page_id = words_file.stem
+        entry = {
+            "page_id": page_id,
+            "catalog": _catalog_of(page_id),
+            "status": "untouched",
+            "annotator": "",
+            "num_offers": 0,
+            "stale": False,
+        }
+        annotation_file = _offer_gold_file(page_id)
+        if annotation_file.exists():
+            try:
+                with open(annotation_file) as f:
+                    annotation = json.load(f)
+                with open(words_file) as f:
+                    current_hash = words_hash(json.load(f)["words"])
+            except (json.JSONDecodeError, KeyError, TypeError):
+                # Wie bei /api/gold: gold/ wird gemergt, ein Konfliktmarker in
+                # einer Datei darf nicht die Übersicht über alle 40 mitreißen.
+                entry["status"] = "broken"
+            else:
+                entry["status"] = annotation.get("status", "in_progress")
+                entry["annotator"] = annotation.get("annotator", "")
+                entry["num_offers"] = len(annotation.get("groups", []))
+                entry["stale"] = annotation.get("words_hash") != current_hash
+        rows.append(entry)
+
+    rows.sort(key=lambda r: (r["catalog"], _page_num(r["page_id"])))
+    return rows
+
+
+@app.get("/api/offer-gold/{page_id}")
+def get_offer_gold(page_id: str):
+    page = _load_words(page_id)
+    current_hash = words_hash(page["words"])
+
+    annotation_file = _offer_gold_file(page_id)
+    if not annotation_file.exists():
+        return {
+            "page_id": page_id,
+            "words_hash": current_hash,
+            "status": "untouched",
+            "annotator": "",
+            "updated": None,
+            "groups": [],
+            "stale": False,
+        }
+
+    with open(annotation_file) as f:
+        annotation = json.load(f)
+    return {
+        "updated": None,
+        **annotation,
+        "page_id": page_id,
+        "stale": annotation.get("words_hash") != current_hash,
+    }
+
+
+@app.put("/api/offer-gold/{page_id}")
+def put_offer_gold(page_id: str, payload: OfferGoldPayload):
+    page = _load_words(page_id)
+
+    if payload.words_hash != words_hash(page["words"]):
+        raise HTTPException(
+            409,
+            "Die Wortliste dieser Seite hat sich geändert. Die Gruppierung passt "
+            "nicht mehr zu den Wortindizes und wurde nicht gespeichert.",
+        )
+
+    errors = offers_gold.validate_groups(payload.groups, len(page["words"]))
+    if errors:
+        raise HTTPException(422, " ".join(errors))
+
+    directory = offers_gold.reference_dir()
+    directory.mkdir(parents=True, exist_ok=True)
+    record = {
+        "page_id": page_id,
+        "words_hash": payload.words_hash,
+        "status": payload.status,
+        "annotator": payload.annotator,
+        "updated": datetime.now().isoformat(timespec="seconds"),
+        "groups": payload.groups,
+    }
+    # Dieselbe Schreibweise wie bei put_gold, aus demselben Grund: Die Datei
+    # lässt sich nicht neu erzeugen und wird im Sekundentakt überschrieben.
+    fd, tmp_path = tempfile.mkstemp(dir=directory, prefix=f".{page_id}.", suffix=".tmp")
+    try:
+        with os.fdopen(fd, "w") as f:
+            json.dump(record, f, ensure_ascii=False, indent=1)
+        os.chmod(tmp_path, 0o644)
+        os.replace(tmp_path, directory / f"{page_id}.json")
+    except Exception:
+        os.unlink(tmp_path)
+        raise
+
     return {**record, "stale": False}
 
 
