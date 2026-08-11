@@ -27,6 +27,19 @@ def _interval(bounds) -> str:
     return f"[{bounds['low']:.3f}, {bounds['high']:.3f}]"
 
 
+def _fill(entry: dict, per_page, clusters, seed: int) -> dict:
+    """Traegt Zaehlungen und Intervalle je Auswertungsbereich ein."""
+    from magda import offer_grid
+
+    for scope in ("total", "blind", "checkable"):
+        entry[scope] = offer_grid.total_of(per_page, scope).to_dict()
+        entry[scope]["pair_ci"] = offer_grid.bootstrap(
+            per_page, clusters, scope, "pair_f1", seed=seed)
+        entry[scope]["group_ci"] = offer_grid.bootstrap(
+            per_page, clusters, scope, "group_f1", seed=seed)
+    return entry
+
+
 def report_name(args) -> str:
     """Dateiname des Reports - die Entity-Quelle gehoert hinein.
 
@@ -35,6 +48,8 @@ def report_name(args) -> str:
     ueberschreibt der zweite den ersten, ohne dass jemand es sieht.
     """
     suffix = f"_{config.model_slug(args.predictions)}" if args.predictions else ""
+    if getattr(args, "cross_validate", False):
+        suffix += "_cv"
     return f"offers_grid_{args.splits.replace(',', '-')}{suffix}.json"
 
 
@@ -53,7 +68,7 @@ def train_namespace(args):
 
 
 def main(argv=None):
-    from magda import offer_grid, offer_model
+    from magda import offer_grid, offer_model, offer_pairs
 
     parser = argparse.ArgumentParser(
         prog="magda offers-grid",
@@ -77,6 +92,9 @@ def main(argv=None):
                         help="Kriterium der Schwellenkalibrierung")
     parser.add_argument("--variants", default=",".join(offer_grid.VARIANTS),
                         help="Teilmenge der Varianten, kommagetrennt")
+    parser.add_argument("--cross-validate", action="store_true",
+                        help="jede Referenzseite out-of-fold auswerten statt "
+                             "nur den Messsplit - mehr unabhaengige Einheiten")
     args = parser.parse_args(argv)
 
     wanted = [v.strip() for v in args.variants.split(",") if v.strip()]
@@ -90,6 +108,14 @@ def main(argv=None):
     train_args = train_namespace(args)
     train_source, train_pages, _ = _selected(train_args, parser)
 
+    if args.cross_validate:
+        # Ausgewertet wird die *ganze* Referenz, jede Seite aus einem Modell,
+        # das sie nicht gesehen hat. Die Trennung Training/Messung wandert
+        # damit von den Splits in die Folds.
+        seen = {p["page_id"] for p in eval_pages}
+        eval_pages = eval_pages + [p for p in train_pages if p["page_id"] not in seen]
+        train_pages = eval_pages
+
     assignments = reference.assignments
     clusters = offer_grid.clusters_of(eval_pages)
     print(f"Entities:    {source}" + ("  (Vorhersagen)" if args.predictions else "  (Labels)"))
@@ -97,7 +123,9 @@ def main(argv=None):
           f"  ({', '.join(sorted(set(reference.provenance.values())))})")
     print(f"Training:    {args.train_splits}, {len(train_pages)} Seiten "
           f"aus {train_source}")
-    print(f"Messung:     {args.splits}, {len(eval_pages)} Seiten "
+    modus = ("out-of-fold ueber die ganze Referenz"
+             if args.cross_validate else f"Split {args.splits}")
+    print(f"Messung:     {modus}, {len(eval_pages)} Seiten "
           f"in {len(clusters)} Duplikat-Clustern")
     print()
 
@@ -105,6 +133,24 @@ def main(argv=None):
     for name in wanted:
         blocks = offer_grid.VARIANTS[name]
         started = time.perf_counter()
+
+        if args.cross_validate:
+            per_page, thresholds = offer_grid.cross_validate(
+                eval_pages, assignments, blocks, folds=args.folds,
+                epochs=args.epochs, seed=args.seed, objective=args.objective)
+            entry = {
+                "blocks": list(blocks),
+                "features": len(offer_pairs.feature_names(blocks)),
+                "threshold": round(sum(thresholds) / len(thresholds), 3),
+                "thresholds_per_fold": thresholds,
+                "seconds": round(time.perf_counter() - started, 1),
+            }
+            _fill(entry, per_page, clusters, args.seed)
+            results[name] = entry
+            print(f"  {name:<10} {entry['features']:>3} Merkmale, "
+                  f"Schwellen {thresholds}, {entry['seconds']:>5.1f} s")
+            continue
+
         calibration = offer_model.calibrate(
             train_pages, assignments, folds=args.folds, epochs=args.epochs,
             seed=args.seed, objective=args.objective, blocks=blocks)
@@ -128,13 +174,7 @@ def main(argv=None):
             "threshold": threshold,
             "seconds": round(time.perf_counter() - started, 1),
         }
-        for scope in ("total", "blind", "checkable"):
-            counts = offer_grid.total_of(per_page, scope)
-            entry[scope] = counts.to_dict()
-            entry[scope]["pair_ci"] = offer_grid.bootstrap(
-                per_page, clusters, scope, "pair_f1", seed=args.seed)
-            entry[scope]["group_ci"] = offer_grid.bootstrap(
-                per_page, clusters, scope, "group_f1", seed=args.seed)
+        _fill(entry, per_page, clusters, args.seed)
         results[name] = entry
         print(f"  {name:<10} {entry['features']:>3} Merkmale, "
               f"Schwelle {threshold:.2f}, {entry['seconds']:>5.1f} s")
@@ -165,6 +205,7 @@ def main(argv=None):
         "provenance": sorted(set(reference.provenance.values())),
         "train_splits": args.train_splits,
         "splits": args.splits,
+        "cross_validated": bool(args.cross_validate),
         "objective": args.objective,
         "train_pages": len(train_pages),
         "eval_pages": len(eval_pages),

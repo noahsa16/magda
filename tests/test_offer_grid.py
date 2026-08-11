@@ -250,3 +250,56 @@ def test_eine_eigene_trainingsquelle_trennt_lehrer_von_schueler():
     assert train.predictions is None
     assert train.labels_from == "sonnet-5"
     assert train.splits == "train"
+
+
+# ------------------------------------------------------- Kreuzvalidierung
+
+
+def test_kreuzvalidierung_bewertet_jede_seite_genau_einmal():
+    """Sonst zaehlte eine Seite mehrfach in Zaehler und Nenner.
+
+    Der Zweck der Kreuzvalidierung ist, die Zahl der unabhaengigen
+    Auswertungseinheiten zu erhoehen - eine doppelt gezaehlte Seite
+    verengte das Intervall genau um den Betrag, den sie vortaeuscht.
+    """
+    from magda import offer_grid, offer_model
+
+    pages = [_page(OHNE_GRUNDPREIS) for _ in range(6)]
+    for index, page in enumerate(pages):
+        page["page_id"] = f"p{index}"
+        for word_index, word in enumerate(page["words"]):
+            word["text"] = f"{word['text']}{index}"
+
+    folds = offer_model.page_folds(pages, 3)
+    verteilt = [page_id for fold in folds for page_id in fold]
+
+    assert sorted(verteilt) == sorted(p["page_id"] for p in pages)
+    assert len(verteilt) == len(set(verteilt))
+
+
+def test_die_auswertungseinheiten_wachsen_ueber_dev_hinaus():
+    """Der Grund fuer die Kreuzvalidierung, als Zahl.
+
+    Dev hat 21 Seiten in 14 Duplikat-Clustern und ist vollstaendig
+    gruppiert - mehr Trainingsreferenz macht das Intervall dort nicht
+    schmaler. Ueber die ganze Referenz sind es deutlich mehr Cluster.
+    """
+    import json
+    from pathlib import Path
+
+    from magda import offer_grid
+    from magda.cli.offers import _load_labeled_pages
+    from magda.cli.offers_model import SPLIT_FILE
+
+    grouping = Path("data/offer_groups/claude-sonnet-5")
+    if not grouping.is_dir() or not SPLIT_FILE.is_file():
+        pytest.skip("Gruppierungsreferenz oder Split fehlen")
+
+    split = json.loads(SPLIT_FILE.read_text())
+    grouped = {p.stem for p in grouping.glob("*.json")}
+    pages = {p["page_id"]: p for p in _load_labeled_pages("sonnet-5")}
+
+    dev = [pages[i] for i in grouped & set(split["dev"]) if i in pages]
+    alle = [pages[i] for i in grouped if i in pages]
+
+    assert len(offer_grid.clusters_of(alle)) > len(offer_grid.clusters_of(dev))

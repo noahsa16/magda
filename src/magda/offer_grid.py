@@ -15,6 +15,20 @@ Gruppe ist keine Rechnung moeglich.
 
 from __future__ import annotations
 
+# Warum es die Kreuzvalidierung gibt (11.08.2026):
+#
+# Die Konfidenzintervalle der Gruppen-F1 waren so breit, dass keine Variante
+# von einer anderen zu unterscheiden war. Der naheliegende Schluss war "mehr
+# Referenz" - und er war halb falsch. Gemessen wird auf **Dev**, und Dev hat
+# 21 Seiten in 14 Duplikat-Clustern, *alle* davon bereits gruppiert. Die
+# Breite des Intervalls haengt an der Zahl der Auswertungs-Cluster, also an
+# 14, und keine weitere Trainingsseite aendert daran etwas. Das Planziel
+# "Dev auf 25-30 Seiten ausbauen" war nicht schwer, sondern unmoeglich.
+#
+# Der Ausweg ist keine Datenfrage, sondern eine Frage des Messaufbaus: jede
+# Referenzseite einmal auswerten, mit einem Modell, das sie nicht gesehen
+# hat. Aus 14 Clustern werden so alle Cluster der Referenz.
+
 import math
 import random
 from dataclasses import dataclass, field
@@ -169,6 +183,49 @@ def judge_page(page: dict, assignment: dict[int, int],
                 setattr(counts, name, getattr(counts, name) + 1)
 
     return result
+
+
+def cross_validate(pages: list[dict], assignments: dict, blocks,
+                   folds: int = 5, epochs: int = 300, seed: int = 0,
+                   objective: str = "group_f1",
+                   progress=None) -> tuple[list[PageCounts], list[float]]:
+    """Jede Referenzseite einmal auswerten - mit einem Modell ohne sie.
+
+    Die Schwelle wird **geschachtelt** gewaehlt: `calibrate` laeuft auf den
+    inneren Folds und macht dort seine eigene Kreuzvalidierung, die
+    Auswertung trifft nur den aeusseren Fold. Eine einmal auf allem gewaehlte
+    Schwelle waere bequemer und genau der Zirkelschluss, gegen den
+    `offers_report` die Ablation braucht - die Schwelle ist ein Freiheitsgrad
+    wie jeder andere.
+
+    Der Preis ist Rechenzeit: `folds` mal Kalibrierung plus Training. Der
+    Gewinn ist die Zahl der unabhaengigen Auswertungseinheiten, und die
+    bestimmt die Breite jedes Intervalls.
+    """
+    from magda import offer_model, offer_pairs
+
+    per_page: list[PageCounts] = []
+    thresholds: list[float] = []
+    for number, fold in enumerate(offer_model.page_folds(pages, folds), 1):
+        held_out = set(fold)
+        inner = [p for p in pages if p["page_id"] not in held_out]
+        outer = [p for p in pages if p["page_id"] in held_out]
+        if not inner or not outer:
+            continue
+        calibration = offer_model.calibrate(
+            inner, assignments, folds=folds, epochs=epochs, seed=seed,
+            objective=objective, blocks=blocks)
+        threshold = calibration["threshold"]
+        thresholds.append(threshold)
+        model = offer_model.train(inner, assignments, epochs=epochs, seed=seed,
+                                  blocks=blocks)
+        model.threshold = threshold
+        for page in outer:
+            per_page.append(judge_page(page, assignments[page["page_id"]],
+                                       model.group_page_words(page, threshold)))
+        if progress:
+            progress(number, len(outer), threshold)
+    return per_page, thresholds
 
 
 def clusters_of(pages: list[dict]) -> list[list[str]]:
