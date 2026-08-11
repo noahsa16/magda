@@ -280,6 +280,77 @@ Blackbox-Vergleich sind heute `cluster_page`-Angebote aus den Lehrer-Labels
 selbst, und der Dev-Probewert von 0.922 ist entsprechend zu lesen. Die
 Alternative wäre `data/offer_groups/`. Der Testlauf ist nicht wiederholbar.
 
+## 8. Fortsetzung ab 02:00 — die Referenz, und warum sie nicht das Problem war
+
+**Die Gruppierungsreferenz ist von 51 auf 75 Seiten gewachsen** (Train 30 →
+54, Dev unverändert 21), alle 24 Seiten der Warteschlange von
+sonnet-Subagenten aus dem Seitenbild gruppiert. Zwei Antwortdateien kamen
+abgeschnitten zurück; `magda offers-teacher save` hat sie abgelehnt statt sie
+halb zu übernehmen — genau die Regel, für die es sie gibt.
+
+Dabei sind zwei Dinge aufgefallen, die mehr wiegen als die 24 Seiten.
+
+### Der Label-Default zeigte auf mistral
+
+`config.default_labeled_model()` gab `CHAT_AI_VISION_MODEL` den Vorrang und
+lieferte damit `mistral-medium-3.5-128b` — ein Modell, mit dem im Projekt gar
+nicht gelabelt wird. Jeder Befehl ohne `--labels-from` maß gegen dessen
+Labels, und man sah es nur, wenn man die Kopfzeile las.
+
+Beziffert über **dieselbe** Gruppierung:
+
+| Labelquelle | Preise | Genauigkeit | Abdeckung |
+|---|---:|---:|---:|
+| `mistral-medium-3.5-128b` (Default) | 399 | 0.927 | 0.446 |
+| `sonnet-5` | **494** | 0.936 | 0.478 |
+
+Ein Viertel mehr Preise bei gleicher Rechnung. Über die Ordnergröße allein
+wäre es auch nicht gutgegangen: `sonnet-5`, `sonnet-5-app` und der
+Mistral-Ordner haben alle 296 Seiten, dann entscheidet die
+Sortierreihenfolge. Vorrang hat jetzt `config.CANONICAL_LABELS`. **Ältere
+Zahlen aus Befehlen ohne `--labels-from` stehen unter diesem Vorbehalt.**
+
+### „Mehr Referenz" war die halb falsche Antwort
+
+Der Schluss aus den breiten Intervallen lautete: Referenz vergrößern. Das war
+zur Hälfte falsch, und die Hälfte ist wichtig. Gemessen wurde auf **Dev** —
+und Dev hat 21 Seiten in 14 Duplikat-Clustern, **alle davon längst
+gruppiert**. Die Breite eines Bootstrap-Intervalls hängt an der Zahl der
+Auswertungs-Cluster; keine weitere *Trainings*seite ändert daran etwas. Das
+Planziel „Dev auf 25–30 Seiten ausbauen" war nicht schwer, sondern
+**unmöglich**: der eingefrorene Split gibt nur 21 her.
+
+Der Ausweg ist kein Datenproblem, sondern der Messaufbau. `magda offers-grid
+--cross-validate` wertet jede Referenzseite einmal aus, mit einem Modell, das
+sie nicht gesehen hat. **Aus 14 Clustern werden 62.** Die Schwelle wird dabei
+geschachtelt gewählt — `calibrate` auf den inneren Folds, Auswertung nur auf
+dem äußeren; einmal auf allem gewählt wäre sie genau der Zirkelschluss, gegen
+den `offers_report` die Ablation braucht.
+
+Was das mit den Intervallen macht (Gruppen-F1, Lauf über 69 Seiten):
+
+| Variante | Dev, 14 Cluster | out-of-fold, 62 Cluster |
+|---|---|---|
+| basis | 0.477 [0.16, 0.65] · Breite 0.49 | 0.376 [0.29, 0.47] · **0.18** |
+| geometrie | 0.540 [0.21, 0.74] · 0.53 | 0.447 [0.34, 0.55] · **0.21** |
+| farbe | 0.472 [0.20, 0.63] · 0.43 | 0.398 [0.32, 0.48] · **0.16** |
+| beide | 0.492 [0.23, 0.62] · 0.39 | 0.423 [0.33, 0.52] · **0.19** |
+
+**Die Intervalle sind im Mittel von 0.463 auf 0.185 geschrumpft, Faktor
+2,5** — bei niedrigeren Punktschätzern, was zu erwarten war: out-of-fold ist
+ehrlicher als eine auf Train kalibrierte Schwelle.
+
+### Was noch fehlte: der richtige Test
+
+Überlappende **Einzel**intervalle heißen nicht „kein Unterschied". Beide
+Varianten sehen dieselben Seiten; ist eine Seite schwer, ist sie es für
+beide. Wer sie einzeln resampelt, zählt diese gemeinsame Streuung zweimal und
+verdeckt genau den Effekt, den er messen will. Deshalb bootstrappt
+`offer_grid.paired_bootstrap` jetzt die **Differenz** — dieselbe Konstruktion
+wie `magda significance` für den Modellvergleich, nur über Duplikat-Cluster.
+Das kostet keine zusätzliche Rechenzeit: die seitenweisen Zählungen aller
+Varianten liegen im selben Lauf ohnehin vor.
+
 ## Was nicht passiert ist — und warum
 
 - **Der eine Testbatch (Plan B/6): gesperrt.** Er setzt die Handprüfung der
