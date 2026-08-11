@@ -581,9 +581,11 @@ Derselbe Lauf mit `--features geometrie` (35 Merkmale), ILP, out-of-fold
 | Differenz | +0.049 | **+0.059** | **±0.000** |
 
 **Der einzige Merkmalsblock mit belegtem Effekt (+0.044, p = 0.018) hebt
-alles außer den Variantenblöcken.** Dort exakt dieselben 40 von 95. Und
-die Preiskante bewegt sich um +0.001 (0.639 → 0.639), während
-`QUANTITY|QUANTITY` +0.016 gewinnt.
+alles außer den Variantenblöcken.** Dort unverändert 40 von 95 — *gleiche
+Anzahl; ob es dieselben Gruppen sind, ist ungeprüft.* Der Report hielt
+bisher nur Summen fest, verglichen wurden also zwei Zählungen, nicht zwei
+Mengen. Die Aussage hängt nicht daran: die Preiskante bewegt sich um
++0.001 (0.639 → 0.639), während `QUANTITY|QUANTITY` +0.016 gewinnt.
 
 Das ist kein Zufall, sondern die Bauart der Merkmale: `products_between`,
 `closer_rivals` und `distance_ratio` sind **Trennmerkmale** — sie

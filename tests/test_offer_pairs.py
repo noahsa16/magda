@@ -15,7 +15,7 @@ zurueckhalten, mit dem hinterher gerichtet wird.
 
 import pytest
 
-from magda import offer_pairs
+from magda import offer_pairs, offers
 
 
 def _page(page_id="p1"):
@@ -505,3 +505,161 @@ def test_auch_die_neuen_merkmale_heissen_nicht_nach_der_rechnung():
     verboten = ("unit_price", "arithmetic", "quantity_times", "rechnung")
     for name in offer_pairs.feature_names(offer_pairs.ALL_BLOCKS):
         assert not any(wort in name for wort in verboten), name
+
+
+# ------------------------------------------------------------------- Anker
+
+
+def _variantenblock():
+    """Ein Produktname, zwei Preise darunter - die Form aus Issue #6.
+
+    Der zweite Preis steht weiter weg als der fremde Produktname unten;
+    genau deshalb trennt die Geometrie hier falsch.
+    """
+    texts = ["Pfanne", "9.99", "14.99", "Topf"]
+    boxes = [
+        [10, 10, 60, 20],     # Pfanne   - der gemeinsame Anker
+        [10, 40, 40, 55],     # 9.99
+        [10, 90, 40, 105],    # 14.99    - weit unten
+        [10, 108, 60, 118],   # Topf     - naeher an 14.99 als Pfanne
+    ]
+    return {
+        "page_id": "vb",
+        "width": 100,
+        "height": 200,
+        "words": [{"text": t, "bbox": b} for t, b in zip(texts, boxes)],
+        "tags": ["B-PRODUCT", "B-PRICE", "B-PRICE", "B-PRODUCT"],
+    }
+
+
+ANKER = offer_pairs.ANCHOR_BLOCKS
+
+
+def test_zwei_preise_unter_einem_namen_teilen_ihren_anker():
+    """Das Zielmerkmal: die Geschwisterkante eines Variantenblocks."""
+    page = _page()
+    pairs = offer_pairs.page_pairs(page, blocks=ANKER)
+    shared = pairs.feature_names.index("shared_anchor")
+    von = dict(zip(pairs.index_pairs, pairs.features))
+
+    # Preis 2 und Produkt 1 gehoeren zusammen, Preis 2 und Produkt 4 nicht.
+    assert von[(1, 2)][shared] == 1.0
+    assert von[(2, 4)][shared] == 0.0
+
+
+def test_der_anker_verbindet_ueber_die_geometrie_hinweg():
+    """Der Fall, den die vorhandenen Merkmale nicht loesen.
+
+    "14.99" liegt naeher an "Topf" als an "Pfanne". Trotzdem muss es
+    denselben Anker haben wie "9.99" - sonst trennt die Naehe wieder, und
+    das Merkmal traegt nichts bei, was `distance` nicht schon sagt.
+    """
+    pairs = offer_pairs.page_pairs(_variantenblock(), blocks=ANKER)
+    shared = pairs.feature_names.index("shared_anchor")
+    von = dict(zip(pairs.index_pairs, pairs.features))
+
+    assert von[(1, 2)][shared] == 0.0     # 14.99 ankert am naeheren "Topf"
+    # Die Speiche stimmt trotzdem: jeder Preis teilt den Anker mit *seinem*
+    # naechsten Produktnamen.
+    assert von[(0, 1)][shared] == 1.0     # Pfanne - 9.99
+    assert von[(2, 3)][shared] == 1.0     # 14.99 - Topf
+
+
+def test_zwei_produktnamen_teilen_nie_einen_anker():
+    """Die dokumentierte Grenze - jeder Anker ist sein eigener.
+
+    Bloecke mit mehreren Produktnamen loest dieses Merkmal nicht. Steht so
+    im Docstring; hier festgehalten, damit die Grenze nicht spaeter fuer
+    einen Fehler gehalten wird.
+    """
+    pairs = offer_pairs.page_pairs(_variantenblock(), blocks=ANKER)
+    shared = pairs.feature_names.index("shared_anchor")
+    von = dict(zip(pairs.index_pairs, pairs.features))
+
+    assert von[(0, 3)][shared] == 0.0
+
+
+def test_ohne_produktnamen_bleiben_die_ankermerkmale_null():
+    """Kein Sentinel: der waere seitenkonstant und damit selbst ein Merkmal."""
+    page = _variantenblock()
+    page["tags"] = ["B-PRICE", "B-PRICE", "B-PRICE", "B-PRICE"]
+
+    pairs = offer_pairs.page_pairs(page, blocks=ANKER)
+
+    erste = pairs.feature_names.index("shared_anchor")
+    for row in pairs.features:
+        assert row[erste:erste + 3] == [0.0, 0.0, 0.0]
+
+
+def test_der_ankerblock_haengt_hinten_an():
+    """Sonst zeigt jedes gelernte Gewicht eines Checkpoints auf eine andere
+    Spalte, und das faellt durch keine Pruefung auf."""
+    mit = offer_pairs.feature_names(ANKER)
+    ohne = offer_pairs.feature_names(offer_pairs.GEOMETRY_BLOCKS)
+
+    assert mit[:len(ohne)] == ohne
+    assert mit[len(ohne):] == offer_pairs.ANCHOR_NAMES
+
+
+def test_die_variante_beide_waechst_nicht_mit_neuen_bloecken():
+    """`ALL_BLOCKS = BLOCK_ORDER` haette "beide" still um den Ankerblock
+    erweitert - und jeder Vergleich gegen eine aeltere Zahl meinte dann
+    etwas anderes."""
+    assert "anchor" not in offer_pairs.ALL_BLOCKS
+    assert len(offer_pairs.feature_names(offer_pairs.ALL_BLOCKS)) == 39
+
+
+def test_kein_ankermerkmal_heisst_nach_der_rechnung():
+    """Dieselbe Zusicherung wie fuer die Grundmerkmale, fuer den neuen Block."""
+    verboten = ("unit_price", "arithmetic", "quantity_times", "rechnung")
+    for name in offer_pairs.ANCHOR_NAMES:
+        assert not any(wort in name for wort in verboten), name
+
+
+def _ein_anker_zwei_abstaende():
+    """Ein Produktname, ein Preis knapp darunter, einer sehr weit unten."""
+    texts = ["Pfanne", "9.99", "14.99"]
+    boxes = [[10, 10, 60, 20], [10, 25, 40, 40], [10, 900, 40, 915]]
+    return {
+        "page_id": "gap", "width": 100, "height": 1000,
+        "words": [{"text": t, "bbox": b} for t, b in zip(texts, boxes)],
+        "tags": ["B-PRODUCT", "B-PRICE", "B-PRICE"],
+    }
+
+
+def test_der_ankerabstand_waechst_mit_der_entfernung():
+    """Sonst traegt das Merkmal nur "geteilt ja/nein" und nicht, wie sicher."""
+    pairs = offer_pairs.page_pairs(_ein_anker_zwei_abstaende(), blocks=ANKER)
+    gap_j = pairs.feature_names.index("anchor_gap_j")
+    von = dict(zip(pairs.index_pairs, pairs.features))
+
+    assert von[(0, 1)][gap_j] < von[(0, 2)][gap_j]
+
+
+def test_der_ankerabstand_wird_gekappt():
+    """Ungekappt dominiert eine Seite ohne nahen Namen die Skala, und die
+    Unterschiede im relevanten Bereich - ein bis zwei Zeilen - fallen
+    darunter zusammen."""
+    pairs = offer_pairs.page_pairs(_ein_anker_zwei_abstaende(), blocks=ANKER)
+    gap_j = pairs.feature_names.index("anchor_gap_j")
+    von = dict(zip(pairs.index_pairs, pairs.features))
+
+    assert von[(0, 2)][gap_j] == 1.0       # der ferne Preis liegt an der Kappe
+    assert von[(0, 1)][gap_j] < 0.2        # der nahe deutlich darunter
+
+
+def test_eine_entity_ohne_eigenen_namen_ankert_nicht_am_fremden():
+    """Ein Produktname ist sein eigener Anker - nicht der naechste andere.
+
+    Ohne das wanderte jeder Name zum Nachbarn und zwei benachbarte
+    Angebote teilten sich einen Anker: das Merkmal sagte dann das
+    Gegenteil dessen, wofuer es gebaut ist.
+    """
+    page = _variantenblock()
+    entities = [e for e in offers.entities_from_page(page)
+                if e.type in offers.VALUE_TYPES]
+
+    of_index, gaps = offer_pairs._page_anchors(entities)
+
+    assert of_index[0] == 0 and gaps[0] == 0.0     # "Pfanne" ankert an sich
+    assert of_index[3] == 3 and gaps[3] == 0.0     # "Topf" ebenso

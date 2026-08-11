@@ -41,6 +41,7 @@ VARIANTS: dict[str, tuple[str, ...]] = {
     "geometrie": offer_pairs.GEOMETRY_BLOCKS,
     "farbe": ("types", "geometry_base", "color"),
     "beide": offer_pairs.ALL_BLOCKS,
+    "anker": offer_pairs.ANCHOR_BLOCKS,
 }
 
 # Duplikat-Cluster, ueber die das Bootstrap resampelt - dieselbe Schwelle,
@@ -521,7 +522,11 @@ def _variant_rows(page: dict, assignment: dict, model):
         variant = any(counts[t] > 1 for t in VARIANT_MULTIPLES)
         variant_of[group] = variant
         keys = frozenset((e.start, e.end) for e in members)
-        group_rows.append({"variant": variant, "hit": keys in exact,
+        # `page_id` und `group` mitschreiben, damit sich zwei Laeufe als
+        # *Mengen* vergleichen lassen und nicht nur als Zaehlungen. Zweimal
+        # "40 von 95" koennen zwei verschiedene Vierziger sein.
+        group_rows.append({"page_id": page.get("page_id"), "group": group,
+                           "variant": variant, "hit": keys in exact,
                            "size": len(members)})
 
     # Nur positive Paare: die Frage ist, welche Kante das System *verliert*,
@@ -573,7 +578,9 @@ def _variant_summary(group_rows: list[dict], edge_rows: list[dict]) -> dict:
             entry["mean_probability"] = entry.pop("sum") / entry["total"]
         edges[bucket] = dict(sorted(by_pair.items(),
                                     key=lambda kv: -kv[1]["total"]))
-    return {"groups": groups, "edges": edges}
+    hit_ids = sorted(f"{r['page_id']}#{r['group']}"
+                     for r in group_rows if r["hit"])
+    return {"groups": groups, "edges": edges, "hit_groups": hit_ids}
 
 
 def variant_blocks(pages: list[dict], assignments: dict, model) -> dict:

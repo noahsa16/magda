@@ -64,6 +64,12 @@ COLOR_NAMES = [
     "bg_offpage_j",
 ]
 
+ANCHOR_NAMES = [
+    "shared_anchor",     # zeigen beide auf denselben Produktnamen?
+    "anchor_gap_i",      # wie weit ist der eigene Anker - je weiter, desto
+    "anchor_gap_j",      # unsicherer ist die Zuordnung zu ihm
+]
+
 # Anker eines Angebots. Ein Angebot ist ein Stern um genau einen Produktnamen;
 # Preis-Badges schweben dagegen frei, ein fremder PRICE dazwischen trennt
 # deshalb *nicht* zuverlaessig (deshalb kein `prices_between`).
@@ -72,6 +78,11 @@ ANCHOR_TYPES = frozenset({"PRODUCT", "BRAND"})
 # Kappung des Abstandsverhaeltnisses. Ungekappt fittet das MLP Ausreisser
 # am Seitenrand, wo die naechste Alternative sehr weit weg liegt.
 RATIO_CAP = 5.0
+
+# Kappung des Ankerabstands in Medianworthoehen. Ungekappt dominiert eine
+# Seite ohne nahen Produktnamen die Skala, und die feinen Unterschiede im
+# relevanten Bereich - eine bis zwei Zeilen - fallen darunter zusammen.
+ANCHOR_GAP_CAP = 20.0
 
 # Wie viele Punkte auf der Verbindungslinie hoechstens abgetastet werden.
 # Mehr kostet nur Zeit: die Linie ist selten laenger als eine halbe Seite.
@@ -93,12 +104,17 @@ FEATURE_BLOCKS: dict[str, list[str]] = {
     "geometry_base": GEOMETRY_NAMES,
     "geometry_plus": CONTEXT_NAMES,
     "color": COLOR_NAMES,
+    "anchor": ANCHOR_NAMES,
 }
-BLOCK_ORDER = ("types", "geometry_base", "geometry_plus", "color")
+BLOCK_ORDER = ("types", "geometry_base", "geometry_plus", "color", "anchor")
 
 DEFAULT_BLOCKS = ("types", "geometry_base")
 GEOMETRY_BLOCKS = ("types", "geometry_base", "geometry_plus")
-ALL_BLOCKS = BLOCK_ORDER
+ANCHOR_BLOCKS = ("types", "geometry_base", "geometry_plus", "anchor")
+# Ausgeschrieben statt `= BLOCK_ORDER`: sonst waechst die Variante "beide"
+# mit jedem neuen Block mit, und ein Vergleich gegen eine aeltere Zahl
+# meint stillschweigend etwas anderes.
+ALL_BLOCKS = ("types", "geometry_base", "geometry_plus", "color")
 
 
 def feature_names(blocks=DEFAULT_BLOCKS) -> list[str]:
@@ -209,8 +225,70 @@ def _pair_features(entity_i, entity_j, index_i: int, index_j: int,
             entity_i, entity_j, index_i, index_j, context)
     if "color" in context["blocks"]:
         parts["color"] = _color_features(index_i, index_j, context)
+    if "anchor" in context["blocks"]:
+        parts["anchor"] = _anchor_features(index_i, index_j, context)
 
     return [v for block in BLOCK_ORDER if block in parts for v in parts[block]]
+
+
+def _page_anchors(entities: list) -> tuple[list[int | None], list[float]]:
+    """Je Entity ihr naechster Produktanker und der Abstand dorthin.
+
+    Eine Anker-Entity ist ihr eigener Anker. Damit deckt `shared_anchor`
+    beide Relationen ab, die ein Angebot ausmachen: die Speiche
+    (PRICE-PRODUCT ist geteilt, wenn genau dieses PRODUCT der naechste
+    Anker des Preises ist) und die Geschwisterkante (PRICE-PRICE ist
+    geteilt, wenn beide auf denselben Namen zeigen).
+
+    **Bekannte Grenze:** Zwei Anker sind nie geteilt, denn jeder ist sein
+    eigener. Bloecke mit mehreren Produktnamen - `Kochgeschirr: Kasserolle
+    14.99 / Topf 24.99` - loest dieses Merkmal deshalb nicht. Das ist eine
+    bewusste Verkleinerung: die gemessene Luecke sitzt bei PRICE|PRICE
+    (0.639), nicht bei PRODUCT|PRODUCT (0.814).
+    """
+    anchors = [k for k, e in enumerate(entities) if e.type in ANCHOR_TYPES]
+    of_index: list[int | None] = []
+    gaps: list[float] = []
+    for k, entity in enumerate(entities):
+        if entity.type in ANCHOR_TYPES:
+            of_index.append(k)
+            gaps.append(0.0)
+            continue
+        center = _center(entity.bbox)
+        best, distance = None, None
+        for a in anchors:
+            candidate = math.dist(center, _center(entities[a].bbox))
+            if distance is None or candidate < distance:
+                best, distance = a, candidate
+        of_index.append(best)
+        gaps.append(distance if distance is not None else 0.0)
+    return of_index, gaps
+
+
+def _anchor_features(index_i: int, index_j: int, context: dict) -> list[float]:
+    """Die Stern-Eigenschaft eines Angebots: n Angaben, ein Name.
+
+    Gegenrichtung zu den Kontextmerkmalen. `closer_rivals` und
+    `distance_ratio` beantworten "gibt es einen naeheren Kandidaten" und
+    *trennen* damit; ein Variantenblock braucht eine Verbindung trotz
+    Distanz und trotz naeherer Konkurrenz. Gemessen wirken die
+    Trennmerkmale an Variantenbloecken vorbei: +0.059 ausserhalb, ±0.000
+    darin (11.08.2026, out-of-fold ueber 573 Gruppen).
+
+    Ohne jeden Produktanker auf der Seite ist der Anker `None`; dann sind
+    alle drei Werte 0.0. Ein Sentinel waere seitenkonstant und das Modell
+    lernte "Seiten ohne Produktnamen sehen anders aus" - derselbe Grund,
+    aus dem der Farbblock ein fehlendes Bild lieber abbricht.
+    """
+    of_index, gaps = context["anchors"]
+    anchor_i, anchor_j = of_index[index_i], of_index[index_j]
+    shared = float(anchor_i is not None and anchor_i == anchor_j)
+    scale = context["scale"]
+    return [
+        shared,
+        min(gaps[index_i] / scale, ANCHOR_GAP_CAP) / ANCHOR_GAP_CAP,
+        min(gaps[index_j] / scale, ANCHOR_GAP_CAP) / ANCHOR_GAP_CAP,
+    ]
 
 
 def _context_features(entity_i, entity_j, index_i: int, index_j: int,
@@ -502,6 +580,10 @@ def page_pairs(page: dict, assignment: dict[int, int] | None = None, *,
             w["bbox"] for w in (page.get("words") or [])
             if len(w.get("bbox") or []) == 4
         ]
+    if "anchor" in blocks:
+        # Einmal je Seite, nicht je Paar - sonst kostet die Suche nach dem
+        # naechsten Anker quadratisch mal die Zahl der Anker.
+        context["anchors"] = _page_anchors(entities)
     if "color" in blocks:
         # Die Hintergrundfarbe je Entity kommt aus dem Originalbild (einmal
         # je Entity, billig); der Pfad tastet das geglaettete ab (einmal je
