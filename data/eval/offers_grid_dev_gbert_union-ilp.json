@@ -1,0 +1,193 @@
+{
+  "source": "gbert",
+  "source_kind": "predictions",
+  "train_source": "sonnet-5",
+  "reference": "data/offer_groups/claude-sonnet-5",
+  "provenance": [
+    "llm"
+  ],
+  "train_splits": "train",
+  "splits": "dev",
+  "cross_validated": false,
+  "decoders": [
+    "union",
+    "ilp"
+  ],
+  "objective": "group_f1",
+  "train_pages": 54,
+  "eval_pages": 21,
+  "eval_clusters": 14,
+  "variants": {
+    "geometrie/union": {
+      "blocks": [
+        "types",
+        "geometry_base",
+        "geometry_plus"
+      ],
+      "decoder": "union",
+      "features": 35,
+      "threshold": 0.96,
+      "seconds": 160.3,
+      "total": {
+        "ref_pairs": 1855,
+        "sys_pairs": 1808,
+        "shared_pairs": 1509,
+        "ref_groups": 122,
+        "sys_groups": 152,
+        "exact_groups": 82,
+        "pair_f1": 0.823914823914824,
+        "group_f1": 0.5985401459854015,
+        "pair_ci": {
+          "clusters": 14,
+          "low": 0.6521308225966304,
+          "high": 0.9057471264367817
+        },
+        "group_ci": {
+          "clusters": 14,
+          "low": 0.2898550724637681,
+          "high": 0.761904761904762
+        }
+      },
+      "blind": {
+        "ref_pairs": 444,
+        "sys_pairs": 181,
+        "shared_pairs": 181,
+        "ref_groups": 34,
+        "sys_groups": 60,
+        "exact_groups": 24,
+        "pair_f1": 0.5792,
+        "group_f1": 0.5106382978723405,
+        "pair_ci": {
+          "clusters": 14,
+          "low": 0.547356188262638,
+          "high": 1.0
+        },
+        "group_ci": {
+          "clusters": 14,
+          "low": 0.25,
+          "high": 1.0
+        }
+      },
+      "checkable": {
+        "ref_pairs": 1411,
+        "sys_pairs": 1627,
+        "shared_pairs": 1328,
+        "ref_groups": 88,
+        "sys_groups": 92,
+        "exact_groups": 58,
+        "pair_f1": 0.8742593811718236,
+        "group_f1": 0.6444444444444444,
+        "pair_ci": {
+          "clusters": 14,
+          "low": 0.7483870967741936,
+          "high": 0.9129533678756475
+        },
+        "group_ci": {
+          "clusters": 14,
+          "low": 0.24,
+          "high": 0.7633136094674557
+        }
+      }
+    },
+    "geometrie/ilp": {
+      "blocks": [
+        "types",
+        "geometry_base",
+        "geometry_plus"
+      ],
+      "decoder": "ilp",
+      "features": 35,
+      "threshold": 0.88,
+      "seconds": 396.7,
+      "total": {
+        "ref_pairs": 1855,
+        "sys_pairs": 1513,
+        "shared_pairs": 1478,
+        "ref_groups": 122,
+        "sys_groups": 147,
+        "exact_groups": 98,
+        "pair_f1": 0.8776722090261283,
+        "group_f1": 0.728624535315985,
+        "pair_ci": {
+          "clusters": 14,
+          "low": 0.7171783148269105,
+          "high": 0.9681257968550787
+        },
+        "group_ci": {
+          "clusters": 14,
+          "low": 0.3703703703703704,
+          "high": 0.8863636363636362
+        }
+      },
+      "blind": {
+        "ref_pairs": 444,
+        "sys_pairs": 222,
+        "shared_pairs": 222,
+        "ref_groups": 34,
+        "sys_groups": 46,
+        "exact_groups": 25,
+        "pair_f1": 0.6666666666666666,
+        "group_f1": 0.625,
+        "pair_ci": {
+          "clusters": 14,
+          "low": 0.6428571428571429,
+          "high": 1.0
+        },
+        "group_ci": {
+          "clusters": 14,
+          "low": 0.4242424242424242,
+          "high": 1.0
+        }
+      },
+      "checkable": {
+        "ref_pairs": 1411,
+        "sys_pairs": 1291,
+        "shared_pairs": 1256,
+        "ref_groups": 88,
+        "sys_groups": 101,
+        "exact_groups": 73,
+        "pair_f1": 0.9296817172464841,
+        "group_f1": 0.7724867724867726,
+        "pair_ci": {
+          "clusters": 14,
+          "low": 0.8065348237317281,
+          "high": 0.9775250473869483
+        },
+        "group_ci": {
+          "clusters": 14,
+          "low": 0.2972972972972973,
+          "high": 0.9020979020979022
+        }
+      },
+      "ilp": {
+        "components": 6691,
+        "optimised": 4357,
+        "capped": 359,
+        "largest_capped": 119
+      }
+    }
+  },
+  "paired_vs_baseline": {
+    "geometrie/ilp_vs_geometrie/union_total": {
+      "clusters": 14,
+      "difference": 0.13008438933058353,
+      "low": 0.07033639143730885,
+      "high": 0.1588716062968878,
+      "p_two_sided": 0.0
+    },
+    "geometrie/ilp_vs_geometrie/union_blind": {
+      "clusters": 14,
+      "difference": 0.1143617021276595,
+      "low": 0.0,
+      "high": 0.3214285714285715,
+      "p_two_sided": 0.23069207622868607
+    },
+    "geometrie/ilp_vs_geometrie/union_checkable": {
+      "clusters": 14,
+      "difference": 0.12804232804232818,
+      "low": 0.04411764705882354,
+      "high": 0.18931583880037495,
+      "p_two_sided": 0.026
+    }
+  }
+}

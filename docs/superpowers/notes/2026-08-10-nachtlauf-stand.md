@@ -346,6 +346,44 @@ durch gröbere Gruppen, sondern bei gleicher Körnung.
 **Diese Messung steht auf 21 Dev-Seiten in 14 Clustern und hat kein
 Intervall.** Sie ist die unabhängige Gegenprobe, nicht die Hauptzahl.
 
+### Ende zu Ende: die ganze Kette, ohne Leck
+
+`magda offers-grid --predictions gbert --train-labels-from sonnet-5
+--splits dev --variants geometrie --decoder union,ilp`
+
+**Warum hier keine Kreuzvalidierung möglich ist:** GBERT hat die 54
+Train-Seiten der Referenz im Training gesehen; seine Vorhersagen dort
+wären auswendig gelernt. Deshalb existieren für Train gar keine
+Vorhersagen, und der saubere Aufbau ist: Paarmodell auf 54 Train-Seiten
+mit Lehrer-Entities lernen, auf 21 Dev-Seiten mit **GBERT-Entities**
+messen. Keine Seite auf beiden Seiten, keine Stufe sieht ihre eigenen
+Messdaten. Preis: 14 Cluster statt 68.
+
+| | Paar-F1 | Gruppen-F1 | Angebote | exakt |
+|---|---:|---:|---:|---:|
+| Union-Find | 0.824 | 0.599 | 152 | 82/122 |
+| ILP | **0.878** | **0.729** | 147 | **98**/122 |
+
+Gepaart: **+0.130 [+0.070, +0.159], p = 0.000** gesamt; prüfbar +0.128
+(p = 0.026); **im blinden Fleck +0.114, aber p = 0.231** — dort trägt die
+Stichprobe die Aussage nicht, anders als im CV-Lauf.
+
+**Die eigentliche Nachricht steckt im Vergleich mit den Lehrer-Entities
+auf denselben Seiten: 98 exakte Gruppen gegen 97.** Die Wortfehler von
+GBERT (F1 0.894) kosten die Gruppierung praktisch nichts. Plausibel, weil
+die Fehler-Taxonomie 0.325 der Fehler als *Grenzfehler* ausweist,
+überwiegend an Sortenzusätzen bei PRODUCT — die verschieben eine
+Span-Grenze, zerstören aber kein Angebot.
+
+**Vorbehalt zum Nenner, und er ist derselbe wie einst bei `magda eval`:**
+Entities, die GBERT nicht findet, fehlen nicht als Falsch-Negative,
+sondern **im Nenner**. Gemessen: 656 von 675 Referenz-Entities überleben
+(97,2 %), 15 der 122 Referenzgruppen werden dadurch kleiner, die mittlere
+Gruppengröße sinkt von 5,53 auf 5,38. Kleinere Gruppen sind leichter
+exakt zu treffen — die absolute E2E-Zahl ist also **leicht nach oben
+verzerrt**. Der gepaarte ILP-Union-Vergleich ist davon unberührt, beide
+sehen dieselben Entities.
+
 **Teil 3 dieses Specs (Widerspruch als drittes Auswahlkriterium) ist
 gestrichen**, nicht vergessen: Die Referenz ist schon auf 75, in der Queue
 stehen 5 Seiten, und die breiten Intervalle waren ohnehin ein Cluster- und
