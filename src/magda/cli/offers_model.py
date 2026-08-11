@@ -385,7 +385,14 @@ def _cmd_predict(args, parser):
     threshold = args.threshold if args.threshold is not None else from_model.threshold
     if args.decoder:
         from_model.decoder = args.decoder
-    _, pages, _ = _selected(args, parser)
+    # Der Einsatzfall braucht beide Filter *nicht*: eine frisch geerntete
+    # Woche steht in keinem Split und hat keine Referenz - genau deshalb
+    # laesst man das Modell darauf los. Ohne diesen Zweig kann die
+    # Gruppierung nur dort laufen, wo die Antwort schon bekannt ist.
+    if args.all_pages:
+        _, pages = _pages(args, parser)
+    else:
+        _, pages, _ = _selected(args, parser)
     written = 0
     for page in pages:
         groups = from_model.group_page_words(page, threshold)
@@ -463,6 +470,10 @@ def main(argv=None):
     predict.add_argument("--threshold", type=float, default=None)
     predict.add_argument("--target", default="pair-model",
                          help="Zielordner unter data/offer_groups/")
+    predict.add_argument("--all-pages", action="store_true",
+                         help="Alle Seiten der Quelle statt eines Splits mit\n"
+                              "vorhandener Referenz. Der Einsatzfall: eine\n"
+                              "frisch geerntete Woche kennt beides nicht")
 
     args = parser.parse_args(argv)
     return {"train": _cmd_train, "eval": _cmd_eval, "predict": _cmd_predict,
