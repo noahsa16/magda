@@ -605,3 +605,25 @@ Struktur des Befundes — nicht aus dem Bauchgefühl — ist die
 Produktanker? Das ist genau die Form „n Preise, ein Name", enthält weder
 Text noch die Rechnung, und es ist die Gegenrichtung zu den vorhandenen
 Trennmerkmalen.
+
+### Protokoll für den Ankerlauf, festgelegt vor dem Lauf
+
+Vergleich `anker` (38 Merkmale) gegen `geometrie` (35), ILP, gepaarter
+Bootstrap über die 68 Duplikat-Cluster, out-of-fold mit geschachtelter
+Schwellenwahl, Primärzahl Gruppen-F1.
+
+**Akzeptanzkriterium, damit es hinterher nicht beliebig ist: die
+Variantenblock-Treffer müssen steigen *und* die Gesamtzahl darf nicht
+fallen.** Nur eines von beiden reicht nicht — ein Merkmal, das
+Variantenblöcke rettet und dafür anderswo verschmilzt, hat nichts
+gewonnen.
+
+**Erwartung, ebenfalls vorher:** Selbst bei vollem Erfolg sind es
+95/573 × (0.605 − 0.421) ≈ **+0.03** insgesamt, also dieselbe
+Größenordnung wie +Geometrie (+0.044). Wer mehr erwartet, hat den Anteil
+der Variantenblöcke nicht angesehen.
+
+**Zwei Vorbehalte, die mitgehören:** Das ist ungefähr der zehnte Vergleich
+ohne Korrektur für multiples Testen. Und die Grenze des Merkmals steht
+fest, bevor die Zahl da ist — Blöcke mit mehreren Produktnamen löst es
+nicht.
