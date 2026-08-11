@@ -864,6 +864,35 @@ eine Liste auszugeben.
   `test_blind_haengt_an_der_referenz_nicht_an_der_vorhersage` prüft die
   falsche Invarianz – es variiert nur die Gruppierung, nie die Typquelle.
   Die Eigenschaft, die sein Name behauptet, schützt es nicht.
+- **Der Label-Default zeigte auf ein Modell, mit dem hier gar nicht gelabelt
+  wird.** `config.default_labeled_model()` gab `CHAT_AI_VISION_MODEL` den
+  Vorrang und lieferte damit `mistral-medium-3.5-128b`. Jeder Befehl ohne
+  `--labels-from` maß also gegen Mistral-Labels, und man sah es nur, wenn man
+  die Kopfzeile las. Beziffert am 11.08.2026: über *dieselbe* Gruppierung
+  fand `magda offers-verify` mit Mistral-Labels **399** Preise (Genauigkeit
+  0.927, Abdeckung 0.446), mit sonnet-5 dagegen **494** (0.936, 0.478). Ein
+  Viertel mehr Preise bei gleicher Rechnung – die Zahl beantwortete leise
+  eine andere Frage. Über die Ordnergröße allein wäre es auch nicht
+  gutgegangen: `sonnet-5`, `sonnet-5-app` und der Mistral-Ordner haben alle
+  296 Seiten, dann entscheidet die Sortierreihenfolge. Vorrang hat jetzt
+  `config.CANONICAL_LABELS`. **Ältere Zahlen aus Befehlen ohne
+  `--labels-from` stehen unter diesem Vorbehalt** – wer eine davon
+  weiterverwendet, rechnet sie besser nach.
+- **„Mehr Referenz" war die halb falsche Antwort auf die breiten
+  Intervalle.** Gemessen wurde auf **Dev**, und Dev hat 21 Seiten in 14
+  Duplikat-Clustern – *alle* davon längst gruppiert. Die Breite eines
+  Bootstrap-Intervalls hängt an der Zahl der Auswertungs-Cluster; keine
+  weitere *Trainings*seite ändert daran etwas. Das naheliegende Ziel „Dev auf
+  25–30 Seiten ausbauen" war nicht schwer, sondern **unmöglich**.
+  Der Ausweg ist kein Datenproblem, sondern der Messaufbau: `magda
+  offers-grid --cross-validate` wertet jede Referenzseite einmal aus, mit
+  einem Modell, das sie nicht gesehen hat. Aus 14 Clustern werden 68. Die
+  Schwelle wird dabei **geschachtelt** gewählt – `calibrate` auf den inneren
+  Folds, Auswertung nur auf dem äußeren. Einmal auf allem gewählt wäre sie
+  bequemer und genau der Zirkelschluss, gegen den `offers_report` die
+  Ablation braucht: eine Schwelle ist ein Freiheitsgrad wie jeder andere.
+  Die Referenz ist trotzdem gewachsen (51 → 75 Seiten, Train 30 → 54) – das
+  hilft dem *Training* des Paarmodells, nur eben nicht dem Intervall.
 - **Clusterweise ziehen heißt nicht automatisch fair ziehen.**
   `dataset.subset_by_clusters` sortierte zuerst nach absteigender
   Clustergröße – naheliegend und genau falschherum: die Duplikate landen
