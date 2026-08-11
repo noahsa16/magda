@@ -42,6 +42,27 @@ LEARNING_RATE = 1e-3
 # Kalibrierung nicht auf verschiedene Folds fallen.
 CLUSTER_THRESHOLD = 0.7
 
+DECODERS = ("union", "ilp")
+
+
+def decode(name: str, count: int, edges: dict, threshold: float) -> list[list[int]]:
+    """Kanten zu Gruppen - ueber Zusammenhang oder ueber Correlation Clustering.
+
+    Die eine Stelle, an der die Wahl faellt. Verstreut ausgewertet waere sie
+    frueher oder spaeter uneinheitlich: `calibrate` bildet die Gruppen
+    selbst, und waehlte es die Schwelle mit Union-Find, waehrend die
+    Auswertung mit dem ILP dekodiert, entstuende ein System, das es so nicht
+    gibt - und der Fehler benachteiligte gerade das ILP, dessen Vorteil im
+    Ueberleben niedrigerer Schwellen besteht.
+    """
+    if name not in DECODERS:
+        raise ValueError(f"Dekoder unbekannt: {name}. Bekannt: {', '.join(DECODERS)}")
+    if name == "union":
+        return offer_pairs.groups_from_edges(count, edges, threshold)
+    from magda import offer_ilp
+
+    return offer_ilp.groups_from_edges_ilp(count, edges, threshold)
+
 
 def _build_network(features: int, hidden: tuple[int, ...] = HIDDEN):
     from torch import nn
@@ -59,11 +80,18 @@ class PairClassifier:
 
     def __init__(self, network, feature_names: list[str], provenance: dict | None = None,
                  hidden: tuple[int, ...] = HIDDEN, threshold: float = 0.5,
-                 blocks: tuple[str, ...] = offer_pairs.DEFAULT_BLOCKS):
+                 blocks: tuple[str, ...] = offer_pairs.DEFAULT_BLOCKS,
+                 decoder: str = "union"):
         self.network = network
         self.feature_names = feature_names
         self.provenance = provenance or {}
         self.hidden = tuple(hidden)
+        # Wie die Schwelle eine Eigenschaft des Modells, nicht des Aufrufs:
+        # Die Schwelle wurde *fuer diesen Dekoder* out-of-fold gewaehlt, die
+        # beiden gehoeren zusammen.
+        if decoder not in DECODERS:
+            raise ValueError(f"Dekoder unbekannt: {decoder}. Bekannt: {', '.join(DECODERS)}")
+        self.decoder = decoder
         # Welche Merkmalsbloecke dieses Modell erwartet. Gehoert zum
         # Checkpoint, sonst rechnet ein Modell mit vertauschten Spalten
         # weiter und faellt durch keine Pruefung auf.
@@ -93,9 +121,8 @@ class PairClassifier:
         if not pairs.index_pairs:
             # Eine einzelne Entity ist ein Angebot, keine Entity ist keines.
             return [[0]] if pairs.entities else []
-        return offer_pairs.groups_from_edges(
-            len(pairs.entities), self.score_page(page, pixels), threshold
-        )
+        return decode(self.decoder, len(pairs.entities),
+                      self.score_page(page, pixels), threshold)
 
     def group_page_words(self, page: dict, threshold: float = 0.5,
                          pixels=None) -> list[list[int]]:
@@ -115,6 +142,7 @@ class PairClassifier:
                 "blocks": list(self.blocks),
                 "hidden": list(self.hidden),
                 "threshold": float(self.threshold),
+                "decoder": self.decoder,
                 "provenance": dict(self.provenance),
             },
             path,
@@ -175,7 +203,8 @@ def training_stats(pages: list[dict], reference: dict[str, dict[int, int]]) -> d
 def train(pages: list[dict], reference: dict[str, dict[int, int]],
           epochs: int = 300, seed: int = 0, provenance: dict | None = None,
           hidden: tuple[int, ...] = HIDDEN,
-          blocks=offer_pairs.DEFAULT_BLOCKS) -> PairClassifier:
+          blocks=offer_pairs.DEFAULT_BLOCKS,
+          decoder: str = "union") -> PairClassifier:
     """Trainiert das Paarmodell auf einer vorhandenen Gruppierung.
 
     Voller Batch statt Minibatches: Die Datenmenge passt in den Speicher, und
@@ -186,6 +215,8 @@ def train(pages: list[dict], reference: dict[str, dict[int, int]],
     import torch
     from torch import nn
 
+    if decoder not in DECODERS:
+        raise ValueError(f"Dekoder unbekannt: {decoder}. Bekannt: {', '.join(DECODERS)}")
     names = offer_pairs.feature_names(blocks)
     features, labels, _ = _examples(pages, reference, blocks)
     if not labels:
@@ -212,7 +243,8 @@ def train(pages: list[dict], reference: dict[str, dict[int, int]],
         loss.backward()
         optimizer.step()
 
-    return PairClassifier(network, names, provenance, hidden, blocks=blocks)
+    return PairClassifier(network, names, provenance, hidden, blocks=blocks,
+                          decoder=decoder)
 
 
 def page_folds(pages: list[dict], folds: int = 5) -> list[list[str]]:
@@ -245,7 +277,8 @@ def calibrate(pages: list[dict], reference: dict[str, dict[int, int]],
               hidden: tuple[int, ...] = HIDDEN,
               thresholds: list[float] | None = None,
               objective: str = "pair_f1",
-              blocks=offer_pairs.DEFAULT_BLOCKS) -> dict:
+              blocks=offer_pairs.DEFAULT_BLOCKS,
+              decoder: str = "union") -> dict:
     """Die Schwelle out-of-fold waehlen, statt sie zu raten.
 
     0.5 waere nur dann der natuerliche Schnitt, wenn die Klassen gleich
@@ -272,7 +305,8 @@ def calibrate(pages: list[dict], reference: dict[str, dict[int, int]],
         outer = [p for p in pages if p["page_id"] in held_out]
         if not inner or not outer:
             continue
-        model = train(inner, reference, epochs, seed, hidden=hidden, blocks=blocks)
+        model = train(inner, reference, epochs, seed, hidden=hidden, blocks=blocks,
+                      decoder=decoder)
         for page in outer:
             entities = offer_pairs.page_pairs(page).entities
             scored.append((page, model.score_page(page), len(entities)))
@@ -288,7 +322,7 @@ def calibrate(pages: list[dict], reference: dict[str, dict[int, int]],
             if assignment is None:
                 continue
             groups = offer_pairs.entity_groups_to_words(
-                page, offer_pairs.groups_from_edges(count, scores, threshold)
+                page, decode(decoder, count, scores, threshold)
             )
             predicted = {word: group_id
                          for group_id, members in enumerate(groups) for word in members}
@@ -354,4 +388,5 @@ def load(path) -> PairClassifier:
     network = _build_network(len(stored), hidden)
     network.load_state_dict(payload["state_dict"])
     return PairClassifier(network, stored, payload.get("provenance") or {}, hidden,
-                          float(payload.get("threshold", 0.5)), blocks=blocks)
+                          float(payload.get("threshold", 0.5)), blocks=blocks,
+                          decoder=payload.get("decoder") or "union")

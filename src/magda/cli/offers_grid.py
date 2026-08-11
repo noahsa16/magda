@@ -40,16 +40,37 @@ def _fill(entry: dict, per_page, clusters, seed: int) -> dict:
     return entry
 
 
+def _note_capping(entry: dict, decoder: str) -> dict:
+    """Wie oft das ILP nicht optimiert, sondern durchgereicht hat.
+
+    Wo die Kappung greift, *ist* das ILP Union-Find - und zwar an genau der
+    Stelle, an der es seinen Vorteil ausspielen sollte. Eine Zahl ohne diese
+    Angabe sieht aus wie ein ILP-Ergebnis und ist teilweise keines.
+    """
+    if decoder != "ilp":
+        return entry
+    from magda import offer_ilp
+
+    entry["ilp"] = dict(offer_ilp.LAST_RUN)
+    return entry
+
+
 def report_name(args) -> str:
     """Dateiname des Reports - die Entity-Quelle gehoert hinein.
 
     Der Lehrerlauf und der Vorhersagelauf messen beide `dev` und
     beantworten trotzdem verschiedene Fragen. Unter einem Namen
     ueberschreibt der zweite den ersten, ohne dass jemand es sieht.
+
+    Aus demselben Grund steht der Dekoder im Namen: Ein ILP-Lauf und ein
+    Union-Find-Lauf ueber dieselben Seiten sind zwei Messungen, und der
+    Vergleich braucht beide nebeneinander.
     """
     suffix = f"_{config.model_slug(args.predictions)}" if args.predictions else ""
     if getattr(args, "cross_validate", False):
         suffix += "_cv"
+    if getattr(args, "decoder", "union") != "union":
+        suffix += f"_{args.decoder}"
     return f"offers_grid_{args.splits.replace(',', '-')}{suffix}.json"
 
 
@@ -95,6 +116,10 @@ def main(argv=None):
     parser.add_argument("--cross-validate", action="store_true",
                         help="jede Referenzseite out-of-fold auswerten statt "
                              "nur den Messsplit - mehr unabhaengige Einheiten")
+    parser.add_argument("--decoder", default="union", choices=offer_model.DECODERS,
+                        help="wie aus Kanten Gruppen werden. union = "
+                             "Zusammenhangskomponenten, ilp = Correlation "
+                             "Clustering mit Transitivitaet (braucht pulp)")
     args = parser.parse_args(argv)
 
     wanted = [v.strip() for v in args.variants.split(",") if v.strip()]
@@ -134,11 +159,15 @@ def main(argv=None):
     for name in wanted:
         blocks = offer_grid.VARIANTS[name]
         started = time.perf_counter()
+        if args.decoder == "ilp":
+            from magda import offer_ilp
+            offer_ilp.reset_counters()
 
         if args.cross_validate:
             per_page, thresholds = offer_grid.cross_validate(
                 eval_pages, assignments, blocks, folds=args.folds,
-                epochs=args.epochs, seed=args.seed, objective=args.objective)
+                epochs=args.epochs, seed=args.seed, objective=args.objective,
+                decoder=args.decoder)
             entry = {
                 "blocks": list(blocks),
                 "features": len(offer_pairs.feature_names(blocks)),
@@ -147,6 +176,7 @@ def main(argv=None):
                 "seconds": round(time.perf_counter() - started, 1),
             }
             _fill(entry, per_page, clusters, args.seed)
+            _note_capping(entry, args.decoder)
             counts_by_variant[name] = per_page
             results[name] = entry
             print(f"  {name:<10} {entry['features']:>3} Merkmale, "
@@ -155,11 +185,12 @@ def main(argv=None):
 
         calibration = offer_model.calibrate(
             train_pages, assignments, folds=args.folds, epochs=args.epochs,
-            seed=args.seed, objective=args.objective, blocks=blocks)
+            seed=args.seed, objective=args.objective, blocks=blocks,
+            decoder=args.decoder)
         threshold = calibration["threshold"]
         model = offer_model.train(
             train_pages, assignments, epochs=args.epochs, seed=args.seed,
-            blocks=blocks,
+            blocks=blocks, decoder=args.decoder,
             provenance={"reference": args.reference_from, "labels": source,
                         "splits": args.train_splits, "pages": len(train_pages),
                         "blocks": list(blocks)})
@@ -177,6 +208,7 @@ def main(argv=None):
             "seconds": round(time.perf_counter() - started, 1),
         }
         _fill(entry, per_page, clusters, args.seed)
+        _note_capping(entry, args.decoder)
         counts_by_variant[name] = per_page
         results[name] = entry
         print(f"  {name:<10} {entry['features']:>3} Merkmale, "
@@ -229,6 +261,7 @@ def main(argv=None):
         "train_splits": args.train_splits,
         "splits": args.splits,
         "cross_validated": bool(args.cross_validate),
+        "decoder": args.decoder,
         "objective": args.objective,
         "train_pages": len(train_pages),
         "eval_pages": len(eval_pages),

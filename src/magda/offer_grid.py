@@ -187,7 +187,7 @@ def judge_page(page: dict, assignment: dict[int, int],
 
 def cross_validate(pages: list[dict], assignments: dict, blocks,
                    folds: int = 5, epochs: int = 300, seed: int = 0,
-                   objective: str = "group_f1",
+                   objective: str = "group_f1", decoder: str = "union",
                    progress=None) -> tuple[list[PageCounts], list[float]]:
     """Jede Referenzseite einmal auswerten - mit einem Modell ohne sie.
 
@@ -214,11 +214,11 @@ def cross_validate(pages: list[dict], assignments: dict, blocks,
             continue
         calibration = offer_model.calibrate(
             inner, assignments, folds=folds, epochs=epochs, seed=seed,
-            objective=objective, blocks=blocks)
+            objective=objective, blocks=blocks, decoder=decoder)
         threshold = calibration["threshold"]
         thresholds.append(threshold)
         model = offer_model.train(inner, assignments, epochs=epochs, seed=seed,
-                                  blocks=blocks)
+                                  blocks=blocks, decoder=decoder)
         model.threshold = threshold
         for page in outer:
             per_page.append(judge_page(page, assignments[page["page_id"]],

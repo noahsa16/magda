@@ -76,24 +76,26 @@ def _cmd_train(args, parser):
     source, pages, reference = _selected(args, parser)
     stats = offer_model.training_stats(pages, reference.assignments)
     hidden = tuple(int(h) for h in args.hidden.split(","))
+    decoder = args.decoder or "union"
 
     calibration = None
     if args.folds > 1:
         calibration = offer_model.calibrate(
             pages, reference.assignments, folds=args.folds,
             epochs=args.epochs, seed=args.seed, hidden=hidden,
-            objective=args.objective,
+            objective=args.objective, decoder=decoder,
         )
 
     model = offer_model.train(
         pages, reference.assignments, epochs=args.epochs, seed=args.seed,
-        hidden=hidden,
+        hidden=hidden, decoder=decoder,
         provenance={
             "reference": args.reference_from,
             "kind": sorted(set(reference.provenance.values())),
             "labels": source,
             "splits": args.splits,
             "pages": stats["pages"],
+            "decoder": decoder,
         },
     )
     if calibration:
@@ -101,7 +103,7 @@ def _cmd_train(args, parser):
     path = model.save(args.out)
 
     print(f"Lehrer: data/offer_groups/{config.model_slug(args.reference_from)}"
-          f"   Labels: {source}   Splits: {args.splits}")
+          f"   Labels: {source}   Splits: {args.splits}   Dekoder: {decoder}")
     if "llm" in set(reference.provenance.values()):
         print("  Maschinell erzeugte Gruppierung: das Modell lernt Uebereinstimmung,")
         print("  nicht Richtigkeit. Gegenprobe: `magda offers-model eval`.")
@@ -149,8 +151,11 @@ def _cmd_eval(args, parser):
     model = offer_model.load(args.checkpoint)
     # Ohne Angabe die Schwelle des Checkpoints: sie wurde out-of-fold
     # gewaehlt und gehoert zum Modell. Wer sie hier neu setzt, misst nicht
-    # mehr das System, das trainiert wurde.
+    # mehr das System, das trainiert wurde. Fuer den Dekoder gilt dasselbe,
+    # und zwar staerker: Die Schwelle wurde *fuer ihn* gewaehlt.
     threshold = args.threshold if args.threshold is not None else model.threshold
+    if args.decoder:
+        model.decoder = args.decoder
 
     def grouping(page):
         return offers_gold.offers_from_reference(page, _assignment(model, page, threshold))
@@ -178,6 +183,7 @@ def _cmd_eval(args, parser):
         "provenance": sorted(set(reference.provenance.values())),
         "splits": args.splits,
         "threshold": threshold,
+        "decoder": model.decoder,
         "checkpoint": str(args.checkpoint),
         "model_provenance": model.provenance,
         "agreement": agreement.to_dict(),
@@ -186,14 +192,17 @@ def _cmd_eval(args, parser):
         "arithmetic_heuristic": heuristic_verdict.to_dict(),
     }
     config.EVAL_DIR.mkdir(parents=True, exist_ok=True)
-    out_path = config.EVAL_DIR / f"offers_model_{args.splits.replace(',', '-')}.json"
+    suffix = "" if model.decoder == "union" else f"_{model.decoder}"
+    out_path = config.EVAL_DIR / (
+        f"offers_model_{args.splits.replace(',', '-')}{suffix}.json")
     with open(out_path, "w") as f:
         json.dump(payload, f, indent=2, ensure_ascii=False)
 
     def _rate(value):
         return "nicht messbar" if value is None else f"{value:.3f}"
 
-    print(f"Splits: {args.splits}   Seiten: {agreement.pages}   Schwelle: {threshold}")
+    print(f"Splits: {args.splits}   Seiten: {agreement.pages}   "
+          f"Schwelle: {threshold}   Dekoder: {model.decoder}")
     print(f"Lehrer: data/offer_groups/{config.model_slug(args.reference_from)}")
     print()
     print("Uebereinstimmung mit dem Lehrer (andere Seiten als im Training):")
@@ -232,6 +241,8 @@ def _cmd_predict(args, parser):
 
     from_model = offer_model.load(args.checkpoint)
     threshold = args.threshold if args.threshold is not None else from_model.threshold
+    if args.decoder:
+        from_model.decoder = args.decoder
     _, pages, _ = _selected(args, parser)
     written = 0
     for page in pages:
@@ -239,6 +250,7 @@ def _cmd_predict(args, parser):
         offer_teacher.save_grouping(page, groups, source=args.target,
                                     model=str(args.checkpoint),
                                     notes=f"Schwelle {threshold}, "
+                                          f"Dekoder {from_model.decoder}, "
                                           f"{len(offer_pairs.FEATURE_NAMES)} Merkmale")
         written += 1
     print(f"{written} Seiten -> data/offer_groups/{config.model_slug(args.target)}")
@@ -257,6 +269,11 @@ def main(argv=None):
     common.add_argument("--predictions", default=None,
                         help="Variante unter data/predictions/ statt data/labeled/")
     common.add_argument("--checkpoint", default=DEFAULT_CHECKPOINT)
+    common.add_argument("--decoder", default=None,
+                        choices=("union", "ilp"),
+                        help="wie aus Kanten Gruppen werden. Ohne Angabe beim Messen\n"
+                             "der Dekoder des Checkpoints, beim Training union.\n"
+                             "ilp = Correlation Clustering (braucht pulp)")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     train = subparsers.add_parser("train", help="Paarmodell trainieren", parents=[common])

@@ -346,3 +346,27 @@ def test_zwei_gleiche_varianten_ergeben_eine_differenz_um_null():
 
     assert result["difference"] == pytest.approx(0.0)
     assert result["p_two_sided"] == pytest.approx(1.0)
+
+
+def test_der_report_traegt_auch_den_dekoder_im_namen():
+    """Derselbe Grund wie bei der Entity-Quelle, nur eine Ebene tiefer.
+
+    Ein ILP-Lauf und ein Union-Find-Lauf ueber dieselben Seiten sind zwei
+    Messungen. Unter einem Dateinamen ueberschriebe der zweite den ersten -
+    und genau die beiden nebeneinander sind der Vergleich.
+    """
+    from magda.cli import offers_grid
+
+    union = offers_grid.report_name(_args(decoder="union"))
+    ilp = offers_grid.report_name(_args(decoder="ilp"))
+
+    assert union != ilp
+    assert "ilp" in ilp
+
+
+def test_ohne_dekoder_bleibt_der_alte_dateiname():
+    """Sonst zeigen die Reports aus frueheren Laeufen ins Leere."""
+    from magda.cli import offers_grid
+
+    assert offers_grid.report_name(_args()) == "offers_grid_dev.json"
+    assert offers_grid.report_name(_args(decoder="union")) == "offers_grid_dev.json"

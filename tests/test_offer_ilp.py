@@ -227,3 +227,37 @@ def test_ohne_pulp_bricht_der_aufruf_ab(monkeypatch):
 
     with pytest.raises(RuntimeError, match="pulp"):
         offer_ilp.groups_from_edges_ilp(2, {(0, 1): 0.99}, 0.9)
+
+
+def test_grosse_komponenten_werden_durchgereicht_und_gezaehlt(monkeypatch):
+    """Die Kappung darf nicht still sein.
+
+    Wo sie greift, *ist* das ILP Union-Find - und zwar an genau der Stelle,
+    an der es seinen Vorteil ausspielen sollte. Eine Kurve, die das nicht
+    ausweist, sieht aus wie ein ILP-Ergebnis und ist teilweise keines.
+    """
+    threshold = 0.9
+    monkeypatch.setattr(offer_ilp, "MAX_COMPONENT", 4)
+    offer_ilp.reset_counters()
+
+    edges = _chain(8, threshold)
+    groups = offer_ilp.groups_from_edges_ilp(8, edges, threshold)
+
+    assert offer_ilp.LAST_RUN["capped"] == 1
+    assert offer_ilp.LAST_RUN["largest_capped"] == 8
+    assert offer_ilp.LAST_RUN["optimised"] == 0
+    # Durchgereicht heisst: dasselbe wie Union-Find, nicht irgendetwas.
+    assert [sorted(g) for g in groups] == \
+        [sorted(g) for g in offer_pairs.groups_from_edges(8, edges, threshold)]
+
+
+def test_unterhalb_der_kappung_wird_optimiert(monkeypatch):
+    """Die Gegenprobe - sonst koennte die Kappung immer greifen."""
+    threshold = 0.9
+    monkeypatch.setattr(offer_ilp, "MAX_COMPONENT", 40)
+    offer_ilp.reset_counters()
+
+    offer_ilp.groups_from_edges_ilp(8, _chain(8, threshold), threshold)
+
+    assert offer_ilp.LAST_RUN["capped"] == 0
+    assert offer_ilp.LAST_RUN["optimised"] == 1

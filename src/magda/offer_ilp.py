@@ -62,6 +62,41 @@ LAZY_ABOVE = 8
 # schweren Fall.
 MAX_ROUNDS = 40
 
+# Ab dieser Komponentengroesse wird nicht mehr optimiert, sondern
+# durchgereicht - die Komponente *ist* dann die Gruppe, also genau das, was
+# Union-Find liefert.
+#
+# Gemessen ueber 12 echte Seiten, Dekodierzeit je Schwelle:
+#
+#     Schwelle   groesste Komponente   Union-Find   ILP
+#       0.50            83               0.001 s    5.27 s
+#       0.70             6               0.001 s    0.51 s
+#       0.90+            1               0.001 s    0.02 s
+#
+# Die Kosten haengen allein an der groessten Komponente. Bei den
+# kalibrierten Schwellen (0.94 bis 0.96) kostet das ILP nichts; teuer wird
+# nur der untere Rand des Kalibrierungsrasters, den am Ende ohnehin kein
+# Kriterium waehlt.
+#
+# **Die Kappung ist keine Kleinigkeit fuer die Auslegung der Kurve:** Wo sie
+# greift, *ist* das ILP Union-Find - und zwar an genau der Stelle, an der es
+# seinen Vorteil ausspielen sollte. Die Schwellenkurve ist deshalb nur
+# oberhalb der Kappung aussagekraeftig. Wie oft sie greift, zaehlt
+# `LAST_RUN` mit und gehoert in jeden Report.
+MAX_COMPONENT = 40
+
+# Zaehlwerk des letzten Laufs. Ein Modul-Zustand ist unschoen, aber die
+# Alternative waere ein Rueckgabewert an jedem Aufrufer entlang bis in den
+# Report - fuer eine Zahl, die niemand zum Rechnen braucht und die trotzdem
+# niemals fehlen darf.
+LAST_RUN = {"components": 0, "optimised": 0, "capped": 0, "largest_capped": 0}
+
+
+def reset_counters() -> None:
+    """Vor einem Messlauf zuruecksetzen, damit die Zahlen zu ihm gehoeren."""
+    LAST_RUN.update({"components": 0, "optimised": 0, "capped": 0,
+                     "largest_capped": 0})
+
 
 def _require_pulp():
     """PuLP holen - oder abbrechen, statt still auf Union-Find zurueckzufallen.
@@ -243,8 +278,16 @@ def groups_from_edges_ilp(count: int, edges: dict[tuple[int, int], float],
 
     groups: list[list[int]] = []
     for component in _components(count, positive):
+        LAST_RUN["components"] += 1
         if len(component) == 1:
             groups.append(component)
+        elif len(component) > MAX_COMPONENT:
+            # Durchgereicht statt optimiert - das Ergebnis ist hier exakt
+            # das von Union-Find. Wird gezaehlt, nicht verschwiegen.
+            LAST_RUN["capped"] += 1
+            LAST_RUN["largest_capped"] = max(LAST_RUN["largest_capped"], len(component))
+            groups.append(sorted(component))
         else:
+            LAST_RUN["optimised"] += 1
             groups.extend(_solve_component(sorted(component), weights, cannot_link))
     return sorted(groups, key=lambda group: group[0])
