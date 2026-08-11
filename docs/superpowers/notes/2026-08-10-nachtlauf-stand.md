@@ -298,7 +298,13 @@ Schwelle erkauft die exakten Gruppen mit deutlich mehr falschen Paaren.
 Welche der beiden Zahlen das Projekt trägt, ist die schon offene
 Teamentscheidung — `group_f1` ist Default, weil es „die Zeile in der
 Datenbank stimmt" entspricht, und beide Dekoder wurden danach kalibriert.
-Wer Paar-F1 zur Primärzahl macht, dreht diesen Befund um.
+Wer Paar-F1 zur Primärzahl macht, dreht diesen Teilbefund um.
+
+**Und genau dieser Punkt widerspricht sich zwischen den beiden Messungen —
+siehe die Gegenprobe unten.** Auf Dev *steigt* Paar-F1 (0.880 gegen 0.782).
+Belastbarer ist die CV-Zahl (68 Cluster gegen 14); der Dev-Wert ist ohne
+Intervall und aus 14 Clustern. Wer den Paar-F1-Effekt berichtet, muss
+sagen, aus welcher der beiden Messungen er stammt.
 
 **Die Kappung greift messbar:** 1611 von 37367 Komponenten (4,3 %) wurden
 durchgereicht statt optimiert, die größte hatte 118 Entities. Dort *ist*
@@ -311,6 +317,34 @@ Gitterläufe spürbar.
 
 **Und die übliche Einschränkung bleibt:** Gemessen wird Übereinstimmung
 mit einem LLM-Lehrer, nicht Richtigkeit.
+
+### Die arithmetische Gegenprobe — die einzige unbeteiligte Instanz
+
+Alles oben misst Übereinstimmung mit dem Lehrer. `magda offers-model eval`
+auf Dev, beide Dekoder frisch trainiert und kalibriert (getrennte
+Checkpoints `model_union.pt` / `model_ilp.pt`, damit keiner den anderen
+überschreibt):
+
+| | Schwelle | Paar-F1 | Gruppen-F1 | Angebote | Rechnung | Abdeckung |
+|---|---:|---:|---:|---:|---:|---:|
+| Union-Find | 0.94 | 0.782 | 0.494 | 145 | 0.845 | 0.589 |
+| ILP | 0.86 | **0.880** | **0.711** | 151 | **0.883** | 0.589 |
+| Heuristik | – | 0.683 | 0.436 | 185 | 0.802 | 0.577 |
+| Lehrer | – | – | – | 122 | – | – |
+
+Widerlegte Preise fallen von 16 auf 12, „ohne Treffer" von 2 auf 0.
+
+**Der naheliegende Einwand greift hier nicht.** Die Rechnung bestätigt
+einen Preis, wenn er zu einer Menge-mal-Grundpreis-Kombination *in seiner
+eigenen Gruppe* passt — gröbere Gruppen tragen mehr Kombinationen, also
+schmeichelt Verschmelzen der Prüfung (im Grenzfall bestätigt eine
+seitengroße Gruppe jeden prüfbaren Preis). Ein Anstieg wäre deshalb für
+sich genommen schwach. Hier aber ist die **Abdeckung identisch (0.589)**
+und die Angebotszahl fast gleich (151 gegen 145) — das ILP gewinnt nicht
+durch gröbere Gruppen, sondern bei gleicher Körnung.
+
+**Diese Messung steht auf 21 Dev-Seiten in 14 Clustern und hat kein
+Intervall.** Sie ist die unabhängige Gegenprobe, nicht die Hauptzahl.
 
 **Teil 3 dieses Specs (Widerspruch als drittes Auswahlkriterium) ist
 gestrichen**, nicht vergessen: Die Referenz ist schon auf 75, in der Queue

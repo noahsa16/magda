@@ -5,9 +5,9 @@
     "llm"
   ],
   "splits": "dev",
-  "threshold": 0.94,
-  "decoder": "union",
-  "checkpoint": "checkpoints/offer_pairs/model_union.pt",
+  "threshold": 0.86,
+  "decoder": "ilp",
+  "checkpoint": "checkpoints/offer_pairs/model_ilp.pt",
   "model_provenance": {
     "reference": "claude-sonnet-5",
     "kind": [
@@ -16,21 +16,21 @@
     "labels": "sonnet-5",
     "splits": "train",
     "pages": 54,
-    "decoder": "union"
+    "decoder": "ilp"
   },
   "agreement": {
     "pages": 21,
     "entities": 730,
     "unassignable": 55,
     "ref_pairs": 1996,
-    "sys_pairs": 2235,
-    "shared_pairs": 1655,
+    "sys_pairs": 1631,
+    "shared_pairs": 1596,
     "ref_groups": 122,
-    "sys_groups": 145,
-    "exact_groups": 66,
+    "sys_groups": 151,
+    "exact_groups": 97,
     "ref_groups_without_entities": 0,
-    "pair_f1": 0.7823209643110377,
-    "group_f1": 0.49438202247191015
+    "pair_f1": 0.880066170388751,
+    "group_f1": 0.7106227106227107
   },
   "heuristic": {
     "pages": 21,
@@ -49,13 +49,13 @@
   "arithmetic": {
     "pages": 21,
     "prices": 175,
-    "confirmed": 87,
-    "contradicted": 16,
-    "unresolved": 2,
-    "unjudgeable": 70,
-    "offers": 167,
+    "confirmed": 91,
+    "contradicted": 12,
+    "unresolved": 0,
+    "unjudgeable": 72,
+    "offers": 169,
     "judged": 103,
-    "accuracy": 0.8446601941747572,
+    "accuracy": 0.883495145631068,
     "coverage": 0.5885714285714285
   },
   "arithmetic_heuristic": {
