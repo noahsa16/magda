@@ -171,3 +171,44 @@ sich, nach dem Schlussbatch aufzuräumen — gebraucht wird dann nur noch
 - **Plan A/4** — Woche 4 labeln, blockiert am Labelweg
 - **Plan B/5, B/6** — Handprüfung, dann der eine Testbatch
 - **Plan B/7** — zweiter Händler, braucht Erlaubnis zum Download
+
+---
+
+## Nachtrag 3 — Fortsetzung ab 02:03 (Plan A/3)
+
+### Gruppierungsreferenz von 51 auf 71 Seiten
+
+Zwanzig neue Seiten, von sonnet-Subagenten aus dem Seitenbild gruppiert,
+ausgewählt über `magda offers-queue` (abwechselnd blinder Fleck und
+Clustergröße). Train wächst von 30 auf 50, Dev war schon vollständig.
+
+Eine Antwortdatei kam abgeschnitten zurück (`1347471_p44`) — `save` hat sie
+korrekt abgelehnt statt halb zu übernehmen, danach repariert. Der Prompt
+verlangt seither ausdrücklich gültiges JSON und ≤400 Zeichen `notes`.
+
+### Zwei Funde, die wichtiger sind als die zwanzig Seiten
+
+**1. Der Label-Default zeigte auf mistral.** `config.default_labeled_model()`
+gab `CHAT_AI_VISION_MODEL` den Vorrang, also `mistral-medium-3.5-128b` — ein
+Modell, mit dem hier gar nicht gelabelt wird. Was das kostet, ist beziffert:
+über *dieselbe* Gruppierung fand `magda offers-verify` mit Mistral-Labels
+**399** Preise (Genauigkeit 0.927, Abdeckung 0.446), mit sonnet-5 dagegen
+**494** (0.936, 0.478). Ein Viertel mehr Preise, dieselbe Rechnung — die Zahl
+beantwortete leise eine andere Frage, ohne dass irgendwo „mistral" stand.
+Über die Ordnergröße allein wäre es auch nicht gutgegangen: `sonnet-5`,
+`sonnet-5-app` und der Mistral-Ordner haben alle 296 Seiten. Vorrang hat
+jetzt `CANONICAL_LABELS`.
+
+**2. „Mehr Referenz" war die halb falsche Antwort auf die breiten
+Intervalle.** Gemessen wird auf **Dev**, und Dev hat 21 Seiten in 14
+Duplikat-Clustern — *alle* davon längst gruppiert. Die Breite eines
+Bootstrap-Intervalls hängt an der Zahl der Auswertungs-Cluster, und keine
+weitere Trainingsseite ändert daran etwas. Das Planziel „Dev auf 25–30 Seiten
+ausbauen" war nicht schwer, sondern **unmöglich**.
+
+Der Ausweg ist kein Datenproblem, sondern der Messaufbau: `magda offers-grid
+--cross-validate` wertet jede Referenzseite einmal aus, mit einem Modell, das
+sie nicht gesehen hat. Aus 14 Clustern werden **62**. Die Schwelle wird dabei
+geschachtelt gewählt (`calibrate` auf den inneren Folds, Auswertung nur auf
+dem äußeren) — einmal auf allem gewählt wäre sie genau der Zirkelschluss,
+gegen den `offers_report` die Ablation braucht.
