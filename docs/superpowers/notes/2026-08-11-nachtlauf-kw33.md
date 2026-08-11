@@ -84,6 +84,22 @@ Abbruch weniger Arbeit kostet.
 - **Lernkurve Paarmodell**: `--curve 10,20,35,0`, out-of-fold über 75
   Seiten in 68 Clustern, ILP. Ein Punkt ≈ 34 min. Log im Scratchpad.
 
+## Nachtrag: Gruppieren läuft parallel mit (auf Nachfrage Noah)
+
+Ein Agent erledigt für eine KW33-Seite **beide** Stufen — labeln, dann
+gruppieren. Das Seitenbild (~100k Token) ist der teure Teil und nach dem
+Labeln schon im Kontext; die Gruppierung kostet fast nichts extra. Für die
+221 Altseiten (haben schon Spans) laufen reine Gruppierungschargen.
+
+`offers-queue --splits test` freigeschaltet: der Testsplit hatte null
+Gruppierungen, damit ist die zweite Stufe auf Test überhaupt erst messbar.
+Acht Vorschläge decken 41 der 100 Testseiten. `--reference-from` zählt den
+Teacher-Bestand als erledigt (sonst kommen dieselben Seiten wieder).
+
+Reihenfolge der Gruppierung: **Testseiten zuerst** (schalten die erste
+ehrliche Test-Messung frei), dann Train/Dev-Rest, dann KW33 im Verbund mit
+dem Labeln.
+
 ## Danach, in dieser Reihenfolge
 
 1. **Alle Seiten gruppieren** (347). Werkzeug steht, Kontrolle mit
