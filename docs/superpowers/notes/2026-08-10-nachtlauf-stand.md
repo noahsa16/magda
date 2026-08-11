@@ -263,6 +263,19 @@ kein Datenproblem. Wieder relevant, falls Woche 4 den Auswahlpool füllt.
 Begründung im Spec-Nachtrag.
 
 **Teil 2 (Efficiency Frontier) ist noch frei** — `src/magda/frontier.py`
-existiert nicht. Die Abbildung liest vorhandene Reports, sie misst nicht
-selbst; der Blackbox-Punkt bleibt offen, solange die Referenzfrage aus
-Nachtrag 1 Noahs Entscheidung ist.
+existiert nicht.
+
+**Und er braucht mehr Vorarbeit als gedacht: Kein Report in `data/eval/`
+enthält eine Zeitangabe.** Geprüft über `gbert_test`, `layoutxlm_test`,
+`flair_llm_test`, `gbert_dev` und `offers_grid_dev_cv` — kein Feld für
+Sekunden, Latenz oder Dauer. Die Zahlen 0,264 s je Seite und 44,8 s beim
+LLM stehen in `CLAUDE.md`, aber ohne erzeugendes Skript; nach der eigenen
+Projektregel („Keine Zahl ohne das Skript") sind sie damit nicht
+nachrechenbar.
+
+Der Frontier ist deshalb kein reiner Darstellungsschritt, sondern zwei
+Aufgaben: **erst eine Zeitmessung je Konfiguration** (eigenes Skript,
+gleiche Seitenmenge, gleiche Maschine — sonst vergleicht die X-Achse
+Äpfel mit Birnen), **dann die Abbildung**. Die Zeitmessung ist unabhängig
+von der offenen Blackbox-Referenzfrage und kann sofort gebaut werden; die
+Abbildung kann ohne den Blackbox-Punkt erscheinen und ihn nachtragen.
