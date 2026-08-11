@@ -31,6 +31,24 @@ from magda.cli.offers import _load_labeled_pages, _load_predicted_pages
 SPLIT_FILE = config.DATA_DIR / "splits" / "split.json"
 DEFAULT_CHECKPOINT = config.PROJECT_ROOT / "checkpoints" / "offer_pairs" / "model.pt"
 
+# Beide Defaults sind gemessen, nicht geraten - `magda offers-grid
+# --cross-validate` ueber 75 Seiten in 68 Clustern: +Geometrie schlaegt die
+# Basis um +0.044 [+0.009, +0.082] bei p = 0.018, ILP schlaegt Union-Find um
+# +0.100 [+0.067, +0.133] bei p = 0.000. Vorher waren hier "basis" und "union"
+# eingestellt, also zweimal die unterlegene Variante.
+DEFAULT_TRAIN_FEATURES = "geometrie"
+DEFAULT_TRAIN_DECODER = "ilp"
+
+
+def _blocks(name: str, parser) -> tuple[str, ...]:
+    """Merkmalsvariante nach Namen - dieselben wie in `magda offers-grid`."""
+    from magda import offer_grid
+
+    if name not in offer_grid.VARIANTS:
+        parser.error(f"Merkmalsvariante unbekannt: {name}. "
+                     f"Bekannt: {', '.join(offer_grid.VARIANTS)}")
+    return offer_grid.VARIANTS[name]
+
 
 def _split_ids(names: list[str], parser) -> set[str]:
     if not SPLIT_FILE.is_file():
@@ -76,20 +94,22 @@ def _cmd_train(args, parser):
     source, pages, reference = _selected(args, parser)
     stats = offer_model.training_stats(pages, reference.assignments)
     hidden = tuple(int(h) for h in args.hidden.split(","))
-    decoder = args.decoder or "union"
+    blocks = _blocks(args.features, parser)
+    decoder = args.decoder or DEFAULT_TRAIN_DECODER
 
     calibration = None
     if args.folds > 1:
         calibration = offer_model.calibrate(
             pages, reference.assignments, folds=args.folds,
             epochs=args.epochs, seed=args.seed, hidden=hidden,
-            objective=args.objective, decoder=decoder,
+            objective=args.objective, decoder=decoder, blocks=blocks,
         )
 
     model = offer_model.train(
         pages, reference.assignments, epochs=args.epochs, seed=args.seed,
-        hidden=hidden, decoder=decoder,
+        hidden=hidden, decoder=decoder, blocks=blocks,
         provenance={
+            "features": args.features,
             "reference": args.reference_from,
             "kind": sorted(set(reference.provenance.values())),
             "labels": source,
@@ -103,7 +123,9 @@ def _cmd_train(args, parser):
     path = model.save(args.out)
 
     print(f"Lehrer: data/offer_groups/{config.model_slug(args.reference_from)}"
-          f"   Labels: {source}   Splits: {args.splits}   Dekoder: {decoder}")
+          f"   Labels: {source}   Splits: {args.splits}")
+    print(f"Merkmale: {args.features} ({len(model.feature_names)})"
+          f"   Dekoder: {decoder}")
     if "llm" in set(reference.provenance.values()):
         print("  Maschinell erzeugte Gruppierung: das Modell lernt Uebereinstimmung,")
         print("  nicht Richtigkeit. Gegenprobe: `magda offers-model eval`.")
@@ -297,12 +319,7 @@ def _cmd_variants(args, parser):
         model.decoder = args.decoder
 
     if args.cross_validate:
-        blocks = model.blocks
-        if args.features:
-            if args.features not in offer_grid.VARIANTS:
-                parser.error(f"Merkmalsvariante unbekannt: {args.features}. "
-                             f"Bekannt: {', '.join(offer_grid.VARIANTS)}")
-            blocks = offer_grid.VARIANTS[args.features]
+        blocks = _blocks(args.features, parser) if args.features else model.blocks
 
         def progress(number, held, threshold):
             print(f"  Fold {number}: {held} Seiten, Schwelle {threshold:.2f}")
@@ -421,7 +438,7 @@ def main(argv=None):
     common.add_argument("--decoder", default=None,
                         choices=("union", "ilp"),
                         help="wie aus Kanten Gruppen werden. Ohne Angabe beim Messen\n"
-                             "der Dekoder des Checkpoints, beim Training union.\n"
+                             "der Dekoder des Checkpoints, beim Training ilp.\n"
                              "ilp = Correlation Clustering (braucht pulp)")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
@@ -437,6 +454,9 @@ def main(argv=None):
                        help="Wonach die Schwelle gewaehlt wird. Default group_f1")
     train.add_argument("--folds", type=int, default=5,
                        help="Folds fuer die Schwellenwahl. 1 schaltet sie ab")
+    train.add_argument("--features", default=DEFAULT_TRAIN_FEATURES,
+                       help="Merkmalsvariante. Default `geometrie` - der einzige\n"
+                            "Block, dessen Gewinn belegt ist (p = 0.018)")
 
     evaluate = subparsers.add_parser("eval", help="Gegen Lehrer und Arithmetik messen",
                                      parents=[common])

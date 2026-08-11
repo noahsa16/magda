@@ -29,6 +29,8 @@ PIPELINE = (
     Befehl("extract", "extract", "Wörter und Boxen aus dem PDF-Textlayer ziehen"),
     Befehl("dedupe", "duplicates", "Beinah-Duplikate finden und aussortieren"),
     Befehl("label", "label", "Seiten vom Vision-LLM labeln lassen"),
+    Befehl("label-teacher", "label_teacher",
+           "Seiten von einem Agenten mit Bildzugriff labeln lassen (sonnet-5)"),
     Befehl("split", "split", "Train/Dev/Test festlegen"),
     Befehl("train", "train", "Token-Klassifikation trainieren"),
     Befehl("eval", "evaluate", "Entity-Level-F1 auf einem Split messen"),
