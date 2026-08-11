@@ -174,15 +174,27 @@ CANONICAL_LABELS = "sonnet-5"
 def default_labeled_model() -> str | None:
     """Welche Labels nimmt ein Schritt, der keinen Modellnamen bekommen hat?
 
-    Vorrang hat das konfigurierte Vision-Modell – wer CHAT_AI_VISION_MODEL
-    setzt, meint dessen Labels. Liegen die nicht vor, gewinnt der Ordner mit
-    den meisten Seiten: das ist der vollständigste Datensatz und damit die
-    einzige Wahl, die nicht stillschweigend auf einem Zehn-Seiten-Probelauf
-    trainiert.
+    Vorrang hat `CANONICAL_LABELS`, also die Referenz des Projekts. Erst
+    danach das konfigurierte Vision-Modell, zuletzt der Ordner mit den
+    meisten Seiten.
+
+    Die erste Stufe fehlte lange, und sie hat leise Zahlen verschoben: mit
+    `CHAT_AI_VISION_MODEL` an der Spitze zeigte der Default auf
+    `mistral-medium-3.5-128b` – ein Modell, mit dem hier gar nicht gelabelt
+    wird. Gemessen am 11.08.2026: `magda offers-verify` fand über dieselbe
+    Gruppierung mit Mistral-Labels **399** Preise (Genauigkeit 0.927,
+    Abdeckung 0.446), mit sonnet-5 dagegen **494** (0.936, 0.478). Ein
+    Viertel mehr Preise, dieselbe Rechnung – die Zahl beantwortete eine
+    andere Frage, ohne dass irgendwo „mistral" stand.
+    Über die Größe allein wäre es auch nicht gutgegangen: `sonnet-5`,
+    `sonnet-5-app` und der Mistral-Ordner haben alle 296 Seiten, und dann
+    entscheidet die Sortierreihenfolge.
     """
     models = labeled_models()
     if not models:
         return None
+    if model_slug(CANONICAL_LABELS) in models:
+        return model_slug(CANONICAL_LABELS)
     if model_slug(CHAT_AI_VISION_MODEL) in models:
         return model_slug(CHAT_AI_VISION_MODEL)
     return max(models, key=lambda m: len(list((LABELED_DIR / m).glob("*.json"))))
