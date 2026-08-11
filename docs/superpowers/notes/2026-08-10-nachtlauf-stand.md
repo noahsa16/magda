@@ -212,3 +212,37 @@ sie nicht gesehen hat. Aus 14 Clustern werden **62**. Die Schwelle wird dabei
 geschachtelt gewählt (`calibrate` auf den inneren Folds, Auswertung nur auf
 dem äußeren) — einmal auf allem gewählt wäre sie genau der Zirkelschluss,
 gegen den `offers_report` die Ablation braucht.
+
+### Das Ergebnis der Fortsetzung
+
+75 Seiten in 68 Clustern, out-of-fold, gepaarte Differenz gegen die Basis:
+
+| Variante | Bereich | Differenz | Intervall | p |
+|---|---|---:|---|---:|
+| +Geometrie | alle Paare | **+0.044** | [+0.009, +0.082] | **0.018** |
+| +Geometrie | prüfbar | +0.052 | [+0.002, +0.099] | 0.042 |
+| +Farbe | alle Paare | −0.008 | [−0.036, +0.023] | 0.596 |
+| beide | blinder Fleck | **−0.051** | [−0.103, −0.001] | 0.042 |
+
+**+Geometrie wirkt, Farbe nicht** — und auf der Geometrie obendrauf
+verschlechtert die Farbe das Ergebnis im blinden Fleck, also genau dort,
+wofür sie gebaut wurde. Der Dev-Eindruck dreht sich um.
+
+Einschränkung: neun Vergleiche ohne Korrektur für multiples Testen, drei
+Bereiche nicht unabhängig. Belastbar ist p = 0.018; die beiden bei p = 0.042
+sind Hinweise.
+
+**Offene Teamentscheidung:** Farbmerkmale entfernen oder als sauber
+gemessenen Negativbefund stehen lassen. Nicht vertretbar wäre nur, sie
+mitzuführen und die alte Dev-Zahl zu zitieren.
+
+### Was jetzt noch offen ist
+
+- **Plan B/5** — Handprüfung der Schülerabweichungen auf Test (4 h am
+  `/audit`-UI). Vorbedingung für den Schlussbatch.
+- **Plan B/6** — der eine Testbatch. Wartet auf B/5.
+- **Plan B/7** — zweiter Händler, braucht Erlaubnis zum Download.
+- **Plan A/4** — Woche 4 labeln, 126 Seiten über den Subagenten-Weg.
+- **Blackbox-Referenz** vor dem Schlussbatch klären (siehe Nachtrag 1).
+- 5 Seiten bleiben in der `offers-queue` — die Referenz kann weiter wachsen,
+  hilft aber nur dem Training, nicht dem Intervall.
