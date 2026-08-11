@@ -189,7 +189,8 @@ def judge_page(page: dict, assignment: dict[int, int],
 def cross_validate(pages: list[dict], assignments: dict, blocks,
                    folds: int = 5, epochs: int = 300, seed: int = 0,
                    objective: str = "group_f1", decoder: str = "union",
-                   progress=None) -> tuple[list[PageCounts], list[float]]:
+                   progress=None, limit: int = 0
+                   ) -> tuple[list[PageCounts], list[float]]:
     """Jede Referenzseite einmal auswerten - mit einem Modell ohne sie.
 
     Die Schwelle wird **geschachtelt** gewaehlt: `calibrate` laeuft auf den
@@ -205,35 +206,46 @@ def cross_validate(pages: list[dict], assignments: dict, blocks,
     """
     per_page: list[PageCounts] = []
     thresholds: list[float] = []
-    for model, outer in fold_models(pages, assignments, blocks, folds=folds,
-                                    epochs=epochs, seed=seed,
-                                    objective=objective, decoder=decoder,
-                                    progress=progress):
+    trained_on: list[list[str]] = []
+    for model, outer, inner in fold_models(pages, assignments, blocks, folds=folds,
+                                           epochs=epochs, seed=seed,
+                                           objective=objective, decoder=decoder,
+                                           progress=progress, limit=limit):
         thresholds.append(model.threshold)
+        trained_on.append([p["page_id"] for p in inner])
         for page in outer:
             per_page.append(
                 judge_page(page, assignments[page["page_id"]],
                            model.group_page_words(page, model.threshold)))
-    return per_page, thresholds
+    return per_page, thresholds, trained_on
 
 
 def fold_models(pages: list[dict], assignments: dict, blocks,
                 folds: int = 5, epochs: int = 300, seed: int = 0,
                 objective: str = "group_f1", decoder: str = "union",
-                progress=None):
+                progress=None, limit: int = 0):
     """Liefert je Fold (Modell, gehaltene Seiten) - das Modell hat sie nie gesehen.
 
     Herausgezogen, damit jede weitere Out-of-fold-Auswertung dieselben
     Modelle sieht wie `cross_validate`. Zwei getrennte Fold-Schleifen waeren
     zwei Gelegenheiten, die geschachtelte Kalibrierung falsch zu bauen - und
     eine davon faellt niemandem auf, weil beide plausible Zahlen liefern.
+
+    `limit` beschneidet die *innere* Menge fuer die Lernkurve, und zwar
+    clusterweise. Die aeussere bleibt vollstaendig - sonst waeren die
+    Kurvenpunkte auf verschieden grossen Auswertungsmengen gemessen und
+    nicht vergleichbar. Beschnitten wird nach der Fold-Teilung, nicht davor:
+    andersherum saehe jeder Punkt andere gehaltene Seiten.
     """
-    from magda import offer_model
+    from magda import dataset, offer_model
 
     for number, fold in enumerate(offer_model.page_folds(pages, folds), 1):
         held_out = set(fold)
         inner = [p for p in pages if p["page_id"] not in held_out]
         outer = [p for p in pages if p["page_id"] in held_out]
+        if limit:
+            kept = set(dataset.subset_by_clusters(inner, limit))
+            inner = [p for p in inner if p["page_id"] in kept]
         if not inner or not outer:
             continue
         calibration = offer_model.calibrate(
@@ -244,7 +256,9 @@ def fold_models(pages: list[dict], assignments: dict, blocks,
         model.threshold = calibration["threshold"]
         if progress:
             progress(number, len(outer), model.threshold)
-        yield model, outer
+        # Auch die *innere* Menge, denn bei `limit` ist sie der Kurvenpunkt -
+        # und zu jedem Punkt gehoert die Clusterzahl, nicht die Seitenzahl.
+        yield model, outer, inner
 
 
 def clusters_of(pages: list[dict]) -> list[list[str]]:
@@ -618,7 +632,7 @@ def variant_blocks_cv(pages: list[dict], assignments: dict, blocks,
     group_rows: list[dict] = []
     edge_rows: list[dict] = []
     thresholds: list[float] = []
-    for model, outer in fold_models(pages, assignments, blocks, folds=folds,
+    for model, outer, _ in fold_models(pages, assignments, blocks, folds=folds,
                                     epochs=epochs, seed=seed,
                                     objective=objective, decoder=decoder,
                                     progress=progress):

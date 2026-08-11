@@ -72,6 +72,11 @@ def report_name(args) -> str:
     decoder = getattr(args, "decoder", "union") or "union"
     if decoder != "union":
         suffix += "_" + decoder.replace(",", "-")
+    # Und aus demselben Grund die Lernkurve: ihre Punkte tragen dieselben
+    # Variantennamen nicht, sie ist eine andere Messung ueber dieselben
+    # Seiten. Ohne das ueberschreibt ein Kurvenlauf den Variantenvergleich.
+    if getattr(args, "curve", None):
+        suffix += "_curve"
     return f"offers_grid_{args.splits.replace(',', '-')}{suffix}.json"
 
 
@@ -117,6 +122,12 @@ def main(argv=None):
     parser.add_argument("--cross-validate", action="store_true",
                         help="jede Referenzseite out-of-fold auswerten statt "
                              "nur den Messsplit - mehr unabhaengige Einheiten")
+    parser.add_argument("--curve", default=None,
+                        help="Lernkurve: Seitengrenzen fuer das Training, "
+                             "kommagetrennt, 0 = alle. Beschnitten wird "
+                             "clusterweise und nur die Trainingsmenge; "
+                             "gemessen wird immer gegen dieselbe Referenz.\n"
+                             "Beispiel: --curve 10,20,30,0")
     parser.add_argument("--decoder", default="union",
                         help="wie aus Kanten Gruppen werden, kommagetrennt fuer "
                              "den Vergleich. union = Zusammenhangskomponenten, "
@@ -137,12 +148,27 @@ def main(argv=None):
         parser.error(f"Unbekannte(r) Dekoder: {', '.join(unknown)}. "
                      f"Bekannt: {', '.join(offer_model.DECODERS)}")
 
-    # Ein Lauf je Kombination. Beide Achsen in *einem* Lauf, weil der
+    # Dritte Achse: die Lernkurve. `0` heisst "alle Trainingsseiten" und
+    # gehoert als Endpunkt dazu - ohne ihn fehlt der Kurve die Referenz,
+    # gegen die "saettigt sie?" ueberhaupt beantwortbar ist.
+    limits = [int(p) for p in args.curve.split(",") if p.strip()] if args.curve else [0]
+    if any(limit < 0 for limit in limits):
+        parser.error("--curve nimmt nur nichtnegative Seitenzahlen (0 = alle).")
+
+    # Ein Lauf je Kombination. Alle Achsen in *einem* Lauf, weil der
     # gepaarte Bootstrap die Zaehlungen je Seite braucht - aus zwei
     # Reportdateien laesst er sich nicht nachtraeglich bilden.
-    runs = [(f"{v}/{d}" if len(decoders) > 1 else v, v, d)
-            for v in variants for d in decoders]
-    wanted = [label for label, _, _ in runs]
+    def _label(variant, decoder, limit):
+        parts = [variant] if len(variants) > 1 or not args.curve else []
+        if len(decoders) > 1:
+            parts.append(decoder)
+        if args.curve:
+            parts.append(f"p{limit}" if limit else "alle")
+        return "/".join(parts) or variant
+
+    runs = [(_label(v, d, limit), v, d, limit)
+            for limit in limits for v in variants for d in decoders]
+    wanted = [label for label, _, _, _ in runs]
 
     # Erst die Messseiten (setzt args.splits voraus), dann die Trainingsseiten.
     source, eval_pages, reference = _selected(args, parser)
@@ -172,7 +198,7 @@ def main(argv=None):
 
     results: dict[str, dict] = {}
     counts_by_variant: dict[str, list] = {}
-    for label, name, decoder in runs:
+    for label, name, decoder, limit in runs:
         blocks = offer_grid.VARIANTS[name]
         started = time.perf_counter()
         if decoder == "ilp":
@@ -180,23 +206,35 @@ def main(argv=None):
             offer_ilp.reset_counters()
 
         if args.cross_validate:
-            per_page, thresholds = offer_grid.cross_validate(
+            per_page, thresholds, trained_on = offer_grid.cross_validate(
                 eval_pages, assignments, blocks, folds=args.folds,
                 epochs=args.epochs, seed=args.seed, objective=args.objective,
-                decoder=decoder)
+                decoder=decoder, limit=limit)
             entry = {
                 "blocks": list(blocks),
                 "decoder": decoder,
+                "limit": limit,
                 "features": len(offer_pairs.feature_names(blocks)),
                 "threshold": round(sum(thresholds) / len(thresholds), 3),
                 "thresholds_per_fold": thresholds,
                 "seconds": round(time.perf_counter() - started, 1),
             }
+            # Zum Kurvenpunkt gehoert die Clusterzahl, nicht die Seitenzahl:
+            # elf Regionalfassungen einer Vorlage sind eine Beobachtung.
+            # Gemittelt ueber die Folds, weil jeder eine eigene innere Menge hat.
+            by_id = {p["page_id"]: p for p in eval_pages}
+            sizes = [len(ids) for ids in trained_on]
+            fold_clusters = [len(offer_grid.clusters_of([by_id[i] for i in ids]))
+                             for ids in trained_on]
+            entry["train_pages"] = round(sum(sizes) / len(sizes), 1)
+            entry["train_clusters"] = round(sum(fold_clusters) / len(fold_clusters), 1)
             _fill(entry, per_page, clusters, args.seed)
             _note_capping(entry, decoder)
             counts_by_variant[label] = per_page
             results[label] = entry
             print(f"  {label:<16} {entry['features']:>3} Merkmale, "
+                  f"{entry['train_pages']:>5.1f} Seiten in "
+                  f"{entry['train_clusters']:>4.1f} Clustern, "
                   f"Schwellen {thresholds}, {entry['seconds']:>5.1f} s")
             continue
 

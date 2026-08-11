@@ -372,6 +372,22 @@ def test_ohne_dekoder_bleibt_der_alte_dateiname():
     assert offers_grid.report_name(_args(decoder="union")) == "offers_grid_dev.json"
 
 
+def test_die_lernkurve_ueberschreibt_den_variantenvergleich_nicht():
+    """Ein Kurvenlauf hat dieselben Splits, denselben Dekoder, andere Zahlen.
+
+    Beim Bauen genau einmal passiert: der Probelauf mit `--curve` legte sich
+    auf `offers_grid_dev_cv_ilp.json` und war damit der Variantenvergleich,
+    aus dem der Dekoder-Befund stammt.
+    """
+    from magda.cli import offers_grid
+
+    ohne = offers_grid.report_name(_args(decoder="ilp"))
+    mit = offers_grid.report_name(_args(decoder="ilp", curve="10,0"))
+
+    assert ohne != mit
+    assert "curve" in mit
+
+
 def test_mehrere_dekoder_ergeben_einen_dateinamen():
     """Der Vergleichslauf darf keinen der Einzellaeufe ueberschreiben."""
     from magda.cli import offers_grid
@@ -521,7 +537,7 @@ def test_kein_fold_modell_sieht_seine_eigenen_seiten(monkeypatch):
 
     pages, reference = _training_set()
     beurteilt = []
-    for _, outer in offer_grid.fold_models(
+    for _, outer, _ in offer_grid.fold_models(
             pages, reference, ("types", "geometry_base"), folds=3, epochs=5):
         gehalten = {p["page_id"] for p in outer}
         # Alles, was seit dem letzten Fold trainiert wurde, gehoert diesem.
@@ -531,3 +547,42 @@ def test_kein_fold_modell_sieht_seine_eigenen_seiten(monkeypatch):
         beurteilt += sorted(gehalten)
 
     assert sorted(beurteilt) == sorted(p["page_id"] for p in pages)
+
+
+def test_die_lernkurve_beschneidet_nur_das_training(monkeypatch):
+    """`limit` verkleinert die innere Menge und laesst die aeussere ganz.
+
+    Beides gehoert geprueft: Beschnitte man auch die Messseiten, waeren die
+    Kurvenpunkte auf verschieden grossen Mengen gemessen, und ein Anstieg
+    hiesse womoeglich nur "weniger schwere Seiten im Nenner".
+    """
+    pytest.importorskip("torch")
+    from magda import offer_model
+    from test_offer_model import _training_set
+
+    trainiert_mit: list[int] = []
+    train = offer_model.train
+
+    def spy_train(pages, *args, **kwargs):
+        trainiert_mit.append(len(pages))
+        return train(pages, *args, **kwargs)
+
+    monkeypatch.setattr(offer_model, "train", spy_train)
+    pages, reference = _training_set()
+
+    def lauf(limit):
+        trainiert_mit.clear()
+        gemessen = []
+        for _, outer, inner in offer_grid.fold_models(
+                pages, reference, ("types", "geometry_base"), folds=3,
+                epochs=5, limit=limit):
+            gemessen += [p["page_id"] for p in outer]
+            assert len(inner) <= limit or not limit
+        return sorted(gemessen), list(trainiert_mit)
+
+    ganz_gemessen, ganz_trainiert = lauf(0)
+    eng_gemessen, eng_trainiert = lauf(2)
+
+    assert eng_gemessen == ganz_gemessen, "die Messmenge darf sich nicht aendern"
+    assert max(eng_trainiert) < max(ganz_trainiert), "limit hat nichts beschnitten"
+    assert max(eng_trainiert) <= 2
