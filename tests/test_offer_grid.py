@@ -303,3 +303,46 @@ def test_die_auswertungseinheiten_wachsen_ueber_dev_hinaus():
     alle = [pages[i] for i in grouped if i in pages]
 
     assert len(offer_grid.clusters_of(alle)) > len(offer_grid.clusters_of(dev))
+
+
+def test_gepaart_ist_das_intervall_der_differenz_enger_als_zwei_einzelne():
+    """Der Grund, warum ueberlappende Einzelintervalle nichts beweisen.
+
+    Beide Varianten sehen dieselben Seiten. Ist eine Seite schwer, ist sie
+    es fuer beide - diese gemeinsame Streuung faellt beim gepaarten
+    Resampling heraus. Hier gebaut: zwei Varianten, die sich auf jeder
+    Seite um genau denselben Betrag unterscheiden, bei stark
+    schwankendem Niveau. Die Differenz ist konstant, also muss ihr
+    Intervall praktisch die Breite null haben - waehrend die Einzelwerte
+    ueber den ganzen Bereich streuen.
+    """
+    from magda import offer_grid
+
+    left, right = [], []
+    for index, ref in enumerate([10, 10, 10, 10, 10, 10]):
+        shared_left = 10 if index % 2 else 2      # mal leicht, mal schwer
+        page_left = _counts(f"p{index}", ref, 10, shared_left)
+        page_right = _counts(f"p{index}", ref, 10, shared_left - 1)
+        left.append(page_left)
+        right.append(page_right)
+    clusters = [[f"p{i}"] for i in range(6)]
+
+    einzeln = offer_grid.bootstrap(left, clusters, "total", "pair_f1", rounds=300)
+    gepaart = offer_grid.paired_bootstrap(left, right, clusters, "total",
+                                          "pair_f1", rounds=300)
+
+    assert (gepaart["high"] - gepaart["low"]) < (einzeln["high"] - einzeln["low"])
+    assert gepaart["difference"] > 0
+
+
+def test_zwei_gleiche_varianten_ergeben_eine_differenz_um_null():
+    from magda import offer_grid
+
+    pages = [_counts(f"p{i}", 10, 10, 7) for i in range(5)]
+    clusters = [[f"p{i}"] for i in range(5)]
+
+    result = offer_grid.paired_bootstrap(pages, list(pages), clusters,
+                                         "total", "pair_f1", rounds=200)
+
+    assert result["difference"] == pytest.approx(0.0)
+    assert result["p_two_sided"] == pytest.approx(1.0)

@@ -130,6 +130,7 @@ def main(argv=None):
     print()
 
     results: dict[str, dict] = {}
+    counts_by_variant: dict[str, list] = {}
     for name in wanted:
         blocks = offer_grid.VARIANTS[name]
         started = time.perf_counter()
@@ -146,6 +147,7 @@ def main(argv=None):
                 "seconds": round(time.perf_counter() - started, 1),
             }
             _fill(entry, per_page, clusters, args.seed)
+            counts_by_variant[name] = per_page
             results[name] = entry
             print(f"  {name:<10} {entry['features']:>3} Merkmale, "
                   f"Schwellen {thresholds}, {entry['seconds']:>5.1f} s")
@@ -175,6 +177,7 @@ def main(argv=None):
             "seconds": round(time.perf_counter() - started, 1),
         }
         _fill(entry, per_page, clusters, args.seed)
+        counts_by_variant[name] = per_page
         results[name] = entry
         print(f"  {name:<10} {entry['features']:>3} Merkmale, "
               f"Schwelle {threshold:.2f}, {entry['seconds']:>5.1f} s")
@@ -194,8 +197,28 @@ def main(argv=None):
                   f"{_interval(entry['pair_ci'])}")
         print()
 
+    comparisons: dict[str, dict] = {}
+    baseline = wanted[0]
+    if len(wanted) > 1:
+        print(f"Gepaarte Differenz gegen '{baseline}' (Gruppen-F1, dieselben Seiten):")
+        print(f"  {'Variante':<12}{'Differenz':>11}{'Intervall':>20}{'p':>8}   Bereich")
+        for scope in ("total", "blind", "checkable"):
+            for name in wanted[1:]:
+                paired = offer_grid.paired_bootstrap(
+                    counts_by_variant[name], counts_by_variant[baseline],
+                    clusters, scope, "group_f1", seed=args.seed)
+                comparisons[f"{name}_vs_{baseline}_{scope}"] = paired
+                if paired["difference"] is None:
+                    continue
+                spanne = f"[{paired['low']:+.3f}, {paired['high']:+.3f}]"
+                print(f"  {name:<12}{paired['difference']:>+11.3f}{spanne:>20}"
+                      f"{paired['p_two_sided']:>8.3f}   {scope}")
+        print()
+
     print("Die Intervalle sind 95 % ueber Duplikat-Cluster gebootstrappt, nicht")
     print("ueber Seiten. Ohne Intervall ist eine Differenz keine Behauptung.")
+    print("Zwei ueberlappende Einzelintervalle heissen dabei NICHT 'kein")
+    print("Unterschied' - dafuer ist die gepaarte Differenz zustaendig.")
 
     payload = {
         "source": source,
@@ -211,6 +234,7 @@ def main(argv=None):
         "eval_pages": len(eval_pages),
         "eval_clusters": len(clusters),
         "variants": results,
+        "paired_vs_baseline": comparisons,
     }
     config.EVAL_DIR.mkdir(parents=True, exist_ok=True)
     out_path = config.EVAL_DIR / report_name(args)

@@ -274,6 +274,68 @@ def bootstrap(per_page: list[PageCounts], clusters: list[list[str]],
     }
 
 
+def paired_bootstrap(left: list[PageCounts], right: list[PageCounts],
+                     clusters: list[list[str]], field_name: str = "total",
+                     metric: str = "group_f1", rounds: int = BOOTSTRAP_ROUNDS,
+                     seed: int = 0) -> dict:
+    """Die **Differenz** zweier Varianten bootstrappen, nicht zwei Intervalle.
+
+    Zwei überlappende Einzelintervalle heißen *nicht* „kein Unterschied".
+    Beide Varianten sehen dieselben Seiten, und der größte Teil der Streuung
+    kommt aus den Seiten, nicht aus der Variante – wer sie einzeln
+    resampelt, zählt diese gemeinsame Streuung zweimal und verdeckt damit
+    genau den Effekt, den er messen will. Gepaart resampelt fällt sie heraus.
+
+    Dieselbe Konstruktion wie in `magda significance` für den
+    Modellvergleich, nur über Duplikat-Cluster statt über Seiten.
+
+    `p_two_sided` ist der Anteil der Ziehungen, in denen die Differenz das
+    Vorzeichen wechselt, verdoppelt – kein exakter Test, aber die
+    gebräuchliche Bootstrap-Näherung, und sie sagt dasselbe wie die Frage,
+    ob das Intervall die Null überdeckt.
+    """
+    by_left = {p.page_id: p for p in left}
+    by_right = {p.page_id: p for p in right}
+    shared = set(by_left) & set(by_right)
+    usable = [[pid for pid in c if pid in shared] for c in clusters]
+    usable = [c for c in usable if c]
+    if len(usable) < 2:
+        return {"clusters": len(usable), "low": None, "high": None,
+                "difference": None, "p_two_sided": None}
+
+    rng = random.Random(seed)
+    values: list[float] = []
+    for _ in range(rounds):
+        total_left, total_right = Counts(), Counts()
+        for _ in range(len(usable)):
+            for page_id in rng.choice(usable):
+                total_left.add(getattr(by_left[page_id], field_name))
+                total_right.add(getattr(by_right[page_id], field_name))
+        a, b = getattr(total_left, metric), getattr(total_right, metric)
+        if a is not None and b is not None:
+            values.append(a - b)
+    if not values:
+        return {"clusters": len(usable), "low": None, "high": None,
+                "difference": None, "p_two_sided": None}
+
+    observed_left = total_of([by_left[p] for c in usable for p in c], field_name)
+    observed_right = total_of([by_right[p] for c in usable for p in c], field_name)
+    difference = (getattr(observed_left, metric) or 0.0) - (getattr(observed_right, metric) or 0.0)
+    # Anteil der Ziehungen, die gegen das beobachtete Vorzeichen sprechen.
+    if difference > 0:
+        against = sum(1 for value in values if value <= 0)
+    else:
+        against = sum(1 for value in values if value >= 0)
+    values.sort()
+    return {
+        "clusters": len(usable),
+        "difference": difference,
+        "low": values[int(0.025 * len(values))],
+        "high": values[min(int(0.975 * len(values)), len(values) - 1)],
+        "p_two_sided": min(1.0, 2 * against / len(values)),
+    }
+
+
 def total_of(per_page: list[PageCounts], field_name: str) -> Counts:
     total = Counts()
     for page in per_page:
