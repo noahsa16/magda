@@ -490,3 +490,81 @@ gleiche Seitenmenge, gleiche Maschine — sonst vergleicht die X-Achse
 Äpfel mit Birnen), **dann die Abbildung**. Die Zeitmessung ist unabhängig
 von der offenen Blackbox-Referenzfrage und kann sofort gebaut werden; die
 Abbildung kann ohne den Blackbox-Punkt erscheinen und ihn nachtragen.
+
+---
+
+## Nachtrag 5 (11.08.2026): die Variantenblöcke, out-of-fold nachgerechnet
+
+Die Zahl aus Nachtrag 4 (19 Blöcke, Recall 0.263 gegen 0.883) hatte zwei
+Mängel, die zusammen ihre Größenordnung erklären: sie war **auf Dev
+gemessen** und stammte von einem **Checkpoint, der diese Seiten im
+Training hatte**. Gebaut ist jetzt `magda offers-model variants`, damit
+sie überhaupt ein Skript hat — bisher stand sie nur in dieser Notiz,
+erzeugt von einem Wegwerf-Skript.
+
+Out-of-fold über Train+Dev, 75 Seiten, 573 Referenzgruppen, davon **95
+Variantenblöcke** (Merkmale: Basis, 30):
+
+| Dekoder | alle | ohne Variantenblöcke | Variantenblöcke | Faktor |
+|---|---:|---:|---:|---:|
+| Union-Find | 239/573 = 0.417 | 0.425 | 0.379 | 1.12 |
+| ILP | 301/573 = 0.525 | **0.546** | **0.421** | **1.30** |
+| *Dev, Checkpoint (alt)* | *0.656* | *0.738* | *0.211* | *3.4* |
+
+**Der Effekt ist real, aber ein Drittel so groß wie berichtet.** Dasselbe
+Muster wie bei den Farbmerkmalen: ein Dev-Eindruck über 19 Einheiten
+hält der Kreuzvalidierung über 95 nicht stand. Wer die 0.263 weiter
+zitiert, zitiert eine In-sample-Zahl.
+
+### Welche Kante ausfällt — und die Kontrolle, die es entscheidet
+
+Mittlere Kantenwahrscheinlichkeit auf *zusammengehörigen* Paaren, ILP,
+out-of-fold:
+
+| Typpaar | in Variantenblöcken | sonst | Differenz |
+|---|---:|---:|---:|
+| **PRICE\|PRICE** | **0.639** (n=172) | – | *nur hier möglich* |
+| **QUANTITY\|QUANTITY** | **0.868** (n=123) | – | *nur hier möglich* |
+| PRODUCT\|PRODUCT | 0.814 | 0.962 | −0.149 |
+| PRICE\|PRODUCT | 0.782 | 0.882 | −0.100 |
+| QUANTITY\|UNIT_PRICE | 0.894 | 0.985 | −0.090 |
+| BRAND\|PRODUCT | 0.959 | 0.991 | −0.031 |
+
+**`QUANTITY|QUANTITY` ist die Kontrolle, und sie trägt den ganzen
+Befund.** Beide Kantenarten gibt es *nur* in Variantenblöcken, beide
+verbinden gleichartige Entities derselben großen Gruppe. Wäre die Ursache
+die Gruppengröße (8.74 Entities gegen 5.03), müssten beide gleich leiden.
+Tatsächlich liegt die Mengenkante bei 0.868 und die Preiskante bei 0.639.
+
+Das Modell findet also **mehrere Größenangaben eines Blocks zusammen,
+mehrere Preise nicht**. Die Erklärung steht seit Woche 1 im Projektwissen:
+Penny setzt Mengen untereinander in den Fließtext und Preise in getrennte
+gelbe Kästen. Für zwei Preise sagt die Geometrie „getrennt", und global
+hat sie damit fast immer recht — zwei Preise sind fast immer zwei
+Angebote.
+
+Der allgemeine Größeneffekt existiert daneben, ist aber klein: alle
+übrigen Kanten verlieren in Variantenblöcken nur 0.01 bis 0.15.
+
+### Was das für die Richtung heißt
+
+**Ein Dekoderwechsel scheidet aus.** Das ILP hebt den Variantenblock-Recall
+zwar von 0.379 auf 0.421, aber es hebt alles andere im selben Zug
+(0.425 → 0.546). Es schließt die Lücke nicht, es verschiebt beide Zahlen.
+
+**Die ursprüngliche Hypothese hat sich bestätigt, aber erst beim ILP.**
+Im Union-Lauf sah `PRICE|PRICE` unauffällig aus — die Schwelle 0.94
+schneidet so hoch ab, dass alle Kanten gleichmäßig durchfallen und die
+Rangfolge verschwindet. Erst bei der tieferen ILP-Schwelle (0.80–0.88)
+trennt sich, welche Kante das Modell wirklich schwach bewertet. **Für
+künftige Kantendiagnosen: die mittlere Wahrscheinlichkeit lesen, nicht
+den Recall.** Der Recall ist eine Aussage über die Schwelle.
+
+**Offener Vorbehalt:** gemessen mit den Basis-Merkmalen (30), weil der
+Default-Checkpoint `('types', 'geometry_base')` trägt. Die Kontextmerkmale
+(`products_between`, `closer_rivals`, `distance_ratio`) sind genau die,
+die auf einen gemeinsamen Anker zielen könnten, und sie sind der einzige
+Block mit belegtem Effekt (+0.044, p = 0.018). Der Lauf mit `--features
+geometrie` steht aus; ohne ihn ist nicht entschieden, ob die Lücke ein
+fehlendes Merkmal ist oder ein schon vorhandenes, das nur nicht im
+Checkpoint steckt.

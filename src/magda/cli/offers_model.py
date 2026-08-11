@@ -297,13 +297,22 @@ def _cmd_variants(args, parser):
         model.decoder = args.decoder
 
     if args.cross_validate:
+        blocks = model.blocks
+        if args.features:
+            if args.features not in offer_grid.VARIANTS:
+                parser.error(f"Merkmalsvariante unbekannt: {args.features}. "
+                             f"Bekannt: {', '.join(offer_grid.VARIANTS)}")
+            blocks = offer_grid.VARIANTS[args.features]
+
         def progress(number, held, threshold):
             print(f"  Fold {number}: {held} Seiten, Schwelle {threshold:.2f}")
 
         result = offer_grid.variant_blocks_cv(
-            pages, reference.assignments, model.blocks, folds=args.folds,
+            pages, reference.assignments, blocks, folds=args.folds,
             epochs=args.epochs, seed=args.seed, decoder=model.decoder,
             progress=progress)
+        result["features"] = args.features or "checkpoint"
+        result["blocks"] = list(blocks)
         print()
     else:
         result = offer_grid.variant_blocks(pages, reference.assignments, model)
@@ -312,10 +321,13 @@ def _cmd_variants(args, parser):
                "reference": config.model_slug(args.reference_from)}
 
     config.EVAL_DIR.mkdir(parents=True, exist_ok=True)
+    # Die Merkmalsvariante gehoert in den Namen wie die Entity-Quelle: sonst
+    # ueberschreibt der Geometrie-Lauf den Basis-Lauf still, und der Vergleich
+    # misst zwei Kopien derselben Zahl. Schon einmal passiert (5a755d6).
     out_path = config.EVAL_DIR / (
         f"offers_variants_{args.splits.replace(',', '-')}"
-        f"_{config.model_slug(source)}_{model.decoder}"
-        f"{'_cv' if args.cross_validate else ''}.json")
+        f"_{config.model_slug(source)}_{result.get('features', 'checkpoint')}"
+        f"_{model.decoder}{'_cv' if args.cross_validate else ''}.json")
     with open(out_path, "w") as f:
         json.dump(result, f, indent=2, ensure_ascii=False)
 
@@ -440,6 +452,10 @@ def main(argv=None):
     variants.add_argument("--folds", type=int, default=5)
     variants.add_argument("--epochs", type=int, default=300)
     variants.add_argument("--seed", type=int, default=0)
+    variants.add_argument("--features", default=None,
+                          help="Merkmalsvariante fuer --cross-validate. Ohne\n"
+                               "Angabe die des Checkpoints - und die ist beim\n"
+                               "Default nur die Basis, nicht +Geometrie")
 
     predict = subparsers.add_parser("predict", help="Gruppierung als Dateien ablegen",
                                     parents=[common])
