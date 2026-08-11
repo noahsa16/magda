@@ -22,6 +22,7 @@ auftreten, sonst misst die naechste Zahl Uebereinstimmung statt Richtigkeit.
 
 import argparse
 import json
+from pathlib import Path
 
 from magda import config, offer_teacher, review
 from magda.cli.offers import _load_labeled_pages
@@ -88,6 +89,22 @@ def _cmd_save(args, parser):
     print(f"{args.page_id}: {len(groups)} Angebote gespeichert -> {path}")
 
 
+def _cmd_view(args, parser):
+    from magda import offer_view
+
+    page_ids = [p.strip() for p in args.pages.split(",") if p.strip()] if args.pages else None
+    entries = offer_view.load(args.source, page_ids, limit=args.limit)
+    if not entries:
+        parser.exit(1, f"Keine Gruppierung unter data/offer_groups/"
+                       f"{config.model_slug(args.source)} gefunden.\n")
+
+    out = Path(args.out)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(offer_view.render(entries, args.source), encoding="utf-8")
+    offers = sum(len(a.get("groups") or []) for _, a in entries)
+    print(f"{len(entries)} Seiten, {offers} Angebote -> {out}")
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -110,5 +127,13 @@ def main(argv=None):
                       help="JSON-Datei mit {\"groups\": [[Entity-Nummern], ...]}")
     save.add_argument("--model", default=None, help="Modellname fuer die provenance")
 
+    view = subparsers.add_parser(
+        "view", help="Gruppierungen als HTML ansehen (Seitenbild mit Farben)")
+    view.add_argument("--pages", default=None,
+                      help="Seiten, komma-getrennt. Ohne Angabe die ersten --limit")
+    view.add_argument("--limit", type=int, default=8)
+    view.add_argument("--out", default="offer_groups.html")
+
     args = parser.parse_args(argv)
-    return {"pages": _cmd_pages, "task": _cmd_task, "save": _cmd_save}[args.command](args, parser)
+    return {"pages": _cmd_pages, "task": _cmd_task, "save": _cmd_save,
+            "view": _cmd_view}[args.command](args, parser)
