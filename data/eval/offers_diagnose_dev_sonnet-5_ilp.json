@@ -1,0 +1,131 @@
+{
+  "pages": 20,
+  "pairs": 15979,
+  "positive": 1996,
+  "decoder": "ilp",
+  "auc": 0.9806957654133985,
+  "threshold": 0.86,
+  "achieved": 0.7106227106227107,
+  "ceiling": 0.7376425855513308,
+  "ceiling_threshold": 0.74,
+  "oracle": 1.0,
+  "failures": {
+    "hit": 97,
+    "miss": 25,
+    "kinds": {
+      "zerfallen": 21,
+      "zerfallen_und_verschmolzen": 1,
+      "verschmolzen": 3
+    },
+    "mean_size_hit": 4.958762886597938,
+    "mean_size_miss": 7.76,
+    "blind_share_hit": 0.24742268041237114,
+    "blind_share_miss": 0.44
+  },
+  "curve": [
+    {
+      "threshold": 0.5,
+      "group_f1": 0.5178571428571428
+    },
+    {
+      "threshold": 0.52,
+      "group_f1": 0.5244444444444444
+    },
+    {
+      "threshold": 0.54,
+      "group_f1": 0.5244444444444444
+    },
+    {
+      "threshold": 0.56,
+      "group_f1": 0.5244444444444444
+    },
+    {
+      "threshold": 0.58,
+      "group_f1": 0.5617021276595745
+    },
+    {
+      "threshold": 0.6,
+      "group_f1": 0.5630252100840336
+    },
+    {
+      "threshold": 0.62,
+      "group_f1": 0.5798319327731093
+    },
+    {
+      "threshold": 0.64,
+      "group_f1": 0.6000000000000001
+    },
+    {
+      "threshold": 0.66,
+      "group_f1": 0.715953307392996
+    },
+    {
+      "threshold": 0.68,
+      "group_f1": 0.715953307392996
+    },
+    {
+      "threshold": 0.7,
+      "group_f1": 0.715953307392996
+    },
+    {
+      "threshold": 0.72,
+      "group_f1": 0.715953307392996
+    },
+    {
+      "threshold": 0.74,
+      "group_f1": 0.7376425855513308
+    },
+    {
+      "threshold": 0.76,
+      "group_f1": 0.7376425855513308
+    },
+    {
+      "threshold": 0.78,
+      "group_f1": 0.7014925373134328
+    },
+    {
+      "threshold": 0.8,
+      "group_f1": 0.7137546468401487
+    },
+    {
+      "threshold": 0.82,
+      "group_f1": 0.725925925925926
+    },
+    {
+      "threshold": 0.84,
+      "group_f1": 0.7158671586715867
+    },
+    {
+      "threshold": 0.86,
+      "group_f1": 0.7106227106227107
+    },
+    {
+      "threshold": 0.88,
+      "group_f1": 0.700361010830325
+    },
+    {
+      "threshold": 0.9,
+      "group_f1": 0.6830985915492959
+    },
+    {
+      "threshold": 0.92,
+      "group_f1": 0.6344827586206897
+    },
+    {
+      "threshold": 0.94,
+      "group_f1": 0.5472312703583061
+    },
+    {
+      "threshold": 0.96,
+      "group_f1": 0.4559270516717326
+    },
+    {
+      "threshold": 0.98,
+      "group_f1": 0.07637231503579951
+    }
+  ],
+  "source": "sonnet-5",
+  "splits": "dev",
+  "reference": "claude-sonnet-5",
+  "checkpoint": "checkpoints/offer_pairs/model_ilp.pt"
+}

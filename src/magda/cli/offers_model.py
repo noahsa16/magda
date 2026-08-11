@@ -241,7 +241,12 @@ def _cmd_diagnose(args, parser):
                "checkpoint": str(args.checkpoint)}
 
     config.EVAL_DIR.mkdir(parents=True, exist_ok=True)
-    out_path = config.EVAL_DIR / f"offers_diagnose_{args.splits.replace(',', '-')}_{model.decoder}.json"
+    # Die Entity-Quelle gehoert in den Namen, nicht nur der Dekoder: Der
+    # Lehrerlauf und der Vorhersagelauf messen beide `dev` und beantworten
+    # verschiedene Fragen. Derselbe Fehler wie einst bei `offers_grid`.
+    out_path = config.EVAL_DIR / (
+        f"offers_diagnose_{args.splits.replace(',', '-')}"
+        f"_{config.model_slug(source)}_{model.decoder}.json")
     with open(out_path, "w") as f:
         json.dump(result, f, indent=2, ensure_ascii=False)
 
