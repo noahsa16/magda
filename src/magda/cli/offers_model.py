@@ -227,6 +227,50 @@ def _cmd_eval(args, parser):
     print(f"Report: {out_path}")
 
 
+def _cmd_diagnose(args, parser):
+    """Wer deckelt - das Paarmodell oder das Dekodieren?"""
+    from magda import offer_grid, offer_model
+
+    source, pages, reference = _selected(args, parser)
+    model = offer_model.load(args.checkpoint)
+    if args.decoder:
+        model.decoder = args.decoder
+    result = offer_grid.diagnose(pages, reference.assignments, model)
+    result |= {"source": source, "splits": args.splits,
+               "reference": config.model_slug(args.reference_from),
+               "checkpoint": str(args.checkpoint)}
+
+    config.EVAL_DIR.mkdir(parents=True, exist_ok=True)
+    out_path = config.EVAL_DIR / f"offers_diagnose_{args.splits.replace(',', '-')}_{model.decoder}.json"
+    with open(out_path, "w") as f:
+        json.dump(result, f, indent=2, ensure_ascii=False)
+
+    print(f"Entities: {source}   Splits: {args.splits}   Dekoder: {model.decoder}")
+    print(f"{result['pages']} Seiten, {result['pairs']} beurteilbare Paare, "
+          f"davon {result['positive']} zusammengehoerig")
+    print()
+    print(f"  Kantenqualitaet (AUC)        {result['auc']:.3f}")
+    print("    Trennschaerfe ohne Schwelle. 0.5 hiesse: die Kanten tragen nichts.")
+    print()
+    print(f"  erreicht  (Schwelle {result['threshold']:.2f})   {result['achieved']:.3f}")
+    print(f"  Obergrenze (Schwelle {result['ceiling_threshold']:.2f})   {result['ceiling']:.3f}")
+    print("    Die Obergrenze ist post-hoc auf den Messseiten gewaehlt, also")
+    print("    keine erreichbare Leistung - der Abstand ist der Preis der")
+    print("    Schwellenwahl, nicht ein Versaeumnis.")
+    print()
+    print(f"  mit perfekten Kanten         {result['oracle']:.3f}")
+    print("    Muss 1.000 sein. Sonst verliert der Dekoder selbst Information,")
+    print("    unabhaengig vom Modell - und die Diagnose haette keinen Massstab.")
+    print()
+    if result["auc"] is not None:
+        if result["ceiling"] and result["ceiling"] < 0.8 and result["auc"] > 0.95:
+            print("  Lesart: gute Kanten, verlustreiches Dekodieren.")
+        elif result["auc"] < 0.9:
+            print("  Lesart: die Kanten selbst begrenzen - bessere Merkmale oder")
+            print("  eine bessere Referenz, kein anderes Dekodierverfahren.")
+    print(f"\nReport: {out_path}")
+
+
 def _assignment(model, page: dict, threshold: float) -> dict[int, int]:
     """Wortindex -> Angebotsnummer, wie das Modell die Seite sieht."""
     return {
@@ -295,6 +339,11 @@ def main(argv=None):
     evaluate.add_argument("--threshold", type=float, default=None,
                           help="Ueberschreibt die kalibrierte Schwelle des Checkpoints")
 
+    diagnose = subparsers.add_parser(
+        "diagnose", help="Kantenqualitaet gegen Dekodierverlust trennen",
+        parents=[common])
+    diagnose.add_argument("--splits", default="dev")
+
     predict = subparsers.add_parser("predict", help="Gruppierung als Dateien ablegen",
                                     parents=[common])
     predict.add_argument("--splits", default="dev")
@@ -303,4 +352,5 @@ def main(argv=None):
                          help="Zielordner unter data/offer_groups/")
 
     args = parser.parse_args(argv)
-    return {"train": _cmd_train, "eval": _cmd_eval, "predict": _cmd_predict}[args.command](args, parser)
+    return {"train": _cmd_train, "eval": _cmd_eval, "predict": _cmd_predict,
+            "diagnose": _cmd_diagnose}[args.command](args, parser)

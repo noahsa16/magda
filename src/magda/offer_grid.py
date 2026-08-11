@@ -341,3 +341,124 @@ def total_of(per_page: list[PageCounts], field_name: str) -> Counts:
     for page in per_page:
         total.add(getattr(page, field_name))
     return total
+
+
+def edge_auc(labels: list[int], scores: list[float]) -> float | None:
+    """Wie gut die Kantenwahrscheinlichkeiten trennen - ohne Schwelle.
+
+    Die Zahl beantwortet die Frage, die Gruppen-F1 offen laesst: Liegt der
+    verbleibende Fehler an den Kanten oder am Dekodieren? Gruppen-F1 mischt
+    beides, und die Konsequenzen sind entgegengesetzt - bessere Merkmale
+    gegen besseres Dekodieren.
+
+    Gerechnet als Anteil der Paare (positiv, negativ), in denen das
+    positive hoeher bewertet ist; Gleichstaende zaehlen halb. Das ist
+    dieselbe Groesse wie die Flaeche unter der ROC-Kurve, nur ohne
+    zusaetzliche Abhaengigkeit. Ueber Raenge statt ueber alle Paare, sonst
+    ist es quadratisch in der Paarzahl - und davon gibt es je Seite schon
+    tausende.
+
+    `None`, wenn eine der beiden Klassen fehlt: Ohne Negativbeispiele ist
+    nichts zu trennen, und 0.5 hiesse "raet", was etwas anderes ist.
+    """
+    positive = [s for label, s in zip(labels, scores) if label == 1]
+    negative = [s for label, s in zip(labels, scores) if label == 0]
+    if not positive or not negative:
+        return None
+
+    order = sorted(range(len(scores)), key=lambda i: scores[i])
+    ranks = [0.0] * len(scores)
+    index = 0
+    while index < len(order):
+        stop = index
+        while stop + 1 < len(order) and scores[order[stop + 1]] == scores[order[index]]:
+            stop += 1
+        shared = (index + stop) / 2 + 1        # mittlerer Rang der Gruppe
+        for position in range(index, stop + 1):
+            ranks[order[position]] = shared
+        index = stop + 1
+
+    rank_sum = sum(rank for rank, label in zip(ranks, labels) if label == 1)
+    count_positive, count_negative = len(positive), len(negative)
+    u = rank_sum - count_positive * (count_positive + 1) / 2
+    return u / (count_positive * count_negative)
+
+
+def diagnose(pages: list[dict], assignments: dict, model,
+             thresholds: list[float] | None = None) -> dict:
+    """Zerlegt "wer deckelt?" in Kantenqualitaet, Schwellenwahl und Dekoder.
+
+    Vier Zahlen, die sich gegenseitig einordnen:
+
+        auc           Trennschaerfe der Kanten, ohne Schwelle. Nur das
+                      Paarmodell.
+        achieved      Gruppen-F1 bei der kalibrierten Schwelle - was das
+                      System heute liefert.
+        ceiling       Bestes Gruppen-F1 ueber alle Schwellen. **Post-hoc auf
+                      den Messseiten gewaehlt, also keine erreichbare
+                      Leistung**, sondern die Obergrenze dieses Dekoders bei
+                      diesen Kanten. Der Abstand zu `achieved` ist der Preis
+                      der Schwellenwahl.
+        oracle        Gruppen-F1, wenn die Kanten *perfekt* waeren. Muss 1.0
+                      sein; ist es das nicht, verliert der Dekoder selbst
+                      Information, unabhaengig vom Modell.
+
+    Die Lesart: Hohe `auc` bei niedriger `ceiling` heisst, die Kanten sind
+    gut und das Dekodieren verschenkt sie - dann lohnen Constraints und
+    bessere Verfahren. Niedrige `auc` heisst, das Paarmodell ist der
+    Deckel - dann helfen nur bessere Merkmale oder eine bessere Referenz,
+    und kein Dekodierverfahren der Welt.
+    """
+    from magda import offer_model
+    from magda.offers_gold import _reference_group
+
+    thresholds = thresholds or [round(0.50 + 0.02 * i, 2) for i in range(25)]
+
+    labels: list[int] = []
+    scores: list[float] = []
+    scored: list[tuple[dict, dict, list, dict]] = []
+    for page in pages:
+        assignment = assignments.get(page.get("page_id"))
+        if assignment is None:
+            continue
+        pairs = offer_pairs.page_pairs(page, blocks=model.blocks)
+        if not pairs.index_pairs:
+            continue
+        edges = model.score_page(page)
+        groups = [_reference_group(e, assignment) for e in pairs.entities]
+        truth: dict[tuple[int, int], float] = {}
+        for (i, j) in pairs.index_pairs:
+            together = None
+            if groups[i] is not None and groups[j] is not None:
+                together = 1 if groups[i] == groups[j] else 0
+                labels.append(together)
+                scores.append(edges[(i, j)])
+            truth[(i, j)] = 1.0 if together == 1 else 0.0
+        scored.append((page, edges, pairs.entities, truth))
+
+    def measure(edge_source, threshold: float) -> Counts:
+        total = Counts()
+        for page, edges, entities, truth in scored:
+            chosen = truth if edge_source == "oracle" else edges
+            groups = offer_model.decode(model.decoder, len(entities), chosen, threshold)
+            total.add(judge_page(page, assignments[page["page_id"]],
+                                 offer_pairs.entity_groups_to_words(page, groups)).total)
+        return total
+
+    curve = [{"threshold": t, "group_f1": measure("model", t).group_f1,
+              } for t in thresholds]
+    best = max(curve, key=lambda row: (row["group_f1"] or 0.0,))
+
+    return {
+        "pages": len(scored),
+        "pairs": len(labels),
+        "positive": sum(labels),
+        "decoder": model.decoder,
+        "auc": edge_auc(labels, scores),
+        "threshold": model.threshold,
+        "achieved": measure("model", model.threshold).group_f1,
+        "ceiling": best["group_f1"],
+        "ceiling_threshold": best["threshold"],
+        "oracle": measure("oracle", 0.5).group_f1,
+        "curve": curve,
+    }
