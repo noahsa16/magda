@@ -116,6 +116,48 @@ def test_pending_meldet_was_der_labelordner_nicht_hat(tmp_path, monkeypatch):
     assert label_teacher.pending("sonnet-5") == ["a_p2"]
 
 
+def _cli_umgebung(tmp_path, monkeypatch, texts=("1.99",)):
+    from magda.cli import label_teacher as cli
+
+    words_dir = tmp_path / "words"
+    words_dir.mkdir()
+    (words_dir / "a_p1.json").write_text(
+        json.dumps({"page_id": "a_p1", "words": _words(list(texts))}))
+    labeled = tmp_path / "labeled"
+    labeled.mkdir()
+    monkeypatch.setattr(cli, "WORDS_DIR", words_dir)
+    monkeypatch.setattr(cli.config, "labeled_dir", lambda model: labeled)
+    return cli, labeled
+
+
+def test_eine_seite_ganz_ohne_angebot_laesst_sich_speichern(tmp_path, monkeypatch):
+    """Gewinnspiel, Imageanzeige, Rueckseite - es gibt Seiten ohne Entities.
+
+    Vorher lehnte `save` die leere Antwort ab, und der Agent hat daraufhin
+    zwei BRAND-Spans aus dem Fliesstext erfunden, um ueberhaupt speichern zu
+    koennen (`1355990_p20`). Ein Werkzeug, das eine Entscheidung erzwingt,
+    statt sie zuzulassen, schreibt die Referenz still voll.
+    """
+    cli, labeled = _cli_umgebung(tmp_path, monkeypatch, ("Gewinnspiel", "Teilnahme"))
+    leer = tmp_path / "leer.json"
+    leer.write_text("[]")
+
+    cli.main(["save", "a_p1", "--from", str(leer)])
+
+    assert json.loads((labeled / "a_p1.json").read_text())["tags"] == ["O", "O"]
+
+
+def test_eine_komplett_kaputte_antwort_wird_weiter_abgelehnt(tmp_path, monkeypatch):
+    """Die Gegenprobe: leer ist ein Ergebnis, durchgefallen ist ein Fehlschlag."""
+    cli, labeled = _cli_umgebung(tmp_path, monkeypatch)
+    kaputt = tmp_path / "kaputt.json"
+    kaputt.write_text('[{"start": 0, "end": 1, "label": "QUATSCH"}]')
+
+    with pytest.raises(SystemExit):
+        cli.main(["save", "a_p1", "--from", str(kaputt)])
+    assert not (labeled / "a_p1.json").exists()
+
+
 def test_save_schreibt_nicht_ueber_eine_vorhandene_seite(tmp_path, monkeypatch, capsys):
     """Der Geist der Regel „nichts schreibt nach data/labeled/" ohne Not."""
     from magda.cli import label_teacher as cli

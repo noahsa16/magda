@@ -76,7 +76,12 @@ def _cmd_save(args, parser):
             print(f"  {reason}", file=sys.stderr)
         if len(rejected) > 10:
             print(f"  ... und {len(rejected) - 10} weitere", file=sys.stderr)
-    if not kept:
+    # Eine *absichtlich* leere Antwort ist ein gueltiges Ergebnis: es gibt
+    # Seiten ganz ohne Angebot (Gewinnspiel, Imageanzeige, Rueckseite). Nur
+    # eine Antwort, von der *alles* durchgefallen ist, ist ein Fehlschlag.
+    # Ohne diese Unterscheidung erzwingt das Werkzeug erfundene Spans - auf
+    # `1355990_p20` genau passiert, zwei BRAND-Spans aus dem Fliesstext.
+    if spans and not kept:
         parser.exit(1, "Kein einziger Span ist brauchbar - Seite nicht gespeichert.\n")
 
     tags = label_teacher.finish_spans(kept, words)
