@@ -109,6 +109,7 @@ magda offers-model train --labels-from sonnet-5        # Paarmodell lernen (mit 
 magda offers-model eval --labels-from sonnet-5         # gegen Lehrer und Arithmetik messen
 magda offers-sequence               # fasst eine flache OFFER-Folge das Angebot?
 magda bundle --labels-from sonnet-5 # Trainingspaket für eine fremde GPU
+magda prune-checkpoints             # was checkpoint-N belegt (--apply löscht)
 magda serve --frontend              # API (8000) und Oberfläche (5173)
 magda serve                         # nur die API
 cd frontend && npm test             # Frontend-Tests (Vitest)
@@ -203,7 +204,22 @@ eine Liste auszugeben.
   bleibt als Vergleichssystem für die Requirements-Stufe „Excellent".
 - **Der Trainingsverlauf steht nicht in `checkpoints/{variant}/best`.**
   `trainer.save_model()` schreibt dort kein `trainer_state.json`; `/api/model`
-  liest deshalb den `checkpoint-N`-Ordner mit der höchsten Schrittzahl.
+  und `magda curve` lesen deshalb den `checkpoint-N`-Ordner mit der höchsten
+  Schrittzahl – hilfsweise `<lauf>/trainer_state.json`, wenn keiner mehr liegt
+  (`checkpoints.training_state_path`, eine Stelle für beide Leser).
+- **Die `checkpoint-N`-Ordner sind 1,2 GB je Stück und nach dem Training
+  entbehrlich – bis auf den Verlauf.** `save_total_limit=2` lässt zwei davon
+  je Lauf liegen; über sechs Läufe sind das 14,7 GB gegen 417 MB in `best/`.
+  `magda prune-checkpoints` berichtet, `--apply` löscht. Zwei Fallen, die
+  jeden naiven Aufräumbefehl teuer machen: Eine Kopie des Verlaufs nach
+  `best/` **hilft nicht**, weil beide Leser `checkpoint-*` globben und `best/`
+  darauf nicht matcht – gesichert wird deshalb nach `<lauf>/trainer_state.json`,
+  dorthin, wo das RunPod-Bundle ihn für `gbert` und `layoutxlm` ohnehin schon
+  ablegt. Und in `checkpoints/gbert` gehören `checkpoint-60/75` (30.07.) zu
+  `best.vor-3wochen-split`, während die Wurzeldatei (02.08.) zum eingefrorenen
+  `best/` gehört: ein vorhandener Verlauf wird nie überschrieben. Nebeneffekt
+  des Aufräumens ist dort, dass `/api/model` erstmals den Verlauf zeigt, der
+  zum ausgelieferten `best/` gehört (0.9186 statt der 0.9419 vom Vorlauf).
 - **Penny gibt je Woche 44 Regionalausgaben heraus, und sie sind fast gleich.**
   Über alle 44 liegen ~2000 Seiten, davon exakt verschieden nur ~170, und bei
   Jaccard 0.95 bleiben ~130. Die Unterschiede sind echt, aber winzig: eine

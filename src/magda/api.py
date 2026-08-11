@@ -22,7 +22,8 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
 from magda import (
-    agreement, catalog_meta, catalogs, config, dedupe, jobs, runner, runs, scraping,
+    agreement, catalog_meta, catalogs, checkpoints, config, dedupe, jobs, runner,
+    runs, scraping,
 )
 from magda import label_audit, offer_teacher, offers_gold
 from magda.gold import count_by_status, words_hash
@@ -312,15 +313,12 @@ def get_significance():
 def _training_state(variant: str) -> dict:
     """Trainingsstand aus dem jüngsten Checkpoint.
 
-    `trainer.save_model()` schreibt kein trainer_state.json nach best/, der
-    Verlauf steht nur in den checkpoint-N-Ordnern. Der mit der höchsten
-    Schrittzahl ist der aktuellste.
+    `trainer.save_model()` schreibt kein trainer_state.json nach best/. Der
+    Verlauf steht deshalb im jüngsten checkpoint-N-Ordner – und nach
+    `magda prune-checkpoints` im Lauf-Ordner selbst. Welche der beiden Stellen
+    gilt, entscheidet `checkpoints.training_state_path`.
     """
     variant_dir = config.CHECKPOINTS_DIR / variant
-    checkpoints = sorted(
-        variant_dir.glob("checkpoint-*"),
-        key=lambda p: int(p.name.split("-")[1]) if p.name.split("-")[1].isdigit() else 0,
-    )
     entry: dict = {
         "variant": variant,
         "trained": (variant_dir / "best").exists(),
@@ -330,11 +328,8 @@ def _training_state(variant: str) -> dict:
         "best_f1": None,
         "history": [],
     }
-    if not checkpoints:
-        return entry
-
-    state_file = checkpoints[-1] / "trainer_state.json"
-    if not state_file.exists():
+    state_file = checkpoints.training_state_path(variant_dir)
+    if state_file is None:
         return entry
     with open(state_file) as f:
         state = json.load(f)

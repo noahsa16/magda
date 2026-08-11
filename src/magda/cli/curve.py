@@ -29,21 +29,21 @@ from __future__ import annotations
 import argparse
 import json
 
-from magda import config
+from magda import checkpoints, config
 
 
 def best_dev_f1(checkpoint_dir) -> float | None:
-    """Bestes `eval_f1` aus dem Trainingsverlauf eines Checkpoint-Ordners.
+    """Bestes `eval_f1` aus dem Trainingsverlauf eines Lauf-Ordners.
 
-    Gelesen wird aus `checkpoint-N/trainer_state.json` mit der höchsten
-    Schrittzahl: `trainer.save_model()` schreibt in `best/` kein
-    `trainer_state.json` – derselbe Grund, aus dem `/api/model` so vorgeht.
+    Wo der Verlauf steht, entscheidet `checkpoints.training_state_path`:
+    `trainer.save_model()` schreibt in `best/` kein `trainer_state.json`, und
+    nach `magda prune-checkpoints` liegt er im Lauf-Ordner statt in
+    `checkpoint-N/` – derselbe Grund, aus dem `/api/model` so vorgeht.
     """
-    states = sorted(checkpoint_dir.glob("checkpoint-*/trainer_state.json"),
-                    key=lambda p: int(p.parent.name.rsplit("-", 1)[1]))
-    if not states:
+    state_file = checkpoints.training_state_path(checkpoint_dir)
+    if state_file is None:
         return None
-    history = json.loads(states[-1].read_text()).get("log_history") or []
+    history = json.loads(state_file.read_text()).get("log_history") or []
     return max((e["eval_f1"] for e in history if "eval_f1" in e), default=None)
 
 

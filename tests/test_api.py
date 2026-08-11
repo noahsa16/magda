@@ -222,6 +222,23 @@ def test_model_status_liest_trainingsverlauf(client):
     assert entry["history"] == [{"epoch": 1.0, "f1": 0.71}, {"epoch": 2.0, "f1": 0.83}]
 
 
+def test_model_status_liest_den_gesicherten_verlauf_ohne_checkpoints(client):
+    # Nach `magda prune-checkpoints` liegen die checkpoint-N nicht mehr, der
+    # Verlauf aber schon - sonst zeigte die Demo nach dem Aufraeumen nichts an.
+    variant = config.CHECKPOINTS_DIR / "layoutxlm"
+    (variant / "best").mkdir(parents=True)
+    state = {"epoch": 10.0, "global_step": 220, "max_steps": 220,
+             "best_metric": 0.895, "log_history": [{"epoch": 1.0, "eval_f1": 0.62}]}
+    with open(variant / "trainer_state.json", "w") as f:
+        json.dump(state, f)
+
+    entry = client.get("/api/model").json()[0]
+
+    assert entry["steps"] == 220
+    assert entry["best_f1"] == 0.895
+    assert entry["history"] == [{"epoch": 1.0, "f1": 0.62}]
+
+
 # --- Pipeline-Runner -------------------------------------------------------
 
 

@@ -75,6 +75,8 @@ WERKZEUGE = (
            "Paarmodell auf einer Gruppierung trainieren und messen"),
     Befehl("offers-grid", "offers_grid",
            "Merkmalsblöcke des Paarmodells einzeln messen (Basis/Geometrie/Farbe)"),
+    Befehl("prune-checkpoints", "prune_checkpoints",
+           "checkpoint-N-Ordner entfernen, best/ und den Verlauf behalten"),
     Befehl("bundle", "export", "Trainingspaket für eine fremde GPU schnüren"),
     Befehl("import-gold", "import_gold", "Handannotationen als Labelordner ablegen"),
 )
