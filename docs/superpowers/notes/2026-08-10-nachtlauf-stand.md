@@ -249,12 +249,68 @@ mitzuführen und die alte Dev-Zahl zu zitieren.
 
 ---
 
-## Nachtrag 4 — ILP-Dekoder (ab 11.08.2026, 10:00)
+## Nachtrag 4 — ILP-Dekoder (11.08.2026) — **fertig gemessen**
 
-Läuft nach `docs/superpowers/specs/2026-08-10-ilp-frontier-und-auswahl-design.md`,
-Teil 1. **In Arbeit — nicht parallel anfassen:** `src/magda/offer_ilp.py`,
-`tests/test_offer_ilp.py`, dazu der `decoder`-Parameter in `offer_model.py`,
-`offer_grid.py` und den beiden CLIs.
+Nach `docs/superpowers/specs/2026-08-10-ilp-frontier-und-auswahl-design.md`,
+Teil 1. Neu: `src/magda/offer_ilp.py`, `tests/test_offer_ilp.py`, dazu der
+`decoder`-Parameter in `offer_model.py`, `offer_grid.py` und den beiden CLIs.
+523 Tests grün.
+
+### Das Ergebnis
+
+`magda offers-grid --labels-from sonnet-5 --variants geometrie
+--cross-validate --decoder union,ilp`, 75 Seiten in 68 Clustern,
+out-of-fold, geschachtelte Schwellenwahl:
+
+| | Schwelle | Paar-F1 | **Gruppen-F1** | Angebote | exakt | Sekunden |
+|---|---:|---:|---:|---:|---:|---:|
+| Union-Find | 0.956 | 0.715 | 0.453 | 620 | 270/573 | 765 |
+| ILP | 0.868 | 0.569 | **0.553** | 588 | **321**/573 | 2055 |
+
+Gepaarte Differenz im Gruppen-F1, dieselben Seiten:
+
+| Bereich | Differenz | Intervall | p |
+|---|---:|---|---:|
+| alle Paare | **+0.100** | [+0.067, +0.133] | **0.000** |
+| blinder Fleck | **+0.115** | [+0.065, +0.168] | **0.000** |
+| prüfbar | +0.085 | [+0.034, +0.130] | 0.004 |
+
+Zum Vergleich: Der Merkmalsgewinn `+Geometrie` lag bei +0.044 (p = 0.018).
+Der Dekoder wirkt also stärker als der beste bisher gefundene
+Merkmalsblock — und am stärksten im **blinden Fleck**, also dort, wo die
+Arithmetik schweigt und bisher nichts geholfen hat.
+
+### Die Wirkungskette — wichtiger als die Zahl
+
+Der Gewinn kommt **nicht** daraus, dass das ILP bei gleicher Schwelle
+besser dekodiert. Er kommt daraus, dass es eine **niedrigere Schwelle
+erlaubt**: 0.868 statt 0.956, out-of-fold gewählt, ohne dass jemand es
+vorgegeben hätte. Genau die Vorhersage aus dem Spec. Union-Find muss so
+hoch kalibrieren, weil eine einzige durchgerutschte Kante eine ganze
+Legendenspalte verschmilzt; das ILP kappt stattdessen die schwächste
+Kante des Widerspruchs.
+
+### Was dagegen spricht — gehört mitberichtet
+
+**Paar-F1 fällt von 0.715 auf 0.569.** Das ist kein Nebengeräusch: Das ILP
+sagt 19060 Paare vorher (Referenz: 9508), Union-Find 13531. Die niedrigere
+Schwelle erkauft die exakten Gruppen mit deutlich mehr falschen Paaren.
+Welche der beiden Zahlen das Projekt trägt, ist die schon offene
+Teamentscheidung — `group_f1` ist Default, weil es „die Zeile in der
+Datenbank stimmt" entspricht, und beide Dekoder wurden danach kalibriert.
+Wer Paar-F1 zur Primärzahl macht, dreht diesen Befund um.
+
+**Die Kappung greift messbar:** 1611 von 37367 Komponenten (4,3 %) wurden
+durchgereicht statt optimiert, die größte hatte 118 Entities. Dort *ist*
+das ILP Union-Find. Der Effekt ist also eher unterschätzt als
+übertrieben — aber die Zahl gehört neben jede Angabe.
+
+**Laufzeit 2055 s gegen 765 s**, Faktor 2,7. Für die Inferenz belanglos
+(die teuren Fälle entstehen nur im unteren Kalibrierungsraster), für
+Gitterläufe spürbar.
+
+**Und die übliche Einschränkung bleibt:** Gemessen wird Übereinstimmung
+mit einem LLM-Lehrer, nicht Richtigkeit.
 
 **Teil 3 dieses Specs (Widerspruch als drittes Auswahlkriterium) ist
 gestrichen**, nicht vergessen: Die Referenz ist schon auf 75, in der Queue
