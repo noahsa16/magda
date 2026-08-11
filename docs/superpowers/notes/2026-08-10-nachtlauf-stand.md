@@ -418,6 +418,46 @@ Modell noch ein anderer Dekoder, sondern **herauszufinden, welche Gruppen
 kaputtgehen und warum**. Eine Fehleranalyse auf Gruppenebene, analog zur
 Fehler-Taxonomie für die Labels.
 
+### Und die Antwort darauf: es sind die Variantenblöcke
+
+Ausgezählt über dieselben Dev-Seiten. Ein Block gilt als Variantenblock,
+wenn seine Referenzgruppe mehr als einen PRICE oder mehr als eine
+QUANTITY trägt:
+
+| | Gruppen | getroffen | Recall |
+|---|---:|---:|---:|
+| alle | 122 | 96 | 0.787 |
+| **ohne Variantenblöcke** | 103 | 91 | **0.883** |
+| **Variantenblöcke allein** | **19** | **5** | **0.263** |
+
+**19 Gruppen (16 %) verursachen 14 der 26 Fehler (54 %).** Unter den
+verfehlten Gruppen sind 54 % Variantenblöcke, unter den getroffenen 5 % —
+Faktor 11.
+
+Belegte Fälle, alle von `1342812_p27` und alle Non-Food:
+
+    Motivations-trinkflasche* | 4.99 | 4.99 | 5.99 | 7.99
+    Kochgeschirr* | 9.99 | 14.99 | 17.99 | Kasserolle, | 14.99 | Topf, | 24.99
+    1.49 | Grill-und-Abtropf-Schale*, | 1.49 | 2er-Set Steakmesser* | 3.99 | ...
+
+**Damit lösen sich drei Muster in eines auf.** „Non-Food ist
+überrepräsentiert", „verfehlte Gruppen sind größer" und „85 % zerfallen"
+sind nicht drei Befunde, sondern derselbe: Variantenblöcke stehen fast nur
+in Non-Food, sie sind naturgemäß groß, und ein flaches Gruppenlabel kann
+sie nicht abbilden — also zerfallen sie.
+
+**Das ist kein Modellfehler, sondern eine falsch gestellte Aufgabe.**
+Genau die Lücke aus Issue #6: `offer` 1:n `variant(quantity, price,
+old_price, unit_price)`. Auf allen anderen Angeboten liegt das System bei
+Recall 0.883.
+
+Wichtig für die Erwartung: Das 1:n-Schema hebt keine Zahl von selbst. Es
+verlangt, dass **Referenz und Metrik die Hierarchie mitmachen** — die
+heutige LLM-Referenz gruppiert flach. Wer nur das Datenbankschema ändert,
+ändert die Aufgabe, nicht die Leistung. Die Zuordnung *innerhalb* eines
+Blocks ist dagegen schon gelöst und gemessen: Größenvarianten paaren sich
+positionsweise (26 von 43 Blöcken, 0 in anderer Reihenfolge).
+
 **Vorbehalt zum Nenner, und er ist derselbe wie einst bei `magda eval`:**
 Entities, die GBERT nicht findet, fehlen nicht als Falsch-Negative,
 sondern **im Nenner**. Gemessen: 656 von 675 Referenz-Entities überleben
