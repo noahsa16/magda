@@ -627,3 +627,49 @@ der Variantenblöcke nicht angesehen.
 ohne Korrektur für multiples Testen. Und die Grenze des Merkmals steht
 fest, bevor die Zahl da ist — Blöcke mit mehreren Produktnamen löst es
 nicht.
+
+### Ergebnis: das Ankermerkmal fällt durch
+
+Out-of-fold über 75 Seiten in 68 Clustern, ILP, gepaart gegen `geometrie`:
+
+| Variante | Merkmale | Paar-F1 | Gruppen-F1 | Angebote |
+|---|---:|---:|---:|---:|
+| geometrie | 35 | **0.569** | **0.553** | 588 |
+| anker | 38 | 0.448 | 0.532 | 529 |
+
+Gepaarte Differenz Gruppen-F1: **−0.021 [−0.060, +0.021], p = 0.318**;
+im blinden Fleck −0.026, im prüfbaren Bereich −0.014.
+
+**Das vorab festgeschriebene Kriterium verlangte: Variantenblock-Treffer
+steigen *und* die Gesamtzahl fällt nicht.** Die Gesamtzahl fällt. Damit
+ist das Kriterium verfehlt, und die Variantenblock-Zahl braucht gar nicht
+mehr erhoben zu werden — sie könnte den zweiten Teil nicht heilen.
+
+**Was das Merkmal tatsächlich tut, ist ablesbar:** Die kalibrierten
+Schwellen sinken (0.76–0.86 gegen 0.86–0.88), es entstehen weniger
+Angebote (529 gegen 588), und Paar-F1 bricht deutlich stärker ein als
+Gruppen-F1. Es macht das Verschmelzen also mutiger — wie beabsichtigt —,
+aber es verschmilzt das Falsche. Ein gemeinsamer nächster Anker ist
+offenbar auch dann gegeben, wenn zwei Entities *nicht* zusammengehören;
+auf einer Penny-Seite steht fast immer irgendein Produktname in der Nähe.
+
+### Damit ist Merkmals-Engineering am Paarmodell ausgereizt
+
+Vier Blöcke gemessen, out-of-fold und gepaart:
+
+| Block | Differenz zur Basis bzw. zu +Geometrie | p |
+|---|---:|---:|
+| +Geometrie | **+0.044** | **0.018** |
+| +Farbe | −0.008 | 0.596 |
+| Farbe auf Geometrie, blinder Fleck | −0.051 | 0.042 |
+| +Anker | −0.021 | 0.318 |
+
+**Genau einer von vier hat gewirkt.** Drei zielten auf den blinden Fleck
+bzw. die Variantenblöcke und haben ihn nicht getroffen. Das ist kein
+Zufall mehr, sondern ein Befund über die Aufgabe: Was der Gruppierung
+fehlt, ist keine weitere Zahl je Paar.
+
+Der Code des Ankerblocks bleibt als optionaler Block stehen (nicht im
+Default, `ANCHOR_BLOCKS`), damit der Negativbefund reproduzierbar ist und
+niemand ihn ein zweites Mal baut — dieselbe Begründung wie bei
+`blackbox.py`.
