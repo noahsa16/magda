@@ -568,3 +568,38 @@ Block mit belegtem Effekt (+0.044, p = 0.018). Der Lauf mit `--features
 geometrie` steht aus; ohne ihn ist nicht entschieden, ob die Lücke ein
 fehlendes Merkmal ist oder ein schon vorhandenes, das nur nicht im
 Checkpoint steckt.
+
+### Der Vorbehalt ist aufgelöst: +Geometrie wirkt an Variantenblöcken vorbei
+
+Derselbe Lauf mit `--features geometrie` (35 Merkmale), ILP, out-of-fold
+über dieselben 573 Gruppen:
+
+| Merkmale | alle | ohne Variantenblöcke | Variantenblöcke |
+|---|---:|---:|---:|
+| Basis (30) | 0.525 | 0.546 | **40/95 = 0.421** |
+| +Geometrie (35) | 0.574 | **0.605** | **40/95 = 0.421** |
+| Differenz | +0.049 | **+0.059** | **±0.000** |
+
+**Der einzige Merkmalsblock mit belegtem Effekt (+0.044, p = 0.018) hebt
+alles außer den Variantenblöcken.** Dort exakt dieselben 40 von 95. Und
+die Preiskante bewegt sich um +0.001 (0.639 → 0.639), während
+`QUANTITY|QUANTITY` +0.016 gewinnt.
+
+Das ist kein Zufall, sondern die Bauart der Merkmale: `products_between`,
+`closer_rivals` und `distance_ratio` sind **Trennmerkmale** — sie
+beantworten „steht etwas dazwischen" und „gibt es einen näheren
+Kandidaten". Ein Variantenblock braucht das Gegenteil: eine Verbindung
+*trotz* Distanz und *trotz* näherer Konkurrenz.
+
+**Die Lücke wächst dadurch**, von Faktor 1.30 auf **1.44**. Je besser das
+Modell im Normalfall wird, desto deutlicher fallen Variantenblöcke
+heraus. Sie sind mit 95 von 573 Gruppen (16,6 %) der größte
+zusammenhängende Fehlerblock, den die Fehleranalyse bisher gefunden hat.
+
+**Konsequenz für die Merkmalsfrage:** Ein Merkmal für Variantenblöcke ist
+damit erstmals begründet, statt nur naheliegend. Der Vorschlag aus der
+Struktur des Befundes — nicht aus dem Bauchgefühl — ist die
+**Stern-Eigenschaft**: zeigen beide Entities auf denselben nächsten
+Produktanker? Das ist genau die Form „n Preise, ein Name", enthält weder
+Text noch die Rechnung, und es ist die Gegenrichtung zu den vorhandenen
+Trennmerkmalen.
