@@ -19,6 +19,10 @@ Wortklassifikation** (Wort-F1 0.894 gegen Gruppen-F1 0.477).
 Nächstes gruppiert. Wer erst annotiert und dann das Kriterium ändert, hat die
 Referenz nach dem alten Kriterium und kann das nicht nachholen.
 
+> **Überholt am 11.08.2026 — Teil 3 wird nicht gebaut, Teil 1 misst anders.**
+> Der Nachtlauf hat beides eingeholt. Siehe den Nachtrag am Ende dieses
+> Dokuments, bevor jemand hier anfängt.
+
 ## Globale Randbedingungen
 
 - **Der Testsplit bleibt unangetastet.** Alle drei Teile werden auf Train/Dev
@@ -371,10 +375,94 @@ Erst wenn 1–3 beantwortet sind, lohnt der Merkmalsentwurf.
 
 # Reihenfolge
 
-1. **Teil 3** zuerst — zwei Stunden, und er ist der einzige mit einem
-   Zeitfenster. Nach dem Referenzausbau ist er wirkungslos.
+1. ~~**Teil 3** zuerst~~ — zurückgestellt, siehe Nachtrag.
 2. **Teil 1** — der größte Hebel auf die Primärzahl, unabhängig von allem
    anderen.
 3. **Teil 2** — braucht den Blackbox-Lauf und profitiert davon, Teil 1 als
    vierten Punkt zu haben.
 4. **Teil 4** — nach dem Referenzausbau, und erst nach den drei Vorfragen.
+
+---
+
+# Nachtrag 11.08.2026 — was der Nachtlauf an diesem Spec geändert hat
+
+Geschrieben wurde dieser Spec am 10.08. gegen 22:50. In derselben Nacht haben
+parallele Sessions die Gruppierungsreferenz ausgebaut und den Messaufbau
+umgestellt (`docs/superpowers/notes/2026-08-10-nachtlauf-stand.md`). Zwei der
+vier Teile stehen dadurch anders da.
+
+## Teil 3 wird nicht gebaut — zurückgestellt wie Teil 4
+
+Der Teil hatte genau eine Begründung, und die war ein Zeitfenster: Das
+Auswahlkriterium muss wirken, *bevor* die nächsten 30–50 Seiten gruppiert
+werden. Das Fenster ist zu.
+
+- Die Referenz ist in der Nacht von 51 auf **75 Seiten** gewachsen, ausgewählt
+  über die bestehenden zwei Kriterien (`luecke`, `vorlage`).
+- In der `offers-queue` stehen noch **5 Seiten**. Ein drittes Kriterium, das
+  über fünf Restplätze rotiert, verändert nichts Messbares.
+- Der eigentliche Grund für den Ausbau ist obendrein entfallen: Die breiten
+  Intervalle kamen nicht aus zu wenig Referenz, sondern aus 14
+  Auswertungs-Clustern auf Dev. Gelöst hat das `offers-grid --cross-validate`
+  (62–68 Cluster), nicht mehr Seiten.
+
+**Nachträgliche Verunreinigung ist keine zu befürchten.** Die 75 Seiten wurden
+nie nach Widerspruch gezogen, sondern nach Lücke und Vorlagengröße — und
+`luecke` wählt gerade die *unbeurteilbaren* Seiten, die zur
+`offers-verify`-Genauigkeit ohnehin nichts beitragen. Die
+Provenance-Trennung aus dem ursprünglichen Teil 3 wird also nicht rückwirkend
+gebraucht.
+
+**Wieder relevant, wenn der Auswahlpool sich füllt** — etwa wenn Woche 4
+gelabelt wird (126 Seiten) oder das Team Kontingent für eine größere Referenz
+freigibt. Dann gilt der ursprüngliche Entwurf unverändert, samt der
+`selected_by`-Provenance: Wer Seiten nach Widerspruch auswählt und dort
+annotiert, darf die spätere `offers-verify`-Zahl nicht über dieselben Seiten
+berichten.
+
+## Teil 1 wird anders gemessen als oben beschrieben
+
+Der Messabschnitt oben nennt „`magda offers-model eval` auf denselben 21
+Dev-Seiten". Das ist genau der 14-Cluster-Aufbau, den die Nacht als
+untauglich nachgewiesen hat: Die Intervallbreite hängt an der Zahl der
+Auswertungs-Cluster, und 14 trennen keine zwei Varianten.
+
+**Gemessen wird stattdessen** wie der Merkmalsvergleich, der in derselben
+Nacht +Geometrie mit p = 0.018 aufgelöst hat:
+
+1. `offer_grid.cross_validate` zweimal über die 75 Referenzseiten — einmal mit
+   Union-Find, einmal mit ILP, gleiche Folds, gleicher Seed.
+2. `offer_grid.paired_bootstrap` auf der **Differenz**. Zwei überlappende
+   Einzelintervalle heißen nicht „kein Unterschied"; die gemeinsame Streuung
+   der Seiten fällt nur gepaart heraus.
+3. Berichtet werden `total`, `blind` und `checkable` getrennt, dazu die Zahl
+   der Angebote je Dekoder.
+
+**Offenlegung:** Gemessen wird auf den `geometrie`-Blöcken, weil die sich in
+derselben Kreuzvalidierung als beste Variante gezeigt haben. Die Blockwahl
+stammt also aus denselben Daten wie der anschließende Dekoder-Vergleich. Der
+Testsplit bleibt davon unberührt.
+
+## Die Falle, die kein Test fängt
+
+`offer_model.calibrate` ruft `groups_from_edges` **selbst** auf, und
+`cross_validate` wählt die Schwelle geschachtelt durch diesen Aufruf. Wird der
+Dekoder nicht bis dorthin durchgereicht, wählt die Kalibrierung die Schwelle
+mit Union-Find, während die äußere Auswertung mit dem ILP dekodiert.
+
+Das Ergebnis wäre ein System, das es so nicht gibt — und der Fehler benachteiligt
+systematisch das ILP, dessen ganzer Vorteil darin besteht, niedrigere Schwellen
+zu überleben. Kein Test schlägt dabei an.
+
+Deshalb: `decoder` wird ein Feld des Checkpoints wie `threshold` (speichern,
+laden, prüfen), ein Parameter von `calibrate` und `cross_validate`, und
+`--decoder` an `offers-model` wie an `offers-grid`.
+
+## Laufzeit vor dem vollen Lauf prüfen
+
+Die Kalibrierung fährt 25 Schwellen ab, die geschachtelte Kreuzvalidierung
+multipliziert das über die Folds — in Summe schnell einige tausend
+CBC-Aufrufe. Vor dem Gitterlauf **eine** Lösung auf der dichtesten Seite
+messen und hochrechnen. Wird es zu teuer, wird das Schwellenraster für den
+ILP-Zweig vergröbert — und die Vergröberung wird ausgewiesen, nicht still
+vorgenommen.

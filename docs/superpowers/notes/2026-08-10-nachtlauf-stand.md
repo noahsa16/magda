@@ -246,3 +246,23 @@ mitzuführen und die alte Dev-Zahl zu zitieren.
 - **Blackbox-Referenz** vor dem Schlussbatch klären (siehe Nachtrag 1).
 - 5 Seiten bleiben in der `offers-queue` — die Referenz kann weiter wachsen,
   hilft aber nur dem Training, nicht dem Intervall.
+
+---
+
+## Nachtrag 4 — ILP-Dekoder (ab 11.08.2026, 10:00)
+
+Läuft nach `docs/superpowers/specs/2026-08-10-ilp-frontier-und-auswahl-design.md`,
+Teil 1. **In Arbeit — nicht parallel anfassen:** `src/magda/offer_ilp.py`,
+`tests/test_offer_ilp.py`, dazu der `decoder`-Parameter in `offer_model.py`,
+`offer_grid.py` und den beiden CLIs.
+
+**Teil 3 dieses Specs (Widerspruch als drittes Auswahlkriterium) ist
+gestrichen**, nicht vergessen: Die Referenz ist schon auf 75, in der Queue
+stehen 5 Seiten, und die breiten Intervalle waren ohnehin ein Cluster- und
+kein Datenproblem. Wieder relevant, falls Woche 4 den Auswahlpool füllt.
+Begründung im Spec-Nachtrag.
+
+**Teil 2 (Efficiency Frontier) ist noch frei** — `src/magda/frontier.py`
+existiert nicht. Die Abbildung liest vorhandene Reports, sie misst nicht
+selbst; der Blackbox-Punkt bleibt offen, solange die Referenzfrage aus
+Nachtrag 1 Noahs Entscheidung ist.
