@@ -149,7 +149,8 @@ def queue(model_a: str | None = None, model_b: str | None = None,
 
 
 def offer_queue(pages: list[dict], limit: int = 40,
-                annotated: set[str] | None = None) -> list[dict]:
+                annotated: set[str] | None = None,
+                splits: tuple[str, ...] = ("train", "dev")) -> list[dict]:
     """Welche Seiten die Gruppierungsreferenz zuerst braucht.
 
     Anders als `queue()` sortiert das nicht nach Uneinigkeit zweier Modelle,
@@ -163,8 +164,16 @@ def offer_queue(pages: list[dict], limit: int = 40,
     Zug: die groesste Luecke und die groesste Vorlage. Welche einen Vorschlag
     hervorgebracht hat, steht als `reason` dabei.
 
-    Train und Dev, nie Test: eine Referenz, an der Heuristiken entwickelt
+    Default Train und Dev: eine Referenz, an der Heuristiken *entwickelt*
     werden, gehoert nicht auf die Seiten, an denen am Ende gemessen wird.
+
+    `splits` hebt das gezielt auf, denn es gibt den zweiten Zweck. Eine
+    Testreferenz wird nicht entwickelt, sie wird einmal gemessen - und ohne
+    sie ist die Gruppierung auf Test **gar nicht** bewertbar. Genau dort
+    steht das Projekt: `data/offer_groups/` hat null Testseiten, also ist
+    jede Gruppierungszahl bisher eine Dev-Zahl aus den Trainingswochen.
+    Die Trennung, auf die es ankommt, sitzt ohnehin woanders -
+    `offers-model train --splits train` entscheidet, was ins Lernen geht.
 
     `annotated` sagt, was schon erledigt ist. Default ist die Handannotation
     unter gold/offers/; ein LLM-Teacher schreibt woandershin und reicht seinen
@@ -179,7 +188,7 @@ def offer_queue(pages: list[dict], limit: int = 40,
             f"{config.SPLITS_DIR / 'split.json'} fehlt. Erst `magda split` laufen lassen."
         )
 
-    eligible = [p for p in pages if roles.get(p.get("page_id")) in ("train", "dev")]
+    eligible = [p for p in pages if roles.get(p.get("page_id")) in splits]
     if not eligible:
         return []
 

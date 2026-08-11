@@ -28,7 +28,14 @@ def main(argv=None):
                         help="Variante unter data/predictions/ statt data/labeled/")
     parser.add_argument("--limit", type=int, default=40,
                         help="Wie viele Vorschlaege (Default 40)")
+    parser.add_argument("--splits", default="train,dev",
+                        help="Aus welchen Splits vorgeschlagen wird. Default\n"
+                             "train,dev - eine Referenz zum *Entwickeln* gehoert\n"
+                             "nicht auf die Messseiten. `test` ist trotzdem\n"
+                             "vorgesehen: ohne Testreferenz ist die Gruppierung\n"
+                             "auf Test gar nicht bewertbar, und genau die fehlt.")
     args = parser.parse_args(argv)
+    splits = tuple(s.strip() for s in args.splits.split(",") if s.strip())
 
     if args.predictions:
         source = args.predictions
@@ -42,12 +49,12 @@ def main(argv=None):
         pages = _load_labeled_pages(source)
 
     try:
-        suggestions = review.offer_queue(pages, limit=args.limit)
+        suggestions = review.offer_queue(pages, limit=args.limit, splits=splits)
     except FileNotFoundError as error:
         parser.exit(1, f"{error}\n")
 
     if not suggestions:
-        print("Nichts offen: jeder Duplikat-Cluster aus Train/Dev hat schon eine Referenzseite.")
+        print(f"Nichts offen: jeder Duplikat-Cluster aus {args.splits} hat schon eine Referenzseite.")
         return
 
     print(f"Quelle: {source}   Vorschlaege: {len(suggestions)}\n")
