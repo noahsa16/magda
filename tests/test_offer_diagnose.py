@@ -85,3 +85,34 @@ def test_die_obergrenze_liegt_nie_unter_dem_erreichten():
                                  thresholds=[0.5, 0.7, 0.9])
 
     assert result["ceiling"] >= result["achieved"]
+
+
+def test_zerfall_und_verschmelzung_werden_unterschieden():
+    """Die beiden Fehlerarten verlangen gegenlaeufige Massnahmen.
+
+    Zerfall heisst, dem System fehlen Kanten - es braucht mehr Recall.
+    Verschmelzung heisst, es hat zu viele. Aus einer Gruppen-F1-Zahl ist
+    das nicht ablesbar, und wer sich vertut, dreht an der falschen
+    Schraube.
+    """
+    pages, reference = _training_set()
+    model = offer_model.train(pages, reference, epochs=5)
+    # Schwelle ganz oben: nichts wird verbunden, also muss alles zerfallen.
+    model.threshold = 0.9999
+
+    kinds = offer_grid.failure_kinds(pages, reference, model)["kinds"]
+
+    assert kinds.get("zerfallen", 0) + kinds.get("entity_fehlt", 0) > 0
+    assert kinds.get("verschmolzen", 0) == 0
+
+
+def test_alles_in_einer_gruppe_zaehlt_als_verschmolzen():
+    """Die Gegenprobe - sonst koennte 'zerfallen' immer herauskommen."""
+    pages, reference = _training_set()
+    model = offer_model.train(pages, reference, epochs=5)
+    model.threshold = 0.0        # jede Kante zaehlt, die Seite wird eine Gruppe
+
+    kinds = offer_grid.failure_kinds(pages, reference, model)["kinds"]
+
+    assert kinds.get("verschmolzen", 0) > 0
+    assert kinds.get("zerfallen", 0) == 0

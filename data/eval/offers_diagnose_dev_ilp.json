@@ -9,6 +9,19 @@
   "ceiling": 0.7452471482889733,
   "ceiling_threshold": 0.74,
   "oracle": 1.0,
+  "failures": {
+    "hit": 96,
+    "miss": 26,
+    "kinds": {
+      "zerfallen": 22,
+      "zerfallen_und_verschmolzen": 2,
+      "verschmolzen": 2
+    },
+    "mean_size_hit": 4.854166666666667,
+    "mean_size_miss": 7.3076923076923075,
+    "blind_share_hit": 0.23958333333333334,
+    "blind_share_miss": 0.4230769230769231
+  },
   "curve": [
     {
       "threshold": 0.5,

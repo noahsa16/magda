@@ -384,6 +384,82 @@ def edge_auc(labels: list[int], scores: list[float]) -> float | None:
     return u / (count_positive * count_negative)
 
 
+def failure_kinds(pages: list[dict], assignments: dict, model) -> dict:
+    """Woran die verfehlten Gruppen scheitern - zerfallen oder verschmolzen?
+
+    Die Unterscheidung entscheidet ueber die Richtung: Zerfall heisst, dem
+    System fehlen Kanten (mehr Recall noetig), Verschmelzung heisst, es hat
+    zu viele (mehr Precision). Beides aus einer Gruppen-F1-Zahl abzulesen
+    ist unmoeglich, und die Massnahmen sind gegenlaeufig.
+    """
+    import collections
+
+    from magda.offers_gold import _reference_group
+
+    kinds = collections.Counter()
+    hit_size, miss_size = [], []
+    blind_hit = blind_miss = 0
+
+    for page in pages:
+        assignment = assignments.get(page.get("page_id"))
+        if assignment is None:
+            continue
+        entities = [e for e in entities_from_page(page) if e.type in VALUE_TYPES]
+        groups = model.group_page_words(page, model.threshold)
+        system_of = {w: g for g, words in enumerate(groups) for w in words}
+
+        reference, types = {}, {}
+        for entity in entities:
+            group = _reference_group(entity, assignment)
+            if group is None:
+                continue
+            reference.setdefault(group, set()).add((entity.start, entity.end))
+            types.setdefault(group, set()).add(entity.type)
+
+        system = {}
+        for entity in entities:
+            if _reference_group(entity, assignment) is None:
+                continue
+            found = {system_of[w] for w in range(entity.start, entity.end)
+                     if w in system_of}
+            if len(found) == 1:
+                system.setdefault(found.pop(), set()).add((entity.start, entity.end))
+
+        exact = {frozenset(m) for m in system.values()}
+        for group, members in reference.items():
+            blind = "UNIT_PRICE" not in types[group]
+            if frozenset(members) in exact:
+                hit_size.append(len(members))
+                blind_hit += blind
+                continue
+            miss_size.append(len(members))
+            blind_miss += blind
+            landed = collections.Counter()
+            for key in members:
+                for index, group_members in system.items():
+                    if key in group_members:
+                        landed[index] += 1
+            foreign = any(len(system.get(i, ())) > landed[i] for i in landed)
+            if len(landed) > 1 and foreign:
+                kinds["zerfallen_und_verschmolzen"] += 1
+            elif len(landed) > 1:
+                kinds["zerfallen"] += 1
+            elif foreign:
+                kinds["verschmolzen"] += 1
+            else:
+                kinds["entity_fehlt"] += 1
+
+    return {
+        "hit": len(hit_size),
+        "miss": len(miss_size),
+        "kinds": dict(kinds),
+        "mean_size_hit": sum(hit_size) / len(hit_size) if hit_size else None,
+        "mean_size_miss": sum(miss_size) / len(miss_size) if miss_size else None,
+        "blind_share_hit": blind_hit / len(hit_size) if hit_size else None,
+        "blind_share_miss": blind_miss / len(miss_size) if miss_size else None,
+    }
+
+
 def diagnose(pages: list[dict], assignments: dict, model,
              thresholds: list[float] | None = None) -> dict:
     """Zerlegt "wer deckelt?" in Kantenqualitaet, Schwellenwahl und Dekoder.
@@ -460,5 +536,6 @@ def diagnose(pages: list[dict], assignments: dict, model,
         "ceiling": best["group_f1"],
         "ceiling_threshold": best["threshold"],
         "oracle": measure("oracle", 0.5).group_f1,
+        "failures": failure_kinds(pages, assignments, model),
         "curve": curve,
     }

@@ -268,6 +268,17 @@ def _cmd_diagnose(args, parser):
         elif result["auc"] < 0.9:
             print("  Lesart: die Kanten selbst begrenzen - bessere Merkmale oder")
             print("  eine bessere Referenz, kein anderes Dekodierverfahren.")
+    f = result["failures"]
+    print()
+    print(f"  Verfehlte Gruppen: {f['miss']} von {f['hit'] + f['miss']}")
+    for kind, count in sorted(f["kinds"].items(), key=lambda kv: -kv[1]):
+        print(f"    {kind:28s} {count:3d}  ({count / f['miss']:.0%})")
+    print(f"    Groesse getroffen {f['mean_size_hit']:.2f} Entities, "
+          f"verfehlt {f['mean_size_miss']:.2f}")
+    print(f"    ohne Grundpreis: {f['blind_share_hit']:.0%} der getroffenen, "
+          f"{f['blind_share_miss']:.0%} der verfehlten")
+    print("    Zerfall heisst: es fehlen Kanten. Verschmelzung: es sind zu viele.")
+    print("    Die Massnahmen sind gegenlaeufig - deshalb die Unterscheidung.")
     print(f"\nReport: {out_path}")
 
 
