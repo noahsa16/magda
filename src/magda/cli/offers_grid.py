@@ -69,8 +69,9 @@ def report_name(args) -> str:
     suffix = f"_{config.model_slug(args.predictions)}" if args.predictions else ""
     if getattr(args, "cross_validate", False):
         suffix += "_cv"
-    if getattr(args, "decoder", "union") != "union":
-        suffix += f"_{args.decoder}"
+    decoder = getattr(args, "decoder", "union") or "union"
+    if decoder != "union":
+        suffix += "_" + decoder.replace(",", "-")
     return f"offers_grid_{args.splits.replace(',', '-')}{suffix}.json"
 
 
@@ -116,17 +117,32 @@ def main(argv=None):
     parser.add_argument("--cross-validate", action="store_true",
                         help="jede Referenzseite out-of-fold auswerten statt "
                              "nur den Messsplit - mehr unabhaengige Einheiten")
-    parser.add_argument("--decoder", default="union", choices=offer_model.DECODERS,
-                        help="wie aus Kanten Gruppen werden. union = "
-                             "Zusammenhangskomponenten, ilp = Correlation "
-                             "Clustering mit Transitivitaet (braucht pulp)")
+    parser.add_argument("--decoder", default="union",
+                        help="wie aus Kanten Gruppen werden, kommagetrennt fuer "
+                             "den Vergleich. union = Zusammenhangskomponenten, "
+                             "ilp = Correlation Clustering mit Transitivitaet "
+                             "(braucht pulp). Mehrere ergeben eine gepaarte "
+                             f"Differenz. Bekannt: {', '.join(offer_model.DECODERS)}")
     args = parser.parse_args(argv)
 
-    wanted = [v.strip() for v in args.variants.split(",") if v.strip()]
-    unknown = [v for v in wanted if v not in offer_grid.VARIANTS]
+    variants = [v.strip() for v in args.variants.split(",") if v.strip()]
+    unknown = [v for v in variants if v not in offer_grid.VARIANTS]
     if unknown:
         parser.error(f"Unbekannte Variante(n): {', '.join(unknown)}. "
                      f"Bekannt: {', '.join(offer_grid.VARIANTS)}")
+
+    decoders = [d.strip() for d in args.decoder.split(",") if d.strip()]
+    unknown = [d for d in decoders if d not in offer_model.DECODERS]
+    if unknown:
+        parser.error(f"Unbekannte(r) Dekoder: {', '.join(unknown)}. "
+                     f"Bekannt: {', '.join(offer_model.DECODERS)}")
+
+    # Ein Lauf je Kombination. Beide Achsen in *einem* Lauf, weil der
+    # gepaarte Bootstrap die Zaehlungen je Seite braucht - aus zwei
+    # Reportdateien laesst er sich nicht nachtraeglich bilden.
+    runs = [(f"{v}/{d}" if len(decoders) > 1 else v, v, d)
+            for v in variants for d in decoders]
+    wanted = [label for label, _, _ in runs]
 
     # Erst die Messseiten (setzt args.splits voraus), dann die Trainingsseiten.
     source, eval_pages, reference = _selected(args, parser)
@@ -156,10 +172,10 @@ def main(argv=None):
 
     results: dict[str, dict] = {}
     counts_by_variant: dict[str, list] = {}
-    for name in wanted:
+    for label, name, decoder in runs:
         blocks = offer_grid.VARIANTS[name]
         started = time.perf_counter()
-        if args.decoder == "ilp":
+        if decoder == "ilp":
             from magda import offer_ilp
             offer_ilp.reset_counters()
 
@@ -167,30 +183,31 @@ def main(argv=None):
             per_page, thresholds = offer_grid.cross_validate(
                 eval_pages, assignments, blocks, folds=args.folds,
                 epochs=args.epochs, seed=args.seed, objective=args.objective,
-                decoder=args.decoder)
+                decoder=decoder)
             entry = {
                 "blocks": list(blocks),
+                "decoder": decoder,
                 "features": len(offer_pairs.feature_names(blocks)),
                 "threshold": round(sum(thresholds) / len(thresholds), 3),
                 "thresholds_per_fold": thresholds,
                 "seconds": round(time.perf_counter() - started, 1),
             }
             _fill(entry, per_page, clusters, args.seed)
-            _note_capping(entry, args.decoder)
-            counts_by_variant[name] = per_page
-            results[name] = entry
-            print(f"  {name:<10} {entry['features']:>3} Merkmale, "
+            _note_capping(entry, decoder)
+            counts_by_variant[label] = per_page
+            results[label] = entry
+            print(f"  {label:<16} {entry['features']:>3} Merkmale, "
                   f"Schwellen {thresholds}, {entry['seconds']:>5.1f} s")
             continue
 
         calibration = offer_model.calibrate(
             train_pages, assignments, folds=args.folds, epochs=args.epochs,
             seed=args.seed, objective=args.objective, blocks=blocks,
-            decoder=args.decoder)
+            decoder=decoder)
         threshold = calibration["threshold"]
         model = offer_model.train(
             train_pages, assignments, epochs=args.epochs, seed=args.seed,
-            blocks=blocks, decoder=args.decoder,
+            blocks=blocks, decoder=decoder,
             provenance={"reference": args.reference_from, "labels": source,
                         "splits": args.train_splits, "pages": len(train_pages),
                         "blocks": list(blocks)})
@@ -203,15 +220,16 @@ def main(argv=None):
         ]
         entry = {
             "blocks": list(blocks),
+            "decoder": decoder,
             "features": len(model.feature_names),
             "threshold": threshold,
             "seconds": round(time.perf_counter() - started, 1),
         }
         _fill(entry, per_page, clusters, args.seed)
-        _note_capping(entry, args.decoder)
-        counts_by_variant[name] = per_page
-        results[name] = entry
-        print(f"  {name:<10} {entry['features']:>3} Merkmale, "
+        _note_capping(entry, decoder)
+        counts_by_variant[label] = per_page
+        results[label] = entry
+        print(f"  {label:<16} {entry['features']:>3} Merkmale, "
               f"Schwelle {threshold:.2f}, {entry['seconds']:>5.1f} s")
 
     print()
@@ -261,7 +279,7 @@ def main(argv=None):
         "train_splits": args.train_splits,
         "splits": args.splits,
         "cross_validated": bool(args.cross_validate),
-        "decoder": args.decoder,
+        "decoders": decoders,
         "objective": args.objective,
         "train_pages": len(train_pages),
         "eval_pages": len(eval_pages),

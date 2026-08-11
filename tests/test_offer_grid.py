@@ -370,3 +370,14 @@ def test_ohne_dekoder_bleibt_der_alte_dateiname():
 
     assert offers_grid.report_name(_args()) == "offers_grid_dev.json"
     assert offers_grid.report_name(_args(decoder="union")) == "offers_grid_dev.json"
+
+
+def test_mehrere_dekoder_ergeben_einen_dateinamen():
+    """Der Vergleichslauf darf keinen der Einzellaeufe ueberschreiben."""
+    from magda.cli import offers_grid
+
+    beide = offers_grid.report_name(_args(decoder="union,ilp"))
+
+    assert beide == "offers_grid_dev_union-ilp.json"
+    assert beide != offers_grid.report_name(_args(decoder="ilp"))
+    assert beide != offers_grid.report_name(_args())
