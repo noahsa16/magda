@@ -351,6 +351,53 @@ wie `magda significance` für den Modellvergleich, nur über Duplikat-Cluster.
 Das kostet keine zusätzliche Rechenzeit: die seitenweisen Zählungen aller
 Varianten liegen im selben Lauf ohnehin vor.
 
+### Das Ergebnis: +Geometrie ist ein Befund, Farbe nicht
+
+Lauf über alle **75 Referenzseiten in 68 Duplikat-Clustern**, out-of-fold,
+Schwellen je Fold zwischen 0.94 und 0.96. Gepaarte Differenz im Gruppen-F1
+gegen die Basis:
+
+| Variante | Bereich | Differenz | Intervall | p |
+|---|---|---:|---|---:|
+| +Geometrie | alle Paare | **+0.044** | [+0.009, +0.082] | **0.018** |
+| +Geometrie | prüfbar | **+0.052** | [+0.002, +0.099] | 0.042 |
+| +Geometrie | blinder Fleck | +0.032 | [−0.011, +0.079] | 0.148 |
+| +Farbe | alle Paare | −0.008 | [−0.036, +0.023] | 0.596 |
+| +Farbe | blinder Fleck | −0.007 | [−0.043, +0.032] | 0.684 |
+| beide | alle Paare | −0.016 | [−0.054, +0.020] | 0.400 |
+| beide | blinder Fleck | **−0.051** | [−0.103, −0.001] | 0.042 |
+
+**Die Kontextmerkmale wirken.** „+Geometrie schlägt Basis" ist zum ersten Mal
+ein Befund und keine Punktschätzer-Lesart: das Intervall überdeckt die Null
+nicht.
+
+**Die Farbmerkmale wirken nicht** — und das ist das Ergebnis, für das dieser
+Branch gebaut wurde. Über alle Paare, im blinden Fleck und im prüfbaren
+Bereich liegt jede Differenz im Rauschen (p zwischen 0.596 und 0.684). Auf
+die Geometrie *obendrauf* gelegt macht die Farbe es im blinden Fleck sogar
+messbar **schlechter** (−0.051, Intervall überdeckt die Null nicht) — also
+genau dort, wo sie helfen sollte.
+
+**Damit ist der Eindruck aus der Dev-Messung widerlegt.** Dort sah `beide` im
+blinden Fleck wie die beste Variante aus (Paar-F1 0.782 gegen 0.737). Über 68
+statt 14 Cluster, out-of-fold und gepaart gerechnet, dreht sich das Vorzeichen
+um. Genau dafür war die Änderung am Messaufbau da.
+
+**Einschränkung, die mitgehört:** Das sind **neun Vergleiche ohne Korrektur
+für multiples Testen**, und die drei Bereiche sind nicht unabhängig (alle
+Paare = blind + prüfbar). Bei neun Tests auf dem 5-%-Niveau ist rund ein
+Zufallstreffer zu erwarten. Belastbar ist deshalb nur die stärkste Zahl
+(+Geometrie über alle Paare, p = 0.018); die beiden Ergebnisse bei p = 0.042
+sind Hinweise, keine Belege. Und der Richter bleibt ein LLM-Lehrer — gemessen
+wird Übereinstimmung, nicht Richtigkeit.
+
+**Was daraus folgt, ist eine Teamentscheidung:** Die Farbmerkmale kosten
+Rechenzeit (der `beide`-Lauf dauert doppelt so lang wie die Basis) und
+bringen nichts. Sie zu entfernen wäre naheliegend; sie stehen zu lassen und
+den Negativbefund zu berichten ist ebenfalls vertretbar — ein sauber
+gemessener Fehlschlag ist ein Ergebnis. **Nicht** vertretbar wäre, sie
+mitzuführen und dabei die Dev-Zahl zu zitieren.
+
 ## Was nicht passiert ist — und warum
 
 - **Der eine Testbatch (Plan B/6): gesperrt.** Er setzt die Handprüfung der

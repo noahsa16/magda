@@ -893,6 +893,37 @@ eine Liste auszugeben.
   Ablation braucht: eine Schwelle ist ein Freiheitsgrad wie jeder andere.
   Die Referenz ist trotzdem gewachsen (51 → 75 Seiten, Train 30 → 54) – das
   hilft dem *Training* des Paarmodells, nur eben nicht dem Intervall.
+- **Zwei überlappende Einzelintervalle heißen nicht „kein Unterschied".**
+  Beide Varianten sehen dieselben Seiten; ist eine Seite schwer, ist sie es
+  für beide. Wer sie einzeln resampelt, zählt diese gemeinsame Streuung
+  zweimal und verdeckt genau den Effekt, den er messen will.
+  `offer_grid.paired_bootstrap` bootstrappt deshalb die **Differenz** –
+  dieselbe Konstruktion wie `magda significance`, nur über Duplikat-Cluster.
+  Kostet keine Rechenzeit: die seitenweisen Zählungen aller Varianten liegen
+  im selben Lauf ohnehin vor.
+- **Die Kontextmerkmale wirken, die Farbmerkmale nicht** (11.08.2026, 75
+  Seiten in 68 Clustern, out-of-fold, gepaart gegen die Basis, Gruppen-F1):
+
+  | Variante | Bereich | Differenz | Intervall | p |
+  |---|---|---:|---|---:|
+  | +Geometrie | alle Paare | **+0.044** | [+0.009, +0.082] | **0.018** |
+  | +Geometrie | prüfbar | +0.052 | [+0.002, +0.099] | 0.042 |
+  | +Farbe | alle Paare | −0.008 | [−0.036, +0.023] | 0.596 |
+  | +Farbe | blinder Fleck | −0.007 | [−0.043, +0.032] | 0.684 |
+  | beide | blinder Fleck | **−0.051** | [−0.103, −0.001] | 0.042 |
+
+  „+Geometrie schlägt Basis" ist damit zum ersten Mal ein Befund. Die
+  **Farbmerkmale sind einer in die andere Richtung**: sie bringen nichts und
+  verschlechtern das Ergebnis auf der Geometrie obendrauf im blinden Fleck –
+  also genau dort, wofür sie gebaut wurden. Der frühere Dev-Eindruck (`beide`
+  im blinden Fleck vorn) **dreht sich um**, sobald über 68 statt 14 Cluster
+  und gepaart gerechnet wird.
+  **Einschränkungen:** neun Vergleiche ohne Korrektur für multiples Testen,
+  und die drei Bereiche sind nicht unabhängig (alle Paare = blind + prüfbar).
+  Belastbar ist die stärkste Zahl (p = 0.018); die beiden bei p = 0.042 sind
+  Hinweise. Richter bleibt ein LLM-Lehrer, gemessen wird Übereinstimmung.
+  Ob die Farbmerkmale bleiben oder fallen, ist eine Teamentscheidung – nicht
+  vertretbar wäre nur, sie mitzuführen und dabei die alte Dev-Zahl zu zitieren.
 - **Clusterweise ziehen heißt nicht automatisch fair ziehen.**
   `dataset.subset_by_clusters` sortierte zuerst nach absteigender
   Clustergröße – naheliegend und genau falschherum: die Duplikate landen
