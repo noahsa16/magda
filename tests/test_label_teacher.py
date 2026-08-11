@@ -116,6 +116,48 @@ def test_pending_meldet_was_der_labelordner_nicht_hat(tmp_path, monkeypatch):
     assert label_teacher.pending("sonnet-5") == ["a_p2"]
 
 
+def _labelordner(tmp_path, monkeypatch, seiten):
+    """seiten: Liste von (woerter, tags)."""
+    directory = tmp_path / "labeled"
+    directory.mkdir()
+    for number, (texts, tags) in enumerate(seiten):
+        (directory / f"a_p{number}.json").write_text(json.dumps(
+            {"page_id": f"a_p{number}", "words": _words(texts), "tags": tags}))
+    monkeypatch.setattr(label_teacher.config, "labeled_dir", lambda model: directory)
+
+
+def test_grenzwoerter_zaehlen_drin_und_draussen(tmp_path, monkeypatch):
+    _labelordner(tmp_path, monkeypatch, [
+        (["6", "Stück", "je", "500", "g"],
+         ["B-QUANTITY", "I-QUANTITY", "O", "B-QUANTITY", "I-QUANTITY"]),
+        (["2", "Stück", "x"],
+         ["B-QUANTITY", "O", "O"]),
+    ])
+    counts = label_teacher.boundary_words("egal", "QUANTITY")
+
+    assert counts["stück"] == (1, 1)
+    assert counts["g"] == (1, 0)
+
+
+def test_reine_zahlen_sind_keine_grenzwoerter(tmp_path, monkeypatch):
+    """`500 g 1.99` wuerde sonst "1.99" als strittiges Grenzwort melden."""
+    _labelordner(tmp_path, monkeypatch, [
+        (["500", "g", "1.99"], ["B-QUANTITY", "I-QUANTITY", "O"]),
+    ])
+    assert "1.99" not in label_teacher.boundary_words("egal", "QUANTITY")
+
+
+def test_interpunktion_faellt_beim_zaehlen_weg(tmp_path, monkeypatch):
+    """Sonst stehen `Stück` und `Stück,` als zwei Woerter da, jedes zu selten."""
+    _labelordner(tmp_path, monkeypatch, [
+        (["6", "Stück,"], ["B-QUANTITY", "I-QUANTITY"]),
+        (["2", "Stück"], ["B-QUANTITY", "I-QUANTITY"]),
+    ])
+    counts = label_teacher.boundary_words("egal", "QUANTITY")
+
+    assert counts["stück"] == (2, 0)
+
+
 def _cli_umgebung(tmp_path, monkeypatch, texts=("1.99",)):
     from magda.cli import label_teacher as cli
 

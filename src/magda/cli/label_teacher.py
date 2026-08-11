@@ -97,6 +97,33 @@ def _cmd_save(args, parser):
     print(f"{target}   {len(kept)} Spans, {tagged}/{len(words)} Woerter getaggt")
 
 
+def _cmd_conventions(args, parser):
+    counts = label_teacher.boundary_words(args.model, args.label)
+    if not counts:
+        parser.exit(1, f"Keine Spans mit Label {args.label} in {args.model}.\n")
+
+    rows = sorted(counts.items(), key=lambda item: -sum(item[1]))
+    print(f"Labelordner: {args.model}   Label: {args.label}")
+    print("Wort hinter einem Span - gehoert es noch dazu?")
+    print()
+    print(f"  {'Wort':<20}{'drin':>7}{'draussen':>10}{'Anteil':>9}")
+    strittig = []
+    for word, (inside, outside) in rows[:args.limit]:
+        total = inside + outside
+        share = inside / total
+        mark = "  <- strittig" if 0.05 < share < 0.95 else ""
+        if mark:
+            strittig.append((word, inside, outside))
+        print(f"  {word:<20}{inside:>7}{outside:>10}{share:>9.2f}{mark}")
+    print()
+    if strittig:
+        print("Strittig heisst: der Korpus ist sich uneins, und ein neuer Labellauf")
+        print("entscheidet die Faelle nach Zufall der Formulierung. Wer eine Woche")
+        print("dazulabelt, legt sie besser vorher fest - sonst driften die Wochen.")
+    else:
+        print("Keine strittigen Grenzwoerter: der Korpus ist an dieser Grenze einig.")
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(
         prog="magda label-teacher",
@@ -117,6 +144,12 @@ def main(argv=None):
                                  parents=[common])
     task.add_argument("page_id")
 
+    conventions = subparsers.add_parser(
+        "conventions", help="Grenzwoerter eines Labels auszaehlen",
+        parents=[common])
+    conventions.add_argument("--label", default="QUANTITY")
+    conventions.add_argument("--limit", type=int, default=15)
+
     save = subparsers.add_parser("save", help="Antwort pruefen und ablegen",
                                  parents=[common])
     save.add_argument("page_id")
@@ -125,5 +158,5 @@ def main(argv=None):
                       help="vorhandene Seite ueberschreiben")
 
     args = parser.parse_args(argv)
-    return {"pages": _cmd_pages, "task": _cmd_task,
-            "save": _cmd_save}[args.command](args, parser)
+    return {"pages": _cmd_pages, "task": _cmd_task, "save": _cmd_save,
+            "conventions": _cmd_conventions}[args.command](args, parser)

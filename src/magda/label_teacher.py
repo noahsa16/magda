@@ -88,6 +88,44 @@ def finish_spans(spans: list[dict], words: list[dict]) -> list[str]:
     return spans_to_bio(len(words), apply_app_price_rule(cleaned, words))
 
 
+def boundary_words(model: str, label: str) -> dict[str, tuple[int, int]]:
+    """Welche Woerter zieht der Bestand in `label` hinein, welche nicht?
+
+    Gezaehlt wird das Wort *hinter* einem Span dieses Labels: einmal, wenn
+    es noch dazugehoert, einmal, wenn nicht. Reine Zahlen bleiben draussen,
+    sie sind nie strittig.
+
+    Der Zweck ist die Konventionsfrage, und die stellt sich staendig neu.
+    Bei `QUANTITY` sagt der Prompt "Stueck gehoert NICHT dazu", der Korpus
+    aber 33:3 dafuer - wer das nicht auszaehlt, labelt eine neue Woche
+    buchstabengetreu gegen die eigene Referenz. Seitenweise sieht man
+    Einzelfaelle, ueber den Korpus den Widerspruch; dasselbe Argument wie
+    bei den Gebinde-Komposita in CLAUDE.md.
+    """
+    import json
+    import re
+
+    inside: dict[str, int] = {}
+    outside: dict[str, int] = {}
+    directory = config.labeled_dir(model)
+    for path in sorted(directory.glob("*.json")):
+        with open(path) as f:
+            page = json.load(f)
+        tags = page.get("tags") or []
+        words = [w["text"] for w in (page.get("words") or [])]
+        for index in range(1, min(len(tags), len(words))):
+            if not tags[index - 1].endswith(label):
+                continue
+            word = words[index]
+            if re.match(r"^[\d,.]+$", word):
+                continue
+            key = word.rstrip(",.").lower()
+            target = inside if tags[index].endswith(label) else outside
+            target[key] = target.get(key, 0) + 1
+    return {word: (inside.get(word, 0), outside.get(word, 0))
+            for word in set(inside) | set(outside)}
+
+
 def pending(model: str) -> list[str]:
     """Seiten aus `data/words`, fuer die dieser Labelordner nichts hat."""
     extracted = {path.stem for path in config.WORDS_DIR.glob("*.json")}
