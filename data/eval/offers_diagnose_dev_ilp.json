@@ -1,0 +1,118 @@
+{
+  "pages": 20,
+  "pairs": 15148,
+  "positive": 1855,
+  "decoder": "ilp",
+  "auc": 0.9844641293281449,
+  "threshold": 0.86,
+  "achieved": 0.7007299270072993,
+  "ceiling": 0.7452471482889733,
+  "ceiling_threshold": 0.74,
+  "oracle": 1.0,
+  "curve": [
+    {
+      "threshold": 0.5,
+      "group_f1": 0.4694835680751174
+    },
+    {
+      "threshold": 0.52,
+      "group_f1": 0.4953271028037383
+    },
+    {
+      "threshold": 0.54,
+      "group_f1": 0.4953271028037383
+    },
+    {
+      "threshold": 0.56,
+      "group_f1": 0.4953271028037383
+    },
+    {
+      "threshold": 0.58,
+      "group_f1": 0.592274678111588
+    },
+    {
+      "threshold": 0.6,
+      "group_f1": 0.6639344262295082
+    },
+    {
+      "threshold": 0.62,
+      "group_f1": 0.6422764227642276
+    },
+    {
+      "threshold": 0.64,
+      "group_f1": 0.6612903225806451
+    },
+    {
+      "threshold": 0.66,
+      "group_f1": 0.674698795180723
+    },
+    {
+      "threshold": 0.68,
+      "group_f1": 0.7237354085603113
+    },
+    {
+      "threshold": 0.7,
+      "group_f1": 0.7237354085603113
+    },
+    {
+      "threshold": 0.72,
+      "group_f1": 0.7237354085603113
+    },
+    {
+      "threshold": 0.74,
+      "group_f1": 0.7452471482889733
+    },
+    {
+      "threshold": 0.76,
+      "group_f1": 0.7320754716981133
+    },
+    {
+      "threshold": 0.78,
+      "group_f1": 0.7116104868913858
+    },
+    {
+      "threshold": 0.8,
+      "group_f1": 0.7265917602996254
+    },
+    {
+      "threshold": 0.82,
+      "group_f1": 0.7185185185185186
+    },
+    {
+      "threshold": 0.84,
+      "group_f1": 0.7084870848708487
+    },
+    {
+      "threshold": 0.86,
+      "group_f1": 0.7007299270072993
+    },
+    {
+      "threshold": 0.88,
+      "group_f1": 0.6931407942238267
+    },
+    {
+      "threshold": 0.9,
+      "group_f1": 0.676056338028169
+    },
+    {
+      "threshold": 0.92,
+      "group_f1": 0.6666666666666666
+    },
+    {
+      "threshold": 0.94,
+      "group_f1": 0.5863192182410424
+    },
+    {
+      "threshold": 0.96,
+      "group_f1": 0.49240121580547114
+    },
+    {
+      "threshold": 0.98,
+      "group_f1": 0.07529411764705883
+    }
+  ],
+  "source": "gbert",
+  "splits": "dev",
+  "reference": "claude-sonnet-5",
+  "checkpoint": "checkpoints/offer_pairs/model_ilp.pt"
+}

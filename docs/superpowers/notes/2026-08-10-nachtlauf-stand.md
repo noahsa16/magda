@@ -375,6 +375,49 @@ die Fehler-Taxonomie 0.325 der Fehler als *Grenzfehler* ausweist,
 überwiegend an Sortenzusätzen bei PRODUCT — die verschieben eine
 Span-Grenze, zerstören aber kein Angebot.
 
+### Wer deckelt? Nicht das Paarmodell — `magda offers-model diagnose`
+
+Die Frage „ist das Paarmodell der Deckel?" ist beantwortet, und die Antwort
+ist **nein**:
+
+| Entities / Dekoder | AUC | erreicht | Obergrenze | mit perfekten Kanten |
+|---|---:|---:|---:|---:|
+| Lehrer / ILP | 0.981 | 0.711 | 0.738 (Schwelle 0.74) | 1.000 |
+| Lehrer / Union | 0.981 | 0.494 | 0.538 (Schwelle 0.90) | 1.000 |
+| gbert / ILP | **0.984** | 0.701 | 0.745 | 1.000 |
+
+**AUC 0.98** heißt: In 98 von 100 Vergleichen bewertet das Paarmodell ein
+zusammengehöriges Paar höher als ein nicht zusammengehöriges. Die Kanten
+sind exzellent, und mit *perfekten* Kanten liefert der Dekoder 1.000 — er
+verschenkt also von sich aus nichts.
+
+**Auch die Schwellenwahl ist es nicht.** Der Abstand zwischen erreicht und
+Obergrenze beträgt 0.027 (ILP) bzw. 0.044 (Union) — und die Obergrenze ist
+post-hoc gewählt, also nicht einmal erreichbar. Bemerkenswert: Union-Find
+kommt selbst mit der *besten* Schwelle nur auf 0.538 und bleibt damit
+deutlich unter dem ILP bei seiner kalibrierten. Der Vorteil des ILP ist
+also nicht Kalibrierungsglück.
+
+**Interessant nebenbei:** Auf gbert-Entities ist die AUC sogar *höher*
+(0.984 gegen 0.981) — ein weiterer Beleg, dass Stufe 2 die Gruppierung
+nicht beschädigt.
+
+### Die Fehler sind gebündelt, nicht verteilt
+
+Nachgerechnet über den E2E-Lauf: Bei 15,2 Paaren je Referenzgruppe und
+Paar-Recall 0.797 wären bei *unabhängigen* Fehlern nur **0.032** der
+Gruppen komplett richtig. Tatsächlich sind es **0.803**.
+
+Der Unterschied um den Faktor 25 ist die eigentliche Aussage: Das System
+macht nicht überall kleine Fehler, sondern **wenige Gruppen gründlich
+falsch**. Das deckt sich mit dem Legendenversatz auf `1347387_p31`, wo
+eine ganze Spalte kippt, sobald ein Abstand kippt.
+
+Für die Priorisierung heißt das: Der nächste Hebel ist weder ein größeres
+Modell noch ein anderer Dekoder, sondern **herauszufinden, welche Gruppen
+kaputtgehen und warum**. Eine Fehleranalyse auf Gruppenebene, analog zur
+Fehler-Taxonomie für die Labels.
+
 **Vorbehalt zum Nenner, und er ist derselbe wie einst bei `magda eval`:**
 Entities, die GBERT nicht findet, fehlen nicht als Falsch-Negative,
 sondern **im Nenner**. Gemessen: 656 von 675 Referenz-Entities überleben
