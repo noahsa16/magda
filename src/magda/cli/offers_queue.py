@@ -28,6 +28,11 @@ def main(argv=None):
                         help="Variante unter data/predictions/ statt data/labeled/")
     parser.add_argument("--limit", type=int, default=40,
                         help="Wie viele Vorschlaege (Default 40)")
+    parser.add_argument("--reference-from", dest="reference_from",
+                        default="claude-sonnet-5",
+                        help="Welcher Gruppierungsbestand als schon erledigt\n"
+                             "gilt. Default die LLM-Gruppierung; sonst schlaegt\n"
+                             "die Queue Seiten vor, die laengst gruppiert sind.")
     parser.add_argument("--splits", default="train,dev",
                         help="Aus welchen Splits vorgeschlagen wird. Default\n"
                              "train,dev - eine Referenz zum *Entwickeln* gehoert\n"
@@ -48,8 +53,16 @@ def main(argv=None):
             parser.error(f"Labelquelle nicht gefunden: {source}")
         pages = _load_labeled_pages(source)
 
+    # Erledigt ist, was schon eine Gruppierung hat - und die liegt beim
+    # LLM-Teacher unter data/offer_groups/, nicht in gold/offers/. Ohne das
+    # schlaegt die Queue laengst gruppierte Seiten wieder vor, weil der
+    # Default von offer_queue auf den (leeren) Gold-Ordner zeigt.
+    from magda import offer_teacher
+    done = {p.stem for p in offer_teacher.teacher_dir(args.reference_from).glob("*.json")}
+
     try:
-        suggestions = review.offer_queue(pages, limit=args.limit, splits=splits)
+        suggestions = review.offer_queue(pages, limit=args.limit, splits=splits,
+                                         annotated=done)
     except FileNotFoundError as error:
         parser.exit(1, f"{error}\n")
 
