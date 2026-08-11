@@ -791,6 +791,34 @@ eine Liste auszugeben.
   sind dünn, ein Konfidenzintervall gibt es noch nicht. Der Lehrer ist ein
   LLM, also misst „Übereinstimmung", nicht Richtigkeit. Und die Abdeckung
   der Gegenprobe liegt bei 0.589 – die Non-Food-Hälfte bleibt ungeprüft.
+- **Der Dekoder wiegt schwerer als jedes bisher gefundene Merkmal.**
+  `groups_from_edges` verschmilzt A-B und B-C zu einer Gruppe, auch wenn
+  A-C weit unter der Schwelle liegt – das steht seit jeher im eigenen
+  Docstring. `magda offers-grid --decoder union,ilp --cross-validate`
+  (11.08.2026, 75 Seiten in 68 Clustern, out-of-fold, geschachtelte
+  Schwellenwahl) beziffert es erstmals: Gruppen-F1 **0.553 gegen 0.453**,
+  gepaarte Differenz **+0.100 [+0.067, +0.133] bei p = 0.000**; im blinden
+  Fleck +0.115. Zum Vergleich: `+Geometrie`, der beste Merkmalsblock, lag
+  bei +0.044 (p = 0.018).
+  **Die Wirkungskette ist die eigentliche Aussage:** Der Gewinn kommt nicht
+  daher, dass das ILP bei gleicher Schwelle besser dekodiert, sondern dass
+  es eine niedrigere *erlaubt* – die Kalibrierung wählte out-of-fold 0.868
+  statt 0.956, ohne Vorgabe. Union-Find muss so hoch drehen, weil eine
+  einzige durchgerutschte Kante eine Legendenspalte verschmilzt; das ILP
+  kappt stattdessen die schwächste Kante des Widerspruchs.
+  **Drei Dinge gehören zu jeder Nennung:** Im CV-Lauf *fällt* Paar-F1
+  (0.569 gegen 0.715), weil die tiefere Schwelle 19060 statt 13531 Paare
+  vorhersagt – auf Dev steigt es dagegen (0.880 gegen 0.782), und
+  belastbar ist die CV-Zahl. Die Komponentenkappung (`MAX_COMPONENT`)
+  griff bei 1611 von 37367 Komponenten; dort *ist* das ILP Union-Find, der
+  Effekt also eher unter- als überschätzt. Und beide Dekoder wurden auf
+  `group_f1` kalibriert – **wer Paar-F1 zur Primärzahl macht, dreht den
+  Teilbefund um.** Das ist die schon offene Teamentscheidung.
+  Die arithmetische Gegenprobe stützt das Ergebnis (0.883 gegen 0.845 bei
+  *identischer* Abdeckung 0.589, widerlegte Preise 12 statt 16). Sie ist
+  hier unbefangen, weil die Rechnung bewusst kein Constraint des ILP ist –
+  und die gleiche Abdeckung entkräftet den Einwand, gröbere Gruppen
+  schmeichelten der Prüfung.
 - **Die Rechnung Menge × Grundpreis ist bewusst kein Merkmal des
   Paarmodells.** Sie ist das einzige Signal, das sich selbst beweist, und
   damit der einzige unbestechliche Richter. Als Eingabe gefüttert bewertete
