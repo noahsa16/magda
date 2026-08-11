@@ -287,6 +287,76 @@ def _cmd_diagnose(args, parser):
     print(f"\nReport: {out_path}")
 
 
+def _cmd_variants(args, parser):
+    """Trifft das System Variantenbloecke schlechter - und an welcher Kante?"""
+    from magda import offer_grid, offer_model
+
+    source, pages, reference = _selected(args, parser)
+    model = offer_model.load(args.checkpoint)
+    if args.decoder:
+        model.decoder = args.decoder
+
+    if args.cross_validate:
+        def progress(number, held, threshold):
+            print(f"  Fold {number}: {held} Seiten, Schwelle {threshold:.2f}")
+
+        result = offer_grid.variant_blocks_cv(
+            pages, reference.assignments, model.blocks, folds=args.folds,
+            epochs=args.epochs, seed=args.seed, decoder=model.decoder,
+            progress=progress)
+        print()
+    else:
+        result = offer_grid.variant_blocks(pages, reference.assignments, model)
+    result |= {"source": source, "splits": args.splits,
+               "decoder": model.decoder, "out_of_fold": bool(args.cross_validate),
+               "reference": config.model_slug(args.reference_from)}
+
+    config.EVAL_DIR.mkdir(parents=True, exist_ok=True)
+    out_path = config.EVAL_DIR / (
+        f"offers_variants_{args.splits.replace(',', '-')}"
+        f"_{config.model_slug(source)}_{model.decoder}"
+        f"{'_cv' if args.cross_validate else ''}.json")
+    with open(out_path, "w") as f:
+        json.dump(result, f, indent=2, ensure_ascii=False)
+
+    print(f"Entities: {source}   Splits: {args.splits}   Dekoder: {model.decoder}")
+    if not args.cross_validate:
+        print("ACHTUNG: ein Checkpoint auf seinen eigenen Trainingsseiten. Fuer")
+        print("eine belastbare Zahl --cross-validate.")
+    print()
+    groups = result["groups"]
+    print("  Gruppen                 gesamt  getroffen  Recall  Groesse")
+    for bucket, name in (("all", "alle"), ("plain", "ohne Variantenbloecke"),
+                         ("variant", "Variantenbloecke")):
+        entry = groups[bucket]
+        if not entry["total"]:
+            continue
+        print(f"  {name:22s} {entry['total']:6d} {entry['hit']:10d}"
+              f"  {entry['recall']:6.3f}  {entry['mean_size']:5.2f}")
+    print("    Variantenblock = Referenzgruppe mit mehr als einem PRICE oder")
+    print("    mehr als einer QUANTITY. Rohe Zahlen, weil eine Rate ueber so")
+    print("    wenige Gruppen allein nichts aussagt.")
+
+    for bucket, name in (("variant", "In Variantenbloecken"),
+                         ("plain", "In allen anderen")):
+        rows = result["edges"][bucket]
+        if not rows:
+            continue
+        print()
+        print(f"  {name}: welche zusammengehoerige Kante haelt?")
+        print("    Typpaar                  Paare  ueber Schwelle  mittlere W.")
+        for pair, entry in rows.items():
+            print(f"    {pair:22s} {entry['total']:6d}"
+                  f"  {entry['above']:6d} ({entry['recall']:.3f})"
+                  f"      {entry['mean_probability']:.3f}")
+    print()
+    print("    Liegen die PRICE|PRICE-Kanten unten, fehlt dem Paarmodell ein")
+    print("    Merkmal. Halten sie und die Bloecke zerfallen trotzdem, dann")
+    print("    verschenkt der Dekoder sie: ein Variantenblock ist ein Stern um")
+    print("    den Produktnamen, die Transitivitaet des ILP verlangt eine Clique.")
+    print(f"\nReport: {out_path}")
+
+
 def _assignment(model, page: dict, threshold: float) -> dict[int, int]:
     """Wortindex -> Angebotsnummer, wie das Modell die Seite sieht."""
     return {
@@ -360,6 +430,17 @@ def main(argv=None):
         parents=[common])
     diagnose.add_argument("--splits", default="dev")
 
+    variants = subparsers.add_parser(
+        "variants", help="Variantenbloecke: welche Gruppen und Kanten fallen aus",
+        parents=[common])
+    variants.add_argument("--splits", default="train,dev")
+    variants.add_argument("--cross-validate", action="store_true",
+                          help="out-of-fold statt mit dem Checkpoint. Ohne das\n"
+                               "beurteilt ein Modell Seiten aus seinem Training")
+    variants.add_argument("--folds", type=int, default=5)
+    variants.add_argument("--epochs", type=int, default=300)
+    variants.add_argument("--seed", type=int, default=0)
+
     predict = subparsers.add_parser("predict", help="Gruppierung als Dateien ablegen",
                                     parents=[common])
     predict.add_argument("--splits", default="dev")
@@ -369,4 +450,5 @@ def main(argv=None):
 
     args = parser.parse_args(argv)
     return {"train": _cmd_train, "eval": _cmd_eval, "predict": _cmd_predict,
-            "diagnose": _cmd_diagnose}[args.command](args, parser)
+            "diagnose": _cmd_diagnose,
+            "variants": _cmd_variants}[args.command](args, parser)

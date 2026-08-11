@@ -381,3 +381,153 @@ def test_mehrere_dekoder_ergeben_einen_dateinamen():
     assert beide == "offers_grid_dev_union-ilp.json"
     assert beide != offers_grid.report_name(_args(decoder="ilp"))
     assert beide != offers_grid.report_name(_args())
+
+
+# --------------------------------------------------------- Variantenbloecke
+
+
+class _FixedModel:
+    """Ein Modell mit vorgegebener Gruppierung und vorgegebenen Kanten.
+
+    Die Auszaehlung soll geprueft werden, nicht das Paarmodell. Mit einem
+    echten Modell haenge der Test an dessen Gewichten und wuerde rot, sobald
+    jemand die Epochenzahl aendert - also genau dann, wenn nichts kaputt ist.
+    """
+
+    def __init__(self, groups, edges=None, threshold=0.5):
+        from magda import offer_pairs
+
+        self.blocks = offer_pairs.DEFAULT_BLOCKS
+        self.threshold = threshold
+        self._groups = groups
+        self._edges = edges or {}
+
+    def group_page_words(self, page, threshold):
+        return self._groups
+
+    def score_page(self, page):
+        from magda import offer_pairs
+
+        pairs = offer_pairs.page_pairs(page, blocks=self.blocks)
+        return {pair: self._edges.get(pair, 0.0) for pair in pairs.index_pairs}
+
+
+ZWEI_PREISE = ["B-PRODUCT", "B-PRICE", "B-PRICE", "B-PRODUCT"]
+
+
+def test_zwei_preise_in_einer_gruppe_sind_ein_variantenblock():
+    """Die Form aus Issue #6: ein Produktname, mehrere Preise."""
+    page = _page(ZWEI_PREISE, texts=["Pfanne", "9.99", "14.99", "Topf"])
+    assignment = {0: 0, 1: 0, 2: 0, 3: 1}
+
+    result = offer_grid.variant_blocks(
+        [page], {"p1": assignment}, _FixedModel([[0, 1, 2], [3]]))
+
+    assert result["groups"]["variant"]["total"] == 1
+    assert result["groups"]["plain"]["total"] == 1
+    assert result["groups"]["all"]["total"] == 2
+
+
+def test_ohne_doppelten_werttyp_ist_es_kein_variantenblock():
+    """Die Gegenprobe - sonst zaehlte jede Gruppe als Variantenblock."""
+    page = _page(OHNE_GRUNDPREIS)
+    assignment = {0: 0, 1: 0, 2: 1, 3: 1}
+
+    result = offer_grid.variant_blocks(
+        [page], {"p1": assignment}, _FixedModel([[0, 1], [2, 3]]))
+
+    assert result["groups"]["variant"]["total"] == 0
+    assert result["groups"]["plain"]["total"] == 2
+
+
+def test_ein_zerfallener_variantenblock_zaehlt_nicht_als_treffer():
+    """Exakt heisst exakt: ein fehlender Preis macht die Zeile falsch."""
+    page = _page(ZWEI_PREISE, texts=["Pfanne", "9.99", "14.99", "Topf"])
+    assignment = {0: 0, 1: 0, 2: 0, 3: 1}
+
+    zerfallen = offer_grid.variant_blocks(
+        [page], {"p1": assignment}, _FixedModel([[0, 1], [2], [3]]))
+    getroffen = offer_grid.variant_blocks(
+        [page], {"p1": assignment}, _FixedModel([[0, 1, 2], [3]]))
+
+    assert zerfallen["groups"]["variant"]["hit"] == 0
+    assert getroffen["groups"]["variant"]["hit"] == 1
+
+
+def test_nur_zusammengehoerige_kanten_werden_gezaehlt():
+    """Die Frage ist, welche Kante das System *verliert*.
+
+    Negative Paare mitzuzaehlen machte die Zahl zu einer Mischung aus Recall
+    und Precision - und damit unbrauchbar fuer die Diagnose, wo genau diese
+    beiden getrennt gehoeren.
+    """
+    page = _page(ZWEI_PREISE, texts=["Pfanne", "9.99", "14.99", "Topf"])
+    assignment = {0: 0, 1: 0, 2: 0, 3: 1}
+
+    result = offer_grid.variant_blocks(
+        [page], {"p1": assignment}, _FixedModel([[0, 1, 2], [3]]))
+
+    # Gruppe 0 hat drei Entities, also drei Paare. Gruppe 1 hat eine, also
+    # keins. Die drei Kanten zur vierten Entity sind negativ und fehlen.
+    gezaehlt = sum(e["total"] for e in result["edges"]["variant"].values())
+    assert gezaehlt == 3
+    assert result["edges"]["plain"] == {}
+
+
+def test_der_kantenrecall_zaehlt_gegen_die_schwelle():
+    """`above` ist die Betriebszahl: was haelt bei der kalibrierten Schwelle."""
+    page = _page(ZWEI_PREISE, texts=["Pfanne", "9.99", "14.99", "Topf"])
+    assignment = {0: 0, 1: 0, 2: 0, 3: 1}
+    # Die beiden Ankerkanten halten, die Preis-zu-Preis-Kante nicht.
+    edges = {(0, 1): 0.9, (0, 2): 0.9, (1, 2): 0.1}
+
+    result = offer_grid.variant_blocks(
+        [page], {"p1": assignment},
+        _FixedModel([[0, 1, 2], [3]], edges=edges, threshold=0.5))
+
+    anker = result["edges"]["variant"]["PRICE|PRODUCT"]
+    preise = result["edges"]["variant"]["PRICE|PRICE"]
+    assert anker["total"] == 2 and anker["above"] == 2
+    assert preise["total"] == 1 and preise["above"] == 0
+    assert preise["mean_probability"] == pytest.approx(0.1)
+
+
+def test_kein_fold_modell_sieht_seine_eigenen_seiten(monkeypatch):
+    """Die Zusicherung, an der jede Out-of-fold-Zahl haengt.
+
+    Geprueft wird, was in `train` und `calibrate` *hineingeht* - nicht, dass
+    die gehaltenen Seiten untereinander disjunkt sind. Die erste Fassung tat
+    genau das und blieb gruen, als der Trainingsaufruf versuchsweise alle
+    Seiten bekam: sie behauptete eine Eigenschaft, die sie nicht prueft.
+    Derselbe Fall wie `test_blind_haengt_an_der_referenz_nicht_an_der_vorhersage`.
+    """
+    pytest.importorskip("torch")
+    from magda import offer_model
+    from test_offer_model import _training_set
+
+    trainiert_mit: list[set] = []
+    train, calibrate = offer_model.train, offer_model.calibrate
+
+    def spy_train(pages, *args, **kwargs):
+        trainiert_mit.append({p["page_id"] for p in pages})
+        return train(pages, *args, **kwargs)
+
+    def spy_calibrate(pages, *args, **kwargs):
+        trainiert_mit.append({p["page_id"] for p in pages})
+        return calibrate(pages, *args, **kwargs)
+
+    monkeypatch.setattr(offer_model, "train", spy_train)
+    monkeypatch.setattr(offer_model, "calibrate", spy_calibrate)
+
+    pages, reference = _training_set()
+    beurteilt = []
+    for _, outer in offer_grid.fold_models(
+            pages, reference, ("types", "geometry_base"), folds=3, epochs=5):
+        gehalten = {p["page_id"] for p in outer}
+        # Alles, was seit dem letzten Fold trainiert wurde, gehoert diesem.
+        for gesehen in trainiert_mit:
+            assert not (gesehen & gehalten), "Fold-Modell kennt seine Messseiten"
+        trainiert_mit.clear()
+        beurteilt += sorted(gehalten)
+
+    assert sorted(beurteilt) == sorted(p["page_id"] for p in pages)

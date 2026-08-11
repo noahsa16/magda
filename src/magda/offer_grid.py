@@ -202,10 +202,33 @@ def cross_validate(pages: list[dict], assignments: dict, blocks,
     Gewinn ist die Zahl der unabhaengigen Auswertungseinheiten, und die
     bestimmt die Breite jedes Intervalls.
     """
-    from magda import offer_model, offer_pairs
-
     per_page: list[PageCounts] = []
     thresholds: list[float] = []
+    for model, outer in fold_models(pages, assignments, blocks, folds=folds,
+                                    epochs=epochs, seed=seed,
+                                    objective=objective, decoder=decoder,
+                                    progress=progress):
+        thresholds.append(model.threshold)
+        for page in outer:
+            per_page.append(
+                judge_page(page, assignments[page["page_id"]],
+                           model.group_page_words(page, model.threshold)))
+    return per_page, thresholds
+
+
+def fold_models(pages: list[dict], assignments: dict, blocks,
+                folds: int = 5, epochs: int = 300, seed: int = 0,
+                objective: str = "group_f1", decoder: str = "union",
+                progress=None):
+    """Liefert je Fold (Modell, gehaltene Seiten) - das Modell hat sie nie gesehen.
+
+    Herausgezogen, damit jede weitere Out-of-fold-Auswertung dieselben
+    Modelle sieht wie `cross_validate`. Zwei getrennte Fold-Schleifen waeren
+    zwei Gelegenheiten, die geschachtelte Kalibrierung falsch zu bauen - und
+    eine davon faellt niemandem auf, weil beide plausible Zahlen liefern.
+    """
+    from magda import offer_model
+
     for number, fold in enumerate(offer_model.page_folds(pages, folds), 1):
         held_out = set(fold)
         inner = [p for p in pages if p["page_id"] not in held_out]
@@ -215,17 +238,12 @@ def cross_validate(pages: list[dict], assignments: dict, blocks,
         calibration = offer_model.calibrate(
             inner, assignments, folds=folds, epochs=epochs, seed=seed,
             objective=objective, blocks=blocks, decoder=decoder)
-        threshold = calibration["threshold"]
-        thresholds.append(threshold)
         model = offer_model.train(inner, assignments, epochs=epochs, seed=seed,
                                   blocks=blocks, decoder=decoder)
-        model.threshold = threshold
-        for page in outer:
-            per_page.append(judge_page(page, assignments[page["page_id"]],
-                                       model.group_page_words(page, threshold)))
+        model.threshold = calibration["threshold"]
         if progress:
-            progress(number, len(outer), threshold)
-    return per_page, thresholds
+            progress(number, len(outer), model.threshold)
+        yield model, outer
 
 
 def clusters_of(pages: list[dict]) -> list[list[str]]:
@@ -458,6 +476,153 @@ def failure_kinds(pages: list[dict], assignments: dict, model) -> dict:
         "blind_share_hit": blind_hit / len(hit_size) if hit_size else None,
         "blind_share_miss": blind_miss / len(miss_size) if miss_size else None,
     }
+
+
+# Ein Variantenblock ist eine Referenzgruppe, die denselben Werttyp mehrfach
+# traegt - "Pfanne: 20 cm 9.99 / 24 cm 14.99". Genau die Form, die ein flaches
+# Gruppenlabel nicht abbilden kann (Issue #6).
+VARIANT_MULTIPLES = ("PRICE", "QUANTITY")
+
+
+def _variant_rows(page: dict, assignment: dict, model):
+    """Je Referenzgruppe eine Zeile, je *positivem* Paar eine Zeile.
+
+    Getrennt von der Aggregation, weil dieselben Rohzeilen einmal aus einem
+    Modell und einmal aus fuenf Fold-Modellen kommen. Zwei Zaehlschleifen
+    waeren zwei Gelegenheiten, verschieden zu zaehlen.
+    """
+    import collections
+
+    from magda.offers_gold import _reference_group
+
+    entities = [e for e in entities_from_page(page) if e.type in VALUE_TYPES]
+    groups = model.group_page_words(page, model.threshold)
+    system_of = {w: g for g, words in enumerate(groups) for w in words}
+
+    reference: dict = {}
+    for entity in entities:
+        group = _reference_group(entity, assignment)
+        if group is not None:
+            reference.setdefault(group, []).append(entity)
+
+    system: dict = {}
+    for entity in entities:
+        if _reference_group(entity, assignment) is None:
+            continue
+        found = {system_of[w] for w in range(entity.start, entity.end)
+                 if w in system_of}
+        if len(found) == 1:
+            system.setdefault(found.pop(), set()).add((entity.start, entity.end))
+    exact = {frozenset(members) for members in system.values()}
+
+    group_rows, variant_of = [], {}
+    for group, members in reference.items():
+        counts = collections.Counter(e.type for e in members)
+        variant = any(counts[t] > 1 for t in VARIANT_MULTIPLES)
+        variant_of[group] = variant
+        keys = frozenset((e.start, e.end) for e in members)
+        group_rows.append({"variant": variant, "hit": keys in exact,
+                           "size": len(members)})
+
+    # Nur positive Paare: die Frage ist, welche Kante das System *verliert*,
+    # nicht wie gut es trennt - dafuer ist die AUC in `diagnose` zustaendig.
+    edge_rows = []
+    pairs = offer_pairs.page_pairs(page, blocks=model.blocks)
+    if pairs.index_pairs:
+        edges = model.score_page(page)
+        of_index = [_reference_group(e, assignment) for e in pairs.entities]
+        for (i, j) in pairs.index_pairs:
+            if of_index[i] is None or of_index[i] != of_index[j]:
+                continue
+            kinds = sorted((pairs.entities[i].type, pairs.entities[j].type))
+            edge_rows.append({
+                "variant": variant_of.get(of_index[i], False),
+                "pair": "|".join(kinds),
+                "probability": edges[(i, j)],
+                "above": edges[(i, j)] >= model.threshold,
+            })
+    return group_rows, edge_rows
+
+
+def _variant_summary(group_rows: list[dict], edge_rows: list[dict]) -> dict:
+    """Rohe Zaehlungen. Bei 19 Gruppen ist eine Prozentzahl allein bedeutungslos."""
+    groups = {}
+    for bucket, rows in (("all", group_rows),
+                         ("variant", [r for r in group_rows if r["variant"]]),
+                         ("plain", [r for r in group_rows if not r["variant"]])):
+        hit = sum(1 for r in rows if r["hit"])
+        groups[bucket] = {
+            "total": len(rows),
+            "hit": hit,
+            "recall": hit / len(rows) if rows else None,
+            "mean_size": sum(r["size"] for r in rows) / len(rows) if rows else None,
+        }
+
+    edges: dict = {}
+    for bucket in ("variant", "plain"):
+        rows = [r for r in edge_rows if r["variant"] == (bucket == "variant")]
+        by_pair: dict = {}
+        for row in rows:
+            entry = by_pair.setdefault(row["pair"], {"total": 0, "above": 0,
+                                                     "sum": 0.0})
+            entry["total"] += 1
+            entry["above"] += int(row["above"])
+            entry["sum"] += row["probability"]
+        for entry in by_pair.values():
+            entry["recall"] = entry["above"] / entry["total"]
+            entry["mean_probability"] = entry.pop("sum") / entry["total"]
+        edges[bucket] = dict(sorted(by_pair.items(),
+                                    key=lambda kv: -kv[1]["total"]))
+    return {"groups": groups, "edges": edges}
+
+
+def variant_blocks(pages: list[dict], assignments: dict, model) -> dict:
+    """Trifft das System Variantenbloecke schlechter - und an welcher Kante?
+
+    Zwei Fragen in einem Durchgang, weil sie zusammen erst eine Konsequenz
+    ergeben. Zerfallen die Bloecke, *und* liegen die PRICE|PRICE-Kanten unter
+    der Schwelle, fehlt dem Paarmodell ein Merkmal. Zerfallen sie bei
+    ordentlichen Kanten, verschenkt der Dekoder sie - beim ILP naheliegend,
+    weil ein Variantenblock ein Stern um den Produktnamen ist, die
+    Transitivitaet aber eine Clique verlangt.
+    """
+    group_rows: list[dict] = []
+    edge_rows: list[dict] = []
+    for page in pages:
+        assignment = assignments.get(page.get("page_id"))
+        if assignment is None:
+            continue
+        rows, edges = _variant_rows(page, assignment, model)
+        group_rows += rows
+        edge_rows += edges
+    return _variant_summary(group_rows, edge_rows)
+
+
+def variant_blocks_cv(pages: list[dict], assignments: dict, blocks,
+                      folds: int = 5, epochs: int = 300, seed: int = 0,
+                      objective: str = "group_f1", decoder: str = "union",
+                      progress=None) -> dict:
+    """Dieselbe Auszaehlung out-of-fold - jede Seite von einem Modell ohne sie.
+
+    In-sample waeren gerade die seltenen Kanten geschoent: das Modell hat die
+    19 Bloecke gesehen, die hier beurteilt werden. Nebeneffekt ist die
+    Stichprobe - ueber alle Referenzseiten statt ueber Dev allein.
+    """
+    group_rows: list[dict] = []
+    edge_rows: list[dict] = []
+    thresholds: list[float] = []
+    for model, outer in fold_models(pages, assignments, blocks, folds=folds,
+                                    epochs=epochs, seed=seed,
+                                    objective=objective, decoder=decoder,
+                                    progress=progress):
+        thresholds.append(model.threshold)
+        for page in outer:
+            rows, edges = _variant_rows(page, assignments[page["page_id"]], model)
+            group_rows += rows
+            edge_rows += edges
+    summary = _variant_summary(group_rows, edge_rows)
+    summary["thresholds"] = thresholds
+    return summary
 
 
 def diagnose(pages: list[dict], assignments: dict, model,
