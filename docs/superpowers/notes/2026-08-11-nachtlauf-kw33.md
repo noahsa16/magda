@@ -100,6 +100,22 @@ Reihenfolge der Gruppierung: **Testseiten zuerst** (schalten die erste
 ehrliche Test-Messung frei), dann Train/Dev-Rest, dann KW33 im Verbund mit
 dem Labeln.
 
+## Zwischenstand ~00:30
+
+- **Test-Gruppierung vollständig:** jeder Duplikat-Cluster des Testsplits
+  hat eine Referenz (42/100 Seiten, restliche 58 sind Duplikate innerhalb
+  abgedeckter Cluster). Die zweite Stufe ist damit **erstmals auf Test
+  messbar** — vorher null Testgruppen.
+- **Lernkurve fertig und committet** (`ace7b75`): Gruppen-F1 sättigt bei 60
+  Trainingsseiten nicht, +0.101 gegen 10 Seiten (p=0.000), im blinden Fleck
+  +0.142. Mehr Gruppierungsreferenz hilft — der Nachtlauf ist belegt sinnvoll.
+- **KW33-Labels:** ~71 offen, kombinierte Chargen (labeln+gruppieren je
+  Seite) laufen weiter.
+- **Zwei Vergabelisten** im Scratchpad (`vergeben.json` für Labels,
+  `group_vergeben.json` für Gruppierungen) verhindern Doppelvergabe an
+  gleichzeitig laufende Agenten. Leere Seiten (nur VALID, keine Entities)
+  sind dort dauerhaft vermerkt, sonst schlägt die Queue sie ewig vor.
+
 ## Danach, in dieser Reihenfolge
 
 1. **Alle Seiten gruppieren** (347). Werkzeug steht, Kontrolle mit
