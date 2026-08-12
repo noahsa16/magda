@@ -24,7 +24,7 @@ from pydantic import BaseModel
 from magda import (
     agreement, catalog_meta, catalogs, config, dedupe, jobs, runner, runs, scraping,
 )
-from magda import label_audit, offers_gold
+from magda import label_audit, offer_teacher, offers_gold
 from magda.gold import count_by_status, words_hash
 from magda.labels import ENTITY_TYPES, validate_spans
 
@@ -532,12 +532,26 @@ def put_gold(page_id: str, payload: GoldPayload):
 
 
 # ---------------------------------------------------------------------------
-# Gruppierungsreferenz (welche Entities ein Angebot bilden, gold/offers/)
+# Gruppierungsreferenz (welche Entities ein Angebot bilden)
 # ---------------------------------------------------------------------------
 # Getrennt von den Span-Annotationen, obwohl beide von Hand entstehen: Die
 # Spans sagen, *was* ein Wort ist, die Gruppen, *wozu* es gehört. Beides in
 # einer Datei hieße, dass eine halbfertige Gruppierung die fertigen Spans
 # derselben Seite mit in den Status "in_progress" zieht.
+#
+# Die Website zeigt sonnet-5 als Gold: `sonnet-5` IST die Projektreferenz
+# (Teamentscheidung 30.07.2026), und die Gruppierungen dazu liegen im
+# Teacher-Ordner data/offer_groups/claude-sonnet-5/. Über *jeder* dieser
+# Seiten liegt gold/offers/ als Hand-Override-Schicht: was ein Mensch
+# annotiert, ist genauer als die maschinelle Gruppierung und gewinnt.
+# Bewusst NICHT `offers_gold.reference_dir()` global umgebogen - die Funktion
+# speist auch `magda offers-gold`, und die Messung gegen den Teacher wäre
+# Selbstbezug. Deshalb liest hier die API die Overlay-Sicht, während die
+# Messreferenz und das Schreibziel gold/offers/ bleiben.
+
+# Ordnername der sonnet-Gruppierungen unter data/offer_groups/. Konstante
+# statt Parameter: die Website hat genau eine Referenz, und das ist sonnet.
+_OFFER_REFERENCE_SOURCE = "claude-sonnet-5"
 
 
 class OfferGoldPayload(BaseModel):
@@ -547,8 +561,22 @@ class OfferGoldPayload(BaseModel):
     groups: list[list[int]]
 
 
-def _offer_gold_file(page_id: str):
-    return offers_gold.reference_dir() / f"{page_id}.json"
+def _offer_reference_file(page_id: str):
+    """Welche Gruppierungsdatei diese Seite hat und woher sie stammt.
+
+    Hand-Override vor maschineller Referenz: liegt für die Seite eine
+    Handannotation in gold/offers/, gilt die; sonst die sonnet-Gruppierung.
+    Rückgabe ``(pfad_oder_None, quelle)`` mit ``quelle`` in
+    ``{"gold", "sonnet", "untouched"}`` - die Website zeigt die Herkunft an,
+    damit sichtbar bleibt, was Mensch und was Modell gruppiert hat.
+    """
+    hand = offers_gold.reference_dir() / f"{page_id}.json"
+    if hand.exists():
+        return hand, "gold"
+    sonnet = offer_teacher.teacher_dir(_OFFER_REFERENCE_SOURCE) / f"{page_id}.json"
+    if sonnet.exists():
+        return sonnet, "sonnet"
+    return None, "untouched"
 
 
 @app.get("/api/offer-gold")
@@ -556,6 +584,7 @@ def list_offer_gold():
     rows = []
     for words_file in config.WORDS_DIR.glob("*.json"):
         page_id = words_file.stem
+        annotation_file, gsource = _offer_reference_file(page_id)
         entry = {
             "page_id": page_id,
             "catalog": _catalog_of(page_id),
@@ -563,9 +592,9 @@ def list_offer_gold():
             "annotator": "",
             "num_offers": 0,
             "stale": False,
+            "source": gsource,
         }
-        annotation_file = _offer_gold_file(page_id)
-        if annotation_file.exists():
+        if annotation_file:
             try:
                 with open(annotation_file) as f:
                     annotation = json.load(f)
@@ -591,8 +620,8 @@ def get_offer_gold(page_id: str):
     page = _load_words(page_id)
     current_hash = words_hash(page["words"])
 
-    annotation_file = _offer_gold_file(page_id)
-    if not annotation_file.exists():
+    annotation_file, gsource = _offer_reference_file(page_id)
+    if annotation_file is None:
         return {
             "page_id": page_id,
             "words_hash": current_hash,
@@ -601,6 +630,7 @@ def get_offer_gold(page_id: str):
             "updated": None,
             "groups": [],
             "stale": False,
+            "source": gsource,
         }
 
     with open(annotation_file) as f:
@@ -610,6 +640,7 @@ def get_offer_gold(page_id: str):
         **annotation,
         "page_id": page_id,
         "stale": annotation.get("words_hash") != current_hash,
+        "source": gsource,
     }
 
 
