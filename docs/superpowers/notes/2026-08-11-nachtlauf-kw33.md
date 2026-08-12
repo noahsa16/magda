@@ -116,6 +116,20 @@ dem Labeln.
   gleichzeitig laufende Agenten. Leere Seiten (nur VALID, keine Entities)
   sind dort dauerhaft vermerkt, sonst schlägt die Queue sie ewig vor.
 
+## Zwangspause 00:22–04:00 (Session-Limit)
+
+Drei kombinierte Chargen (Y/AA/AB) gleichzeitig rissen das Limit erneut —
+Reset 4 Uhr. Lehre bestätigt: auch drei token-schwere kombinierte Chargen
+(~150k je Stück) sind zu viel gleichzeitig. **Nach dem Reset höchstens zwei
+kombinierte parallel, oder eine kombinierte plus zwei leichte
+Gruppierungschargen.**
+
+Stand bei der Pause: Labels 354/422 (68 KW33 offen), Gruppierungen 142,
+Testsplit vollständig. Alles committet, Vergabelisten zurückgesetzt
+(`vergeben.json` leer, `group_vergeben.json` nur die zwei leeren Seiten
+1351497_p9, _p24). Ein Hintergrund-Timer (`sleep` bis ~04:05) reaktiviert
+den Lauf; bei erneutem Limit kurz weiterschlafen und wieder versuchen.
+
 ## Danach, in dieser Reihenfolge
 
 1. **Alle Seiten gruppieren** (347). Werkzeug steht, Kontrolle mit
