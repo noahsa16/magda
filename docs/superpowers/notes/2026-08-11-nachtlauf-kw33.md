@@ -149,3 +149,43 @@ den Lauf; bei erneutem Limit kurz weiterschlafen und wieder versuchen.
 Lauf mit dem falsch kalibrierten Checkpoint. In einer Auflistung sieht sie
 aus wie eine Referenz. Löschen, sobald mit dem neuen Checkpoint neu
 gruppiert ist.
+
+## Fortsetzung 12.08.2026 vormittags
+
+Session-Limit weg, Labeling wieder aufgenommen. Taktung: 3 Agenten je
+Welle, 3 Seiten pro Agent, beide Stufen kombiniert. Nach jeder Welle
+committet der Koordinator mit **expliziten Dateipfaden** (nicht
+verzeichnisweit) - `zsh` macht kein Word-Splitting bei unquoted `$FILES`,
+und der Blackbox-Parallelprozess schreibt in denselben Baum.
+
+**Zwei Befunde beim Wiederaufnehmen, beide von Noah ausgelöst:**
+
+1. **15 von 144 Gruppierungen waren aus Mistral-Entities gebaut**, nicht
+   aus sonnet. `offers-teacher task` nimmt `args.labels_from or
+   config.default_labeled_model()`, und `default_labeled_model()` liefert
+   den *größten* Labelordner. Als der frühe Nachtlauf lief, war der
+   Mistral-Ordner (296) größer als der sonnet-Ordner - der Default kippte
+   mit der Größe. Inzwischen hat sonnet 354 und gewinnt, aber die 15 frühen
+   Seiten (alle KW30-32, denn Mistral hat kein KW33) tragen Mistrals
+   Entity-Grenzen. **Aufräumarbeit: diese 15 aus sonnet-5 neu gruppieren.**
+   Der Aufruf muss künftig `--labels-from sonnet-5` global tragen (steht
+   jetzt im Agenten-Prompt). Gemessen: App-Preis-Wörter von sonnet-5 landen
+   zu 113/116 in einer Gruppe.
+
+2. **Die Website zeigte die Gruppierungen nicht.** `/api/offer-gold` las nur
+   `gold/offers/` (eine Datei), während die 142+ sonnet-Gruppierungen in
+   `data/offer_groups/claude-sonnet-5/` liegen. Behoben mit einer
+   Overlay-Sicht (Commit `f40988f`): Hand-Annotation vor sonnet-Default, neues
+   Feld `source`. Bewusst **nicht** `offers_gold.reference_dir()` global
+   umgebogen - die Funktion speist auch `magda offers-gold`, und die Messung
+   gegen den Teacher wäre Selbstbezug. Zwei Tests, tamper-gegengeprüft.
+
+Noah hat außerdem bekräftigt, was CLAUDE.md schon sagt: **sonnet-5 IST der
+Goldstandard** (nicht `gold/`), Mistral wird nicht benutzt. Im Gedächtnis
+verankert.
+
+**Zwei offene Teamentscheidungen, die nicht eigenmächtig fallen:**
+- sonnet-5-app (81 handgeprüfte Audit-App-Preise, Weg A) in die Referenz
+  übernehmen? Sonst erben die Gruppierungen sonnet-5s App-Preis-Lücken.
+- Split: wird KW33 die Testwoche? Blockiert das Retraining, gehört zu
+  Bogdan und Kjell.
