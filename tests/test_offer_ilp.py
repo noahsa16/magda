@@ -12,6 +12,11 @@ import pytest
 
 from magda import offer_ilp, offer_pairs
 
+# Wer nur `requirements.txt` installiert hat, soll hier nicht auf elf
+# roten Tests sitzen - `pulp` ist optional wie `flair`. In CI steht es
+# in den dev-Extras, dort laufen sie also wirklich.
+pytest.importorskip("pulp")
+
 
 def _probability(weight: float, threshold: float) -> float:
     """Wahrscheinlichkeit, deren Gewicht `weight` betraegt - die Umkehrung des Offsets."""
