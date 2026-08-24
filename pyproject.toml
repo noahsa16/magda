@@ -51,7 +51,11 @@ magda = "magda.cli:main"
 # torch, transformers und tokenizers unangetastet. Vor einem Versionssprung
 # lohnt derselbe Test:  pip install --dry-run '.[flair]'
 flair = ["flair>=0.13"]
-dev = ["pytest", "httpx"]
+# `pulp` gehört hierher und nicht in requirements.txt: die Pipeline
+# kommt ohne den ILP-Dekoder aus, die Prüfung nicht. Er trägt den
+# stärksten gemessenen Gruppierungsbefund (+0.100 Gruppen-F1,
+# p = 0.000) – ein Pfad, den CI nie ausführt, ist ungeprüft.
+dev = ["pytest", "httpx", "pulp"]
 
 [tool.setuptools.packages.find]
 where = ["src"]

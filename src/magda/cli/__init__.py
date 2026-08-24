@@ -29,6 +29,8 @@ PIPELINE = (
     Befehl("extract", "extract", "Wörter und Boxen aus dem PDF-Textlayer ziehen"),
     Befehl("dedupe", "duplicates", "Beinah-Duplikate finden und aussortieren"),
     Befehl("label", "label", "Seiten vom Vision-LLM labeln lassen"),
+    Befehl("label-teacher", "label_teacher",
+           "Seiten von einem Agenten mit Bildzugriff labeln lassen (sonnet-5)"),
     Befehl("split", "split", "Train/Dev/Test festlegen"),
     Befehl("train", "train", "Token-Klassifikation trainieren"),
     Befehl("eval", "evaluate", "Entity-Level-F1 auf einem Split messen"),
@@ -41,6 +43,8 @@ VERGLEICH = (
     Befehl("agreement", "agreement", "Zwei Labeling-Modelle gegeneinander halten"),
     Befehl("queue", "queue", "Welche Gold-Seiten als Nächstes durchzusehen sind"),
     Befehl("audit", "audit", "Ein Label zur Handprüfung vorsortieren (Kandidaten)"),
+    Befehl("audit-apply", "audit_apply",
+           "Urteile der Handprüfung als neuen Labelordner ablegen"),
     Befehl("offers-queue", "offers_queue",
            "Welche Seiten die Gruppierungsreferenz zuerst braucht"),
     Befehl("offers-gold", "offers_gold",
@@ -51,6 +55,12 @@ VERGLEICH = (
            "Kann eine flache OFFER-Tag-Folge die Angebote ausdrücken?"),
     Befehl("significance", "significance",
            "Konfidenzintervall und gepaarter Modellvergleich über Cluster"),
+    Befehl("curve", "curve",
+           "Lernkurve über clusterweise gezogene Trainingsteilmengen"),
+    Befehl("taxonomy", "taxonomy",
+           "Fehlerklassen des Schülers ordnen, je Klasse mit Lösbarkeit"),
+    Befehl("blackbox-eval", "blackbox_eval",
+           "Die LLM-Blackbox gegen die eigene Pipeline stellen (Angebot gegen Angebot)"),
 )
 
 WERKZEUGE = (
@@ -63,6 +73,10 @@ WERKZEUGE = (
            "Angebote von einem Vision-Modell gruppieren lassen"),
     Befehl("offers-model", "offers_model",
            "Paarmodell auf einer Gruppierung trainieren und messen"),
+    Befehl("offers-grid", "offers_grid",
+           "Merkmalsblöcke des Paarmodells einzeln messen (Basis/Geometrie/Farbe)"),
+    Befehl("prune-checkpoints", "prune_checkpoints",
+           "checkpoint-N-Ordner entfernen, best/ und den Verlauf behalten"),
     Befehl("bundle", "export", "Trainingspaket für eine fremde GPU schnüren"),
     Befehl("import-gold", "import_gold", "Handannotationen als Labelordner ablegen"),
 )

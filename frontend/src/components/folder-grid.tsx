@@ -1,6 +1,6 @@
 import { cn } from "@/lib/utils"
 
-export type FolderTone = "model" | "gold" | "unchecked" | "group"
+export type FolderTone = "model" | "gold" | "unchecked" | "group" | "archive" | "offers"
 
 export interface FolderItem {
   id: string
@@ -22,6 +22,10 @@ function FolderIcon({ tone }: { tone: FolderTone }) {
     model: ["#3b82f6", "#60a5fa"],
     gold: ["#d97706", "#f59e0b"],
     unchecked: ["#64748b", "#94a3b8"],
+    // Archiv bewusst entsättigt: es soll auffindbar sein, ohne dass es neben
+    // dem aktuellen Stand gleichrangig aussieht.
+    archive: ["#475569", "#64748b"],
+    offers: ["#7c3aed", "#a78bfa"],
   }[tone]
 
   return (
@@ -69,6 +73,11 @@ export function FolderGrid({
           onDoubleClick={() => onOpen(item.id)}
           onClick={() => onOpen(item.id)}
           title={item.label}
+          // Der Ton trägt Bedeutung (Archiv entsättigt, Ungeprüftes grau) und
+          // war bis hierher nur als SVG-Füllung vorhanden, also ungeprüfbar:
+          // ein Test konnte den Badge festhalten und die Farbe daneben still
+          // wegdrehen lassen.
+          data-tone={item.tone}
           className={cn(
             "flex flex-col items-center gap-1 rounded-xl border-2 border-transparent px-2 py-3",
             "transition-colors hover:border-foreground hover:bg-accent",

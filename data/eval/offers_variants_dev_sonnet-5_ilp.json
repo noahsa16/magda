@@ -1,0 +1,387 @@
+{
+  "groups": {
+    "all": {
+      "total": 122,
+      "hit": 80,
+      "recall": 0.6557377049180327,
+      "mean_size": 5.532786885245901
+    },
+    "variant": {
+      "total": 19,
+      "hit": 4,
+      "recall": 0.21052631578947367,
+      "mean_size": 10.0
+    },
+    "plain": {
+      "total": 103,
+      "hit": 76,
+      "recall": 0.7378640776699029,
+      "mean_size": 4.70873786407767
+    }
+  },
+  "edges": {
+    "variant": {
+      "PRICE|PRODUCT": {
+        "total": 193,
+        "above": 33,
+        "recall": 0.17098445595854922,
+        "mean_probability": 0.7362898704663207
+      },
+      "PRICE|QUANTITY": {
+        "total": 131,
+        "above": 53,
+        "recall": 0.40458015267175573,
+        "mean_probability": 0.8061732061068702
+      },
+      "PRICE|PRICE": {
+        "total": 107,
+        "above": 31,
+        "recall": 0.2897196261682243,
+        "mean_probability": 0.5993662336448599
+      },
+      "PRODUCT|QUANTITY": {
+        "total": 104,
+        "above": 51,
+        "recall": 0.49038461538461536,
+        "mean_probability": 0.827540596153846
+      },
+      "PRODUCT|PRODUCT": {
+        "total": 77,
+        "above": 33,
+        "recall": 0.42857142857142855,
+        "mean_probability": 0.7551471688311686
+      },
+      "QUANTITY|UNIT_PRICE": {
+        "total": 58,
+        "above": 36,
+        "recall": 0.6206896551724138,
+        "mean_probability": 0.9108811034482753
+      },
+      "QUANTITY|QUANTITY": {
+        "total": 46,
+        "above": 37,
+        "recall": 0.8043478260869565,
+        "mean_probability": 0.9163764130434785
+      },
+      "PRODUCT|UNIT_PRICE": {
+        "total": 40,
+        "above": 30,
+        "recall": 0.75,
+        "mean_probability": 0.9350748000000001
+      },
+      "PRICE|UNIT_PRICE": {
+        "total": 29,
+        "above": 20,
+        "recall": 0.6896551724137931,
+        "mean_probability": 0.9287412413793104
+      },
+      "BRAND|QUANTITY": {
+        "total": 22,
+        "above": 16,
+        "recall": 0.7272727272727273,
+        "mean_probability": 0.956620818181818
+      },
+      "BRAND|UNIT_PRICE": {
+        "total": 20,
+        "above": 13,
+        "recall": 0.65,
+        "mean_probability": 0.9379821500000001
+      },
+      "UNIT_PRICE|UNIT_PRICE": {
+        "total": 18,
+        "above": 12,
+        "recall": 0.6666666666666666,
+        "mean_probability": 0.9349149444444443
+      },
+      "BRAND|PRODUCT": {
+        "total": 16,
+        "above": 13,
+        "recall": 0.8125,
+        "mean_probability": 0.9677359375000001
+      },
+      "OLD_PRICE|QUANTITY": {
+        "total": 14,
+        "above": 6,
+        "recall": 0.42857142857142855,
+        "mean_probability": 0.8211642857142857
+      },
+      "OLD_PRICE|UNIT_PRICE": {
+        "total": 14,
+        "above": 6,
+        "recall": 0.42857142857142855,
+        "mean_probability": 0.8159441428571429
+      },
+      "BRAND|PRICE": {
+        "total": 11,
+        "above": 6,
+        "recall": 0.5454545454545454,
+        "mean_probability": 0.8669176363636364
+      },
+      "OLD_PRICE|PRODUCT": {
+        "total": 8,
+        "above": 2,
+        "recall": 0.25,
+        "mean_probability": 0.711245125
+      },
+      "DISCOUNT|QUANTITY": {
+        "total": 8,
+        "above": 4,
+        "recall": 0.5,
+        "mean_probability": 0.9207981250000001
+      },
+      "DISCOUNT|UNIT_PRICE": {
+        "total": 8,
+        "above": 6,
+        "recall": 0.75,
+        "mean_probability": 0.9533469999999999
+      },
+      "BRAND|OLD_PRICE": {
+        "total": 5,
+        "above": 1,
+        "recall": 0.2,
+        "mean_probability": 0.7078308
+      },
+      "OLD_PRICE|PRICE": {
+        "total": 5,
+        "above": 4,
+        "recall": 0.8,
+        "mean_probability": 0.9522212
+      },
+      "DISCOUNT|PRICE": {
+        "total": 4,
+        "above": 3,
+        "recall": 0.75,
+        "mean_probability": 0.9422915
+      },
+      "DISCOUNT|PRODUCT": {
+        "total": 4,
+        "above": 2,
+        "recall": 0.5,
+        "mean_probability": 0.8621417499999999
+      },
+      "DISCOUNT|OLD_PRICE": {
+        "total": 2,
+        "above": 2,
+        "recall": 1.0,
+        "mean_probability": 0.981813
+      },
+      "BRAND|DISCOUNT": {
+        "total": 2,
+        "above": 1,
+        "recall": 0.5,
+        "mean_probability": 0.816439
+      },
+      "OLD_PRICE|OLD_PRICE": {
+        "total": 1,
+        "above": 0,
+        "recall": 0.0,
+        "mean_probability": 0.297239
+      }
+    },
+    "plain": {
+      "PRICE|PRODUCT": {
+        "total": 103,
+        "above": 84,
+        "recall": 0.8155339805825242,
+        "mean_probability": 0.892273388349514
+      },
+      "PRODUCT|UNIT_PRICE": {
+        "total": 91,
+        "above": 91,
+        "recall": 1.0,
+        "mean_probability": 0.9919603626373626
+      },
+      "QUANTITY|UNIT_PRICE": {
+        "total": 87,
+        "above": 87,
+        "recall": 1.0,
+        "mean_probability": 0.994256068965517
+      },
+      "PRODUCT|QUANTITY": {
+        "total": 86,
+        "above": 84,
+        "recall": 0.9767441860465116,
+        "mean_probability": 0.9891793604651162
+      },
+      "PRICE|UNIT_PRICE": {
+        "total": 84,
+        "above": 67,
+        "recall": 0.7976190476190477,
+        "mean_probability": 0.903496511904762
+      },
+      "PRICE|QUANTITY": {
+        "total": 80,
+        "above": 61,
+        "recall": 0.7625,
+        "mean_probability": 0.8929075500000001
+      },
+      "BRAND|UNIT_PRICE": {
+        "total": 73,
+        "above": 73,
+        "recall": 1.0,
+        "mean_probability": 0.9967096301369865
+      },
+      "BRAND|PRODUCT": {
+        "total": 70,
+        "above": 70,
+        "recall": 1.0,
+        "mean_probability": 0.9926824857142853
+      },
+      "BRAND|QUANTITY": {
+        "total": 65,
+        "above": 65,
+        "recall": 1.0,
+        "mean_probability": 0.9948464923076926
+      },
+      "BRAND|PRICE": {
+        "total": 64,
+        "above": 53,
+        "recall": 0.828125,
+        "mean_probability": 0.9529245000000003
+      },
+      "OLD_PRICE|UNIT_PRICE": {
+        "total": 25,
+        "above": 23,
+        "recall": 0.92,
+        "mean_probability": 0.9423597599999998
+      },
+      "OLD_PRICE|PRODUCT": {
+        "total": 21,
+        "above": 13,
+        "recall": 0.6190476190476191,
+        "mean_probability": 0.9048954761904763
+      },
+      "OLD_PRICE|PRICE": {
+        "total": 20,
+        "above": 13,
+        "recall": 0.65,
+        "mean_probability": 0.9173538499999999
+      },
+      "OLD_PRICE|QUANTITY": {
+        "total": 20,
+        "above": 17,
+        "recall": 0.85,
+        "mean_probability": 0.9286642000000003
+      },
+      "BRAND|OLD_PRICE": {
+        "total": 17,
+        "above": 11,
+        "recall": 0.6470588235294118,
+        "mean_probability": 0.9149121764705883
+      },
+      "APP_PRICE|UNIT_PRICE": {
+        "total": 16,
+        "above": 16,
+        "recall": 1.0,
+        "mean_probability": 0.9958311250000002
+      },
+      "DISCOUNT|PRICE": {
+        "total": 14,
+        "above": 14,
+        "recall": 1.0,
+        "mean_probability": 0.9941295714285714
+      },
+      "DISCOUNT|PRODUCT": {
+        "total": 14,
+        "above": 11,
+        "recall": 0.7857142857142857,
+        "mean_probability": 0.7719049285714287
+      },
+      "DISCOUNT|OLD_PRICE": {
+        "total": 14,
+        "above": 13,
+        "recall": 0.9285714285714286,
+        "mean_probability": 0.9216602142857141
+      },
+      "DISCOUNT|QUANTITY": {
+        "total": 10,
+        "above": 7,
+        "recall": 0.7,
+        "mean_probability": 0.875523
+      },
+      "DISCOUNT|UNIT_PRICE": {
+        "total": 10,
+        "above": 9,
+        "recall": 0.9,
+        "mean_probability": 0.9024994
+      },
+      "UNIT_PRICE|UNIT_PRICE": {
+        "total": 9,
+        "above": 9,
+        "recall": 1.0,
+        "mean_probability": 0.9939556666666667
+      },
+      "APP_PRICE|PRODUCT": {
+        "total": 9,
+        "above": 8,
+        "recall": 0.8888888888888888,
+        "mean_probability": 0.8801953333333333
+      },
+      "APP_PRICE|BRAND": {
+        "total": 8,
+        "above": 8,
+        "recall": 1.0,
+        "mean_probability": 0.9922251249999999
+      },
+      "APP_PRICE|QUANTITY": {
+        "total": 8,
+        "above": 8,
+        "recall": 1.0,
+        "mean_probability": 0.9942894999999999
+      },
+      "BRAND|DISCOUNT": {
+        "total": 7,
+        "above": 6,
+        "recall": 0.8571428571428571,
+        "mean_probability": 0.8553674285714286
+      },
+      "APP_PRICE|PRICE": {
+        "total": 7,
+        "above": 7,
+        "recall": 1.0,
+        "mean_probability": 0.9876535714285714
+      },
+      "OLD_PRICE|OLD_PRICE": {
+        "total": 5,
+        "above": 0,
+        "recall": 0.0,
+        "mean_probability": 0.7043236
+      },
+      "PRODUCT|PRODUCT": {
+        "total": 4,
+        "above": 4,
+        "recall": 1.0,
+        "mean_probability": 0.9872915
+      },
+      "APP_PRICE|APP_PRICE": {
+        "total": 3,
+        "above": 3,
+        "recall": 1.0,
+        "mean_probability": 0.9982383333333334
+      },
+      "APP_PRICE|OLD_PRICE": {
+        "total": 2,
+        "above": 2,
+        "recall": 1.0,
+        "mean_probability": 0.994085
+      },
+      "APP_PRICE|DISCOUNT": {
+        "total": 2,
+        "above": 2,
+        "recall": 1.0,
+        "mean_probability": 0.9865825
+      },
+      "DISCOUNT|DISCOUNT": {
+        "total": 1,
+        "above": 1,
+        "recall": 1.0,
+        "mean_probability": 0.940482
+      }
+    }
+  },
+  "source": "sonnet-5",
+  "splits": "dev",
+  "decoder": "ilp",
+  "out_of_fold": false,
+  "reference": "claude-sonnet-5"
+}

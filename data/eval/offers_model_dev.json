@@ -6,7 +6,8 @@
   ],
   "splits": "dev",
   "threshold": 0.94,
-  "checkpoint": "/Users/noahsamel/PycharmProjects/magda/checkpoints/offer_pairs/model.pt",
+  "decoder": "union",
+  "checkpoint": "checkpoints/offer_pairs/model_union.pt",
   "model_provenance": {
     "reference": "claude-sonnet-5",
     "kind": [
@@ -14,21 +15,22 @@
     ],
     "labels": "sonnet-5",
     "splits": "train",
-    "pages": 30
+    "pages": 54,
+    "decoder": "union"
   },
   "agreement": {
     "pages": 21,
     "entities": 730,
     "unassignable": 55,
     "ref_pairs": 1996,
-    "sys_pairs": 2496,
-    "shared_pairs": 1667,
+    "sys_pairs": 2235,
+    "shared_pairs": 1655,
     "ref_groups": 122,
-    "sys_groups": 138,
-    "exact_groups": 62,
+    "sys_groups": 145,
+    "exact_groups": 66,
     "ref_groups_without_entities": 0,
-    "pair_f1": 0.7422083704363313,
-    "group_f1": 0.47692307692307695
+    "pair_f1": 0.7823209643110377,
+    "group_f1": 0.49438202247191015
   },
   "heuristic": {
     "pages": 21,
@@ -47,13 +49,13 @@
   "arithmetic": {
     "pages": 21,
     "prices": 175,
-    "confirmed": 89,
-    "contradicted": 14,
+    "confirmed": 87,
+    "contradicted": 16,
     "unresolved": 2,
     "unjudgeable": 70,
-    "offers": 160,
+    "offers": 167,
     "judged": 103,
-    "accuracy": 0.8640776699029126,
+    "accuracy": 0.8446601941747572,
     "coverage": 0.5885714285714285
   },
   "arithmetic_heuristic": {

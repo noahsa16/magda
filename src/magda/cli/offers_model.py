@@ -31,6 +31,24 @@ from magda.cli.offers import _load_labeled_pages, _load_predicted_pages
 SPLIT_FILE = config.DATA_DIR / "splits" / "split.json"
 DEFAULT_CHECKPOINT = config.PROJECT_ROOT / "checkpoints" / "offer_pairs" / "model.pt"
 
+# Beide Defaults sind gemessen, nicht geraten - `magda offers-grid
+# --cross-validate` ueber 75 Seiten in 68 Clustern: +Geometrie schlaegt die
+# Basis um +0.044 [+0.009, +0.082] bei p = 0.018, ILP schlaegt Union-Find um
+# +0.100 [+0.067, +0.133] bei p = 0.000. Vorher waren hier "basis" und "union"
+# eingestellt, also zweimal die unterlegene Variante.
+DEFAULT_TRAIN_FEATURES = "geometrie"
+DEFAULT_TRAIN_DECODER = "ilp"
+
+
+def _blocks(name: str, parser) -> tuple[str, ...]:
+    """Merkmalsvariante nach Namen - dieselben wie in `magda offers-grid`."""
+    from magda import offer_grid
+
+    if name not in offer_grid.VARIANTS:
+        parser.error(f"Merkmalsvariante unbekannt: {name}. "
+                     f"Bekannt: {', '.join(offer_grid.VARIANTS)}")
+    return offer_grid.VARIANTS[name]
+
 
 def _split_ids(names: list[str], parser) -> set[str]:
     if not SPLIT_FILE.is_file():
@@ -76,24 +94,28 @@ def _cmd_train(args, parser):
     source, pages, reference = _selected(args, parser)
     stats = offer_model.training_stats(pages, reference.assignments)
     hidden = tuple(int(h) for h in args.hidden.split(","))
+    blocks = _blocks(args.features, parser)
+    decoder = args.decoder or DEFAULT_TRAIN_DECODER
 
     calibration = None
     if args.folds > 1:
         calibration = offer_model.calibrate(
             pages, reference.assignments, folds=args.folds,
             epochs=args.epochs, seed=args.seed, hidden=hidden,
-            objective=args.objective,
+            objective=args.objective, decoder=decoder, blocks=blocks,
         )
 
     model = offer_model.train(
         pages, reference.assignments, epochs=args.epochs, seed=args.seed,
-        hidden=hidden,
+        hidden=hidden, decoder=decoder, blocks=blocks,
         provenance={
+            "features": args.features,
             "reference": args.reference_from,
             "kind": sorted(set(reference.provenance.values())),
             "labels": source,
             "splits": args.splits,
             "pages": stats["pages"],
+            "decoder": decoder,
         },
     )
     if calibration:
@@ -102,6 +124,8 @@ def _cmd_train(args, parser):
 
     print(f"Lehrer: data/offer_groups/{config.model_slug(args.reference_from)}"
           f"   Labels: {source}   Splits: {args.splits}")
+    print(f"Merkmale: {args.features} ({len(model.feature_names)})"
+          f"   Dekoder: {decoder}")
     if "llm" in set(reference.provenance.values()):
         print("  Maschinell erzeugte Gruppierung: das Modell lernt Uebereinstimmung,")
         print("  nicht Richtigkeit. Gegenprobe: `magda offers-model eval`.")
@@ -149,8 +173,11 @@ def _cmd_eval(args, parser):
     model = offer_model.load(args.checkpoint)
     # Ohne Angabe die Schwelle des Checkpoints: sie wurde out-of-fold
     # gewaehlt und gehoert zum Modell. Wer sie hier neu setzt, misst nicht
-    # mehr das System, das trainiert wurde.
+    # mehr das System, das trainiert wurde. Fuer den Dekoder gilt dasselbe,
+    # und zwar staerker: Die Schwelle wurde *fuer ihn* gewaehlt.
     threshold = args.threshold if args.threshold is not None else model.threshold
+    if args.decoder:
+        model.decoder = args.decoder
 
     def grouping(page):
         return offers_gold.offers_from_reference(page, _assignment(model, page, threshold))
@@ -178,6 +205,7 @@ def _cmd_eval(args, parser):
         "provenance": sorted(set(reference.provenance.values())),
         "splits": args.splits,
         "threshold": threshold,
+        "decoder": model.decoder,
         "checkpoint": str(args.checkpoint),
         "model_provenance": model.provenance,
         "agreement": agreement.to_dict(),
@@ -186,14 +214,17 @@ def _cmd_eval(args, parser):
         "arithmetic_heuristic": heuristic_verdict.to_dict(),
     }
     config.EVAL_DIR.mkdir(parents=True, exist_ok=True)
-    out_path = config.EVAL_DIR / f"offers_model_{args.splits.replace(',', '-')}.json"
+    suffix = "" if model.decoder == "union" else f"_{model.decoder}"
+    out_path = config.EVAL_DIR / (
+        f"offers_model_{args.splits.replace(',', '-')}{suffix}.json")
     with open(out_path, "w") as f:
         json.dump(payload, f, indent=2, ensure_ascii=False)
 
     def _rate(value):
         return "nicht messbar" if value is None else f"{value:.3f}"
 
-    print(f"Splits: {args.splits}   Seiten: {agreement.pages}   Schwelle: {threshold}")
+    print(f"Splits: {args.splits}   Seiten: {agreement.pages}   "
+          f"Schwelle: {threshold}   Dekoder: {model.decoder}")
     print(f"Lehrer: data/offer_groups/{config.model_slug(args.reference_from)}")
     print()
     print("Uebereinstimmung mit dem Lehrer (andere Seiten als im Training):")
@@ -218,6 +249,143 @@ def _cmd_eval(args, parser):
     print(f"Report: {out_path}")
 
 
+def _cmd_diagnose(args, parser):
+    """Wer deckelt - das Paarmodell oder das Dekodieren?"""
+    from magda import offer_grid, offer_model
+
+    source, pages, reference = _selected(args, parser)
+    model = offer_model.load(args.checkpoint)
+    if args.decoder:
+        model.decoder = args.decoder
+    result = offer_grid.diagnose(pages, reference.assignments, model)
+    result |= {"source": source, "splits": args.splits,
+               "reference": config.model_slug(args.reference_from),
+               "checkpoint": str(args.checkpoint)}
+
+    config.EVAL_DIR.mkdir(parents=True, exist_ok=True)
+    # Die Entity-Quelle gehoert in den Namen, nicht nur der Dekoder: Der
+    # Lehrerlauf und der Vorhersagelauf messen beide `dev` und beantworten
+    # verschiedene Fragen. Derselbe Fehler wie einst bei `offers_grid`.
+    out_path = config.EVAL_DIR / (
+        f"offers_diagnose_{args.splits.replace(',', '-')}"
+        f"_{config.model_slug(source)}_{model.decoder}.json")
+    with open(out_path, "w") as f:
+        json.dump(result, f, indent=2, ensure_ascii=False)
+
+    print(f"Entities: {source}   Splits: {args.splits}   Dekoder: {model.decoder}")
+    print(f"{result['pages']} Seiten, {result['pairs']} beurteilbare Paare, "
+          f"davon {result['positive']} zusammengehoerig")
+    print()
+    print(f"  Kantenqualitaet (AUC)        {result['auc']:.3f}")
+    print("    Trennschaerfe ohne Schwelle. 0.5 hiesse: die Kanten tragen nichts.")
+    print()
+    print(f"  erreicht  (Schwelle {result['threshold']:.2f})   {result['achieved']:.3f}")
+    print(f"  Obergrenze (Schwelle {result['ceiling_threshold']:.2f})   {result['ceiling']:.3f}")
+    print("    Die Obergrenze ist post-hoc auf den Messseiten gewaehlt, also")
+    print("    keine erreichbare Leistung - der Abstand ist der Preis der")
+    print("    Schwellenwahl, nicht ein Versaeumnis.")
+    print()
+    print(f"  mit perfekten Kanten         {result['oracle']:.3f}")
+    print("    Muss 1.000 sein. Sonst verliert der Dekoder selbst Information,")
+    print("    unabhaengig vom Modell - und die Diagnose haette keinen Massstab.")
+    print()
+    if result["auc"] is not None:
+        if result["ceiling"] and result["ceiling"] < 0.8 and result["auc"] > 0.95:
+            print("  Lesart: gute Kanten, verlustreiches Dekodieren.")
+        elif result["auc"] < 0.9:
+            print("  Lesart: die Kanten selbst begrenzen - bessere Merkmale oder")
+            print("  eine bessere Referenz, kein anderes Dekodierverfahren.")
+    f = result["failures"]
+    print()
+    print(f"  Verfehlte Gruppen: {f['miss']} von {f['hit'] + f['miss']}")
+    for kind, count in sorted(f["kinds"].items(), key=lambda kv: -kv[1]):
+        print(f"    {kind:28s} {count:3d}  ({count / f['miss']:.0%})")
+    print(f"    Groesse getroffen {f['mean_size_hit']:.2f} Entities, "
+          f"verfehlt {f['mean_size_miss']:.2f}")
+    print(f"    ohne Grundpreis: {f['blind_share_hit']:.0%} der getroffenen, "
+          f"{f['blind_share_miss']:.0%} der verfehlten")
+    print("    Zerfall heisst: es fehlen Kanten. Verschmelzung: es sind zu viele.")
+    print("    Die Massnahmen sind gegenlaeufig - deshalb die Unterscheidung.")
+    print(f"\nReport: {out_path}")
+
+
+def _cmd_variants(args, parser):
+    """Trifft das System Variantenbloecke schlechter - und an welcher Kante?"""
+    from magda import offer_grid, offer_model
+
+    source, pages, reference = _selected(args, parser)
+    model = offer_model.load(args.checkpoint)
+    if args.decoder:
+        model.decoder = args.decoder
+
+    if args.cross_validate:
+        blocks = _blocks(args.features, parser) if args.features else model.blocks
+
+        def progress(number, held, threshold):
+            print(f"  Fold {number}: {held} Seiten, Schwelle {threshold:.2f}")
+
+        result = offer_grid.variant_blocks_cv(
+            pages, reference.assignments, blocks, folds=args.folds,
+            epochs=args.epochs, seed=args.seed, decoder=model.decoder,
+            progress=progress)
+        result["features"] = args.features or "checkpoint"
+        result["blocks"] = list(blocks)
+        print()
+    else:
+        result = offer_grid.variant_blocks(pages, reference.assignments, model)
+    result |= {"source": source, "splits": args.splits,
+               "decoder": model.decoder, "out_of_fold": bool(args.cross_validate),
+               "reference": config.model_slug(args.reference_from)}
+
+    config.EVAL_DIR.mkdir(parents=True, exist_ok=True)
+    # Die Merkmalsvariante gehoert in den Namen wie die Entity-Quelle: sonst
+    # ueberschreibt der Geometrie-Lauf den Basis-Lauf still, und der Vergleich
+    # misst zwei Kopien derselben Zahl. Schon einmal passiert (5a755d6).
+    out_path = config.EVAL_DIR / (
+        f"offers_variants_{args.splits.replace(',', '-')}"
+        f"_{config.model_slug(source)}_{result.get('features', 'checkpoint')}"
+        f"_{model.decoder}{'_cv' if args.cross_validate else ''}.json")
+    with open(out_path, "w") as f:
+        json.dump(result, f, indent=2, ensure_ascii=False)
+
+    print(f"Entities: {source}   Splits: {args.splits}   Dekoder: {model.decoder}")
+    if not args.cross_validate:
+        print("ACHTUNG: ein Checkpoint auf seinen eigenen Trainingsseiten. Fuer")
+        print("eine belastbare Zahl --cross-validate.")
+    print()
+    groups = result["groups"]
+    print("  Gruppen                 gesamt  getroffen  Recall  Groesse")
+    for bucket, name in (("all", "alle"), ("plain", "ohne Variantenbloecke"),
+                         ("variant", "Variantenbloecke")):
+        entry = groups[bucket]
+        if not entry["total"]:
+            continue
+        print(f"  {name:22s} {entry['total']:6d} {entry['hit']:10d}"
+              f"  {entry['recall']:6.3f}  {entry['mean_size']:5.2f}")
+    print("    Variantenblock = Referenzgruppe mit mehr als einem PRICE oder")
+    print("    mehr als einer QUANTITY. Rohe Zahlen, weil eine Rate ueber so")
+    print("    wenige Gruppen allein nichts aussagt.")
+
+    for bucket, name in (("variant", "In Variantenbloecken"),
+                         ("plain", "In allen anderen")):
+        rows = result["edges"][bucket]
+        if not rows:
+            continue
+        print()
+        print(f"  {name}: welche zusammengehoerige Kante haelt?")
+        print("    Typpaar                  Paare  ueber Schwelle  mittlere W.")
+        for pair, entry in rows.items():
+            print(f"    {pair:22s} {entry['total']:6d}"
+                  f"  {entry['above']:6d} ({entry['recall']:.3f})"
+                  f"      {entry['mean_probability']:.3f}")
+    print()
+    print("    Liegen die PRICE|PRICE-Kanten unten, fehlt dem Paarmodell ein")
+    print("    Merkmal. Halten sie und die Bloecke zerfallen trotzdem, dann")
+    print("    verschenkt der Dekoder sie: ein Variantenblock ist ein Stern um")
+    print("    den Produktnamen, die Transitivitaet des ILP verlangt eine Clique.")
+    print(f"\nReport: {out_path}")
+
+
 def _assignment(model, page: dict, threshold: float) -> dict[int, int]:
     """Wortindex -> Angebotsnummer, wie das Modell die Seite sieht."""
     return {
@@ -232,13 +400,23 @@ def _cmd_predict(args, parser):
 
     from_model = offer_model.load(args.checkpoint)
     threshold = args.threshold if args.threshold is not None else from_model.threshold
-    _, pages, _ = _selected(args, parser)
+    if args.decoder:
+        from_model.decoder = args.decoder
+    # Der Einsatzfall braucht beide Filter *nicht*: eine frisch geerntete
+    # Woche steht in keinem Split und hat keine Referenz - genau deshalb
+    # laesst man das Modell darauf los. Ohne diesen Zweig kann die
+    # Gruppierung nur dort laufen, wo die Antwort schon bekannt ist.
+    if args.all_pages:
+        _, pages = _pages(args, parser)
+    else:
+        _, pages, _ = _selected(args, parser)
     written = 0
     for page in pages:
         groups = from_model.group_page_words(page, threshold)
         offer_teacher.save_grouping(page, groups, source=args.target,
                                     model=str(args.checkpoint),
                                     notes=f"Schwelle {threshold}, "
+                                          f"Dekoder {from_model.decoder}, "
                                           f"{len(offer_pairs.FEATURE_NAMES)} Merkmale")
         written += 1
     print(f"{written} Seiten -> data/offer_groups/{config.model_slug(args.target)}")
@@ -257,6 +435,11 @@ def main(argv=None):
     common.add_argument("--predictions", default=None,
                         help="Variante unter data/predictions/ statt data/labeled/")
     common.add_argument("--checkpoint", default=DEFAULT_CHECKPOINT)
+    common.add_argument("--decoder", default=None,
+                        choices=("union", "ilp"),
+                        help="wie aus Kanten Gruppen werden. Ohne Angabe beim Messen\n"
+                             "der Dekoder des Checkpoints, beim Training ilp.\n"
+                             "ilp = Correlation Clustering (braucht pulp)")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     train = subparsers.add_parser("train", help="Paarmodell trainieren", parents=[common])
@@ -271,6 +454,9 @@ def main(argv=None):
                        help="Wonach die Schwelle gewaehlt wird. Default group_f1")
     train.add_argument("--folds", type=int, default=5,
                        help="Folds fuer die Schwellenwahl. 1 schaltet sie ab")
+    train.add_argument("--features", default=DEFAULT_TRAIN_FEATURES,
+                       help="Merkmalsvariante. Default `geometrie` - der einzige\n"
+                            "Block, dessen Gewinn belegt ist (p = 0.018)")
 
     evaluate = subparsers.add_parser("eval", help="Gegen Lehrer und Arithmetik messen",
                                      parents=[common])
@@ -278,12 +464,38 @@ def main(argv=None):
     evaluate.add_argument("--threshold", type=float, default=None,
                           help="Ueberschreibt die kalibrierte Schwelle des Checkpoints")
 
+    diagnose = subparsers.add_parser(
+        "diagnose", help="Kantenqualitaet gegen Dekodierverlust trennen",
+        parents=[common])
+    diagnose.add_argument("--splits", default="dev")
+
+    variants = subparsers.add_parser(
+        "variants", help="Variantenbloecke: welche Gruppen und Kanten fallen aus",
+        parents=[common])
+    variants.add_argument("--splits", default="train,dev")
+    variants.add_argument("--cross-validate", action="store_true",
+                          help="out-of-fold statt mit dem Checkpoint. Ohne das\n"
+                               "beurteilt ein Modell Seiten aus seinem Training")
+    variants.add_argument("--folds", type=int, default=5)
+    variants.add_argument("--epochs", type=int, default=300)
+    variants.add_argument("--seed", type=int, default=0)
+    variants.add_argument("--features", default=None,
+                          help="Merkmalsvariante fuer --cross-validate. Ohne\n"
+                               "Angabe die des Checkpoints - und die ist beim\n"
+                               "Default nur die Basis, nicht +Geometrie")
+
     predict = subparsers.add_parser("predict", help="Gruppierung als Dateien ablegen",
                                     parents=[common])
     predict.add_argument("--splits", default="dev")
     predict.add_argument("--threshold", type=float, default=None)
     predict.add_argument("--target", default="pair-model",
                          help="Zielordner unter data/offer_groups/")
+    predict.add_argument("--all-pages", action="store_true",
+                         help="Alle Seiten der Quelle statt eines Splits mit\n"
+                              "vorhandener Referenz. Der Einsatzfall: eine\n"
+                              "frisch geerntete Woche kennt beides nicht")
 
     args = parser.parse_args(argv)
-    return {"train": _cmd_train, "eval": _cmd_eval, "predict": _cmd_predict}[args.command](args, parser)
+    return {"train": _cmd_train, "eval": _cmd_eval, "predict": _cmd_predict,
+            "diagnose": _cmd_diagnose,
+            "variants": _cmd_variants}[args.command](args, parser)

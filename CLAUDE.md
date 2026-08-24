@@ -20,7 +20,15 @@ wo es weh tut.
 - **`data/splits/split.json` ist eingefroren.** Neu würfeln heißt: alle
   bisherigen Zahlen sind nicht mehr vergleichbar.
 - **Nichts schreibt nach `data/labeled/`.** Weder API noch Frontend noch die
-  Handprüfung. Das ist die Referenz, gegen die gemessen wird.
+  Handprüfung. Das ist die Referenz, gegen die gemessen wird. Einzige
+  Ausnahme ist `magda audit-apply` nach einer Teamentscheidung – mit eigenem
+  Commit, damit die Änderung sichtbar bleibt.
+- **`data/labeled/sonnet-5/` wird nicht umbenannt und nicht archiviert.** Der
+  Name steht in Checkpoint-Ordnern (`gbert-sonnet-5-app`), in jeder Datei
+  unter `data/eval/`, in Commit-Nachrichten und in diesem Dokument. Ein
+  Ordner `aktuell/` wäre bequemer und kappte die Belegkette, an der jede
+  berichtete Zahl hängt. „Aktuell" ist ein Zeiger, kein Ordnername:
+  `config.CANONICAL_LABELS`.
 - **Die Wortreihenfolge aus Schritt 02 ist ein Vertrag.** Ändert sie sich, zeigen
   alle Label-Indizes auf andere Wörter – auch die in `gold/`.
 - **Kein freies Argument-Textfeld im Frontend.** `jobs.build_command` nimmt nur
@@ -38,6 +46,10 @@ tests/       pytest (Labels, Alignment, API)
 gold/        handannotierte Referenz (versioniert)
 data/audit/  Handprüfung einzelner Labels: Kandidaten + menschliche Urteile
 data/        versioniert (PDFs, Wörter, Labels, Bilder, Splits)
+  labeled/         aktive Span-Labels, ein Ordner je Quelle
+  labeled_archive/ abgeschlossene Vergleichsarme, gleicher Aufbau
+  offer_groups/    Gruppierungen: welche Entities ein Angebot bilden
+  predictions/     Ausgabe von `magda predict`, ein Ordner je Modell
 checkpoints/ lokal, gitignored
 docs/        Proposal, RunPod-Anleitung, Ursprungs-Prototyp
 reports/     Wochenberichte
@@ -85,6 +97,7 @@ magda flair --reference gold        # Flair-Vergleichsarm
 magda gold --per-label              # Labeling-Modelle gegen Gold messen
 magda agreement qwen3.5-397b-a17b mistral-medium-3.5-128b
 magda audit APP_PRICE --labels-from sonnet-5   # Label zur Handprüfung vorsortieren
+magda audit-apply APP_PRICE --labels-from sonnet-5 --target sonnet-5-neu  # Urteile übernehmen
 magda offers                        # Entities zu Angeboten clustern, als SQLite
 magda offers-report                 # Clustering per Ablation messen (Train+Dev)
 magda offers-queue                  # welche Seiten die Referenz zuerst braucht
@@ -96,6 +109,7 @@ magda offers-model train --labels-from sonnet-5        # Paarmodell lernen (mit 
 magda offers-model eval --labels-from sonnet-5         # gegen Lehrer und Arithmetik messen
 magda offers-sequence               # fasst eine flache OFFER-Folge das Angebot?
 magda bundle --labels-from sonnet-5 # Trainingspaket für eine fremde GPU
+magda prune-checkpoints             # was checkpoint-N belegt (--apply löscht)
 magda serve --frontend              # API (8000) und Oberfläche (5173)
 magda serve                         # nur die API
 cd frontend && npm test             # Frontend-Tests (Vitest)
@@ -190,7 +204,22 @@ eine Liste auszugeben.
   bleibt als Vergleichssystem für die Requirements-Stufe „Excellent".
 - **Der Trainingsverlauf steht nicht in `checkpoints/{variant}/best`.**
   `trainer.save_model()` schreibt dort kein `trainer_state.json`; `/api/model`
-  liest deshalb den `checkpoint-N`-Ordner mit der höchsten Schrittzahl.
+  und `magda curve` lesen deshalb den `checkpoint-N`-Ordner mit der höchsten
+  Schrittzahl – hilfsweise `<lauf>/trainer_state.json`, wenn keiner mehr liegt
+  (`checkpoints.training_state_path`, eine Stelle für beide Leser).
+- **Die `checkpoint-N`-Ordner sind 1,2 GB je Stück und nach dem Training
+  entbehrlich – bis auf den Verlauf.** `save_total_limit=2` lässt zwei davon
+  je Lauf liegen; über sechs Läufe sind das 14,7 GB gegen 417 MB in `best/`.
+  `magda prune-checkpoints` berichtet, `--apply` löscht. Zwei Fallen, die
+  jeden naiven Aufräumbefehl teuer machen: Eine Kopie des Verlaufs nach
+  `best/` **hilft nicht**, weil beide Leser `checkpoint-*` globben und `best/`
+  darauf nicht matcht – gesichert wird deshalb nach `<lauf>/trainer_state.json`,
+  dorthin, wo das RunPod-Bundle ihn für `gbert` und `layoutxlm` ohnehin schon
+  ablegt. Und in `checkpoints/gbert` gehören `checkpoint-60/75` (30.07.) zu
+  `best.vor-3wochen-split`, während die Wurzeldatei (02.08.) zum eingefrorenen
+  `best/` gehört: ein vorhandener Verlauf wird nie überschrieben. Nebeneffekt
+  des Aufräumens ist dort, dass `/api/model` erstmals den Verlauf zeigt, der
+  zum ausgelieferten `best/` gehört (0.9186 statt der 0.9419 vom Vorlauf).
 - **Penny gibt je Woche 44 Regionalausgaben heraus, und sie sind fast gleich.**
   Über alle 44 liegen ~2000 Seiten, davon exakt verschieden nur ~170, und bei
   Jaccard 0.95 bleiben ~130. Die Unterschiede sind echt, aber winzig: eine
@@ -311,9 +340,34 @@ eine Liste auszugeben.
   Flach gespeichert überschreibt der zweite Labeling-Lauf den ersten, und die
   Frage „labelt Qwen näher am Goldstandard als Mistral?" ist danach nicht mehr
   beantwortbar. `magda train --labels-from` wählt aus, worauf trainiert wird;
-  ohne Angabe gilt `CHAT_AI_VISION_MODEL`, sonst der größte Ordner. Der
-  Modellname wird zum Ordnernamen und kommt aus einer Nutzereingabe – deshalb
+  ohne Angabe gilt `config.CANONICAL_LABELS`. Der Modellname wird zum
+  Ordnernamen und kommt aus einer Nutzereingabe – deshalb
   `config.model_slug()`, sonst wäre `../../gold` ein gültiger Modellname.
+- **Abgeschlossene Arme liegen in `data/labeled_archive/`** (seit 24.08.2026).
+  Acht gleich aussehende Ordner beantworteten die Frage „was ist aktuell?"
+  nicht mehr, und sie wurde deshalb nach Ordnergröße beantwortet – also
+  falsch. Stand jetzt: **aktiv `sonnet-5` (422 Seiten)**, archiviert die
+  beiden Mistral-Läufe und `qwen3.5-397b-a17b`. Drei abgebrochene Probeläufe
+  (2, 3 und 3 Seiten) sind gelöscht; geprüft war vorher, dass keine davon
+  eine Seite exklusiv hielt – die Gesamtmenge blieb bei 422.
+
+  Drei Eigenschaften, die daran hängen und leise brechen:
+
+  - **Ein Geschwisterordner, kein Unterordner.** `model_slug()` verbietet
+    Pfadtrenner, also wäre `data/labeled/archiv/mistral/` über
+    `--labels-from` nicht erreichbar, und `labeled_models()` listete
+    „archiv" selbst als Modell.
+  - **`labeled_page_ids()` scannt beide Wurzeln.** Es ist die Sicherung von
+    `magda dedupe`: fällt das Archiv aus dem Scan, entfernt Schritt 06
+    Seiten, in die Labelarbeit geflossen ist, und Schritt 02 stellt sie
+    beim nächsten Lauf als `pending` wieder ein.
+  - **`labeled_dir()` fällt ins Archiv zurück, aktiv hat Vorrang.**
+    Andersherum schriebe ein Labellauf nach `data/labeled/` und gelesen
+    würde aus dem Archiv – eine Differenz, die an keiner Zahl auffällt.
+
+  Ebenso mitgewandert ist `review.default_pair()`: aktiv steht nur noch eine
+  Modellfamilie, und ohne Zugriff aufs Archiv fände `magda queue` kein Paar
+  aus *verschiedenen* Modellen mehr.
 - **Der Prompt in `labeling.py` widersprach dem eigenen Goldstandard.** Er
   erklärte `"je 200 g"` zum QUANTITY-Span, während Gold nur `"200 g"` markiert,
   und sein Beispiel zeigte den Grundpreis nicht als eigene Angabe. QUANTITY und
@@ -791,6 +845,34 @@ eine Liste auszugeben.
   sind dünn, ein Konfidenzintervall gibt es noch nicht. Der Lehrer ist ein
   LLM, also misst „Übereinstimmung", nicht Richtigkeit. Und die Abdeckung
   der Gegenprobe liegt bei 0.589 – die Non-Food-Hälfte bleibt ungeprüft.
+- **Der Dekoder wiegt schwerer als jedes bisher gefundene Merkmal.**
+  `groups_from_edges` verschmilzt A-B und B-C zu einer Gruppe, auch wenn
+  A-C weit unter der Schwelle liegt – das steht seit jeher im eigenen
+  Docstring. `magda offers-grid --decoder union,ilp --cross-validate`
+  (11.08.2026, 75 Seiten in 68 Clustern, out-of-fold, geschachtelte
+  Schwellenwahl) beziffert es erstmals: Gruppen-F1 **0.553 gegen 0.453**,
+  gepaarte Differenz **+0.100 [+0.067, +0.133] bei p = 0.000**; im blinden
+  Fleck +0.115. Zum Vergleich: `+Geometrie`, der beste Merkmalsblock, lag
+  bei +0.044 (p = 0.018).
+  **Die Wirkungskette ist die eigentliche Aussage:** Der Gewinn kommt nicht
+  daher, dass das ILP bei gleicher Schwelle besser dekodiert, sondern dass
+  es eine niedrigere *erlaubt* – die Kalibrierung wählte out-of-fold 0.868
+  statt 0.956, ohne Vorgabe. Union-Find muss so hoch drehen, weil eine
+  einzige durchgerutschte Kante eine Legendenspalte verschmilzt; das ILP
+  kappt stattdessen die schwächste Kante des Widerspruchs.
+  **Drei Dinge gehören zu jeder Nennung:** Im CV-Lauf *fällt* Paar-F1
+  (0.569 gegen 0.715), weil die tiefere Schwelle 19060 statt 13531 Paare
+  vorhersagt – auf Dev steigt es dagegen (0.880 gegen 0.782), und
+  belastbar ist die CV-Zahl. Die Komponentenkappung (`MAX_COMPONENT`)
+  griff bei 1611 von 37367 Komponenten; dort *ist* das ILP Union-Find, der
+  Effekt also eher unter- als überschätzt. Und beide Dekoder wurden auf
+  `group_f1` kalibriert – **wer Paar-F1 zur Primärzahl macht, dreht den
+  Teilbefund um.** Das ist die schon offene Teamentscheidung.
+  Die arithmetische Gegenprobe stützt das Ergebnis (0.883 gegen 0.845 bei
+  *identischer* Abdeckung 0.589, widerlegte Preise 12 statt 16). Sie ist
+  hier unbefangen, weil die Rechnung bewusst kein Constraint des ILP ist –
+  und die gleiche Abdeckung entkräftet den Einwand, gröbere Gruppen
+  schmeichelten der Prüfung.
 - **Die Rechnung Menge × Grundpreis ist bewusst kein Merkmal des
   Paarmodells.** Sie ist das einzige Signal, das sich selbst beweist, und
   damit der einzige unbestechliche Richter. Als Eingabe gefüttert bewertete
@@ -813,6 +895,142 @@ eine Liste auszugeben.
   Zeile in der Datenbank stimmt" entspricht. **Offenlegung:** Diese Wahl
   fiel, nachdem beide Schwellen auf Dev gemessen waren; die Dev-Zahl ist
   dadurch leicht optimistisch. Der Testsplit ist unangetastet.
+- **Die Kette ist erstmals ende-zu-ende gemessen – und die Zahl steigt, weil
+  das Problem schrumpft.** Bis zum 10.08.2026 war das unmöglich:
+  `data/predictions/gbert` hatte 101 Seiten (alle Test),
+  `data/offer_groups/claude-sonnet-5` 51 (alle Train/Dev), **Schnittmenge
+  null**. Nach `magda predict gbert --split dev` treffen sich beide auf 21
+  Seiten. Gemessen mit `magda offers-grid --predictions gbert
+  --train-labels-from sonnet-5` (das Paarmodell lernt an Lehrer-Entities,
+  weil nur die gruppiert sind, und arbeitet auf denen des Schülers – der
+  Einsatzfall):
+
+  | Entities | Basis | +Geometrie | +Farbe | beide |
+  |---|---|---|---|---|
+  | Lehrer (sonnet-5) | 0.477 | 0.540 | 0.472 | 0.492 |
+  | Schüler (gbert) | 0.504 | 0.556 | 0.504 | 0.502 |
+
+  **Die zweite Zeile ist nicht besser, sie ist auf einem kleineren Nenner
+  gemessen.** GBERT findet 717 statt 730 Entities (0.982), aber nur **1855
+  der 1996 Referenzpaare** überleben (0.929) – 7,1 % der Gruppierungsaufgabe
+  verschwinden, und zwar die Paare, deren Entity der Schüler nicht gefunden
+  hat. Die Regel aus `offers-gold` („die Entity-Grundmenge kommt aus der
+  Seite, nicht aus der Systemausgabe") greift hier nicht, weil die *Seite*
+  in diesem Lauf die Vorhersagedatei ist. Wer die +0.027 als Verbesserung
+  liest, hat den Nenner nicht angesehen.
+  **Was die Zahl trägt:** Die Gruppierung bricht mit Schüler-Entities nicht
+  zusammen. Die Zahl der Referenzgruppen bleibt bei 122, das Verfahren
+  bildet 136 statt 138 Angebote, und Stufe 1 → Stufe 2 kostet auf Dev
+  weniger als das Konfidenzintervall breit ist. Mehr sagt sie nicht –
+  **Dev stammt aus den Trainingswochen, die Entity-Qualität ist dort
+  in-distribution-optimistisch, die Zahl ist eine Obergrenze.**
+- **Im blinden Fleck liegt die Farbe vorn – auf beiden Entity-Quellen.**
+  Über alle Paare ist zwischen den Varianten nichts zu unterscheiden. Im
+  Bereich ohne Grundpreis, für den die Farbmerkmale gebaut wurden, ist
+  `beide` (39 Merkmale) dagegen zweimal die beste Variante: Paar-F1 0.782
+  gegen 0.737 der Basis auf Lehrer-Entities, 0.740 gegen 0.640 auf
+  Vorhersagen, bei jeweils den wenigsten gebildeten Angeboten (48 bzw. 43).
+  **Das ist kein Befund, und drei Gegenrechnungen machen es noch schwächer**
+  (Review vom 11.08.2026): Die beiden Quellen sind *nicht* unabhängig – GBERT
+  ist auf sonnet-5 trainiert, 98 % der Entities und 93 % der Referenzpaare
+  sind dieselben. Die beiden Zeilen messen *nicht dieselbe Aufgabe* – die
+  Einteilung blind/prüfbar hängt an den Entity-Typen der jeweiligen Quelle,
+  und die blinden Referenzpaare fallen von 606 auf 444 (−27 %), während die
+  prüfbaren steigen. Und die Paar-Precision ist im blinden Fleck in **allen
+  acht Zellen exakt 1.000**: die Unterschiede sind reiner Recall, „Farbe
+  findet die richtige Kachel" und „Farbe macht das Verschmelzen mutiger"
+  sind damit nicht unterscheidbar. Dazu Intervalle bis 1.000, weil viele der
+  14 Dev-Cluster dort gar keine Paare haben. Die Konsequenz bleibt: größere
+  Referenz, nicht der nächste Merkmalsblock.
+  **Nebenbefund für alle künftigen Blind-Auswertungen:**
+  `test_blind_haengt_an_der_referenz_nicht_an_der_vorhersage` prüft die
+  falsche Invarianz – es variiert nur die Gruppierung, nie die Typquelle.
+  Die Eigenschaft, die sein Name behauptet, schützt es nicht.
+- **Der Label-Default zeigte auf ein Modell, mit dem hier gar nicht gelabelt
+  wird.** `config.default_labeled_model()` gab `CHAT_AI_VISION_MODEL` den
+  Vorrang und lieferte damit `mistral-medium-3.5-128b`. Jeder Befehl ohne
+  `--labels-from` maß also gegen Mistral-Labels, und man sah es nur, wenn man
+  die Kopfzeile las. Beziffert am 11.08.2026: über *dieselbe* Gruppierung
+  fand `magda offers-verify` mit Mistral-Labels **399** Preise (Genauigkeit
+  0.927, Abdeckung 0.446), mit sonnet-5 dagegen **494** (0.936, 0.478). Ein
+  Viertel mehr Preise bei gleicher Rechnung – die Zahl beantwortete leise
+  eine andere Frage. Über die Ordnergröße allein wäre es auch nicht
+  gutgegangen: `sonnet-5`, `sonnet-5-app` und der Mistral-Ordner hatten alle
+  296 Seiten, dann entscheidet die Sortierreihenfolge. Vorrang hat jetzt
+  `config.CANONICAL_LABELS`. (Seit dem 24.08.2026 gibt es die beiden anderen
+  Ordner nicht mehr – `sonnet-5-app` ist in `sonnet-5` aufgegangen, Mistral
+  liegt im Archiv. Der Befund bleibt trotzdem stehen: er begründet, warum
+  der Default nicht an der Ordnergröße hängen darf.) **Ältere Zahlen aus Befehlen ohne
+  `--labels-from` stehen unter diesem Vorbehalt** – wer eine davon
+  weiterverwendet, rechnet sie besser nach.
+- **„Mehr Referenz" war die halb falsche Antwort auf die breiten
+  Intervalle.** Gemessen wurde auf **Dev**, und Dev hat 21 Seiten in 14
+  Duplikat-Clustern – *alle* davon längst gruppiert. Die Breite eines
+  Bootstrap-Intervalls hängt an der Zahl der Auswertungs-Cluster; keine
+  weitere *Trainings*seite ändert daran etwas. Das naheliegende Ziel „Dev auf
+  25–30 Seiten ausbauen" war nicht schwer, sondern **unmöglich**.
+  Der Ausweg ist kein Datenproblem, sondern der Messaufbau: `magda
+  offers-grid --cross-validate` wertet jede Referenzseite einmal aus, mit
+  einem Modell, das sie nicht gesehen hat. Aus 14 Clustern werden 68. Die
+  Schwelle wird dabei **geschachtelt** gewählt – `calibrate` auf den inneren
+  Folds, Auswertung nur auf dem äußeren. Einmal auf allem gewählt wäre sie
+  bequemer und genau der Zirkelschluss, gegen den `offers_report` die
+  Ablation braucht: eine Schwelle ist ein Freiheitsgrad wie jeder andere.
+  Die Referenz ist trotzdem gewachsen (51 → 75 Seiten, Train 30 → 54) – das
+  hilft dem *Training* des Paarmodells, nur eben nicht dem Intervall.
+- **Zwei überlappende Einzelintervalle heißen nicht „kein Unterschied".**
+  Beide Varianten sehen dieselben Seiten; ist eine Seite schwer, ist sie es
+  für beide. Wer sie einzeln resampelt, zählt diese gemeinsame Streuung
+  zweimal und verdeckt genau den Effekt, den er messen will.
+  `offer_grid.paired_bootstrap` bootstrappt deshalb die **Differenz** –
+  dieselbe Konstruktion wie `magda significance`, nur über Duplikat-Cluster.
+  Kostet keine Rechenzeit: die seitenweisen Zählungen aller Varianten liegen
+  im selben Lauf ohnehin vor.
+- **Die Kontextmerkmale wirken, die Farbmerkmale nicht** (11.08.2026, 75
+  Seiten in 68 Clustern, out-of-fold, gepaart gegen die Basis, Gruppen-F1):
+
+  | Variante | Bereich | Differenz | Intervall | p |
+  |---|---|---:|---|---:|
+  | +Geometrie | alle Paare | **+0.044** | [+0.009, +0.082] | **0.018** |
+  | +Geometrie | prüfbar | +0.052 | [+0.002, +0.099] | 0.042 |
+  | +Farbe | alle Paare | −0.008 | [−0.036, +0.023] | 0.596 |
+  | +Farbe | blinder Fleck | −0.007 | [−0.043, +0.032] | 0.684 |
+  | beide | blinder Fleck | **−0.051** | [−0.103, −0.001] | 0.042 |
+
+  „+Geometrie schlägt Basis" ist damit zum ersten Mal ein Befund. Die
+  **Farbmerkmale sind einer in die andere Richtung**: sie bringen nichts und
+  verschlechtern das Ergebnis auf der Geometrie obendrauf im blinden Fleck –
+  also genau dort, wofür sie gebaut wurden. Der frühere Dev-Eindruck (`beide`
+  im blinden Fleck vorn) **dreht sich um**, sobald über 68 statt 14 Cluster
+  und gepaart gerechnet wird.
+  **Einschränkungen:** neun Vergleiche ohne Korrektur für multiples Testen,
+  und die drei Bereiche sind nicht unabhängig (alle Paare = blind + prüfbar).
+  Belastbar ist die stärkste Zahl (p = 0.018); die beiden bei p = 0.042 sind
+  Hinweise. Richter bleibt ein LLM-Lehrer, gemessen wird Übereinstimmung.
+  Ob die Farbmerkmale bleiben oder fallen, ist eine Teamentscheidung – nicht
+  vertretbar wäre nur, sie mitzuführen und dabei die alte Dev-Zahl zu zitieren.
+- **Clusterweise ziehen heißt nicht automatisch fair ziehen.**
+  `dataset.subset_by_clusters` sortierte zuerst nach absteigender
+  Clustergröße – naheliegend und genau falschherum: die Duplikate landen
+  dann zuerst im Budget. Auf den 175 Trainingsseiten (93 Cluster) ergab die
+  Grenze 25 damit **23 Seiten aus drei Vorlagen**, also genau das, was
+  clusterweises Ziehen verhindern soll. Nach `page_id` sortiert sind es
+  9/16/50/93 Cluster statt 3/9/25/93. Zu jedem Kurvenpunkt gehört die
+  **Clusterzahl** – „p25" allein ist eine Seitenzahl ohne das, woran
+  gemessen wurde.
+- **`checkpoints/gbert` ist der eingefrorene KW30/31-Stand, und bis zum
+  10.08.2026 hätte ihn jeder Nebenlauf überschrieben.** `magda train`
+  schrieb nach `CHECKPOINTS_DIR / variant`, ohne Rücksicht auf
+  `--labels-from`. Ein APP_PRICE-Nachtraining hätte damit genau das Modell
+  gelöscht, gegen das es verglichen werden soll, und jeder Punkt einer
+  Lernkurve den vorigen. Jetzt vergibt `cli/train.checkpoint_name()` eigene
+  Ordner (`gbert-sonnet-5-app`, `gbert-p50`); `magda eval` und `magda
+  predict` erreichen sie über `--checkpoint`. Anker für „der kanonische
+  Lauf" ist `config.CANONICAL_LABELS` (= `sonnet-5`), **nicht**
+  `default_labeled_model()` – das folgt `CHAT_AI_VISION_MODEL` und liefert
+  `mistral-medium-3.5-128b`, also ein Modell, mit dem hier gar nicht
+  gelabelt wird. Sonst hätte der Inhalt einer `.env` Namensgewalt über
+  Checkpoints, an denen berichtete Zahlen hängen.
 - **`test_hilfe_laedt_keine_schweren_module` hat torch aus `sys.modules`
   genommen und nicht zurückgestellt.** Ein zweiter echter Import registriert
   dieselben C-Extensions erneut und stirbt an „Only a single TORCH_LIBRARY
@@ -920,7 +1138,48 @@ eine Liste auszugeben.
   fehlender, nur per Text ausgezeichneter App-Preis wäre ihr entgangen; eine
   Gegenprobe über die Textumgebung ergab keinen solchen Fall, ist aber
   schwächer als die Farbprüfung.
-  **Die Übernahme selbst ist weiter nicht gebaut und bleibt Teamentscheidung.**
+  **Die Übernahme ist am 24.08.2026 erfolgt** (Entscheidung Noah), mit
+  `magda audit-apply APP_PRICE --labels-from sonnet-5 --target …` und einem
+  eigenen Commit. 81 Spans von PRICE nach APP_PRICE, 292 Urteile bestätigt,
+  eines ohne Zielabel (`1342881_p31:165`, die Aufzählungsziffer – das alte
+  Label bleibt stehen, ein Ersatz wäre geraten). Danach je Split: **train
+  187, dev 20, test 98** – der Test ändert sich um keinen einzigen Span,
+  also bleiben alle berichteten Testzahlen gültig.
+
+  **Nachgerechnet auf Dev, und erstmals als echter Vergleich** (24.08.2026,
+  beide Checkpoints gegen *dieselbe* korrigierte Referenz, n = 20 in beiden
+  Zellen – die frühere Tabelle maß jeden Arm gegen seine eigene Referenz und
+  verglich damit zwei verschiedene Fragen):
+
+  | Checkpoint | micro-F1 | APP_PRICE | P | R |
+  |---|---:|---:|---:|---:|
+  | `gbert` (auf der alten Referenz gelernt) | 0.914 | 0.645 | 0.909 | 0.500 |
+  | `gbert-sonnet-5-app` (auf der korrigierten) | 0.927 | 0.947 | 1.000 | 0.900 |
+
+  Die Differenz ist fast reiner **Recall**: 0.500 gegen 0.900. Das Modell mit
+  den 72 zusätzlichen Trainingsbeispielen findet die App-Preise, das alte
+  übersieht die Hälfte. Damit ist auch beziffert, was `checkpoints/gbert`
+  jetzt ist – ein Checkpoint, der zu seiner Referenz nicht mehr passt. Ein
+  Retraining ist fällig, bleibt aber eine bewusste Weiche (siehe
+  Branch-Workflow); die 0.914 ist keine Aussage über die Referenz, sondern
+  über einen veralteten Checkpoint.
+
+  **Einschränkung:** 21 Dev-Seiten in 14 Clustern, kein Konfidenzintervall,
+  und `gbert-sonnet-5-app` ist auf 296 Seiten trainiert, kennt KW33 also
+  nicht – wie `gbert` auch, deshalb sind die beiden untereinander
+  vergleichbar. Der Ordnername des Checkpoints verweist auf `sonnet-5-app`,
+  den es seit heute nicht mehr gibt; der Inhalt ist unverändert.
+
+  **Und KW33 brauchte die Korrektur nicht.** `label_audit.collect` über alle
+  422 Seiten findet dort 134 bereits gelabelte APP_PRICE und **null** PRICE
+  auf App-Grund – genau den Fehlermodus, der in KW30–32 81-mal auftrat. Die
+  sechs übrigen Kandidaten sind OLD_PRICE, und dafür hat die Handprüfung
+  67 von 67 bestätigt. Zwischen den Wochen entsteht also keine
+  Konventionslücke; das war die Bedingung, unter der die Übernahme
+  überhaupt vertretbar war.
+
+  Weg B (dem Modell die Farbe als Merkmal geben) ist davon unberührt und
+  bleibt offen.
 - **Sortenangaben und Gebinde-Komposita** (`50-ml-Fläschchen`, `0,33-l-Dose`,
   `1-l-Sonderedition`): unverändert offen, und mit 106 von 135 PRODUCT-Fehlern
   jetzt beziffert. Prüfen per Auszählung je Wortlaut über den Korpus, nicht
@@ -937,7 +1196,13 @@ eine Liste auszugeben.
 - **Weitere Label – aufgekommen, weil das Zusammensetzen der Angebote hakt**
   (Frage von Bogdan und Kjell, 03.08.2026). Die Messung dazu steht oben; sie
   sagt vor allem, was ein neues Label **nicht** leistet: das Clustern löst es
-  nicht, dafür bräuchte es die OFFER-Sequenz. Unabhängig davon lohnen sich vier
+  nicht, dafür bräuchte es die OFFER-Sequenz. Von den vier Kandidaten unten
+  wirkt nur `LEGAL` überhaupt aufs Gruppieren, und auch nur durch Ausschluss.
+  `PROMO`, `DEPOSIT` und `ORIGIN` sitzen alle schon direkt neben dem Wort, zu
+  dem sie gehören (Pfand am Preis, `je` am Preis, Herkunft am Produkt) – ihr
+  räumliches Zuordnungsproblem existiert gar nicht. Sie verbessern die
+  Vollständigkeit eines bereits korrekt gruppierten Angebots, lösen aber nicht,
+  warum das Gruppieren heute hakt. Unabhängig davon lohnen sich vier
   Kandidaten, nach Nutzen sortiert:
   - `PROMO` (`je`, `2für`, `3er-Set`) – 287 von 296 Seiten. Nicht nur Masse,
     sondern semantisch nötig: `2für 1.99` gegen `je 1.99` ändert, was der Preis
@@ -1014,6 +1279,32 @@ eine Liste auszugeben.
   als Primärzahl, dazu Feld-F1 unter Gruppen-Matching im DocILE-Protokoll –
   das ist die Zahl, die „Zeile in der Datenbank stimmt" entspricht. Test
   einmal am Ende, je eine Seite pro der 43 unabhängigen Cluster.
+- **`Aktion` als möglicher Anker für den Angebots-Beginn – kostet kein
+  Relabeling.** Ausgezählt über `data/labeled/sonnet-5/` (Erstbefund
+  03.08.2026 über 296 Seiten mit 755/656, nachgerechnet am 24.08.2026 über
+  alle 422): das Wort steht **1142-mal als `O` auf 316 Seiten**, und in **968
+  der 1142 Fälle (84,8 %)** folgt direkt ein `B-PRICE`. Anders als
+  `PROMO`/`DEPOSIT`/`ORIGIN` trägt es vermutlich keine verlorene Information –
+  es markiert nur, dass gleich ein neuer Preisblock beginnt. Damit kein
+  Kandidat für `ENTITY_TYPES`, aber ein möglicher textueller Signalgeber
+  für `offers.py`, robuster als Boxabstand und ohne LLM-Zeit zu kosten, weil
+  die Information schon in den bestehenden O-Tags steckt. Ungeprüft: ob das
+  über die 43 Test-Cluster hinweg tatsächlich zuverlässiger trennt als die
+  18,5-%-Distanzheuristik. Nachzählen ohne eigenes Kommando:
+
+  ```python
+  import json
+  from magda import config
+  total = vor_preis = 0
+  for path in sorted(config.labeled_dir("sonnet-5").glob("*.json")):
+      payload = json.loads(path.read_text())
+      words, tags = payload["words"], payload["tags"]
+      for i, (word, tag) in enumerate(zip(words, tags)):
+          if word["text"].strip().rstrip(":").lower() == "aktion" and tag == "O":
+              total += 1
+              vor_preis += i + 1 < len(tags) and tags[i + 1] == "B-PRICE"
+  print(total, vor_preis)
+  ```
 - Label-Set ist ein Entwurf und wird nach Sichtung der ersten gelabelten Seiten
   finalisiert.
 
