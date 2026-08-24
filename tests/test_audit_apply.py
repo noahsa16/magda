@@ -164,3 +164,29 @@ def test_ziel_und_quelle_duerfen_nicht_derselbe_ordner_sein(tmp_path):
 
     with pytest.raises(ValueError, match="derselbe"):
         audit_apply.apply_verdicts({}, source, source)
+
+
+def test_unveraenderte_seiten_bleiben_byteweise_gleich(tmp_path):
+    """data/ ist versioniert - eine Kopie darf nicht jede Seite anfassen.
+
+    Frueher schrieb dieser Schritt mit `indent=2`, waehrend `cli/label.py`
+    kompakt schreibt. Der Diff einer Uebernahme umfasste damit alle Seiten
+    des Ordners statt der geaenderten, und die eigentliche Korrektur war
+    darin nicht mehr zu finden.
+    """
+    import json
+
+    from magda import audit_apply
+
+    source, target = tmp_path / "quelle", tmp_path / "ziel"
+    source.mkdir()
+    original = json.dumps(
+        {"page_id": "p1", "words": [{"text": "Käse", "bbox": [1.5, 2.0, 3.25, 4.0]}],
+         "tags": ["B-PRODUCT"]},
+        ensure_ascii=False,
+    )
+    (source / "p1.json").write_text(original)
+
+    audit_apply.apply_verdicts({}, source, target)
+
+    assert (target / "p1.json").read_text() == original

@@ -100,8 +100,12 @@ def apply_verdicts(verdicts: dict, source, target) -> dict:
                 tags[start:end] = neu
                 changed += 1
         payload["tags"] = tags
+        # Kompakt wie `cli/label.py` schreibt, nicht eingerueckt: data/ ist
+        # versioniert, und ein Formatwechsel blaeht den Diff auf jede
+        # kopierte Seite auf. Die inhaltliche Aenderung - hier 81 von 422
+        # Seiten - waere darin nicht mehr zu sehen.
         (target / path.name).write_text(
-            json.dumps(payload, indent=2, ensure_ascii=False))
+            json.dumps(payload, ensure_ascii=False))
 
     return {"pages": pages, "changed": changed, "confirmed": confirmed,
             "unresolved": unresolved}
