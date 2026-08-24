@@ -1128,8 +1128,31 @@ eine Liste auszugeben.
   eines ohne Zielabel (`1342881_p31:165`, die Aufzählungsziffer – das alte
   Label bleibt stehen, ein Ersatz wäre geraten). Danach je Split: **train
   187, dev 20, test 98** – der Test ändert sich um keinen einzigen Span,
-  also bleiben alle berichteten Testzahlen gültig. Die Dev-Zahlen sind um
-  9 Spans verschoben und gehören nachgerechnet.
+  also bleiben alle berichteten Testzahlen gültig.
+
+  **Nachgerechnet auf Dev, und erstmals als echter Vergleich** (24.08.2026,
+  beide Checkpoints gegen *dieselbe* korrigierte Referenz, n = 20 in beiden
+  Zellen – die frühere Tabelle maß jeden Arm gegen seine eigene Referenz und
+  verglich damit zwei verschiedene Fragen):
+
+  | Checkpoint | micro-F1 | APP_PRICE | P | R |
+  |---|---:|---:|---:|---:|
+  | `gbert` (auf der alten Referenz gelernt) | 0.914 | 0.645 | 0.909 | 0.500 |
+  | `gbert-sonnet-5-app` (auf der korrigierten) | 0.927 | 0.947 | 1.000 | 0.900 |
+
+  Die Differenz ist fast reiner **Recall**: 0.500 gegen 0.900. Das Modell mit
+  den 72 zusätzlichen Trainingsbeispielen findet die App-Preise, das alte
+  übersieht die Hälfte. Damit ist auch beziffert, was `checkpoints/gbert`
+  jetzt ist – ein Checkpoint, der zu seiner Referenz nicht mehr passt. Ein
+  Retraining ist fällig, bleibt aber eine bewusste Weiche (siehe
+  Branch-Workflow); die 0.914 ist keine Aussage über die Referenz, sondern
+  über einen veralteten Checkpoint.
+
+  **Einschränkung:** 21 Dev-Seiten in 14 Clustern, kein Konfidenzintervall,
+  und `gbert-sonnet-5-app` ist auf 296 Seiten trainiert, kennt KW33 also
+  nicht – wie `gbert` auch, deshalb sind die beiden untereinander
+  vergleichbar. Der Ordnername des Checkpoints verweist auf `sonnet-5-app`,
+  den es seit heute nicht mehr gibt; der Inhalt ist unverändert.
 
   **Und KW33 brauchte die Korrektur nicht.** `label_audit.collect` über alle
   422 Seiten findet dort 134 bereits gelabelte APP_PRICE und **null** PRICE
