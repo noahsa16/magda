@@ -142,13 +142,19 @@ Dazu zählt auch "Versch. Sorten". Er endet vor der Mengenangabe.
   Falsch:  PRODUCT="Käsescheiben Natur, je 150 g (1 kg = 15.27)"
   Falsch:  PRODUCT="Löslicher Kaffee"               <- Sorte fehlt
 
-NICHT zum Produktnamen gehören Handelsklasse und Werbetext:
+NICHT zum Produktnamen gehören Handelsklasse, Haltungsform und Herkunftsland:
 
-  Richtig: PRODUCT="Heidelbeeren"    Falsch: PRODUCT="Heidelbeeren Kl. I,"
-  Richtig: PRODUCT="Pasta*"          Falsch: PRODUCT="Pasta* Zu 100% aus Hartweizen"
+  Richtig: PRODUCT="Heidelbeeren"      Falsch: PRODUCT="Heidelbeeren Kl. I,"
+  Richtig: PRODUCT="Hähnchenschenkel"  Falsch: PRODUCT="Hähnchenschenkel Haltungsform 2, Deutschland"
 
-Merkregel: Sorte beantwortet "welche Variante?" und gehört dazu. Handelsklasse
-und Werbetext beantworten "wie gut / wie beworben?" und bleiben draußen.
+Beschreibt der Text dagegen das Produkt selbst — Zutaten, Machart,
+Beschaffenheit —, gehört er in den Span:
+
+  Richtig: PRODUCT="Pasta* Zu 100% aus Hartweizen, versch. Sorten,"
+  Richtig: PRODUCT="Frischer Schweinebraten* Aus der Schulter, ohne Knochen,"
+
+Merkregel: Was "welche Variante?" oder "woraus, wie gemacht?" beantwortet,
+gehört dazu. Was "wie eingestuft?" oder "woher?" beantwortet, bleibt draußen.
 
 Anschließende Präpositionen ("mit", "im", "aus", "für") und was ihnen folgt,
 gehören in den Span — im Zweifel lieber mit aufnehmen als weglassen. Die
@@ -181,9 +187,13 @@ REGEL 6 — Was NIE ein Label bekommt
 ═══════════════════════════════════════════════════════════════════════
 "je", "oder", "statt", "ca.", "UVP", "KAUFEN", "ENTSPRICHT", "NEU", "TOP",
 "zzgl. 0.25 Pfand", "Nur mit App", "mit PENNY App", "ohne PENNY App",
-"Aktion", "Haltungsform 2", "Kl. I", "Zu 100% aus Hartweizen", "im Kühlregal
-erhältlich", Fußnotenziffern, Sternchen, Aufzählungspunkte, einzelne
-Buchstaben aus Grafiken.
+"Aktion", "Haltungsform 2", "Kl. I", "Deutschland", "im Kühlregal erhältlich",
+Fußnotenziffern, Sternchen, Aufzählungspunkte, einzelne Buchstaben aus
+Grafiken.
+
+Beschaffenheitsangaben wie "Zu 100% aus Hartweizen" stehen hier bewusst
+NICHT: sie beschreiben das Produkt und gehören nach Regel 5 in den
+PRODUCT-Span.
 
 "Versch. Sorten" ist die Ausnahme: als Teil eines PRODUCT-Spans gehört es
 dazu (Regel 5), allein oder in einer Mengenangabe nicht.
