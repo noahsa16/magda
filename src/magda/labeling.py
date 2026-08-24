@@ -150,6 +150,20 @@ NICHT zum Produktnamen gehören Handelsklasse und Werbetext:
 Merkregel: Sorte beantwortet "welche Variante?" und gehört dazu. Handelsklasse
 und Werbetext beantworten "wie gut / wie beworben?" und bleiben draußen.
 
+Anschließende Präpositionen ("mit", "im", "aus", "für") und was ihnen folgt,
+gehören in den Span — im Zweifel lieber mit aufnehmen als weglassen. Die
+Grenze ist dieselbe wie überall sonst: Sobald eine Mengenangabe beginnt,
+endet der Span, denn sie trägt ihr eigenes Label.
+
+  Richtig: PRODUCT="Socken mit Komfortbund* Versch. Größen,"
+  Richtig: PRODUCT="Salat im Glas* Grüner Bohnensalat,"
+  Richtig: PRODUCT="Creme-Croissant Mit Nussstückchen,"
+  Richtig: PRODUCT="Color Kraft-Gel Für 20 WL"
+  Richtig: PRODUCT="Gelschreiber-Set, mit 2 Nachfüllminen"
+  Falsch:  PRODUCT="Husarenknöpfchen* Im 12-cm-Topf"
+           <- "12-cm-Topf" ist die Mengenangabe und damit QUANTITY;
+              der PRODUCT-Span endet vor "Im".
+
 Ein PRODUCT-Span enthält NIEMALS ein Wort, das zu QUANTITY, UNIT_PRICE,
 PRICE oder OLD_PRICE gehört. Diese Angaben haben eigene Labels. Enthält
 dein Span eine Zahl mit Einheit oder eine runde Klammer, ist er zu lang.
