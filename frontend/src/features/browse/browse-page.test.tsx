@@ -8,8 +8,25 @@ import type { LabelSource } from "@/lib/types"
 import { BrowsePage } from "./browse-page"
 
 const SOURCES: LabelSource[] = [
-  { kind: "model", id: "qwen3.5-397b-a17b", name: "qwen3.5-397b-a17b", pages: 196, done: 196 },
-  { kind: "model", id: "mistral-medium-3.5-128b", name: "mistral-medium-3.5-128b", pages: 196, done: 196 },
+  { kind: "model", id: "sonnet-5", name: "sonnet-5", pages: 422, done: 422, status: "canonical" },
+  { kind: "model", id: "sonnet-5-app", name: "sonnet-5-app", pages: 296, done: 296, status: "variant" },
+  {
+    kind: "model",
+    id: "qwen3.5-397b-a17b",
+    name: "qwen3.5-397b-a17b",
+    pages: 196,
+    done: 196,
+    status: "archive",
+  },
+  {
+    kind: "model",
+    id: "mistral-medium-3.5-128b",
+    name: "mistral-medium-3.5-128b",
+    pages: 196,
+    done: 196,
+    status: "archive",
+  },
+  { kind: "offer_groups", id: "claude-sonnet-5", name: "claude-sonnet-5", pages: 195, done: 195 },
   { kind: "gold", id: "Noah", name: "Noah", pages: 3, done: 3 },
   {
     kind: "gold",
@@ -30,9 +47,13 @@ function setup(route = "/labels", audits: { label: string; total: number; judged
     })),
   } as Awaited<ReturnType<typeof api.audits>>)
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
-  const router = createMemoryRouter([{ path: "/labels", element: <BrowsePage /> }], {
-    initialEntries: [route],
-  })
+  const router = createMemoryRouter(
+    [
+      { path: "/labels", element: <BrowsePage /> },
+      { path: "/group", element: <div>Gruppierungsseite</div> },
+    ],
+    { initialEntries: [route] },
+  )
   render(
     <QueryClientProvider client={qc}>
       <RouterProvider router={router} />
@@ -97,5 +118,45 @@ describe("BrowsePage — Label-Prüfung", () => {
     // 300 offen, nicht 374 – die Zahl soll sagen, was noch zu tun ist.
     expect(await screen.findByText(/APP_PRICE von Hand prüfen/)).toBeInTheDocument()
     expect(screen.getByText(/300 offen/)).toBeInTheDocument()
+  })
+})
+
+describe("BrowsePage — Ordnung unter den Quellen", () => {
+  it("zeigt die Gruppierung als eigenen Ordner neben den Labels", async () => {
+    // Sie war bis hierher ein Kleingedrucktes-Link unter dem Raster. Spans und
+    // Gruppen beantworten zwei verschiedene Fragen ("was ist dieses Wort" und
+    // "wozu gehört es"); als Fussnote sieht die zweite aus wie ein Nachtrag.
+    const user = userEvent.setup()
+    setup()
+
+    const kachel = await screen.findByText("Angebots-Gruppierung")
+    expect(screen.getByText("195 Seiten")).toBeInTheDocument()
+
+    await user.click(kachel)
+    expect(await screen.findByText("Gruppierungsseite")).toBeInTheDocument()
+  })
+
+  it("zählt im Überordner nur, womit gearbeitet wird", async () => {
+    // Vier Modellordner, davon zwei erledigte Vergleichsarme.
+    setup()
+    expect(await screen.findByText("2 Läufe")).toBeInTheDocument()
+  })
+
+  it("kennzeichnet die kanonische Quelle und das Archiv", async () => {
+    // Der eigentliche Anlass: acht gleich aussehende Ordner, und welcher die
+    // berichteten Zahlen trägt, stand nirgends.
+    const user = userEvent.setup()
+    setup()
+
+    await user.click(await screen.findByText("Modell-Labels"))
+
+    await screen.findByText("sonnet-5")
+    expect(screen.getByText("kanonisch")).toBeInTheDocument()
+    expect(screen.getAllByText("Archiv")).toHaveLength(2)
+    // Nicht nur die Beschriftung: der Ordner sieht auch anders aus. Ohne
+    // diese Zusicherung liesse sich der Ton wegdrehen, ohne dass etwas
+    // rot wird – der Test hielte dann den Text fest und nichts sonst.
+    expect(screen.getByTitle("sonnet-5")).toHaveAttribute("data-tone", "model")
+    expect(screen.getByTitle("qwen3.5-397b-a17b")).toHaveAttribute("data-tone", "archive")
   })
 })

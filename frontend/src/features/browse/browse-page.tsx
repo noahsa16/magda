@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query"
-import { Link, useSearchParams } from "react-router-dom"
+import { Link, useNavigate, useSearchParams } from "react-router-dom"
 import { Crumbs } from "@/components/crumbs"
 import { FolderGrid, type FolderItem } from "@/components/folder-grid"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -22,6 +22,7 @@ import { api } from "@/lib/api"
  */
 export function BrowsePage() {
   const [searchParams, setSearchParams] = useSearchParams()
+  const navigate = useNavigate()
   const group = searchParams.get("group")
   const model = searchParams.get("model")
   const annotator = searchParams.get("annotator")
@@ -41,6 +42,10 @@ export function BrowsePage() {
   const all = sources.data ?? []
   const models = all.filter((s) => s.kind === "model")
   const golds = all.filter((s) => s.kind === "gold")
+  const offerGroups = all.filter((s) => s.kind === "offer_groups")
+  // Der Überordner zählt, womit gearbeitet wird. Ein erledigter
+  // Vergleichsarm ist kein "Lauf, der ansteht" und blähte die Zahl nur auf.
+  const activeModels = models.filter((s) => s.status !== "archive")
 
   const header = (crumbs: { label: string; onClick?: () => void }[]) => (
     <div className="flex flex-wrap items-baseline gap-3">
@@ -50,11 +55,20 @@ export function BrowsePage() {
   )
 
   if (group === "model") {
+    // Ohne diese Kennzeichnung sahen acht Ordner gleich aus, und die Frage
+    // "welcher trägt die berichteten Zahlen?" beantwortete man nach
+    // Ordnergrösse – also falsch, denn die grösste ist nicht die richtige.
     const items: FolderItem[] = models.map((source) => ({
       id: source.id,
       label: source.name,
       sublabel: `${source.pages} Seiten`,
-      tone: "model",
+      badge:
+        source.status === "canonical"
+          ? "kanonisch"
+          : source.status === "archive"
+            ? "Archiv"
+            : undefined,
+      tone: source.status === "archive" ? "archive" : "model",
     }))
     return (
       <div className="flex min-w-0 flex-col gap-5">
@@ -118,18 +132,25 @@ export function BrowsePage() {
       {header([{ label: "Labels" }])}
       <p className="max-w-2xl text-sm text-muted-foreground">
         Was die Vision-Modelle erzeugt haben – ein Ordner je Labeling-Lauf,
-        jederzeit neu berechenbar.
+        jederzeit neu berechenbar. Daneben die Gruppierung: welche Entities
+        zusammen ein Angebot bilden.
       </p>
       <FolderGrid
         items={[
           {
             id: "model",
             label: "Modell-Labels",
-            sublabel: `${models.length} ${models.length === 1 ? "Lauf" : "Läufe"}`,
+            sublabel: `${activeModels.length} ${activeModels.length === 1 ? "Lauf" : "Läufe"}`,
             tone: "group",
           },
+          {
+            id: "offers",
+            label: "Angebots-Gruppierung",
+            sublabel: `${offerGroups.reduce((sum, s) => sum + s.pages, 0)} Seiten`,
+            tone: "offers",
+          },
         ]}
-        onOpen={(id) => setSearchParams({ group: id })}
+        onOpen={(id) => (id === "offers" ? navigate("/group") : setSearchParams({ group: id }))}
       />
       {/* Die Handannotation ist ausgeblendet, nicht entfernt: /annotate und
           ?group=gold funktionieren weiter, gold/ bleibt versioniert, und
@@ -142,16 +163,6 @@ export function BrowsePage() {
       >
         … Handannotation öffnen
       </button>
-      {/* Zweite Handarbeit neben den Spans: welche Entities ein Angebot
-          bilden. Getrennter Weg, weil es eine getrennte Referenz ist -
-          gold/offers/ statt gold/, und `magda offers-gold` misst dagegen.
-          `magda offers-queue` sagt, welche Seite als Nächstes drankommt. */}
-      <Link
-        to="/group"
-        className="self-start font-mono text-xs text-muted-foreground underline-offset-4 hover:underline"
-      >
-        … Angebote gruppieren (Referenz fürs Clustering)
-      </Link>
       {/* Die Label-Prüfung hängt hier statt in der Hauptnavigation: sie gilt
           einem einzelnen Label und ist zwischen zwei Messungen relevant, nicht
           dauerhaft. /audit bleibt der direkte Weg. */}

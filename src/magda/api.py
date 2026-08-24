@@ -159,26 +159,49 @@ def list_pages(model: str | None = None):
 def list_label_sources():
     """Die Label-Quellen als Ordner-Ebene für Inspektor und Annotator.
 
-    Zwei Sorten, die sich grundsätzlich unterscheiden und deshalb getrennt
-    gehören: was ein LLM erzeugt hat (reproduzierbar, liegt unter
-    data/labeled/<modell>/) und was ein Mensch oder eine Vorannotation in
-    gold/ hinterlassen hat.
+    Drei Sorten, die sich grundsätzlich unterscheiden und deshalb getrennt
+    gehören: was ein LLM als Spans erzeugt hat (reproduzierbar, unter
+    data/labeled/<modell>/), wozu diese Entities gruppiert wurden
+    (data/offer_groups/<quelle>/) und was ein Mensch oder eine Vorannotation
+    in gold/ hinterlassen hat.
+
+    Die Modelle tragen ein `status`: `canonical` ist die Quelle, an der die
+    berichteten Zahlen hängen (`config.CANONICAL_LABELS`), `variant` ein
+    Nebenstand mit offener Entscheidung, `archive` ein abgeschlossener
+    Vergleichsarm aus data/labeled_archive/. Ohne dieses Feld sehen acht
+    Ordner gleich aus, und "was ist aktuell?" beantwortet man nach
+    Ordnergrösse – also falsch, denn die grösste ist nicht die richtige.
 
     Gold wird nach `annotator` gruppiert, nicht als ein Topf ausgeliefert.
     Seit Seiten vorannotiert werden, stehen dort zwei verschiedene Dinge
     nebeneinander: geprüfte Handarbeit und ungeprüfte Vorschläge. Wer die
     zusammenwirft, weiß hinterher nicht mehr, worauf er sich verlassen kann.
     """
+    def _model_source(model: str, status: str) -> dict:
+        pages = len(list(config.labeled_dir(model).glob("*.json")))
+        return {"kind": "model", "id": model, "name": model,
+                "pages": pages, "done": pages, "status": status}
+
+    # Kanonisch zuerst, Archiv zuletzt. Die Reihenfolge ist die Aussage: acht
+    # gleich aussehende Ordner waren der Grund, warum niemand mehr wusste,
+    # welcher die berichteten Zahlen trägt.
+    canonical = config.model_slug(config.CANONICAL_LABELS)
+    active = sorted(config.labeled_models(), key=lambda m: (m != canonical, m))
     sources = [
-        {
-            "kind": "model",
-            "id": model,
-            "name": model,
-            "pages": len(list(config.labeled_dir(model).glob("*.json"))),
-            "done": len(list(config.labeled_dir(model).glob("*.json"))),
-        }
-        for model in config.labeled_models()
-    ]
+        _model_source(m, "canonical" if m == canonical else "variant")
+        for m in active
+    ] + [_model_source(m, "archive") for m in config.archived_models()]
+
+    # Gruppierungen als eigene Ebene, nicht als Fußnote: sie beantworten
+    # "wozu gehört diese Entity", die Spans "was ist dieses Wort". Zwei
+    # Fragen, zwei Ordner – genauso wie gold/ und gold/offers/ getrennt sind.
+    if config.OFFER_GROUPS_DIR.is_dir():
+        for directory in sorted(config.OFFER_GROUPS_DIR.iterdir()):
+            if not directory.is_dir():
+                continue
+            pages = len(list(directory.glob("*.json")))
+            sources.append({"kind": "offer_groups", "id": directory.name,
+                            "name": directory.name, "pages": pages, "done": pages})
 
     by_annotator: dict[str, dict] = {}
     for gold_file in config.GOLD_DIR.glob("*.json"):

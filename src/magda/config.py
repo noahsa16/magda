@@ -47,6 +47,13 @@ IMAGES_DIR = DATA_DIR / "images"    # gerenderte Seitenbilder (PNG)
 # Frage "labelt Qwen näher am Goldstandard als Mistral?" ist nicht mehr
 # beantwortbar, weil die Vergleichsgrundlage weg ist.
 LABELED_DIR = DATA_DIR / "labeled"
+# Abgeschlossene Vergleichsarme. Ein Geschwisterordner, bewusst nicht
+# data/labeled/archiv/: `model_slug` verbietet Pfadtrenner (sonst waere
+# "../../gold" ein Modellname), also waere ein verschachtelter Archivordner
+# ueber `--labels-from` nicht erreichbar, und `labeled_models` listete
+# "archiv" selbst als Modell. Getrennt bleibt data/labeled/ eine Antwort auf
+# "womit wird gerade gearbeitet", ohne dass Erledigtes verschwindet.
+LABELED_ARCHIVE_DIR = DATA_DIR / "labeled_archive"
 SPLITS_DIR = DATA_DIR / "splits"    # train/dev/test-Aufteilung
 EVAL_DIR = DATA_DIR / "eval"        # Evaluations-Reports als JSON (fürs Frontend)
 RUNS_DIR = DATA_DIR / "runs"        # Lauf-Historie: je Lauf Metadaten-JSON + Log
@@ -89,8 +96,29 @@ def model_slug(model: str) -> str:
 
 
 def labeled_dir(model: str) -> Path:
-    """Ordner mit den Labels genau eines Modells."""
-    return LABELED_DIR / model_slug(model)
+    """Ordner mit den Labels genau eines Modells, aktiv oder archiviert.
+
+    Der Rueckfall ins Archiv haelt `magda agreement` und `magda gold` fuer
+    abgeschlossene Arme am Leben, ohne dass jemand einen Pfad tippen muss.
+    Aktiv hat Vorrang, und die Richtung ist nicht beliebig: andersherum
+    schriebe ein Labellauf nach data/labeled/ und gelesen wuerde aus dem
+    Archiv - eine Differenz, die an keiner Zahl auffaellt.
+
+    Ein unbekannter Name zeigt auf den aktiven Ordner, damit ein neuer Lauf
+    nicht ins Archiv schreibt.
+    """
+    slug = model_slug(model)
+    archived = LABELED_ARCHIVE_DIR / slug
+    if archived.is_dir() and not (LABELED_DIR / slug).is_dir():
+        return archived
+    return LABELED_DIR / slug
+
+
+def archived_models() -> list[str]:
+    """Modelle, deren Arm abgeschlossen ist - alphabetisch."""
+    if not LABELED_ARCHIVE_DIR.is_dir():
+        return []
+    return sorted(d.name for d in LABELED_ARCHIVE_DIR.iterdir() if d.is_dir())
 
 
 def labeled_models() -> list[str]:
@@ -156,8 +184,18 @@ def labeled_page_ids() -> set[str]:
     geflossen ist – von welchem Modell, ist dort egal. Würde man hier nur ein
     Modell betrachten, könnte Schritt 06 eine Seite als Duplikat entfernen, die
     ein anderes Modell bereits gelabelt hat, und dessen Arbeit wäre weg.
+
+    Das Archiv zählt mit. Es aus dem Scan zu nehmen wäre genau derselbe
+    Fehler, nur eine Ebene höher: die Seite ist gelabelt, der Ordner steht
+    bloß woanders.
     """
-    return {f.stem for m in labeled_models() for f in (LABELED_DIR / m).glob("*.json")}
+    return {
+        f.stem
+        for root, models in ((LABELED_DIR, labeled_models()),
+                             (LABELED_ARCHIVE_DIR, archived_models()))
+        for m in models
+        for f in (root / m).glob("*.json")
+    }
 
 
 # Die Referenz des Projekts (Teamentscheidung, 30.07.2026), bekräftigt am

@@ -41,9 +41,14 @@ def default_pair() -> tuple[str | None, str | None]:
     und der zweite ist der bekannt schlechte (F1 0.306 gegen Gold). Ihre
     Uneinigkeit misst die Prompt-Überarbeitung, nicht die Schwierigkeit der
     Seite. Deshalb muss der zweite Ordner von einem anderen Modell stammen.
+
+    Archivierte Arme zählen mit. Seit der Sortierung vom 24.08.2026 stehen
+    aktiv nur noch `sonnet-5` und `sonnet-5-app`, und die teilen sich den
+    Präfix – ohne das Archiv fände diese Funktion kein Paar mehr und `magda
+    queue` verlöre sein Uneinigkeitsmass, ohne dass ein Test rot wird.
     """
     nach_umfang = sorted(
-        config.labeled_models(),
+        config.labeled_models() + config.archived_models(),
         key=lambda m: (len(list(config.labeled_dir(m).glob("*.json"))), m),
         reverse=True,
     )

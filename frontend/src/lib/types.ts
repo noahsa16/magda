@@ -24,16 +24,23 @@ export interface PageDetail {
 /**
  * Eine Label-Quelle als Ordner – aus /api/sources.
  *
- * "model": ein LLM-Lauf unter data/labeled/<modell>/.
+ * "model": ein LLM-Lauf unter data/labeled/<modell>/ bzw. data/labeled_archive/.
+ * "offer_groups": eine Gruppierung aus data/offer_groups/<quelle>/ – sie sagt,
+ * wozu eine Entity gehört, während die Spans sagen, was ein Wort ist.
  * "gold": Handannotation aus gold/, gruppiert nach Urheber. Geprüfte Arbeit
  * und ungeprüfte Vorannotation stehen dort nebeneinander, deshalb `done`.
+ *
+ * `status` tragen nur Modelle: "canonical" ist die Quelle, an der die
+ * berichteten Zahlen hängen, "variant" ein Nebenstand, "archive" ein
+ * abgeschlossener Vergleichsarm.
  */
 export interface LabelSource {
-  kind: "model" | "gold"
+  kind: "model" | "gold" | "offer_groups"
   id: string
   name: string
   pages: number
   done: number
+  status?: "canonical" | "variant" | "archive"
 }
 
 /** Ein Modell, das gelabelt hat – aus /api/labelers. */
