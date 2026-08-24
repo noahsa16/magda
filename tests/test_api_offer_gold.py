@@ -11,7 +11,7 @@ import json
 import pytest
 from fastapi.testclient import TestClient
 
-from magda import api, config
+from magda import api, config, offer_teacher
 from magda.gold import words_hash
 
 SEITE = {
@@ -28,7 +28,7 @@ SEITE = {
 
 @pytest.fixture
 def client(tmp_path, monkeypatch):
-    for name in ("WORDS_DIR", "GOLD_DIR", "LABELED_DIR", "IMAGES_DIR"):
+    for name in ("WORDS_DIR", "GOLD_DIR", "LABELED_DIR", "IMAGES_DIR", "OFFER_GROUPS_DIR"):
         d = tmp_path / name.lower()
         d.mkdir()
         monkeypatch.setattr(config, name, d)
@@ -40,6 +40,18 @@ def client(tmp_path, monkeypatch):
 
 def _hash():
     return words_hash(SEITE["words"])
+
+
+def _write_sonnet(groups):
+    """Eine maschinelle sonnet-Gruppierung ablegen, wie sie der Teacher schreibt."""
+    directory = offer_teacher.teacher_dir("claude-sonnet-5")
+    directory.mkdir(parents=True, exist_ok=True)
+    with open(directory / "1_p1.json", "w") as f:
+        json.dump({
+            "page_id": "1_p1", "words_hash": _hash(), "status": "done",
+            "annotator": "", "provenance": {"kind": "llm", "source": "claude-sonnet-5"},
+            "notes": "", "groups": groups,
+        }, f)
 
 
 def test_unberuehrte_seite_liefert_leere_gruppen(client):
@@ -120,6 +132,49 @@ def test_uebersicht_nennt_stand_und_veraltung(client):
     assert zeilen[0]["status"] == "done"
     assert zeilen[0]["num_offers"] == 1
     assert zeilen[0]["stale"] is False
+
+
+def test_sonnet_gruppierung_ist_die_website_referenz(client):
+    """sonnet-5 IST Gold: ohne Handannotation zeigt die Seite die sonnet-Gruppen.
+
+    Vor dem Overlay lieferte eine Seite ohne gold/offers/-Datei "untouched" und
+    leere Gruppen - die 142 sonnet-Gruppierungen waren auf der Website
+    unsichtbar, obwohl sonnet die Projektreferenz ist.
+    """
+    _write_sonnet([[0, 1, 2]])
+
+    antwort = client.get("/api/offer-gold/1_p1").json()
+
+    assert antwort["groups"] == [[0, 1, 2]]
+    assert antwort["status"] == "done"
+    assert antwort["source"] == "sonnet"
+
+
+def test_handannotation_schlaegt_die_sonnet_referenz(client):
+    """Was ein Mensch gruppiert, gewinnt ueber die maschinelle Referenz.
+
+    gold/offers/ bleibt die Override-Schicht: die Handannotation ist genauer
+    als das Modell und schattet die sonnet-Gruppierung derselben Seite.
+    """
+    _write_sonnet([[0, 1, 2]])
+    client.put("/api/offer-gold/1_p1", json={
+        "words_hash": _hash(), "status": "done", "annotator": "noah", "groups": [[0, 1]],
+    })
+
+    antwort = client.get("/api/offer-gold/1_p1").json()
+
+    assert antwort["groups"] == [[0, 1]]
+    assert antwort["source"] == "gold"
+
+
+def test_uebersicht_zeigt_sonnet_als_quelle(client):
+    """Die Herkunft steht in der Liste, damit Mensch und Modell unterscheidbar bleiben."""
+    _write_sonnet([[0, 1, 2]])
+
+    zeilen = client.get("/api/offer-gold").json()
+
+    assert zeilen[0]["source"] == "sonnet"
+    assert zeilen[0]["num_offers"] == 1
 
 
 def test_unbekannte_seite_ist_ein_404(client):

@@ -1,0 +1,70 @@
+{
+  "split": "dev",
+  "predictions": "gbert",
+  "labels_from": "sonnet-5",
+  "pages": 21,
+  "summary": {
+    "total": 77,
+    "classes": {
+      "typverwechslung": {
+        "count": 5,
+        "share": 0.0649,
+        "solvability": "konsistentere Referenz (Handprüfung, Code-Guard)"
+      },
+      "grenzfehler": {
+        "count": 25,
+        "share": 0.3247,
+        "solvability": "Annotationsregel entscheiden (Sortenzusatz-Frage)"
+      },
+      "lehrerluecke": {
+        "count": 0,
+        "share": 0.0,
+        "solvability": "Referenz korrigieren – der Schüler hat recht"
+      },
+      "echtes_falsch_negativ": {
+        "count": 30,
+        "share": 0.3896,
+        "solvability": "mehr Daten oder Bildmerkmal"
+      },
+      "echtes_falsch_positiv": {
+        "count": 17,
+        "share": 0.2208,
+        "solvability": "mehr Daten"
+      }
+    },
+    "per_label": {
+      "APP_PRICE": {
+        "echtes_falsch_negativ": 1
+      },
+      "BRAND": {
+        "grenzfehler": 4,
+        "echtes_falsch_positiv": 5
+      },
+      "OLD_PRICE": {
+        "typverwechslung": 2
+      },
+      "PRICE": {
+        "echtes_falsch_negativ": 7,
+        "typverwechslung": 2,
+        "echtes_falsch_positiv": 2
+      },
+      "PRODUCT": {
+        "grenzfehler": 21,
+        "echtes_falsch_positiv": 7,
+        "typverwechslung": 1,
+        "echtes_falsch_negativ": 2
+      },
+      "QUANTITY": {
+        "echtes_falsch_negativ": 20,
+        "echtes_falsch_positiv": 1
+      },
+      "UNIT_PRICE": {
+        "echtes_falsch_positiv": 1
+      },
+      "VALID": {
+        "echtes_falsch_positiv": 1
+      }
+    },
+    "patterns": {}
+  }
+}

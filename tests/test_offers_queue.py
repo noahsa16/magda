@@ -118,6 +118,22 @@ def test_testseiten_bleiben_aussen_vor(daten):
     assert [v["page_id"] for v in vorschlaege] == ["f1"]
 
 
+def test_testseiten_lassen_sich_gezielt_anfordern(daten):
+    """Zwei Zwecke, zwei Antworten - und der Default bleibt der vorsichtige.
+
+    Eine Referenz zum *Entwickeln* gehoert nicht auf die Messseiten. Eine
+    Referenz zum *Messen* gibt es dort ueberhaupt nur so: `data/offer_groups/`
+    hat null Testseiten, also ist jede Gruppierungszahl des Projekts bisher
+    eine Dev-Zahl. Die Trennung, auf die es ankommt, sitzt in
+    `offers-model train --splits train`.
+    """
+    splits(daten, train=["f1"], dev=[], test=["n1"])
+
+    nur_test = review.offer_queue([food("f1"), nonfood("n1")], splits=("test",))
+
+    assert [v["page_id"] for v in nur_test] == ["n1"]
+
+
 def test_bereits_annotierter_cluster_faellt_weg(daten):
     """Eine fertige Seite vertritt ihren Cluster schon."""
     splits(daten, train=["n1", "n2", "f1"], dev=[], test=[])

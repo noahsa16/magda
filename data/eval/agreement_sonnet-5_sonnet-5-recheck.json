@@ -1,0 +1,41 @@
+{
+  "model_a": "sonnet-5",
+  "model_b": "sonnet-5-recheck",
+  "pages_compared": 3,
+  "skipped": [],
+  "agreement": 0.9515260323159784,
+  "confusion": {},
+  "only_a": {
+    "PRODUCT": 3,
+    "APP_PRICE": 4
+  },
+  "only_b": {
+    "QUANTITY": 10,
+    "PRICE": 2,
+    "UNIT_PRICE": 4,
+    "APP_PRICE": 4
+  },
+  "pages": [
+    {
+      "page_id": "1342812_p38",
+      "words": 230,
+      "conflicts": 26,
+      "agreement": 0.8869565217391304,
+      "agreement_on_labeled": 0.8243243243243243
+    },
+    {
+      "page_id": "1342821_p25",
+      "words": 177,
+      "conflicts": 1,
+      "agreement": 0.9943502824858758,
+      "agreement_on_labeled": 0.96
+    },
+    {
+      "page_id": "1347375_p37",
+      "words": 150,
+      "conflicts": 0,
+      "agreement": 1.0,
+      "agreement_on_labeled": 1.0
+    }
+  ]
+}

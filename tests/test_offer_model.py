@@ -289,3 +289,55 @@ def test_der_checkpoint_nennt_seine_herkunft(tmp_path):
     model.save(path)
 
     assert offer_model.load(path).provenance["kind"] == "llm"
+
+
+def test_die_kalibrierung_dekodiert_wie_die_auswertung(monkeypatch):
+    """Die Falle, die kein anderer Test faengt.
+
+    `calibrate` bildet die Gruppen selbst, um die Schwelle out-of-fold zu
+    waehlen. Reicht der Dekoder nicht bis dorthin, waehlt die Kalibrierung
+    mit Union-Find, waehrend die Auswertung mit dem ILP dekodiert - ein
+    System, das es so nicht gibt. Der Fehler ist einseitig: Er
+    benachteiligt gerade das ILP, dessen ganzer Vorteil darin besteht,
+    niedrigere Schwellen zu ueberleben.
+    """
+    from magda import offer_ilp
+
+    pages, reference = _training_set()
+    seen = []
+    # Vor dem Patchen binden, sonst ruft der Spy sich selbst auf.
+    original_union = offer_pairs.groups_from_edges
+    original_ilp = offer_ilp.groups_from_edges_ilp
+
+    def spy(count, edges, threshold):
+        seen.append("union")
+        return original_union(count, edges, threshold)
+
+    def spy_ilp(count, edges, threshold, cannot_link=None):
+        seen.append("ilp")
+        return original_ilp(count, edges, threshold, cannot_link)
+
+    monkeypatch.setattr(offer_pairs, "groups_from_edges", spy)
+    monkeypatch.setattr(offer_ilp, "groups_from_edges_ilp", spy_ilp)
+
+    offer_model.calibrate(pages, reference, folds=2, epochs=5,
+                          thresholds=[0.6], decoder="ilp")
+
+    assert seen, "die Kalibrierung hat ueberhaupt nicht dekodiert"
+    assert set(seen) == {"ilp"}, f"Union-Find lief mit: {sorted(set(seen))}"
+
+
+def test_der_dekoder_gehoert_zum_checkpoint(tmp_path):
+    """Wie die Schwelle: Wer ihn beim Laden neu setzt, misst ein anderes System."""
+    pages, reference = _training_set()
+    model = offer_model.train(pages, reference, epochs=5, decoder="ilp")
+    path = model.save(tmp_path / "model.pt")
+
+    assert offer_model.load(path).decoder == "ilp"
+
+
+def test_ein_unbekannter_dekoder_bricht_ab():
+    pages, reference = _training_set()
+
+    with pytest.raises(ValueError, match="Dekoder"):
+        offer_model.train(pages, reference, epochs=5, decoder="quatsch")

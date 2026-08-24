@@ -41,9 +41,14 @@ def default_pair() -> tuple[str | None, str | None]:
     und der zweite ist der bekannt schlechte (F1 0.306 gegen Gold). Ihre
     Uneinigkeit misst die Prompt-Überarbeitung, nicht die Schwierigkeit der
     Seite. Deshalb muss der zweite Ordner von einem anderen Modell stammen.
+
+    Archivierte Arme zählen mit. Seit der Sortierung vom 24.08.2026 stehen
+    aktiv nur noch `sonnet-5` und `sonnet-5-app`, und die teilen sich den
+    Präfix – ohne das Archiv fände diese Funktion kein Paar mehr und `magda
+    queue` verlöre sein Uneinigkeitsmass, ohne dass ein Test rot wird.
     """
     nach_umfang = sorted(
-        config.labeled_models(),
+        config.labeled_models() + config.archived_models(),
         key=lambda m: (len(list(config.labeled_dir(m).glob("*.json"))), m),
         reverse=True,
     )
@@ -149,7 +154,8 @@ def queue(model_a: str | None = None, model_b: str | None = None,
 
 
 def offer_queue(pages: list[dict], limit: int = 40,
-                annotated: set[str] | None = None) -> list[dict]:
+                annotated: set[str] | None = None,
+                splits: tuple[str, ...] = ("train", "dev")) -> list[dict]:
     """Welche Seiten die Gruppierungsreferenz zuerst braucht.
 
     Anders als `queue()` sortiert das nicht nach Uneinigkeit zweier Modelle,
@@ -163,8 +169,16 @@ def offer_queue(pages: list[dict], limit: int = 40,
     Zug: die groesste Luecke und die groesste Vorlage. Welche einen Vorschlag
     hervorgebracht hat, steht als `reason` dabei.
 
-    Train und Dev, nie Test: eine Referenz, an der Heuristiken entwickelt
+    Default Train und Dev: eine Referenz, an der Heuristiken *entwickelt*
     werden, gehoert nicht auf die Seiten, an denen am Ende gemessen wird.
+
+    `splits` hebt das gezielt auf, denn es gibt den zweiten Zweck. Eine
+    Testreferenz wird nicht entwickelt, sie wird einmal gemessen - und ohne
+    sie ist die Gruppierung auf Test **gar nicht** bewertbar. Genau dort
+    steht das Projekt: `data/offer_groups/` hat null Testseiten, also ist
+    jede Gruppierungszahl bisher eine Dev-Zahl aus den Trainingswochen.
+    Die Trennung, auf die es ankommt, sitzt ohnehin woanders -
+    `offers-model train --splits train` entscheidet, was ins Lernen geht.
 
     `annotated` sagt, was schon erledigt ist. Default ist die Handannotation
     unter gold/offers/; ein LLM-Teacher schreibt woandershin und reicht seinen
@@ -179,7 +193,7 @@ def offer_queue(pages: list[dict], limit: int = 40,
             f"{config.SPLITS_DIR / 'split.json'} fehlt. Erst `magda split` laufen lassen."
         )
 
-    eligible = [p for p in pages if roles.get(p.get("page_id")) in ("train", "dev")]
+    eligible = [p for p in pages if roles.get(p.get("page_id")) in splits]
     if not eligible:
         return []
 

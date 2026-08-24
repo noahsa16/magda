@@ -1,0 +1,207 @@
+{
+  "source": "sonnet-5",
+  "source_kind": "labels",
+  "train_source": "sonnet-5",
+  "reference": "data/offer_groups/claude-sonnet-5",
+  "provenance": [
+    "llm"
+  ],
+  "train_splits": "train",
+  "splits": "dev",
+  "cross_validated": true,
+  "decoders": [
+    "union",
+    "ilp"
+  ],
+  "objective": "group_f1",
+  "train_pages": 75,
+  "eval_pages": 75,
+  "eval_clusters": 68,
+  "variants": {
+    "geometrie/union": {
+      "blocks": [
+        "types",
+        "geometry_base",
+        "geometry_plus"
+      ],
+      "decoder": "union",
+      "features": 35,
+      "threshold": 0.956,
+      "thresholds_per_fold": [
+        0.96,
+        0.94,
+        0.96,
+        0.96,
+        0.96
+      ],
+      "seconds": 765.5,
+      "total": {
+        "ref_pairs": 9508,
+        "sys_pairs": 13531,
+        "shared_pairs": 8240,
+        "ref_groups": 573,
+        "sys_groups": 620,
+        "exact_groups": 270,
+        "pair_f1": 0.7153088241677157,
+        "group_f1": 0.4526404023470243,
+        "pair_ci": {
+          "clusters": 68,
+          "low": 0.6509547280785322,
+          "high": 0.776467361492046
+        },
+        "group_ci": {
+          "clusters": 68,
+          "low": 0.35747883349012227,
+          "high": 0.547673531655225
+        }
+      },
+      "blind": {
+        "ref_pairs": 1771,
+        "sys_pairs": 2052,
+        "shared_pairs": 1174,
+        "ref_groups": 226,
+        "sys_groups": 268,
+        "exact_groups": 77,
+        "pair_f1": 0.6141773476327491,
+        "group_f1": 0.3117408906882591,
+        "pair_ci": {
+          "clusters": 68,
+          "low": 0.4948297604035308,
+          "high": 0.7338129496402878
+        },
+        "group_ci": {
+          "clusters": 68,
+          "low": 0.2231578947368421,
+          "high": 0.4395604395604396
+        }
+      },
+      "checkable": {
+        "ref_pairs": 7737,
+        "sys_pairs": 11479,
+        "shared_pairs": 7066,
+        "ref_groups": 347,
+        "sys_groups": 352,
+        "exact_groups": 193,
+        "pair_f1": 0.735428809325562,
+        "group_f1": 0.5522174535050072,
+        "pair_ci": {
+          "clusters": 68,
+          "low": 0.6654956468611578,
+          "high": 0.8067065514439767
+        },
+        "group_ci": {
+          "clusters": 68,
+          "low": 0.4528301886792453,
+          "high": 0.6447187928669409
+        }
+      }
+    },
+    "geometrie/ilp": {
+      "blocks": [
+        "types",
+        "geometry_base",
+        "geometry_plus"
+      ],
+      "decoder": "ilp",
+      "features": 35,
+      "threshold": 0.868,
+      "thresholds_per_fold": [
+        0.86,
+        0.86,
+        0.88,
+        0.88,
+        0.86
+      ],
+      "seconds": 2054.8,
+      "total": {
+        "ref_pairs": 9508,
+        "sys_pairs": 19060,
+        "shared_pairs": 8134,
+        "ref_groups": 573,
+        "sys_groups": 588,
+        "exact_groups": 321,
+        "pair_f1": 0.569448333800056,
+        "group_f1": 0.5529715762273902,
+        "pair_ci": {
+          "clusters": 68,
+          "low": 0.45781368615117674,
+          "high": 0.7336749441597686
+        },
+        "group_ci": {
+          "clusters": 68,
+          "low": 0.449685534591195,
+          "high": 0.6495327102803738
+        }
+      },
+      "blind": {
+        "ref_pairs": 1771,
+        "sys_pairs": 1980,
+        "shared_pairs": 1207,
+        "ref_groups": 226,
+        "sys_groups": 238,
+        "exact_groups": 99,
+        "pair_f1": 0.6435617168754999,
+        "group_f1": 0.42672413793103453,
+        "pair_ci": {
+          "clusters": 68,
+          "low": 0.5397426192278576,
+          "high": 0.7640354579991558
+        },
+        "group_ci": {
+          "clusters": 68,
+          "low": 0.3253588516746412,
+          "high": 0.56
+        }
+      },
+      "checkable": {
+        "ref_pairs": 7737,
+        "sys_pairs": 17080,
+        "shared_pairs": 6927,
+        "ref_groups": 347,
+        "sys_groups": 350,
+        "exact_groups": 222,
+        "pair_f1": 0.5582463633799412,
+        "group_f1": 0.6370157819225252,
+        "pair_ci": {
+          "clusters": 68,
+          "low": 0.4368319308619513,
+          "high": 0.7555584791474806
+        },
+        "group_ci": {
+          "clusters": 68,
+          "low": 0.5288035450516987,
+          "high": 0.7317574511819116
+        }
+      },
+      "ilp": {
+        "components": 37367,
+        "optimised": 24864,
+        "capped": 1611,
+        "largest_capped": 118
+      }
+    }
+  },
+  "paired_vs_baseline": {
+    "geometrie/ilp_vs_geometrie/union_total": {
+      "clusters": 68,
+      "difference": 0.10033117388036594,
+      "low": 0.0667895670592965,
+      "high": 0.13317998411437648,
+      "p_two_sided": 0.0
+    },
+    "geometrie/ilp_vs_geometrie/union_blind": {
+      "clusters": 68,
+      "difference": 0.11498324724277542,
+      "low": 0.06467104381615973,
+      "high": 0.16769172361427487,
+      "p_two_sided": 0.0
+    },
+    "geometrie/ilp_vs_geometrie/union_checkable": {
+      "clusters": 68,
+      "difference": 0.084798328417518,
+      "low": 0.034102134604647116,
+      "high": 0.13049999999999984,
+      "p_two_sided": 0.004
+    }
+  }
+}

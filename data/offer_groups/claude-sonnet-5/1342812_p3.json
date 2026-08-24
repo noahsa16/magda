@@ -1,0 +1,78 @@
+{
+  "page_id": "1342812_p3",
+  "words_hash": "e3398a4566a4d4a2f721f24bc1c7f2dfba7edcab9f48e9ecc12bfd0fd126557f",
+  "status": "done",
+  "annotator": "claude-sonnet-5",
+  "provenance": {
+    "kind": "llm",
+    "source": "claude-sonnet-5",
+    "model": "claude-sonnet-5",
+    "prompt_version": 1
+  },
+  "notes": "Bei Möhren und Pinienkerne gibt es je zwei Preise für dasselbe Produkt (regulärer Aktionspreis/altpreis plus rabattierter App-Preis im türkisen Kasten) - beide Preis-Entities gehören zum selben Angebot, nicht zu getrennten. Bei Pinienkerne stehen die beiden UNIT_PRICE-Angaben (29.80 und 49.80) in ungewöhnlicher Reihenfolge im Text (29.80 direkt nach der Menge, 49.80 nach dem regulären Preis), gehören aber beide zur einzigen Kachel. Entity 30 (Gültigkeitszeitraum im Seitenkopf) gehört zu keinem Angebot und wurde weggelassen.",
+  "groups": [
+    [
+      126,
+      127,
+      128,
+      132,
+      134,
+      135
+    ],
+    [
+      119,
+      120,
+      121
+    ],
+    [
+      113,
+      114,
+      115,
+      117
+    ],
+    [
+      21,
+      22,
+      23,
+      24,
+      26,
+      27,
+      47,
+      48,
+      49
+    ],
+    [
+      28,
+      29,
+      30,
+      31,
+      32,
+      33,
+      34,
+      36,
+      37,
+      55,
+      56,
+      57
+    ],
+    [
+      58,
+      60,
+      61,
+      62,
+      63,
+      64,
+      65,
+      67,
+      68,
+      69,
+      70,
+      71,
+      72,
+      77,
+      78,
+      79,
+      80
+    ]
+  ]
+}

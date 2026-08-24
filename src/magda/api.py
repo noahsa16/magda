@@ -22,9 +22,10 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
 from magda import (
-    agreement, catalog_meta, catalogs, config, dedupe, jobs, runner, runs, scraping,
+    agreement, catalog_meta, catalogs, checkpoints, config, dedupe, jobs, runner,
+    runs, scraping,
 )
-from magda import label_audit, offers_gold
+from magda import label_audit, offer_teacher, offers_gold
 from magda.gold import count_by_status, words_hash
 from magda.labels import ENTITY_TYPES, validate_spans
 
@@ -159,26 +160,49 @@ def list_pages(model: str | None = None):
 def list_label_sources():
     """Die Label-Quellen als Ordner-Ebene für Inspektor und Annotator.
 
-    Zwei Sorten, die sich grundsätzlich unterscheiden und deshalb getrennt
-    gehören: was ein LLM erzeugt hat (reproduzierbar, liegt unter
-    data/labeled/<modell>/) und was ein Mensch oder eine Vorannotation in
-    gold/ hinterlassen hat.
+    Drei Sorten, die sich grundsätzlich unterscheiden und deshalb getrennt
+    gehören: was ein LLM als Spans erzeugt hat (reproduzierbar, unter
+    data/labeled/<modell>/), wozu diese Entities gruppiert wurden
+    (data/offer_groups/<quelle>/) und was ein Mensch oder eine Vorannotation
+    in gold/ hinterlassen hat.
+
+    Die Modelle tragen ein `status`: `canonical` ist die Quelle, an der die
+    berichteten Zahlen hängen (`config.CANONICAL_LABELS`), `variant` ein
+    Nebenstand mit offener Entscheidung, `archive` ein abgeschlossener
+    Vergleichsarm aus data/labeled_archive/. Ohne dieses Feld sehen acht
+    Ordner gleich aus, und "was ist aktuell?" beantwortet man nach
+    Ordnergrösse – also falsch, denn die grösste ist nicht die richtige.
 
     Gold wird nach `annotator` gruppiert, nicht als ein Topf ausgeliefert.
     Seit Seiten vorannotiert werden, stehen dort zwei verschiedene Dinge
     nebeneinander: geprüfte Handarbeit und ungeprüfte Vorschläge. Wer die
     zusammenwirft, weiß hinterher nicht mehr, worauf er sich verlassen kann.
     """
+    def _model_source(model: str, status: str) -> dict:
+        pages = len(list(config.labeled_dir(model).glob("*.json")))
+        return {"kind": "model", "id": model, "name": model,
+                "pages": pages, "done": pages, "status": status}
+
+    # Kanonisch zuerst, Archiv zuletzt. Die Reihenfolge ist die Aussage: acht
+    # gleich aussehende Ordner waren der Grund, warum niemand mehr wusste,
+    # welcher die berichteten Zahlen trägt.
+    canonical = config.model_slug(config.CANONICAL_LABELS)
+    active = sorted(config.labeled_models(), key=lambda m: (m != canonical, m))
     sources = [
-        {
-            "kind": "model",
-            "id": model,
-            "name": model,
-            "pages": len(list(config.labeled_dir(model).glob("*.json"))),
-            "done": len(list(config.labeled_dir(model).glob("*.json"))),
-        }
-        for model in config.labeled_models()
-    ]
+        _model_source(m, "canonical" if m == canonical else "variant")
+        for m in active
+    ] + [_model_source(m, "archive") for m in config.archived_models()]
+
+    # Gruppierungen als eigene Ebene, nicht als Fußnote: sie beantworten
+    # "wozu gehört diese Entity", die Spans "was ist dieses Wort". Zwei
+    # Fragen, zwei Ordner – genauso wie gold/ und gold/offers/ getrennt sind.
+    if config.OFFER_GROUPS_DIR.is_dir():
+        for directory in sorted(config.OFFER_GROUPS_DIR.iterdir()):
+            if not directory.is_dir():
+                continue
+            pages = len(list(directory.glob("*.json")))
+            sources.append({"kind": "offer_groups", "id": directory.name,
+                            "name": directory.name, "pages": pages, "done": pages})
 
     by_annotator: dict[str, dict] = {}
     for gold_file in config.GOLD_DIR.glob("*.json"):
@@ -289,15 +313,12 @@ def get_significance():
 def _training_state(variant: str) -> dict:
     """Trainingsstand aus dem jüngsten Checkpoint.
 
-    `trainer.save_model()` schreibt kein trainer_state.json nach best/, der
-    Verlauf steht nur in den checkpoint-N-Ordnern. Der mit der höchsten
-    Schrittzahl ist der aktuellste.
+    `trainer.save_model()` schreibt kein trainer_state.json nach best/. Der
+    Verlauf steht deshalb im jüngsten checkpoint-N-Ordner – und nach
+    `magda prune-checkpoints` im Lauf-Ordner selbst. Welche der beiden Stellen
+    gilt, entscheidet `checkpoints.training_state_path`.
     """
     variant_dir = config.CHECKPOINTS_DIR / variant
-    checkpoints = sorted(
-        variant_dir.glob("checkpoint-*"),
-        key=lambda p: int(p.name.split("-")[1]) if p.name.split("-")[1].isdigit() else 0,
-    )
     entry: dict = {
         "variant": variant,
         "trained": (variant_dir / "best").exists(),
@@ -307,11 +328,8 @@ def _training_state(variant: str) -> dict:
         "best_f1": None,
         "history": [],
     }
-    if not checkpoints:
-        return entry
-
-    state_file = checkpoints[-1] / "trainer_state.json"
-    if not state_file.exists():
+    state_file = checkpoints.training_state_path(variant_dir)
+    if state_file is None:
         return entry
     with open(state_file) as f:
         state = json.load(f)
@@ -532,12 +550,26 @@ def put_gold(page_id: str, payload: GoldPayload):
 
 
 # ---------------------------------------------------------------------------
-# Gruppierungsreferenz (welche Entities ein Angebot bilden, gold/offers/)
+# Gruppierungsreferenz (welche Entities ein Angebot bilden)
 # ---------------------------------------------------------------------------
 # Getrennt von den Span-Annotationen, obwohl beide von Hand entstehen: Die
 # Spans sagen, *was* ein Wort ist, die Gruppen, *wozu* es gehört. Beides in
 # einer Datei hieße, dass eine halbfertige Gruppierung die fertigen Spans
 # derselben Seite mit in den Status "in_progress" zieht.
+#
+# Die Website zeigt sonnet-5 als Gold: `sonnet-5` IST die Projektreferenz
+# (Teamentscheidung 30.07.2026), und die Gruppierungen dazu liegen im
+# Teacher-Ordner data/offer_groups/claude-sonnet-5/. Über *jeder* dieser
+# Seiten liegt gold/offers/ als Hand-Override-Schicht: was ein Mensch
+# annotiert, ist genauer als die maschinelle Gruppierung und gewinnt.
+# Bewusst NICHT `offers_gold.reference_dir()` global umgebogen - die Funktion
+# speist auch `magda offers-gold`, und die Messung gegen den Teacher wäre
+# Selbstbezug. Deshalb liest hier die API die Overlay-Sicht, während die
+# Messreferenz und das Schreibziel gold/offers/ bleiben.
+
+# Ordnername der sonnet-Gruppierungen unter data/offer_groups/. Konstante
+# statt Parameter: die Website hat genau eine Referenz, und das ist sonnet.
+_OFFER_REFERENCE_SOURCE = "claude-sonnet-5"
 
 
 class OfferGoldPayload(BaseModel):
@@ -547,8 +579,22 @@ class OfferGoldPayload(BaseModel):
     groups: list[list[int]]
 
 
-def _offer_gold_file(page_id: str):
-    return offers_gold.reference_dir() / f"{page_id}.json"
+def _offer_reference_file(page_id: str):
+    """Welche Gruppierungsdatei diese Seite hat und woher sie stammt.
+
+    Hand-Override vor maschineller Referenz: liegt für die Seite eine
+    Handannotation in gold/offers/, gilt die; sonst die sonnet-Gruppierung.
+    Rückgabe ``(pfad_oder_None, quelle)`` mit ``quelle`` in
+    ``{"gold", "sonnet", "untouched"}`` - die Website zeigt die Herkunft an,
+    damit sichtbar bleibt, was Mensch und was Modell gruppiert hat.
+    """
+    hand = offers_gold.reference_dir() / f"{page_id}.json"
+    if hand.exists():
+        return hand, "gold"
+    sonnet = offer_teacher.teacher_dir(_OFFER_REFERENCE_SOURCE) / f"{page_id}.json"
+    if sonnet.exists():
+        return sonnet, "sonnet"
+    return None, "untouched"
 
 
 @app.get("/api/offer-gold")
@@ -556,6 +602,7 @@ def list_offer_gold():
     rows = []
     for words_file in config.WORDS_DIR.glob("*.json"):
         page_id = words_file.stem
+        annotation_file, gsource = _offer_reference_file(page_id)
         entry = {
             "page_id": page_id,
             "catalog": _catalog_of(page_id),
@@ -563,9 +610,9 @@ def list_offer_gold():
             "annotator": "",
             "num_offers": 0,
             "stale": False,
+            "source": gsource,
         }
-        annotation_file = _offer_gold_file(page_id)
-        if annotation_file.exists():
+        if annotation_file:
             try:
                 with open(annotation_file) as f:
                     annotation = json.load(f)
@@ -591,8 +638,8 @@ def get_offer_gold(page_id: str):
     page = _load_words(page_id)
     current_hash = words_hash(page["words"])
 
-    annotation_file = _offer_gold_file(page_id)
-    if not annotation_file.exists():
+    annotation_file, gsource = _offer_reference_file(page_id)
+    if annotation_file is None:
         return {
             "page_id": page_id,
             "words_hash": current_hash,
@@ -601,6 +648,7 @@ def get_offer_gold(page_id: str):
             "updated": None,
             "groups": [],
             "stale": False,
+            "source": gsource,
         }
 
     with open(annotation_file) as f:
@@ -610,6 +658,7 @@ def get_offer_gold(page_id: str):
         **annotation,
         "page_id": page_id,
         "stale": annotation.get("words_hash") != current_hash,
+        "source": gsource,
     }
 
 

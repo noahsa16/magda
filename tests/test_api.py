@@ -24,7 +24,9 @@ SAMPLE_PAGE = {
 
 @pytest.fixture
 def client(tmp_path, monkeypatch):
-    for name in ("RAW_DIR", "WORDS_DIR", "IMAGES_DIR", "LABELED_DIR", "EVAL_DIR", "CHECKPOINTS_DIR", "GOLD_DIR", "RUNS_DIR"):
+    for name in ("RAW_DIR", "WORDS_DIR", "IMAGES_DIR", "LABELED_DIR",
+                 "LABELED_ARCHIVE_DIR", "OFFER_GROUPS_DIR", "EVAL_DIR",
+                 "CHECKPOINTS_DIR", "GOLD_DIR", "RUNS_DIR"):
         d = tmp_path / name.lower()
         d.mkdir()
         monkeypatch.setattr(config, name, d)
@@ -218,6 +220,23 @@ def test_model_status_liest_trainingsverlauf(client):
     assert entry["best_f1"] == 0.83
     # Nur Zeilen mit eval_f1 landen im Verlauf, die reinen Loss-Logs nicht.
     assert entry["history"] == [{"epoch": 1.0, "f1": 0.71}, {"epoch": 2.0, "f1": 0.83}]
+
+
+def test_model_status_liest_den_gesicherten_verlauf_ohne_checkpoints(client):
+    # Nach `magda prune-checkpoints` liegen die checkpoint-N nicht mehr, der
+    # Verlauf aber schon - sonst zeigte die Demo nach dem Aufraeumen nichts an.
+    variant = config.CHECKPOINTS_DIR / "layoutxlm"
+    (variant / "best").mkdir(parents=True)
+    state = {"epoch": 10.0, "global_step": 220, "max_steps": 220,
+             "best_metric": 0.895, "log_history": [{"epoch": 1.0, "eval_f1": 0.62}]}
+    with open(variant / "trainer_state.json", "w") as f:
+        json.dump(state, f)
+
+    entry = client.get("/api/model").json()[0]
+
+    assert entry["steps"] == 220
+    assert entry["best_f1"] == 0.895
+    assert entry["history"] == [{"epoch": 1.0, "f1": 0.62}]
 
 
 # --- Pipeline-Runner -------------------------------------------------------
@@ -859,7 +878,8 @@ def test_sources_trennt_modelle_von_handannotation(client):
 
     body = client.get("/api/sources").json()
 
-    assert body[0] == {"kind": "model", "id": "alpha", "name": "alpha", "pages": 2, "done": 2}
+    assert body[0] == {"kind": "model", "id": "alpha", "name": "alpha",
+                       "pages": 2, "done": 2, "status": "variant"}
     # Gold nach Urheber getrennt: geprüfte Handarbeit und ungeprüfte
     # Vorannotation sind nicht dasselbe und gehören nicht in einen Topf.
     gold = {s["name"]: s for s in body if s["kind"] == "gold"}
@@ -878,3 +898,42 @@ def test_sources_ueberlebt_eine_kaputte_gold_datei(client):
     body = client.get("/api/sources").json()
 
     assert [s["name"] for s in body] == ["Noah"]
+
+
+def test_sources_weist_die_kanonische_quelle_aus(client, monkeypatch):
+    """Acht gleich aussehende Ordner sind der Grund fuer dieses Feld.
+
+    `sonnet-5` traegt jede berichtete Zahl, `sonnet-5-app` ist eine Variante
+    mit offener Teamentscheidung, die Vergleichsarme sind erledigt. Ohne
+    Kennzeichnung sieht man das keiner Kachel an, und die Frage "was ist
+    eigentlich aktuell?" beantwortet man per Ordnergroesse - also falsch.
+    """
+    monkeypatch.setattr(config, "CANONICAL_LABELS", "sonnet-5")
+    _write_labeled("462828_p1", {"tags": ["O"]}, model="sonnet-5")
+    _write_labeled("462828_p1", {"tags": ["O"]}, model="sonnet-5-app")
+    archiv = config.LABELED_ARCHIVE_DIR / "mistral-alt"
+    archiv.mkdir(parents=True)
+    (archiv / "462828_p1.json").write_text('{"tags": ["O"]}')
+
+    body = client.get("/api/sources").json()
+    status = {s["id"]: s["status"] for s in body if s["kind"] == "model"}
+
+    assert status == {"sonnet-5": "canonical", "sonnet-5-app": "variant",
+                      "mistral-alt": "archive"}
+    # Kanonisch zuerst, Archiv zuletzt: die Reihenfolge ist die Aussage.
+    ids = [s["id"] for s in body if s["kind"] == "model"]
+    assert ids[0] == "sonnet-5" and ids[-1] == "mistral-alt"
+
+
+def test_sources_zeigt_gruppierungen_als_eigene_quelle(client):
+    """Gruppierungen sagen, *wozu* eine Entity gehoert - eine andere Frage als
+    die Spans, und bis hierher nur ein Kleingedrucktes-Link im Frontend."""
+    groups = config.OFFER_GROUPS_DIR / "claude-sonnet-5"
+    groups.mkdir(parents=True)
+    (groups / "462828_p1.json").write_text('{"groups": []}')
+
+    body = client.get("/api/sources").json()
+    offers = [s for s in body if s["kind"] == "offer_groups"]
+
+    assert offers == [{"kind": "offer_groups", "id": "claude-sonnet-5",
+                       "name": "claude-sonnet-5", "pages": 1, "done": 1}]
