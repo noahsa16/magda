@@ -20,7 +20,15 @@ wo es weh tut.
 - **`data/splits/split.json` ist eingefroren.** Neu würfeln heißt: alle
   bisherigen Zahlen sind nicht mehr vergleichbar.
 - **Nichts schreibt nach `data/labeled/`.** Weder API noch Frontend noch die
-  Handprüfung. Das ist die Referenz, gegen die gemessen wird.
+  Handprüfung. Das ist die Referenz, gegen die gemessen wird. Einzige
+  Ausnahme ist `magda audit-apply` nach einer Teamentscheidung – mit eigenem
+  Commit, damit die Änderung sichtbar bleibt.
+- **`data/labeled/sonnet-5/` wird nicht umbenannt und nicht archiviert.** Der
+  Name steht in Checkpoint-Ordnern (`gbert-sonnet-5-app`), in jeder Datei
+  unter `data/eval/`, in Commit-Nachrichten und in diesem Dokument. Ein
+  Ordner `aktuell/` wäre bequemer und kappte die Belegkette, an der jede
+  berichtete Zahl hängt. „Aktuell" ist ein Zeiger, kein Ordnername:
+  `config.CANONICAL_LABELS`.
 - **Die Wortreihenfolge aus Schritt 02 ist ein Vertrag.** Ändert sie sich, zeigen
   alle Label-Indizes auf andere Wörter – auch die in `gold/`.
 - **Kein freies Argument-Textfeld im Frontend.** `jobs.build_command` nimmt nur
@@ -38,6 +46,10 @@ tests/       pytest (Labels, Alignment, API)
 gold/        handannotierte Referenz (versioniert)
 data/audit/  Handprüfung einzelner Labels: Kandidaten + menschliche Urteile
 data/        versioniert (PDFs, Wörter, Labels, Bilder, Splits)
+  labeled/         aktive Span-Labels, ein Ordner je Quelle
+  labeled_archive/ abgeschlossene Vergleichsarme, gleicher Aufbau
+  offer_groups/    Gruppierungen: welche Entities ein Angebot bilden
+  predictions/     Ausgabe von `magda predict`, ein Ordner je Modell
 checkpoints/ lokal, gitignored
 docs/        Proposal, RunPod-Anleitung, Ursprungs-Prototyp
 reports/     Wochenberichte
@@ -85,6 +97,7 @@ magda flair --reference gold        # Flair-Vergleichsarm
 magda gold --per-label              # Labeling-Modelle gegen Gold messen
 magda agreement qwen3.5-397b-a17b mistral-medium-3.5-128b
 magda audit APP_PRICE --labels-from sonnet-5   # Label zur Handprüfung vorsortieren
+magda audit-apply APP_PRICE --labels-from sonnet-5 --target sonnet-5-neu  # Urteile übernehmen
 magda offers                        # Entities zu Angeboten clustern, als SQLite
 magda offers-report                 # Clustering per Ablation messen (Train+Dev)
 magda offers-queue                  # welche Seiten die Referenz zuerst braucht
@@ -311,9 +324,34 @@ eine Liste auszugeben.
   Flach gespeichert überschreibt der zweite Labeling-Lauf den ersten, und die
   Frage „labelt Qwen näher am Goldstandard als Mistral?" ist danach nicht mehr
   beantwortbar. `magda train --labels-from` wählt aus, worauf trainiert wird;
-  ohne Angabe gilt `CHAT_AI_VISION_MODEL`, sonst der größte Ordner. Der
-  Modellname wird zum Ordnernamen und kommt aus einer Nutzereingabe – deshalb
+  ohne Angabe gilt `config.CANONICAL_LABELS`. Der Modellname wird zum
+  Ordnernamen und kommt aus einer Nutzereingabe – deshalb
   `config.model_slug()`, sonst wäre `../../gold` ein gültiger Modellname.
+- **Abgeschlossene Arme liegen in `data/labeled_archive/`** (seit 24.08.2026).
+  Acht gleich aussehende Ordner beantworteten die Frage „was ist aktuell?"
+  nicht mehr, und sie wurde deshalb nach Ordnergröße beantwortet – also
+  falsch. Stand jetzt: **aktiv `sonnet-5` (422 Seiten)**, archiviert die
+  beiden Mistral-Läufe und `qwen3.5-397b-a17b`. Drei abgebrochene Probeläufe
+  (2, 3 und 3 Seiten) sind gelöscht; geprüft war vorher, dass keine davon
+  eine Seite exklusiv hielt – die Gesamtmenge blieb bei 422.
+
+  Drei Eigenschaften, die daran hängen und leise brechen:
+
+  - **Ein Geschwisterordner, kein Unterordner.** `model_slug()` verbietet
+    Pfadtrenner, also wäre `data/labeled/archiv/mistral/` über
+    `--labels-from` nicht erreichbar, und `labeled_models()` listete
+    „archiv" selbst als Modell.
+  - **`labeled_page_ids()` scannt beide Wurzeln.** Es ist die Sicherung von
+    `magda dedupe`: fällt das Archiv aus dem Scan, entfernt Schritt 06
+    Seiten, in die Labelarbeit geflossen ist, und Schritt 02 stellt sie
+    beim nächsten Lauf als `pending` wieder ein.
+  - **`labeled_dir()` fällt ins Archiv zurück, aktiv hat Vorrang.**
+    Andersherum schriebe ein Labellauf nach `data/labeled/` und gelesen
+    würde aus dem Archiv – eine Differenz, die an keiner Zahl auffällt.
+
+  Ebenso mitgewandert ist `review.default_pair()`: aktiv steht nur noch eine
+  Modellfamilie, und ohne Zugriff aufs Archiv fände `magda queue` kein Paar
+  aus *verschiedenen* Modellen mehr.
 - **Der Prompt in `labeling.py` widersprach dem eigenen Goldstandard.** Er
   erklärte `"je 200 g"` zum QUANTITY-Span, während Gold nur `"200 g"` markiert,
   und sein Beispiel zeigte den Grundpreis nicht als eigene Angabe. QUANTITY und
@@ -901,9 +939,12 @@ eine Liste auszugeben.
   0.927, Abdeckung 0.446), mit sonnet-5 dagegen **494** (0.936, 0.478). Ein
   Viertel mehr Preise bei gleicher Rechnung – die Zahl beantwortete leise
   eine andere Frage. Über die Ordnergröße allein wäre es auch nicht
-  gutgegangen: `sonnet-5`, `sonnet-5-app` und der Mistral-Ordner haben alle
+  gutgegangen: `sonnet-5`, `sonnet-5-app` und der Mistral-Ordner hatten alle
   296 Seiten, dann entscheidet die Sortierreihenfolge. Vorrang hat jetzt
-  `config.CANONICAL_LABELS`. **Ältere Zahlen aus Befehlen ohne
+  `config.CANONICAL_LABELS`. (Seit dem 24.08.2026 gibt es die beiden anderen
+  Ordner nicht mehr – `sonnet-5-app` ist in `sonnet-5` aufgegangen, Mistral
+  liegt im Archiv. Der Befund bleibt trotzdem stehen: er begründet, warum
+  der Default nicht an der Ordnergröße hängen darf.) **Ältere Zahlen aus Befehlen ohne
   `--labels-from` stehen unter diesem Vorbehalt** – wer eine davon
   weiterverwendet, rechnet sie besser nach.
 - **„Mehr Referenz" war die halb falsche Antwort auf die breiten
@@ -1081,7 +1122,25 @@ eine Liste auszugeben.
   fehlender, nur per Text ausgezeichneter App-Preis wäre ihr entgangen; eine
   Gegenprobe über die Textumgebung ergab keinen solchen Fall, ist aber
   schwächer als die Farbprüfung.
-  **Die Übernahme selbst ist weiter nicht gebaut und bleibt Teamentscheidung.**
+  **Die Übernahme ist am 24.08.2026 erfolgt** (Entscheidung Noah), mit
+  `magda audit-apply APP_PRICE --labels-from sonnet-5 --target …` und einem
+  eigenen Commit. 81 Spans von PRICE nach APP_PRICE, 292 Urteile bestätigt,
+  eines ohne Zielabel (`1342881_p31:165`, die Aufzählungsziffer – das alte
+  Label bleibt stehen, ein Ersatz wäre geraten). Danach je Split: **train
+  187, dev 20, test 98** – der Test ändert sich um keinen einzigen Span,
+  also bleiben alle berichteten Testzahlen gültig. Die Dev-Zahlen sind um
+  9 Spans verschoben und gehören nachgerechnet.
+
+  **Und KW33 brauchte die Korrektur nicht.** `label_audit.collect` über alle
+  422 Seiten findet dort 134 bereits gelabelte APP_PRICE und **null** PRICE
+  auf App-Grund – genau den Fehlermodus, der in KW30–32 81-mal auftrat. Die
+  sechs übrigen Kandidaten sind OLD_PRICE, und dafür hat die Handprüfung
+  67 von 67 bestätigt. Zwischen den Wochen entsteht also keine
+  Konventionslücke; das war die Bedingung, unter der die Übernahme
+  überhaupt vertretbar war.
+
+  Weg B (dem Modell die Farbe als Merkmal geben) ist davon unberührt und
+  bleibt offen.
 - **Sortenangaben und Gebinde-Komposita** (`50-ml-Fläschchen`, `0,33-l-Dose`,
   `1-l-Sonderedition`): unverändert offen, und mit 106 von 135 PRODUCT-Fehlern
   jetzt beziffert. Prüfen per Auszählung je Wortlaut über den Korpus, nicht
