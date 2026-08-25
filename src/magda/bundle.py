@@ -94,6 +94,15 @@ done
 
 echo ""
 echo "########## Ergebnisse einpacken ##########"
+# Die checkpoint-N-Ordner sind 1,2 GB je Stueck und nach dem Training
+# entbehrlich - bis auf den Trainingsverlauf, den dieser Schritt nach
+# <lauf>/trainer_state.json sichert, bevor er loescht. Bei vier Armen mit
+# save_total_limit=2 sind das rund 12 GB, die sonst durch die Leitung
+# muessten, damit 1,8 GB in best/ ankommen. Ohne die Sicherung zeigte
+# /api/model hinterher keinen Verlauf: beide Leser globben checkpoint-*,
+# und best/ matcht darauf nicht.
+python -m magda prune-checkpoints --apply
+
 tar czf ergebnisse.tgz data/eval data/predictions checkpoints
 echo "Fertig: $(pwd)/ergebnisse.tgz"
 """
