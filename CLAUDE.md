@@ -88,11 +88,12 @@ magda label --model qwen3.6-27b     # anderes Vision-Modell
 magda label --only-gold             # Probelauf auf den Gold-Seiten
 magda label --model X --repair      # Span-Guard nachträglich anwenden
 magda split --strategy week         # Aufteilung neu festlegen (--force überschreibt)
-magda train layoutxlm               # bzw. gbert
+magda train layoutxlm               # bzw. gbert, xlmr, lilt
 magda eval gbert --split test
 magda predict gbert --split test --labels-from sonnet-5   # Wort, Box, Label je Seite
 magda predict gbert --all-words     # ganze Ernte, ohne Labels – der Einsatzfall
 magda significance --labels-from sonnet-5   # Konfidenzintervall, gepaarter Vergleich
+magda significance --labels-from sonnet-5 --compare xlmr lilt   # ein Kettenschritt
 magda flair --reference gold        # Flair-Vergleichsarm
 magda gold --per-label              # Labeling-Modelle gegen Gold messen
 magda agreement qwen3.5-397b-a17b mistral-medium-3.5-128b
@@ -346,7 +347,7 @@ eine Liste auszugeben.
 - **Abgeschlossene Arme liegen in `data/labeled_archive/`** (seit 24.08.2026).
   Acht gleich aussehende Ordner beantworteten die Frage „was ist aktuell?"
   nicht mehr, und sie wurde deshalb nach Ordnergröße beantwortet – also
-  falsch. Stand jetzt: **aktiv `sonnet-5` (422 Seiten)**, archiviert die
+  falsch. Stand jetzt: **aktiv `sonnet-5` (666 Seiten, Stand 25.08.2026)**, archiviert die
   beiden Mistral-Läufe und `qwen3.5-397b-a17b`. Drei abgebrochene Probeläufe
   (2, 3 und 3 Seiten) sind gelöscht; geprüft war vorher, dass keine davon
   eine Seite exklusiv hielt – die Gesamtmenge blieb bei 422.
@@ -452,7 +453,48 @@ eine Liste auszugeben.
   Zufall des Labeling-Fortschritts: wer bei 141 von 196 Seiten trainiert,
   friert einen Split ohne die restlichen 55 ein, und die landen später
   sämtlich im Training.
-- **Zum Layout-Vorteil ist kein Effekt nachweisbar – in keine Richtung.**
+- **Layout bringt nichts, das Seitenbild bringt etwas – seit 25.08.2026
+  getrennt gemessen.** Der Satz darunter („kein Effekt nachweisbar") galt für
+  175 Trainingsseiten und einen Vergleich mit *drei* Unterschieden auf einmal:
+  GBERT und LayoutXLM haben verschiedene Textencoder, verschiedene
+  Positionsinformation und verschiedene Bildinformation. Zwei Zwischenarme
+  zerlegen das, alle drei mit demselben Textencoder (XLM-R):
+
+      xlmr  ──+Layout──▶  lilt  ──+Bild──▶  layoutxlm
+
+  Test = KW35, 116 Seiten in **42 Clustern**, 5973 Entities, 494
+  Trainingsseiten, Referenz `sonnet-5`. Gepaart über Cluster gebootstrappt,
+  Differenz als *später minus früher*:
+
+  | Schritt | Zutat | Differenz | 95-%-KI | p |
+  |---|---|---:|---|---:|
+  | gbert → xlmr | anderer Encoder | +0.0059 | [−0.0015, +0.0156] | 0.165 |
+  | **xlmr → lilt** | **Layout** | **−0.0003** | [−0.0063, +0.0058] | **0.925** |
+  | **lilt → layoutxlm** | **Bild** | **+0.0096** | [+0.0033, +0.0182] | **0.019** |
+  | gbert → layoutxlm | alle drei | +0.0152 | [+0.0074, +0.0262] | 0.008 |
+
+  Punktschätzer: gbert 0.9084, xlmr 0.9143, lilt 0.9140, layoutxlm 0.9236.
+  Der Layout-Schritt ist mit ±0.006 die **präziseste Null des Projekts** –
+  keine schwache Wirkung, sondern keine. Der Bildgewinn sitzt fast
+  vollständig bei PRODUCT (+0.028) und BRAND (+0.026), also den Labels, für
+  die das Proposal Positionsinformation vermutet hatte: die Vermutung stimmt,
+  die Annahme „Wortkoordinaten liefern sie" nicht.
+  **Vier Vergleiche ohne Korrektur für multiples Testen, und sie sind nicht
+  unabhängig** (die Gesamtdifferenz ist die Summe der Schritte). Bei
+  Bonferroni hält nur die letzte Zeile. Belastbar ist: LayoutXLM schlägt
+  GBERT, und *innerhalb* dieser Differenz ist der Layout-Anteil null.
+  Ein Lauf je Arm, keine Seed-Streuung gemessen. Details:
+  `reports/woche-06.md`.
+- **APP_PRICE wird vom Seitenbild nicht gelöst – gegenteilig belegt.** Der
+  rein visuelle Fall ist genau der, bei dem LayoutXLM *verliert*: 0.882 gegen
+  LiLTs 0.906, das ohne Bild arbeitet. Der Grund steht schon in der
+  Architektur (49 visuelle Token für die ganze Seite, siehe unten) und ist
+  damit gemessen statt vermutet. Der Backbone liefert grobe Seitenstruktur,
+  keine lokale Farbe. Weg B (Farbe je Wort als Merkmal) ist dadurch
+  gestärkt, nicht erledigt.
+- ~~**Zum Layout-Vorteil ist kein Effekt nachweisbar – in keine Richtung.**~~
+  *(Überholt am 25.08.2026, siehe oben. Der Befund war nicht falsch, sondern
+  unterbestimmt: gemessen an 175 Trainingsseiten und ohne Zwischenarme.)*
   Über drei Wochen (02.08.2026, Test = KW32, 100 Seiten, 5107 Entitäten):
   GBERT 0.891, LayoutXLM 0.878. Die Differenz von +0.013 hat ein
   95-%-Intervall von [−0.008, +0.043] bei p = 0.435 – sie überdeckt die Null.
@@ -540,7 +582,13 @@ eine Liste auszugeben.
   Seiten bei 0.949 überleben sie und landen dann auf verschiedenen Seiten des
   Splits. Gemessener Effekt: F1 0.944 auf Seiten mit nahem Zwilling gegen
   0.886 ohne. Behoben durch den **Wochen-Split**
-  (`magda split --strategy week`). Stand 02.08.2026 über drei Wochen:
+  (`magda split --strategy week`). **Stand 25.08.2026 über sechs Wochen:
+  KW30–KW34 lernen, KW35 testet, 494/56/116 Seiten in 210/25/42
+  Duplikat-Clustern, 24900/2584/5973 Entities.** Test-zu-Train Median-Jaccard
+  0.297, Max 0.778, keine Seite ≥ 0.9; Dev Median 0.360, keine über 0.7.
+  Der Absatz unten beschreibt den vorigen Stand (KW32 als Testwoche) und ist
+  als Begründung des Verfahrens weiter gültig – die Zahlen darin sind es
+  nicht. Stand 02.08.2026 über drei Wochen:
   KW30+KW31 lernen, KW32 testet, **175/21/100 Seiten**. Median-Ähnlichkeit von
   Test zu Train 0.285, keine der 100 Testseiten hat einen Zwilling ≥ 0.9. Ein
   Split über *Kataloge* hätte das nicht behoben – `1347375_p30` und
@@ -558,8 +606,10 @@ eine Liste auszugeben.
   Einsatz garantiert auf – sie zu entfernen machte den Testsatz unrealistisch
   schwer. Der schädliche Leak war ein anderer: dieselbe Seite in 44
   Regionalfassungen, künstlich vervielfacht.
-- **Der Testsatz hat 100 Seiten, aber nur 43 unabhängige Einheiten.**
-  Bei Jaccard 0.7 bilden die 100 Seiten 43 Cluster, der größte umfasst 11.
+- **Der Testsatz hat 116 Seiten, aber nur 42 unabhängige Einheiten**
+  (KW35, seit 25.08.2026; davor 100 Seiten in 43 Clustern – die Zahl der
+  unabhängigen Einheiten wächst also *nicht* mit der Seitenzahl).
+  Bei Jaccard 0.7 bilden die Seiten 42 Cluster.
   Jede Unsicherheitsrechnung muss über *Cluster* resampeln
   (`magda significance`), nicht über Seiten – sonst gelten elf Kopien einer
   Vorlage als elf Beobachtungen und das Intervall wird zu eng. Praktische
@@ -1018,7 +1068,38 @@ eine Liste auszugeben.
   9/16/50/93 Cluster statt 3/9/25/93. Zu jedem Kurvenpunkt gehört die
   **Clusterzahl** – „p25" allein ist eine Seitenzahl ohne das, woran
   gemessen wurde.
-- **`checkpoints/gbert` ist der eingefrorene KW30/31-Stand, und bis zum
+- **`checkpoints/*.kw32-split` sind die eingefrorenen Stände der Testwoche
+  KW32** (umbenannt am 25.08.2026, als KW35 Testwoche wurde). Ein Checkpoint
+  ohne den Split, gegen den er gemessen wurde, ist eine Zahl ohne Fußnote –
+  und `checkpoint_name()` kennt den Split nicht als Dimension, hätte sie also
+  beim kanonischen Retrain überschrieben. Dasselbe gilt für
+  `data/predictions/*.kw32-split/`.
+- **`data/eval/` und `data/predictions/` sind Archive, keine Abbilder des
+  aktuellen Splits.** Beide Leser mussten das lernen, und beide Fehler waren
+  unsichtbar: `magda significance` nahm die Schnittmenge zweier
+  Vorhersageordner und verglich dadurch über 216 statt 116 Seiten, 100 davon
+  inzwischen Trainingsdaten (`shared_test_pages` schränkt jetzt auf den
+  Testsplit ein und meldet die Verworfenen). Die Evaluationsseite fand drei
+  Reports mit `variant: "gbert"` – einen Testlauf und zwei Dev-Läufe eines
+  früheren Splits – und ließ die Dateisortierung entscheiden, welcher die
+  Spalte füllt (`reportsOfOneSplit`). Wer einen neuen Leser über diese Ordner
+  baut, filtert zuerst.
+- **Ein Report kann `variant` und `report` tragen und trotzdem nicht
+  vergleichbar sein.** `flair_llm_test.json` kommt durch die Formprüfung von
+  `/api/evaluation`, misst aber nur BRAND (micro-F1 0.281 über 24 Instanzen).
+  Neben den vier Armen gelesen wäre das ein katastrophal schlechtes Modell
+  statt einer anderen Frage. Marker ist `restricted_to`; die Seite nennt
+  solche Arme, stellt sie aber nicht in die Tabelle.
+- **Das RunPod-Image bringt kein torchvision mehr mit** (geprüft 25.08.2026,
+  `pytorch:1.0.3-cu1281-torch291`). detectron2 übersetzt und importiert sich
+  trotzdem – erst `detectron2.layers` zieht torchvision, und das passiert im
+  Trainer. Der Ausfall kommt also nach dem Aufsetzen und mitten in der
+  Mietzeit. Beim Nachinstallieren die torch-Version pinnen: ein blankes
+  `pip install torchvision` zog torch von 2.9.1 auf 2.11.0 und brach die ABI,
+  gegen die detectron2 übersetzt war – wieder ohne Fehler beim Import.
+  `bundle.py` installiert es jetzt vorab und prüft mit
+  `import detectron2.modeling`.
+- **`checkpoints/gbert` war der eingefrorene KW30/31-Stand, und bis zum
   10.08.2026 hätte ihn jeder Nebenlauf überschrieben.** `magda train`
   schrieb nach `CHECKPOINTS_DIR / variant`, ohne Rücksicht auf
   `--labels-from`. Ein APP_PRICE-Nachtraining hätte damit genau das Modell
@@ -1188,11 +1269,11 @@ eine Liste auszugeben.
   +1,7 Punkte gegen die volle Referenz. Im Training wäre es Augmentierung, kein
   Messfehler – also eine Abwägung, keine Korrektur. Bisher bewusst nicht getan,
   damit Trainingssignal und Checkpoint-Auswahl unverändert bleiben.
-- **LiLT als dritter Arm?** LayoutXLM verliert konsistent, aber nicht
-  nachweisbar (Intervall überdeckt die Null). LiLT hat keinen visuellen
-  Backbone und ist bei 175 Trainingsseiten gutmütiger; ein Lauf würde den
-  Layout-Negativbefund gegen den Einwand „falsche Layout-Architektur"
-  absichern. Weicht vom Proposal ab → Teamentscheidung.
+- ~~**LiLT als dritter Arm?**~~ **Entschieden am 25.08.2026 (Noah): ja, und
+  dazu `xlmr` als vierter Arm.** Ohne den vierten wäre die Kette lückenhaft
+  geblieben – LiLT gegen GBERT hätte weiterhin zwei Unterschiede auf einmal
+  gemessen. Ergebnis oben unter „Layout bringt nichts, das Seitenbild bringt
+  etwas". Die Abweichung vom Proposal ist bewusst und gehört in den Bericht.
 - **Weitere Label – aufgekommen, weil das Zusammensetzen der Angebote hakt**
   (Frage von Bogdan und Kjell, 03.08.2026). Die Messung dazu steht oben; sie
   sagt vor allem, was ein neues Label **nicht** leistet: das Clustern löst es
