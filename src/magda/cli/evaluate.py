@@ -45,10 +45,15 @@ from pathlib import Path
 import numpy as np
 from transformers import AutoModelForTokenClassification, AutoTokenizer, Trainer
 
-from magda.config import CHECKPOINTS_DIR, EVAL_DIR, LAYOUT_MODEL, MAX_SEQ_LENGTH, TEXT_MODEL
+from magda.config import (
+    CHECKPOINTS_DIR,
+    EVAL_DIR,
+    MAX_SEQ_LENGTH,
+    VARIANTS,
+    variant_spec,
+)
 from magda.dataset import (
-    LayoutDataset,
-    TextDataset,
+    dataset_for,
     get_or_create_splits,
     load_labeled_pages,
     select_split,
@@ -108,7 +113,7 @@ def main(argv=None):
     parser = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
     )
-    parser.add_argument("variant", choices=["gbert", "layoutxlm"])
+    parser.add_argument("variant", choices=list(VARIANTS))
     parser.add_argument("--split", default="test", choices=["dev", "test"])
     parser.add_argument(
         "--pages",
@@ -150,17 +155,14 @@ def main(argv=None):
 
     # Tokenizer kommt vom Basismodell, nicht aus dem Checkpoint –
     # wir speichern in `magda train` nur die Modellgewichte.
-    base_model = TEXT_MODEL if args.variant == "gbert" else LAYOUT_MODEL
-    tokenizer = AutoTokenizer.from_pretrained(base_model)
-    layout = args.variant == "layoutxlm"
+    spec = variant_spec(args.variant)
+    tokenizer = AutoTokenizer.from_pretrained(spec.model_name)
     model = AutoModelForTokenClassification.from_pretrained(model_dir)
 
     reference = [page["tags"] for page in eval_pages]
 
     # --- Protokoll 1+3: ein Durchlauf ohne Fenster, zwei Auswertungen -------
-    plain_ds = (LayoutDataset if layout else TextDataset)(
-        eval_pages, tokenizer, MAX_SEQ_LENGTH
-    )
+    plain_ds = dataset_for(spec, eval_pages, tokenizer, MAX_SEQ_LENGTH)
     plain_logits = logits_of(model, plain_ds)
     censored = np.argmax(plain_logits, axis=-1)
 
@@ -172,7 +174,7 @@ def main(argv=None):
     missing_words = sum(t.count(None) for t in plain_raw)
 
     # --- Protokoll 2: überlappende Fenster ---------------------------------
-    window_ds = WindowDataset(eval_pages, tokenizer, MAX_SEQ_LENGTH, WINDOW_STRIDE, layout)
+    window_ds = WindowDataset(eval_pages, tokenizer, MAX_SEQ_LENGTH, WINDOW_STRIDE, spec)
     window_logits = logits_of(model, window_ds)
     windowed_tags = []
     for i, page in enumerate(eval_pages):

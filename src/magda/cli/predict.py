@@ -25,15 +25,14 @@ from transformers import AutoModelForTokenClassification, AutoTokenizer, Trainer
 from magda.config import (
     CHECKPOINTS_DIR,
     DATA_DIR,
-    LAYOUT_MODEL,
     MAX_SEQ_LENGTH,
-    TEXT_MODEL,
+    VARIANTS,
     WORDS_DIR,
     default_labeled_model,
+    variant_spec,
 )
 from magda.dataset import (
-    LayoutDataset,
-    TextDataset,
+    dataset_for,
     get_or_create_splits,
     load_labeled_pages,
     select_split,
@@ -67,7 +66,7 @@ def pages_from_words() -> list[dict]:
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("variant", choices=["gbert", "layoutxlm"])
+    parser.add_argument("variant", choices=list(VARIANTS))
     parser.add_argument("--split", default="test", choices=["train", "dev", "test"])
     parser.add_argument(
         "--all-words", action="store_true",
@@ -110,15 +109,13 @@ def main(argv=None):
     labels_from = args.labels_from or (None if args.all_words else default_labeled_model())
     print(f"Sage '{args.variant}' auf {len(pages)} Seiten voraus ({source}).")
 
-    base_model = TEXT_MODEL if args.variant == "gbert" else LAYOUT_MODEL
-    tokenizer = AutoTokenizer.from_pretrained(base_model)
-    layout = args.variant == "layoutxlm"
+    spec = variant_spec(args.variant)
+    tokenizer = AutoTokenizer.from_pretrained(spec.model_name)
 
     if args.no_windows:
-        dataset_cls = LayoutDataset if layout else TextDataset
-        ds = dataset_cls(pages, tokenizer, MAX_SEQ_LENGTH)
+        ds = dataset_for(spec, pages, tokenizer, MAX_SEQ_LENGTH)
     else:
-        ds = WindowDataset(pages, tokenizer, MAX_SEQ_LENGTH, WINDOW_STRIDE, layout)
+        ds = WindowDataset(pages, tokenizer, MAX_SEQ_LENGTH, WINDOW_STRIDE, spec)
         print(f"{len(ds)} Fenster über {len(pages)} Seiten "
               f"(Überlappung {WINDOW_STRIDE} Subwords).")
 

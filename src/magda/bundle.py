@@ -48,7 +48,7 @@ pip install -q -e .
 # "ModuleNotFoundError: No module named 'torch'" ab.
 pip install -q --no-build-isolation \\
   "git+https://github.com/facebookresearch/detectron2.git" \\
-  || echo "WARNUNG: detectron2 fehlgeschlagen - layoutxlm wird nicht laufen."
+  || echo "WARNUNG: detectron2 fehlgeschlagen - nur layoutxlm faellt aus, die anderen drei Arme brauchen es nicht."
 
 # Der teuerste denkbare Fehler: PyTorch findet die GPU nicht, trainiert
 # stillschweigend auf der CPU, und die gemietete Karte steht daneben. Lieber
@@ -73,7 +73,11 @@ except Exception as fehler:
 print(f"GPU: {torch.cuda.get_device_name(0)}, torch {torch.__version__}")
 PRUEFUNG
 
-for variante in gbert layoutxlm; do
+# Reihenfolge ist Absicht: die drei Arme ohne visuellen Backbone zuerst. Wenn
+# die detectron2-Uebersetzung oben scheitert, sind drei von vier Ergebnissen
+# trotzdem da - und die Kette xlmr -> lilt, an der die Layout-Frage haengt,
+# ist vollstaendig.
+for variante in gbert xlmr lilt layoutxlm; do
   echo ""
   echo "########## $variante ##########"
   # "python -m magda" statt des Befehls "magda": wohin pip die Konsolenskripte

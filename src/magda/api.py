@@ -348,9 +348,9 @@ def _training_state(variant: str) -> dict:
 
 @app.get("/api/model")
 def get_model_status():
-    """Trainingsstand beider Varianten – die Demo zeigt daran, wie weit das
+    """Trainingsstand aller Arme – die Demo zeigt daran, wie weit das
     Modell ist, das dort gerade rechnet."""
-    return [_training_state(v) for v in ("layoutxlm", "gbert")]
+    return [_training_state(v) for v in config.VARIANTS]
 
 
 class RunRequest(BaseModel):

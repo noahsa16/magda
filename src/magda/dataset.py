@@ -18,9 +18,10 @@ from PIL import Image
 from torch.utils.data import Dataset
 from transformers import LayoutLMv2ImageProcessor
 
-from magda.alignment import align_word_labels
+from magda.alignment import align_word_labels, subword_boxes
 from magda.config import (
     IMAGES_DIR,
+    Variant,
     SEED,
     SPLITS_DIR,
     WORDS_DIR,
@@ -341,3 +342,68 @@ class LayoutDataset(Dataset):
             )["pixel_values"]
         item["image"] = pixels[0]
         return item
+
+
+class LiltDataset(Dataset):
+    """Dataset für LiLT: Wörter + Boxen, aber kein Seitenbild.
+
+    Der Unterschied zu `LayoutDataset` sieht klein aus und ist der Kern des
+    Arms. LayoutXLMs Tokenizer nimmt `boxes=` entgegen und vervielfacht sie
+    selbst auf die Subwords; LiLTs Tokenizer ist ein reiner XLM-R-Tokenizer
+    und kennt das Argument gar nicht. Die `bbox`-Spalte entsteht deshalb hier
+    über `alignment.subword_boxes`.
+
+    Fehlt sie, kommt keine Fehlermeldung: `LiltModel` setzt `bbox` still auf
+    Null und trainiert ein Modell ohne jede Positionsinformation – also ein
+    teureres GBERT, das im Vergleich dann den Layout-Anteil widerlegt, den es
+    nie gesehen hat.
+    """
+
+    def __init__(self, pages: list[dict], tokenizer, max_length: int):
+        self.encodings = []
+        self.page_ids = []
+        self.word_ids = []
+        for page in pages:
+            words = [w["text"] for w in page["words"]]
+            boxes = [
+                normalize_bbox(w["bbox"], page["width"], page["height"])
+                for w in page["words"]
+            ]
+            enc = tokenizer(
+                words,
+                is_split_into_words=True,
+                truncation=True,
+                max_length=max_length,
+                padding="max_length",
+            )
+            word_ids = enc.word_ids()
+            enc["labels"] = align_word_labels(word_ids, page["tags"])
+            enc["bbox"] = subword_boxes(word_ids, boxes)
+            self.word_ids.append(word_ids)
+            self.encodings.append(enc)
+            self.page_ids.append(page["page_id"])
+
+    def __len__(self):
+        return len(self.encodings)
+
+    def __getitem__(self, idx):
+        return {k: torch.tensor(v) for k, v in self.encodings[idx].items()}
+
+
+DATASETS = {
+    "none": TextDataset,
+    "manual": LiltDataset,
+    "tokenizer": LayoutDataset,
+}
+
+
+def dataset_for(variant: Variant, pages: list[dict], tokenizer, max_length: int):
+    """Das zur Variante passende Dataset – eine Stelle für alle vier Arme.
+
+    Vorher stand in `train`, `eval` und `predict` je ein
+    `layout = variant == "layoutxlm"`. Ein Boolean trug zwei Arme; beim
+    dritten hätte jede der drei Stellen einzeln nachgezogen werden müssen,
+    und eine vergessene hätte nicht gecrasht, sondern leise das falsche
+    Modell gemessen.
+    """
+    return DATASETS[variant.boxes](pages, tokenizer, max_length)

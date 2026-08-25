@@ -1,12 +1,21 @@
 """Token-Klassifikation trainieren.
 
-Zwei Varianten (siehe Proposal, "Baseline Architecture"):
-    magda train gbert       # text-only Baseline
-    magda train layoutxlm   # layout-aware Modell
+Vier Varianten. Alle bekommen denselben Klassifikationskopf und dieselben
+Labels; verschieden ist nur, was sie sehen:
 
-Beide bekommen denselben Klassifikationskopf und dieselben Labels – der
-einzige Unterschied ist die Positionsinformation. Genau diesen Effekt
-wollen wir messen.
+    magda train gbert       # text-only, deutscher Encoder (Projektbaseline)
+    magda train xlmr        # text-only, derselbe Encoder wie die beiden unteren
+    magda train lilt        # + Layout, ohne visuellen Backbone
+    magda train layoutxlm   # + Layout + Vision
+
+Die drei letzten teilen sich den Textencoder, und darin liegt der Sinn:
+
+    xlmr  ──+Layout──▶  lilt  ──+Vision──▶  layoutxlm
+
+Jeder Pfeil ist genau eine Zutat. "LayoutXLM gegen GBERT" war eine Differenz
+mit zwei Ursachen gleichzeitig – anderer Encoder *und* Layout –, und deshalb
+stand der gemessene Layout-Negativbefund unter dem Vorbehalt, es könne an der
+Architektur liegen. Mit `xlmr` und `lilt` dazwischen ist er zuschreibbar.
 
 Hinweis zu LayoutXLM: microsoft/layoutxlm-base baut auf LayoutLMv2 auf und
 bringt einen visuellen Backbone mit, der detectron2 voraussetzt. Falls die
@@ -27,16 +36,15 @@ from transformers import (
 
 from magda.config import (
     CHECKPOINTS_DIR,
-    LAYOUT_MODEL,
     MAX_SEQ_LENGTH,
     SEED,
-    TEXT_MODEL,
+    VARIANTS,
     default_labeled_model,
     labeled_models,
+    variant_spec,
 )
 from magda.dataset import (
-    LayoutDataset,
-    TextDataset,
+    dataset_for,
     get_or_create_splits,
     load_labeled_pages,
     duplicate_clusters,
@@ -91,15 +99,11 @@ def build_datasets(variant: str, labels_from: str | None,
         f"test={len(select_split(pages, splits, 'test'))}/{len(splits['test'])})"
     )
 
-    if variant == "gbert":
-        model_name, dataset_cls = TEXT_MODEL, TextDataset
-    else:
-        model_name, dataset_cls = LAYOUT_MODEL, LayoutDataset
-
-    tokenizer = AutoTokenizer.from_pretrained(model_name)
-    train_ds = dataset_cls(train_pages_list, tokenizer, MAX_SEQ_LENGTH)
-    dev_ds = dataset_cls(dev_pages, tokenizer, MAX_SEQ_LENGTH)
-    return model_name, train_ds, dev_ds
+    spec = variant_spec(variant)
+    tokenizer = AutoTokenizer.from_pretrained(spec.model_name)
+    train_ds = dataset_for(spec, train_pages_list, tokenizer, MAX_SEQ_LENGTH)
+    dev_ds = dataset_for(spec, dev_pages, tokenizer, MAX_SEQ_LENGTH)
+    return spec.model_name, train_ds, dev_ds
 
 
 def checkpoint_name(variant: str, labels_from: str | None,
@@ -140,7 +144,7 @@ def checkpoint_name(variant: str, labels_from: str | None,
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("variant", choices=["gbert", "layoutxlm"])
+    parser.add_argument("variant", choices=list(VARIANTS))
     parser.add_argument("--epochs", type=int, default=10)
     parser.add_argument("--batch-size", type=int, default=8)
     parser.add_argument("--lr", type=float, default=5e-5)

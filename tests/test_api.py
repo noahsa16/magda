@@ -188,10 +188,20 @@ def test_evaluation_liefert_reports(client):
 # --- Modellstatus ----------------------------------------------------------
 
 
+def _variant_entry(client, variant: str) -> dict:
+    """Ueber den Namen statt ueber die Position: `[0]` war der layoutxlm-Eintrag,
+    solange es zwei Arme gab. Mit vier ist es gbert, und der Test misst dann
+    still den falschen."""
+    return next(e for e in client.get("/api/model").json() if e["variant"] == variant)
+
+
 def test_model_status_ohne_checkpoints(client):
     body = client.get("/api/model").json()
 
-    assert [e["variant"] for e in body] == ["layoutxlm", "gbert"]
+    # Gegen die Registry, nicht gegen ein Literal: die Liste waechst mit den
+    # Armen, und ein festgeschriebenes Paar haelt nur fest, wie viele es
+    # zufaellig gab, als der Test entstand.
+    assert [e["variant"] for e in body] == list(config.VARIANTS)
     assert all(e["trained"] is False for e in body)
 
 
@@ -213,7 +223,7 @@ def test_model_status_liest_trainingsverlauf(client):
     with open(ckpt / "trainer_state.json", "w") as f:
         json.dump(state, f)
 
-    entry = client.get("/api/model").json()[0]
+    entry = _variant_entry(client, "layoutxlm")
 
     assert entry["trained"] is True
     assert entry["steps"] == 120
@@ -232,7 +242,7 @@ def test_model_status_liest_den_gesicherten_verlauf_ohne_checkpoints(client):
     with open(variant / "trainer_state.json", "w") as f:
         json.dump(state, f)
 
-    entry = client.get("/api/model").json()[0]
+    entry = _variant_entry(client, "layoutxlm")
 
     assert entry["steps"] == 220
     assert entry["best_f1"] == 0.895

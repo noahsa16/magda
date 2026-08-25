@@ -19,7 +19,7 @@ import json
 import sys
 from datetime import datetime
 
-from magda.config import DATA_DIR, EVAL_DIR, WORDS_DIR, labeled_dir
+from magda.config import DATA_DIR, EVAL_DIR, VARIANTS, WORDS_DIR, labeled_dir
 from magda.dedupe import group
 from magda.significance import bootstrap_f1, paired_bootstrap
 
