@@ -500,7 +500,25 @@ eine Liste auszugeben.
   und selbst 49 grobe Bildkacheln übertragen davon genug.
   **Wer die vier Schemata berichtet, nennt dazu, welches die Primärzahl ist**:
   `strict` (Span und Typ exakt) ist es, alle anderen sind nachsichtiger und
-  ergeben höhere Werte für dieselbe Ausgabe.
+  ergeben höhere Werte für dieselbe Ausgabe – GBERT steht bei `strict` auf
+  0.9084 und bei `type` auf 0.9477, ohne dass ein Wort anders vorhergesagt
+  wird.
+- **Die Nachsicht der lockeren Schemata schenkt fast nur PRODUCT.** Gemessen
+  über den KW35-Test (`type` minus `strict`, GBERT): PRODUCT +0.143, BRAND
+  +0.055, VALID +0.053, QUANTITY +0.019, UNIT_PRICE +0.008 – und **PRICE,
+  OLD_PRICE, DISCOUNT und APP_PRICE exakt ±0.000**. Bei Preisen gibt es keine
+  Grenzfehler: `1.99` ist ein Token, richtig oder falsch. Wer also `type`
+  berichtet, sagt der Sache nach „wir zählen die Sortenzusatz-Frage weg" –
+  genau die offene Teamentscheidung. Deshalb muss das Schema *vor* der Messung
+  feststehen; nachträglich das nachsichtigste zu wählen ist dieselbe Bewegung
+  wie eine Heuristik an ihrem eigenen Zuordnungskriterium zu messen, nur
+  unauffälliger, weil alle vier Zahlen aus demselben Lauf stammen und einzeln
+  korrekt sind. Umgekehrt gilt: Ein Teil der 0.143 ist kein Modellfehler,
+  sondern die Uneinheitlichkeit von Gold – die Konsequenz ist, die Konvention
+  zu entscheiden, nicht das Schema zu wechseln.
+- **Berichtet wird F1 über Entities, nie Accuracy über Tokens.** 54,5 % aller
+  Wörter tragen `O`; ein Modell, das alles als `O` rät, käme auf über 0.5
+  Token-Accuracy, ohne ein einziges Angebot zu finden.
 - **APP_PRICE wird vom Seitenbild nicht gelöst – gegenteilig belegt.** Der
   rein visuelle Fall ist genau der, bei dem LayoutXLM *verliert*: 0.882 gegen
   LiLTs 0.906, das ohne Bild arbeitet. Der Grund steht schon in der

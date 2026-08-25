@@ -243,6 +243,51 @@ Wort steht, aber nicht, *wie es gesetzt ist*. Der Unterschied zwischen
 Markenzeile und Beschreibungszeile ist Schriftgröße und Fettung — im Bild
 sichtbar, in `bbox` nicht. Selbst 49 grobe Bildkacheln übertragen davon genug.
 
+### Welches Schema berichtet wird, ist eine Entscheidung – keine Messung
+
+Die nachsichtigeren Schemata ergeben höhere Zahlen für **dieselbe
+Modellausgabe**: GBERT steht bei `strict` auf 0.9084 und bei `type` auf
+0.9477. Kein Wort wird dabei anders vorhergesagt. Wer diese Zahl berichtet,
+muss also sagen können, was sie bedeutet — und der Zuwachs ist extrem ungleich
+verteilt:
+
+| Label | Support | strict | type | Zuwachs |
+|---|---:|---:|---:|---:|
+| PRODUCT | 1246 | 0.778 | 0.921 | **+0.143** |
+| BRAND | 757 | 0.931 | 0.987 | +0.055 |
+| VALID | 114 | 0.947 | 1.000 | +0.053 |
+| QUANTITY | 981 | 0.875 | 0.894 | +0.019 |
+| UNIT_PRICE | 782 | 0.990 | 0.997 | +0.008 |
+| PRICE | 1015 | 0.958 | 0.959 | ±0.000 |
+| OLD_PRICE | 428 | 0.947 | 0.947 | ±0.000 |
+| DISCOUNT | 511 | 0.992 | 0.992 | ±0.000 |
+| APP_PRICE | 139 | 0.844 | 0.844 | ±0.000 |
+
+*(GBERT; bei LayoutXLM dasselbe Bild, PRODUCT +0.120, BRAND +0.021.)*
+
+**Die vier Preislabels gewinnen durch Nachsicht exakt nichts.** Bei ihnen gibt
+es keine Grenzfehler: `1.99` ist ein Token, entweder richtig oder falsch. Der
+gesamte Zuwachs sitzt bei PRODUCT — also bei dem Label mit der offenen
+Konventionsfrage. Wer `type` berichtet, sagt der Sache nach: *„Wir zählen die
+Sortenzusatz-Frage weg."*
+
+Deshalb bleibt `strict` die Primärzahl, und deshalb muss das Schema **vor** der
+Messung feststehen. Nachträglich das nachsichtigste zu wählen ist dieselbe
+Bewegung wie eine Heuristik an dem Kriterium zu messen, nach dem sie selbst
+zuordnet — nur unauffälliger, weil alle vier Zahlen aus demselben Lauf stammen
+und einzeln korrekt sind.
+
+Ein Teil der 0.143 ist trotzdem kein Modellfehler: Gold ist bei den
+Sortenzusätzen selbst uneinheitlich, und `strict` bestraft das Modell dann für
+eine Uneindeutigkeit der Referenz. Die Konsequenz daraus ist nicht, das Schema
+zu wechseln, sondern die Konvention zu entscheiden — danach sinkt die Differenz
+von allein.
+
+**Nebenbei zur Begrifflichkeit:** Berichtet wird F1 über Entities, nicht
+Accuracy über Tokens. Letztere wäre deutlich höher und wertlos — 54,5 % aller
+Wörter tragen `O`, ein Modell, das alles als `O` rät, käme damit über 0.5, ohne
+ein einziges Angebot zu finden.
+
 ## Was es kostet
 
 Die Projektfrage ist Kosten, nicht Perfektion.
