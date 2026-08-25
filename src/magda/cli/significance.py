@@ -20,10 +20,36 @@ import sys
 from datetime import datetime
 
 from magda.config import DATA_DIR, EVAL_DIR, VARIANTS, WORDS_DIR, labeled_dir
+from magda.dataset import get_or_create_splits, load_labeled_pages
 from magda.dedupe import group
 from magda.significance import bootstrap_f1, paired_bootstrap
 
 CLUSTER_THRESHOLD = 0.7
+
+
+def shared_test_pages(
+    a: dict[str, list[str]], b: dict[str, list[str]], test: set[str],
+) -> tuple[list[str], int]:
+    """Seiten, die beide Modelle vorhergesagt haben *und* im Testsplit liegen.
+
+    Die blosse Schnittmenge der beiden Ordner reicht nicht. `data/predictions/`
+    ist ein Archiv, kein Abbild des aktuellen Splits: Ein Ordner behaelt die
+    Vorhersagen frueherer Laeufe, und nach einem neuen Split sind deren Seiten
+    womoeglich Trainingsdaten.
+
+    Belegter Fall (25.08.2026): nach dem Wechsel der Testwoche von KW32 auf
+    KW35 lagen in `gbert` noch 101 und in `layoutxlm` noch 100 Seiten des
+    Vorlaufs. Die Schnittmenge war 216 statt 116, und 100 davon hatte das
+    Modell inzwischen im Training gesehen. Der Bootstrap haette daraus ein
+    Konfidenzintervall gebaut, ohne dass irgendetwas darauf hingewiesen
+    haette - die Zahl waere schlicht zu gut gewesen.
+
+    Gibt die genommenen Seiten und die Zahl der verworfenen zurueck; das
+    Verwerfen gehoert in die Ausgabe, nicht in die Stille.
+    """
+    gemeinsam = set(a) & set(b)
+    genommen = sorted(gemeinsam & test)
+    return genommen, len(gemeinsam) - len(genommen)
 
 
 def load_predictions(variant: str) -> dict[str, list[str]]:
@@ -84,9 +110,20 @@ def main(argv=None):
 
     a, b = args.compare
     predictions = {name: load_predictions(name) for name in (a, b)}
-    shared = sorted(set(predictions[a]) & set(predictions[b]))
+
+    # Gegen den Split, nicht gegen die blosse Schnittmenge der Ordner: siehe
+    # shared_test_pages.
+    splits = get_or_create_splits(load_labeled_pages(args.labels_from))
+    shared, verworfen = shared_test_pages(
+        predictions[a], predictions[b], set(splits["test"]))
     if not shared:
-        sys.exit(f"Keine Seiten, die in {a} und {b} beide vorliegen.")
+        sys.exit(
+            f"Keine gemeinsame Seite von {a} und {b} liegt im Testsplit. "
+            f"Erst `magda predict <variante> --split test` laufen lassen."
+        )
+    if verworfen:
+        print(f"{verworfen} gemeinsame Seiten liegen ausserhalb des Testsplits "
+              f"und bleiben draussen (Vorhersagen frueherer Laeufe).")
 
     reference = []
     for pid in shared:

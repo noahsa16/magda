@@ -1,0 +1,2318 @@
+{
+  "page_id": "1364393_p8",
+  "catalog_id": "1364393",
+  "page": 8,
+  "width": 476.22,
+  "height": 841.89,
+  "model": "layoutxlm",
+  "labels_from": "sonnet-5",
+  "created": "2026-08-25T09:08:14",
+  "num_words": 143,
+  "num_words_predicted": 143,
+  "truncated": false,
+  "words": [
+    {
+      "i": 0,
+      "text": "aus",
+      "bbox": [
+        31.99,
+        61.91,
+        44.0,
+        71.15
+      ],
+      "label": "O",
+      "confidence": 0.9998
+    },
+    {
+      "i": 1,
+      "text": "unserem",
+      "bbox": [
+        45.16,
+        60.81,
+        75.53,
+        70.69
+      ],
+      "label": "O",
+      "confidence": 0.9995
+    },
+    {
+      "i": 2,
+      "text": "schönen",
+      "bbox": [
+        76.7,
+        59.77,
+        105.42,
+        69.59
+      ],
+      "label": "O",
+      "confidence": 0.9998
+    },
+    {
+      "i": 3,
+      "text": "Osten",
+      "bbox": [
+        106.59,
+        59.03,
+        126.55,
+        68.54
+      ],
+      "label": "O",
+      "confidence": 0.9998
+    },
+    {
+      "i": 4,
+      "text": "MÜHLENHOF",
+      "bbox": [
+        26.93,
+        81.93,
+        70.66,
+        91.5
+      ],
+      "label": "O",
+      "confidence": 0.9995
+    },
+    {
+      "i": 5,
+      "text": "REGIONAL",
+      "bbox": [
+        72.1,
+        81.93,
+        108.25,
+        91.5
+      ],
+      "label": "O",
+      "confidence": 0.9996
+    },
+    {
+      "i": 6,
+      "text": "bietet",
+      "bbox": [
+        26.93,
+        91.53,
+        49.57,
+        101.1
+      ],
+      "label": "O",
+      "confidence": 0.9998
+    },
+    {
+      "i": 7,
+      "text": "dir",
+      "bbox": [
+        51.33,
+        91.53,
+        61.54,
+        101.1
+      ],
+      "label": "O",
+      "confidence": 0.9998
+    },
+    {
+      "i": 8,
+      "text": "Frische",
+      "bbox": [
+        63.3,
+        91.53,
+        88.57,
+        101.1
+      ],
+      "label": "O",
+      "confidence": 0.9998
+    },
+    {
+      "i": 9,
+      "text": "und",
+      "bbox": [
+        26.93,
+        101.13,
+        40.99,
+        110.7
+      ],
+      "label": "O",
+      "confidence": 0.9998
+    },
+    {
+      "i": 10,
+      "text": "Qualität",
+      "bbox": [
+        42.43,
+        101.13,
+        71.81,
+        110.7
+      ],
+      "label": "O",
+      "confidence": 0.9998
+    },
+    {
+      "i": 11,
+      "text": "aus",
+      "bbox": [
+        73.25,
+        101.13,
+        85.73,
+        110.7
+      ],
+      "label": "O",
+      "confidence": 0.9998
+    },
+    {
+      "i": 12,
+      "text": "deiner",
+      "bbox": [
+        26.93,
+        110.73,
+        50.51,
+        120.3
+      ],
+      "label": "O",
+      "confidence": 0.9998
+    },
+    {
+      "i": 13,
+      "text": "Region.",
+      "bbox": [
+        51.95,
+        110.73,
+        79.89,
+        120.3
+      ],
+      "label": "O",
+      "confidence": 0.9997
+    },
+    {
+      "i": 14,
+      "text": "-27%",
+      "bbox": [
+        184.49,
+        327.92,
+        230.51,
+        352.05
+      ],
+      "label": "B-DISCOUNT",
+      "confidence": 0.9973
+    },
+    {
+      "i": 15,
+      "text": "3.49",
+      "bbox": [
+        162.12,
+        362.64,
+        215.73,
+        395.02
+      ],
+      "label": "B-PRICE",
+      "confidence": 0.9991
+    },
+    {
+      "i": 16,
+      "text": "4.79",
+      "bbox": [
+        178.31,
+        391.86,
+        199.55,
+        404.69
+      ],
+      "label": "B-OLD_PRICE",
+      "confidence": 0.9966
+    },
+    {
+      "i": 17,
+      "text": "MÜHLENHOF",
+      "bbox": [
+        22.68,
+        369.56,
+        62.66,
+        378.6
+      ],
+      "label": "B-BRAND",
+      "confidence": 0.9994
+    },
+    {
+      "i": 18,
+      "text": "Frisches",
+      "bbox": [
+        22.68,
+        377.06,
+        48.55,
+        386.1
+      ],
+      "label": "B-PRODUCT",
+      "confidence": 0.9989
+    },
+    {
+      "i": 19,
+      "text": "Hackfleisch,",
+      "bbox": [
+        49.75,
+        377.06,
+        89.2,
+        386.1
+      ],
+      "label": "I-PRODUCT",
+      "confidence": 0.9994
+    },
+    {
+      "i": 20,
+      "text": "gemischt*",
+      "bbox": [
+        90.24,
+        377.06,
+        124.04,
+        386.1
+      ],
+      "label": "I-PRODUCT",
+      "confidence": 0.9993
+    },
+    {
+      "i": 21,
+      "text": "Vom",
+      "bbox": [
+        22.68,
+        384.64,
+        37.47,
+        393.57
+      ],
+      "label": "I-PRODUCT",
+      "confidence": 0.99
+    },
+    {
+      "i": 22,
+      "text": "Schwein",
+      "bbox": [
+        38.97,
+        384.64,
+        66.81,
+        393.57
+      ],
+      "label": "I-PRODUCT",
+      "confidence": 0.9938
+    },
+    {
+      "i": 23,
+      "text": "und",
+      "bbox": [
+        68.31,
+        384.64,
+        81.09,
+        393.57
+      ],
+      "label": "I-PRODUCT",
+      "confidence": 0.9965
+    },
+    {
+      "i": 24,
+      "text": "Rind,",
+      "bbox": [
+        82.59,
+        384.64,
+        99.51,
+        393.57
+      ],
+      "label": "I-PRODUCT",
+      "confidence": 0.9951
+    },
+    {
+      "i": 25,
+      "text": "je",
+      "bbox": [
+        22.68,
+        392.14,
+        28.84,
+        401.07
+      ],
+      "label": "O",
+      "confidence": 0.9996
+    },
+    {
+      "i": 26,
+      "text": "500-g-Packung",
+      "bbox": [
+        30.34,
+        392.14,
+        80.31,
+        401.07
+      ],
+      "label": "B-QUANTITY",
+      "confidence": 0.9987
+    },
+    {
+      "i": 27,
+      "text": "(1",
+      "bbox": [
+        22.68,
+        399.64,
+        29.58,
+        408.57
+      ],
+      "label": "B-UNIT_PRICE",
+      "confidence": 0.9992
+    },
+    {
+      "i": 28,
+      "text": "kg",
+      "bbox": [
+        31.08,
+        399.64,
+        39.13,
+        408.57
+      ],
+      "label": "I-UNIT_PRICE",
+      "confidence": 0.9996
+    },
+    {
+      "i": 29,
+      "text": "=",
+      "bbox": [
+        40.63,
+        399.64,
+        44.83,
+        408.57
+      ],
+      "label": "I-UNIT_PRICE",
+      "confidence": 0.9996
+    },
+    {
+      "i": 30,
+      "text": "6.98)",
+      "bbox": [
+        46.33,
+        399.64,
+        63.69,
+        408.57
+      ],
+      "label": "I-UNIT_PRICE",
+      "confidence": 0.9995
+    },
+    {
+      "i": 31,
+      "text": "Aktion",
+      "bbox": [
+        269.65,
+        732.34,
+        305.31,
+        746.39
+      ],
+      "label": "O",
+      "confidence": 0.9997
+    },
+    {
+      "i": 32,
+      "text": "4.44",
+      "bbox": [
+        250.35,
+        757.45,
+        294.85,
+        784.34
+      ],
+      "label": "B-PRICE",
+      "confidence": 0.9985
+    },
+    {
+      "i": 33,
+      "text": "MÜHLENHOF",
+      "bbox": [
+        168.19,
+        732.57,
+        208.17,
+        741.61
+      ],
+      "label": "B-BRAND",
+      "confidence": 0.9994
+    },
+    {
+      "i": 34,
+      "text": "Frische",
+      "bbox": [
+        168.19,
+        740.07,
+        190.87,
+        749.11
+      ],
+      "label": "B-PRODUCT",
+      "confidence": 0.999
+    },
+    {
+      "i": 35,
+      "text": "Schweine-",
+      "bbox": [
+        192.07,
+        740.07,
+        226.68,
+        749.11
+      ],
+      "label": "I-PRODUCT",
+      "confidence": 0.9994
+    },
+    {
+      "i": 36,
+      "text": "Fleischspieße*",
+      "bbox": [
+        168.19,
+        747.57,
+        216.74,
+        756.61
+      ],
+      "label": "I-PRODUCT",
+      "confidence": 0.9994
+    },
+    {
+      "i": 37,
+      "text": "Mit",
+      "bbox": [
+        168.19,
+        755.15,
+        178.4,
+        764.08
+      ],
+      "label": "I-PRODUCT",
+      "confidence": 0.9825
+    },
+    {
+      "i": 38,
+      "text": "Zwiebeln",
+      "bbox": [
+        179.9,
+        755.15,
+        210.53,
+        764.08
+      ],
+      "label": "I-PRODUCT",
+      "confidence": 0.953
+    },
+    {
+      "i": 39,
+      "text": "und",
+      "bbox": [
+        212.03,
+        755.15,
+        224.81,
+        764.08
+      ],
+      "label": "I-PRODUCT",
+      "confidence": 0.9488
+    },
+    {
+      "i": 40,
+      "text": "Paprika,",
+      "bbox": [
+        168.19,
+        762.65,
+        194.72,
+        771.58
+      ],
+      "label": "I-PRODUCT",
+      "confidence": 0.9105
+    },
+    {
+      "i": 41,
+      "text": "Haltungsform",
+      "bbox": [
+        168.19,
+        770.15,
+        213.2,
+        779.08
+      ],
+      "label": "O",
+      "confidence": 0.9997
+    },
+    {
+      "i": 42,
+      "text": "2,",
+      "bbox": [
+        214.7,
+        770.15,
+        220.95,
+        779.08
+      ],
+      "label": "O",
+      "confidence": 0.9997
+    },
+    {
+      "i": 43,
+      "text": "je",
+      "bbox": [
+        168.19,
+        777.65,
+        174.35,
+        786.58
+      ],
+      "label": "O",
+      "confidence": 0.9998
+    },
+    {
+      "i": 44,
+      "text": "500-g-Packung",
+      "bbox": [
+        175.85,
+        777.65,
+        225.83,
+        786.58
+      ],
+      "label": "B-QUANTITY",
+      "confidence": 0.9988
+    },
+    {
+      "i": 45,
+      "text": "(1",
+      "bbox": [
+        168.19,
+        785.15,
+        175.09,
+        794.08
+      ],
+      "label": "B-UNIT_PRICE",
+      "confidence": 0.9992
+    },
+    {
+      "i": 46,
+      "text": "kg",
+      "bbox": [
+        176.59,
+        785.15,
+        184.64,
+        794.08
+      ],
+      "label": "I-UNIT_PRICE",
+      "confidence": 0.9995
+    },
+    {
+      "i": 47,
+      "text": "=",
+      "bbox": [
+        186.14,
+        785.15,
+        190.34,
+        794.08
+      ],
+      "label": "I-UNIT_PRICE",
+      "confidence": 0.9995
+    },
+    {
+      "i": 48,
+      "text": "8.88)",
+      "bbox": [
+        191.84,
+        785.15,
+        209.2,
+        794.08
+      ],
+      "label": "I-UNIT_PRICE",
+      "confidence": 0.9995
+    },
+    {
+      "i": 49,
+      "text": "MÜHLENHOF",
+      "bbox": [
+        183.26,
+        176.8,
+        223.24,
+        185.84
+      ],
+      "label": "B-BRAND",
+      "confidence": 0.9994
+    },
+    {
+      "i": 50,
+      "text": "REGIONAL",
+      "bbox": [
+        183.26,
+        184.3,
+        215.43,
+        193.34
+      ],
+      "label": "I-BRAND",
+      "confidence": 0.9977
+    },
+    {
+      "i": 51,
+      "text": "Frische",
+      "bbox": [
+        183.26,
+        191.8,
+        205.94,
+        200.84
+      ],
+      "label": "B-PRODUCT",
+      "confidence": 0.999
+    },
+    {
+      "i": 52,
+      "text": "Hähnchen-Unterschenkel",
+      "bbox": [
+        207.06,
+        191.8,
+        289.98,
+        200.84
+      ],
+      "label": "I-PRODUCT",
+      "confidence": 0.9993
+    },
+    {
+      "i": 53,
+      "text": "Natur,",
+      "bbox": [
+        183.26,
+        199.38,
+        203.07,
+        208.31
+      ],
+      "label": "I-PRODUCT",
+      "confidence": 0.9991
+    },
+    {
+      "i": 54,
+      "text": "Haltungsform",
+      "bbox": [
+        204.41,
+        199.38,
+        249.42,
+        208.31
+      ],
+      "label": "O",
+      "confidence": 0.9996
+    },
+    {
+      "i": 55,
+      "text": "2,",
+      "bbox": [
+        250.92,
+        199.38,
+        257.17,
+        208.31
+      ],
+      "label": "O",
+      "confidence": 0.9997
+    },
+    {
+      "i": 56,
+      "text": "je",
+      "bbox": [
+        183.26,
+        206.88,
+        189.42,
+        215.81
+      ],
+      "label": "O",
+      "confidence": 0.9997
+    },
+    {
+      "i": 57,
+      "text": "1.000-g-Packung",
+      "bbox": [
+        190.92,
+        206.88,
+        247.15,
+        215.81
+      ],
+      "label": "B-QUANTITY",
+      "confidence": 0.9988
+    },
+    {
+      "i": 58,
+      "text": "-20%",
+      "bbox": [
+        422.16,
+        122.87,
+        450.91,
+        138.15
+      ],
+      "label": "B-DISCOUNT",
+      "confidence": 0.9967
+    },
+    {
+      "i": 59,
+      "text": "4.44",
+      "bbox": [
+        405.81,
+        144.12,
+        443.24,
+        166.72
+      ],
+      "label": "B-PRICE",
+      "confidence": 0.9989
+    },
+    {
+      "i": 60,
+      "text": "5.59",
+      "bbox": [
+        416.61,
+        163.67,
+        432.8,
+        173.44
+      ],
+      "label": "B-OLD_PRICE",
+      "confidence": 0.9966
+    },
+    {
+      "i": 61,
+      "text": "3.99",
+      "bbox": [
+        393.61,
+        189.04,
+        447.22,
+        221.42
+      ],
+      "label": "O",
+      "confidence": 0.8606
+    },
+    {
+      "i": 62,
+      "text": "1",
+      "bbox": [
+        446.96,
+        193.88,
+        451.05,
+        202.43
+      ],
+      "label": "O",
+      "confidence": 0.9997
+    },
+    {
+      "i": 63,
+      "text": "-28%",
+      "bbox": [
+        405.35,
+        175.21,
+        446.21,
+        197.21
+      ],
+      "label": "B-DISCOUNT",
+      "confidence": 0.9947
+    },
+    {
+      "i": 64,
+      "text": "Aktion",
+      "bbox": [
+        194.06,
+        539.58,
+        229.72,
+        553.63
+      ],
+      "label": "O",
+      "confidence": 0.9997
+    },
+    {
+      "i": 65,
+      "text": "4.44",
+      "bbox": [
+        174.76,
+        564.7,
+        219.26,
+        591.58
+      ],
+      "label": "B-PRICE",
+      "confidence": 0.997
+    },
+    {
+      "i": 66,
+      "text": "MÜHLENHOF",
+      "bbox": [
+        17.01,
+        554.82,
+        56.99,
+        563.85
+      ],
+      "label": "B-BRAND",
+      "confidence": 0.9994
+    },
+    {
+      "i": 67,
+      "text": "Frischer",
+      "bbox": [
+        17.01,
+        562.32,
+        42.28,
+        571.35
+      ],
+      "label": "B-PRODUCT",
+      "confidence": 0.999
+    },
+    {
+      "i": 68,
+      "text": "Puten-Rollbraten*",
+      "bbox": [
+        43.48,
+        562.32,
+        103.89,
+        571.35
+      ],
+      "label": "I-PRODUCT",
+      "confidence": 0.9994
+    },
+    {
+      "i": 69,
+      "text": "Gewürzt,",
+      "bbox": [
+        17.01,
+        569.89,
+        46.72,
+        578.82
+      ],
+      "label": "I-PRODUCT",
+      "confidence": 0.9955
+    },
+    {
+      "i": 70,
+      "text": "Paprika,",
+      "bbox": [
+        48.06,
+        569.89,
+        74.59,
+        578.82
+      ],
+      "label": "I-PRODUCT",
+      "confidence": 0.9968
+    },
+    {
+      "i": 71,
+      "text": "Haltungsform",
+      "bbox": [
+        17.01,
+        577.39,
+        62.02,
+        586.32
+      ],
+      "label": "O",
+      "confidence": 0.9997
+    },
+    {
+      "i": 72,
+      "text": "2,",
+      "bbox": [
+        63.52,
+        577.39,
+        69.77,
+        586.32
+      ],
+      "label": "O",
+      "confidence": 0.9996
+    },
+    {
+      "i": 73,
+      "text": "je",
+      "bbox": [
+        17.01,
+        584.89,
+        23.17,
+        593.82
+      ],
+      "label": "O",
+      "confidence": 0.9997
+    },
+    {
+      "i": 74,
+      "text": "800-g-Packung",
+      "bbox": [
+        24.67,
+        584.89,
+        74.65,
+        593.82
+      ],
+      "label": "B-QUANTITY",
+      "confidence": 0.9987
+    },
+    {
+      "i": 75,
+      "text": "(1",
+      "bbox": [
+        17.01,
+        592.39,
+        23.91,
+        601.32
+      ],
+      "label": "B-UNIT_PRICE",
+      "confidence": 0.9991
+    },
+    {
+      "i": 76,
+      "text": "kg",
+      "bbox": [
+        25.41,
+        592.39,
+        33.46,
+        601.32
+      ],
+      "label": "I-UNIT_PRICE",
+      "confidence": 0.9995
+    },
+    {
+      "i": 77,
+      "text": "=",
+      "bbox": [
+        34.96,
+        592.39,
+        39.16,
+        601.32
+      ],
+      "label": "I-UNIT_PRICE",
+      "confidence": 0.9995
+    },
+    {
+      "i": 78,
+      "text": "5.55)",
+      "bbox": [
+        40.66,
+        592.39,
+        58.02,
+        601.32
+      ],
+      "label": "I-UNIT_PRICE",
+      "confidence": 0.9994
+    },
+    {
+      "i": 79,
+      "text": "-17%",
+      "bbox": [
+        420.02,
+        344.17,
+        457.3,
+        363.72
+      ],
+      "label": "B-DISCOUNT",
+      "confidence": 0.9976
+    },
+    {
+      "i": 80,
+      "text": "4.59",
+      "bbox": [
+        401.53,
+        371.94,
+        446.03,
+        398.83
+      ],
+      "label": "B-PRICE",
+      "confidence": 0.9991
+    },
+    {
+      "i": 81,
+      "text": "5.59",
+      "bbox": [
+        414.68,
+        395.22,
+        432.88,
+        406.21
+      ],
+      "label": "B-OLD_PRICE",
+      "confidence": 0.9966
+    },
+    {
+      "i": 82,
+      "text": "MÜHLENHOF",
+      "bbox": [
+        243.78,
+        369.56,
+        283.76,
+        378.6
+      ],
+      "label": "B-BRAND",
+      "confidence": 0.9994
+    },
+    {
+      "i": 83,
+      "text": "Frische",
+      "bbox": [
+        243.78,
+        377.06,
+        266.46,
+        386.1
+      ],
+      "label": "B-PRODUCT",
+      "confidence": 0.9991
+    },
+    {
+      "i": 84,
+      "text": "Puten-Schnitzel*",
+      "bbox": [
+        267.66,
+        377.06,
+        322.56,
+        386.1
+      ],
+      "label": "I-PRODUCT",
+      "confidence": 0.9994
+    },
+    {
+      "i": 85,
+      "text": "Haltungsform",
+      "bbox": [
+        243.78,
+        384.64,
+        288.79,
+        393.57
+      ],
+      "label": "O",
+      "confidence": 0.9994
+    },
+    {
+      "i": 86,
+      "text": "2,",
+      "bbox": [
+        290.29,
+        384.64,
+        296.54,
+        393.57
+      ],
+      "label": "O",
+      "confidence": 0.9994
+    },
+    {
+      "i": 87,
+      "text": "je",
+      "bbox": [
+        243.78,
+        392.14,
+        249.94,
+        401.07
+      ],
+      "label": "O",
+      "confidence": 0.9996
+    },
+    {
+      "i": 88,
+      "text": "500-g-Packung",
+      "bbox": [
+        251.44,
+        392.14,
+        301.42,
+        401.07
+      ],
+      "label": "B-QUANTITY",
+      "confidence": 0.9989
+    },
+    {
+      "i": 89,
+      "text": "(1",
+      "bbox": [
+        243.78,
+        399.64,
+        250.68,
+        408.57
+      ],
+      "label": "B-UNIT_PRICE",
+      "confidence": 0.9992
+    },
+    {
+      "i": 90,
+      "text": "kg",
+      "bbox": [
+        252.18,
+        399.64,
+        260.23,
+        408.57
+      ],
+      "label": "I-UNIT_PRICE",
+      "confidence": 0.9996
+    },
+    {
+      "i": 91,
+      "text": "=",
+      "bbox": [
+        261.73,
+        399.64,
+        265.93,
+        408.57
+      ],
+      "label": "I-UNIT_PRICE",
+      "confidence": 0.9996
+    },
+    {
+      "i": 92,
+      "text": "9.18)",
+      "bbox": [
+        267.43,
+        399.64,
+        284.79,
+        408.57
+      ],
+      "label": "I-UNIT_PRICE",
+      "confidence": 0.9996
+    },
+    {
+      "i": 93,
+      "text": "MÜHLENHOF",
+      "bbox": [
+        17.01,
+        740.09,
+        56.99,
+        749.13
+      ],
+      "label": "B-BRAND",
+      "confidence": 0.9993
+    },
+    {
+      "i": 94,
+      "text": "Schweine-Cordon-",
+      "bbox": [
+        17.01,
+        747.59,
+        77.69,
+        756.63
+      ],
+      "label": "B-PRODUCT",
+      "confidence": 0.9988
+    },
+    {
+      "i": 95,
+      "text": "bleu",
+      "bbox": [
+        17.01,
+        755.09,
+        31.96,
+        764.13
+      ],
+      "label": "I-PRODUCT",
+      "confidence": 0.999
+    },
+    {
+      "i": 96,
+      "text": "Camembert*",
+      "bbox": [
+        33.16,
+        755.09,
+        75.35,
+        764.13
+      ],
+      "label": "I-PRODUCT",
+      "confidence": 0.9994
+    },
+    {
+      "i": 97,
+      "text": "Paniert,",
+      "bbox": [
+        17.01,
+        762.67,
+        42.52,
+        771.6
+      ],
+      "label": "I-PRODUCT",
+      "confidence": 0.9784
+    },
+    {
+      "i": 98,
+      "text": "Haltungsform",
+      "bbox": [
+        17.01,
+        770.17,
+        62.02,
+        779.1
+      ],
+      "label": "O",
+      "confidence": 0.9997
+    },
+    {
+      "i": 99,
+      "text": "2,",
+      "bbox": [
+        63.52,
+        770.17,
+        69.77,
+        779.1
+      ],
+      "label": "O",
+      "confidence": 0.9996
+    },
+    {
+      "i": 100,
+      "text": "je",
+      "bbox": [
+        17.01,
+        777.67,
+        23.17,
+        786.6
+      ],
+      "label": "O",
+      "confidence": 0.9997
+    },
+    {
+      "i": 101,
+      "text": "330-g-Packung",
+      "bbox": [
+        24.67,
+        777.67,
+        74.65,
+        786.6
+      ],
+      "label": "B-QUANTITY",
+      "confidence": 0.9988
+    },
+    {
+      "i": 102,
+      "text": "(1",
+      "bbox": [
+        17.01,
+        785.17,
+        23.91,
+        794.1
+      ],
+      "label": "B-UNIT_PRICE",
+      "confidence": 0.9989
+    },
+    {
+      "i": 103,
+      "text": "kg",
+      "bbox": [
+        25.41,
+        785.17,
+        33.46,
+        794.1
+      ],
+      "label": "I-UNIT_PRICE",
+      "confidence": 0.9995
+    },
+    {
+      "i": 104,
+      "text": "=",
+      "bbox": [
+        34.96,
+        785.17,
+        39.16,
+        794.1
+      ],
+      "label": "I-UNIT_PRICE",
+      "confidence": 0.9995
+    },
+    {
+      "i": 105,
+      "text": "9.06)",
+      "bbox": [
+        40.66,
+        785.17,
+        58.02,
+        794.1
+      ],
+      "label": "I-UNIT_PRICE",
+      "confidence": 0.9995
+    },
+    {
+      "i": 106,
+      "text": "Aktion",
+      "bbox": [
+        420.83,
+        732.34,
+        456.49,
+        746.39
+      ],
+      "label": "O",
+      "confidence": 0.9997
+    },
+    {
+      "i": 107,
+      "text": "5.49",
+      "bbox": [
+        401.53,
+        757.45,
+        446.03,
+        784.34
+      ],
+      "label": "B-PRICE",
+      "confidence": 0.9982
+    },
+    {
+      "i": 108,
+      "text": "MÜHLENHOF",
+      "bbox": [
+        319.46,
+        747.59,
+        359.45,
+        756.63
+      ],
+      "label": "B-BRAND",
+      "confidence": 0.9994
+    },
+    {
+      "i": 109,
+      "text": "Frischer",
+      "bbox": [
+        319.46,
+        755.09,
+        344.74,
+        764.13
+      ],
+      "label": "B-PRODUCT",
+      "confidence": 0.999
+    },
+    {
+      "i": 110,
+      "text": "Kasseler-",
+      "bbox": [
+        345.94,
+        755.09,
+        376.19,
+        764.13
+      ],
+      "label": "I-PRODUCT",
+      "confidence": 0.9994
+    },
+    {
+      "i": 111,
+      "text": "Hüftbraten*",
+      "bbox": [
+        319.46,
+        762.59,
+        359.0,
+        771.63
+      ],
+      "label": "I-PRODUCT",
+      "confidence": 0.9993
+    },
+    {
+      "i": 112,
+      "text": "Vom",
+      "bbox": [
+        319.46,
+        770.17,
+        334.26,
+        779.1
+      ],
+      "label": "I-PRODUCT",
+      "confidence": 0.9961
+    },
+    {
+      "i": 113,
+      "text": "Schwein,",
+      "bbox": [
+        335.76,
+        770.17,
+        365.66,
+        779.1
+      ],
+      "label": "I-PRODUCT",
+      "confidence": 0.9967
+    },
+    {
+      "i": 114,
+      "text": "Haltungsform",
+      "bbox": [
+        319.46,
+        777.67,
+        364.47,
+        786.6
+      ],
+      "label": "O",
+      "confidence": 0.9995
+    },
+    {
+      "i": 115,
+      "text": "2,",
+      "bbox": [
+        365.97,
+        777.67,
+        372.23,
+        786.6
+      ],
+      "label": "O",
+      "confidence": 0.9994
+    },
+    {
+      "i": 116,
+      "text": "je",
+      "bbox": [
+        319.46,
+        785.17,
+        325.63,
+        794.1
+      ],
+      "label": "O",
+      "confidence": 0.9997
+    },
+    {
+      "i": 117,
+      "text": "kg",
+      "bbox": [
+        327.13,
+        785.17,
+        335.18,
+        794.1
+      ],
+      "label": "O",
+      "confidence": 0.9992
+    },
+    {
+      "i": 118,
+      "text": "GRILLPARTY",
+      "bbox": [
+        243.78,
+        554.81,
+        281.45,
+        563.85
+      ],
+      "label": "B-BRAND",
+      "confidence": 0.9994
+    },
+    {
+      "i": 119,
+      "text": "Frische",
+      "bbox": [
+        243.78,
+        562.31,
+        266.46,
+        571.35
+      ],
+      "label": "B-PRODUCT",
+      "confidence": 0.999
+    },
+    {
+      "i": 120,
+      "text": "Hähnchen-Medaillons*",
+      "bbox": [
+        267.66,
+        562.31,
+        343.41,
+        571.35
+      ],
+      "label": "I-PRODUCT",
+      "confidence": 0.9993
+    },
+    {
+      "i": 121,
+      "text": "Mariniert,",
+      "bbox": [
+        243.78,
+        569.89,
+        275.85,
+        578.82
+      ],
+      "label": "I-PRODUCT",
+      "confidence": 0.996
+    },
+    {
+      "i": 122,
+      "text": "Aioli,",
+      "bbox": [
+        277.19,
+        569.89,
+        293.89,
+        578.82
+      ],
+      "label": "I-PRODUCT",
+      "confidence": 0.9985
+    },
+    {
+      "i": 123,
+      "text": "Haltungsform",
+      "bbox": [
+        243.78,
+        577.39,
+        288.79,
+        586.32
+      ],
+      "label": "O",
+      "confidence": 0.9993
+    },
+    {
+      "i": 124,
+      "text": "2,",
+      "bbox": [
+        290.29,
+        577.39,
+        296.54,
+        586.32
+      ],
+      "label": "O",
+      "confidence": 0.9994
+    },
+    {
+      "i": 125,
+      "text": "je",
+      "bbox": [
+        243.78,
+        584.89,
+        249.95,
+        593.82
+      ],
+      "label": "O",
+      "confidence": 0.9996
+    },
+    {
+      "i": 126,
+      "text": "350-g-Packung",
+      "bbox": [
+        251.45,
+        584.89,
+        301.42,
+        593.82
+      ],
+      "label": "B-QUANTITY",
+      "confidence": 0.9989
+    },
+    {
+      "i": 127,
+      "text": "(1",
+      "bbox": [
+        243.78,
+        592.39,
+        250.68,
+        601.32
+      ],
+      "label": "B-UNIT_PRICE",
+      "confidence": 0.9992
+    },
+    {
+      "i": 128,
+      "text": "kg",
+      "bbox": [
+        252.18,
+        592.39,
+        260.24,
+        601.32
+      ],
+      "label": "I-UNIT_PRICE",
+      "confidence": 0.9996
+    },
+    {
+      "i": 129,
+      "text": "=",
+      "bbox": [
+        261.74,
+        592.39,
+        265.94,
+        601.32
+      ],
+      "label": "I-UNIT_PRICE",
+      "confidence": 0.9996
+    },
+    {
+      "i": 130,
+      "text": "9.51)",
+      "bbox": [
+        267.44,
+        592.39,
+        284.79,
+        601.32
+      ],
+      "label": "I-UNIT_PRICE",
+      "confidence": 0.9996
+    },
+    {
+      "i": 131,
+      "text": "Aus",
+      "bbox": [
+        243.73,
+        40.73,
+        257.89,
+        50.97
+      ],
+      "label": "O",
+      "confidence": 0.9997
+    },
+    {
+      "i": 132,
+      "text": "dem",
+      "bbox": [
+        259.59,
+        40.73,
+        276.99,
+        50.97
+      ],
+      "label": "O",
+      "confidence": 0.9997
+    },
+    {
+      "i": 133,
+      "text": "Osten",
+      "bbox": [
+        278.69,
+        40.73,
+        300.94,
+        50.97
+      ],
+      "label": "O",
+      "confidence": 0.9997
+    },
+    {
+      "i": 134,
+      "text": "Packung",
+      "bbox": [
+        189.36,
+        76.58,
+        228.03,
+        88.63
+      ],
+      "label": "O",
+      "confidence": 0.9997
+    },
+    {
+      "i": 135,
+      "text": "Aktion",
+      "bbox": [
+        420.83,
+        539.58,
+        456.49,
+        553.63
+      ],
+      "label": "O",
+      "confidence": 0.9997
+    },
+    {
+      "i": 136,
+      "text": "3.33",
+      "bbox": [
+        401.53,
+        564.7,
+        446.03,
+        591.58
+      ],
+      "label": "B-PRICE",
+      "confidence": 0.998
+    },
+    {
+      "i": 137,
+      "text": "Aktion",
+      "bbox": [
+        118.47,
+        732.34,
+        154.13,
+        746.39
+      ],
+      "label": "O",
+      "confidence": 0.9997
+    },
+    {
+      "i": 138,
+      "text": "2.99",
+      "bbox": [
+        99.16,
+        757.45,
+        143.67,
+        784.34
+      ],
+      "label": "B-PRICE",
+      "confidence": 0.9977
+    },
+    {
+      "i": 139,
+      "text": "Mo,",
+      "bbox": [
+        176.85,
+        14.05,
+        200.49,
+        30.92
+      ],
+      "label": "B-VALID",
+      "confidence": 0.9984
+    },
+    {
+      "i": 140,
+      "text": "24.8. – Sa,",
+      "bbox": [
+        203.29,
+        13.98,
+        264.83,
+        31.09
+      ],
+      "label": "I-VALID",
+      "confidence": 0.9981
+    },
+    {
+      "i": 141,
+      "text": "29.8.",
+      "bbox": [
+        267.63,
+        14.05,
+        299.37,
+        30.92
+      ],
+      "label": "I-VALID",
+      "confidence": 0.9983
+    },
+    {
+      "i": 142,
+      "text": "06_01-11-12-13",
+      "bbox": [
+        5.05,
+        754.12,
+        12.19,
+        796.77
+      ],
+      "label": "O",
+      "confidence": 0.9998
+    }
+  ],
+  "entities": [
+    {
+      "label": "DISCOUNT",
+      "start": 14,
+      "end": 15,
+      "text": "-27%",
+      "bbox": [
+        184.49,
+        327.92,
+        230.51,
+        352.05
+      ],
+      "confidence": 0.9973
+    },
+    {
+      "label": "PRICE",
+      "start": 15,
+      "end": 16,
+      "text": "3.49",
+      "bbox": [
+        162.12,
+        362.64,
+        215.73,
+        395.02
+      ],
+      "confidence": 0.9991
+    },
+    {
+      "label": "OLD_PRICE",
+      "start": 16,
+      "end": 17,
+      "text": "4.79",
+      "bbox": [
+        178.31,
+        391.86,
+        199.55,
+        404.69
+      ],
+      "confidence": 0.9966
+    },
+    {
+      "label": "BRAND",
+      "start": 17,
+      "end": 18,
+      "text": "MÜHLENHOF",
+      "bbox": [
+        22.68,
+        369.56,
+        62.66,
+        378.6
+      ],
+      "confidence": 0.9994
+    },
+    {
+      "label": "PRODUCT",
+      "start": 18,
+      "end": 25,
+      "text": "Frisches Hackfleisch, gemischt* Vom Schwein und Rind,",
+      "bbox": [
+        22.68,
+        377.06,
+        124.04,
+        393.57
+      ],
+      "confidence": 0.9961
+    },
+    {
+      "label": "QUANTITY",
+      "start": 26,
+      "end": 27,
+      "text": "500-g-Packung",
+      "bbox": [
+        30.34,
+        392.14,
+        80.31,
+        401.07
+      ],
+      "confidence": 0.9987
+    },
+    {
+      "label": "UNIT_PRICE",
+      "start": 27,
+      "end": 31,
+      "text": "(1 kg = 6.98)",
+      "bbox": [
+        22.68,
+        399.64,
+        63.69,
+        408.57
+      ],
+      "confidence": 0.9995
+    },
+    {
+      "label": "PRICE",
+      "start": 32,
+      "end": 33,
+      "text": "4.44",
+      "bbox": [
+        250.35,
+        757.45,
+        294.85,
+        784.34
+      ],
+      "confidence": 0.9985
+    },
+    {
+      "label": "BRAND",
+      "start": 33,
+      "end": 34,
+      "text": "MÜHLENHOF",
+      "bbox": [
+        168.19,
+        732.57,
+        208.17,
+        741.61
+      ],
+      "confidence": 0.9994
+    },
+    {
+      "label": "PRODUCT",
+      "start": 34,
+      "end": 41,
+      "text": "Frische Schweine- Fleischspieße* Mit Zwiebeln und Paprika,",
+      "bbox": [
+        168.19,
+        740.07,
+        226.68,
+        771.58
+      ],
+      "confidence": 0.9704
+    },
+    {
+      "label": "QUANTITY",
+      "start": 44,
+      "end": 45,
+      "text": "500-g-Packung",
+      "bbox": [
+        175.85,
+        777.65,
+        225.83,
+        786.58
+      ],
+      "confidence": 0.9988
+    },
+    {
+      "label": "UNIT_PRICE",
+      "start": 45,
+      "end": 49,
+      "text": "(1 kg = 8.88)",
+      "bbox": [
+        168.19,
+        785.15,
+        209.2,
+        794.08
+      ],
+      "confidence": 0.9994
+    },
+    {
+      "label": "BRAND",
+      "start": 49,
+      "end": 51,
+      "text": "MÜHLENHOF REGIONAL",
+      "bbox": [
+        183.26,
+        176.8,
+        223.24,
+        193.34
+      ],
+      "confidence": 0.9986
+    },
+    {
+      "label": "PRODUCT",
+      "start": 51,
+      "end": 54,
+      "text": "Frische Hähnchen-Unterschenkel Natur,",
+      "bbox": [
+        183.26,
+        191.8,
+        289.98,
+        208.31
+      ],
+      "confidence": 0.9991
+    },
+    {
+      "label": "QUANTITY",
+      "start": 57,
+      "end": 58,
+      "text": "1.000-g-Packung",
+      "bbox": [
+        190.92,
+        206.88,
+        247.15,
+        215.81
+      ],
+      "confidence": 0.9988
+    },
+    {
+      "label": "DISCOUNT",
+      "start": 58,
+      "end": 59,
+      "text": "-20%",
+      "bbox": [
+        422.16,
+        122.87,
+        450.91,
+        138.15
+      ],
+      "confidence": 0.9967
+    },
+    {
+      "label": "PRICE",
+      "start": 59,
+      "end": 60,
+      "text": "4.44",
+      "bbox": [
+        405.81,
+        144.12,
+        443.24,
+        166.72
+      ],
+      "confidence": 0.9989
+    },
+    {
+      "label": "OLD_PRICE",
+      "start": 60,
+      "end": 61,
+      "text": "5.59",
+      "bbox": [
+        416.61,
+        163.67,
+        432.8,
+        173.44
+      ],
+      "confidence": 0.9966
+    },
+    {
+      "label": "DISCOUNT",
+      "start": 63,
+      "end": 64,
+      "text": "-28%",
+      "bbox": [
+        405.35,
+        175.21,
+        446.21,
+        197.21
+      ],
+      "confidence": 0.9947
+    },
+    {
+      "label": "PRICE",
+      "start": 65,
+      "end": 66,
+      "text": "4.44",
+      "bbox": [
+        174.76,
+        564.7,
+        219.26,
+        591.58
+      ],
+      "confidence": 0.997
+    },
+    {
+      "label": "BRAND",
+      "start": 66,
+      "end": 67,
+      "text": "MÜHLENHOF",
+      "bbox": [
+        17.01,
+        554.82,
+        56.99,
+        563.85
+      ],
+      "confidence": 0.9994
+    },
+    {
+      "label": "PRODUCT",
+      "start": 67,
+      "end": 71,
+      "text": "Frischer Puten-Rollbraten* Gewürzt, Paprika,",
+      "bbox": [
+        17.01,
+        562.32,
+        103.89,
+        578.82
+      ],
+      "confidence": 0.9977
+    },
+    {
+      "label": "QUANTITY",
+      "start": 74,
+      "end": 75,
+      "text": "800-g-Packung",
+      "bbox": [
+        24.67,
+        584.89,
+        74.65,
+        593.82
+      ],
+      "confidence": 0.9987
+    },
+    {
+      "label": "UNIT_PRICE",
+      "start": 75,
+      "end": 79,
+      "text": "(1 kg = 5.55)",
+      "bbox": [
+        17.01,
+        592.39,
+        58.02,
+        601.32
+      ],
+      "confidence": 0.9994
+    },
+    {
+      "label": "DISCOUNT",
+      "start": 79,
+      "end": 80,
+      "text": "-17%",
+      "bbox": [
+        420.02,
+        344.17,
+        457.3,
+        363.72
+      ],
+      "confidence": 0.9976
+    },
+    {
+      "label": "PRICE",
+      "start": 80,
+      "end": 81,
+      "text": "4.59",
+      "bbox": [
+        401.53,
+        371.94,
+        446.03,
+        398.83
+      ],
+      "confidence": 0.9991
+    },
+    {
+      "label": "OLD_PRICE",
+      "start": 81,
+      "end": 82,
+      "text": "5.59",
+      "bbox": [
+        414.68,
+        395.22,
+        432.88,
+        406.21
+      ],
+      "confidence": 0.9966
+    },
+    {
+      "label": "BRAND",
+      "start": 82,
+      "end": 83,
+      "text": "MÜHLENHOF",
+      "bbox": [
+        243.78,
+        369.56,
+        283.76,
+        378.6
+      ],
+      "confidence": 0.9994
+    },
+    {
+      "label": "PRODUCT",
+      "start": 83,
+      "end": 85,
+      "text": "Frische Puten-Schnitzel*",
+      "bbox": [
+        243.78,
+        377.06,
+        322.56,
+        386.1
+      ],
+      "confidence": 0.9992
+    },
+    {
+      "label": "QUANTITY",
+      "start": 88,
+      "end": 89,
+      "text": "500-g-Packung",
+      "bbox": [
+        251.44,
+        392.14,
+        301.42,
+        401.07
+      ],
+      "confidence": 0.9989
+    },
+    {
+      "label": "UNIT_PRICE",
+      "start": 89,
+      "end": 93,
+      "text": "(1 kg = 9.18)",
+      "bbox": [
+        243.78,
+        399.64,
+        284.79,
+        408.57
+      ],
+      "confidence": 0.9995
+    },
+    {
+      "label": "BRAND",
+      "start": 93,
+      "end": 94,
+      "text": "MÜHLENHOF",
+      "bbox": [
+        17.01,
+        740.09,
+        56.99,
+        749.13
+      ],
+      "confidence": 0.9993
+    },
+    {
+      "label": "PRODUCT",
+      "start": 94,
+      "end": 98,
+      "text": "Schweine-Cordon- bleu Camembert* Paniert,",
+      "bbox": [
+        17.01,
+        747.59,
+        77.69,
+        771.6
+      ],
+      "confidence": 0.9939
+    },
+    {
+      "label": "QUANTITY",
+      "start": 101,
+      "end": 102,
+      "text": "330-g-Packung",
+      "bbox": [
+        24.67,
+        777.67,
+        74.65,
+        786.6
+      ],
+      "confidence": 0.9988
+    },
+    {
+      "label": "UNIT_PRICE",
+      "start": 102,
+      "end": 106,
+      "text": "(1 kg = 9.06)",
+      "bbox": [
+        17.01,
+        785.17,
+        58.02,
+        794.1
+      ],
+      "confidence": 0.9994
+    },
+    {
+      "label": "PRICE",
+      "start": 107,
+      "end": 108,
+      "text": "5.49",
+      "bbox": [
+        401.53,
+        757.45,
+        446.03,
+        784.34
+      ],
+      "confidence": 0.9982
+    },
+    {
+      "label": "BRAND",
+      "start": 108,
+      "end": 109,
+      "text": "MÜHLENHOF",
+      "bbox": [
+        319.46,
+        747.59,
+        359.45,
+        756.63
+      ],
+      "confidence": 0.9994
+    },
+    {
+      "label": "PRODUCT",
+      "start": 109,
+      "end": 114,
+      "text": "Frischer Kasseler- Hüftbraten* Vom Schwein,",
+      "bbox": [
+        319.46,
+        755.09,
+        376.19,
+        779.1
+      ],
+      "confidence": 0.9981
+    },
+    {
+      "label": "BRAND",
+      "start": 118,
+      "end": 119,
+      "text": "GRILLPARTY",
+      "bbox": [
+        243.78,
+        554.81,
+        281.45,
+        563.85
+      ],
+      "confidence": 0.9994
+    },
+    {
+      "label": "PRODUCT",
+      "start": 119,
+      "end": 123,
+      "text": "Frische Hähnchen-Medaillons* Mariniert, Aioli,",
+      "bbox": [
+        243.78,
+        562.31,
+        343.41,
+        578.82
+      ],
+      "confidence": 0.9982
+    },
+    {
+      "label": "QUANTITY",
+      "start": 126,
+      "end": 127,
+      "text": "350-g-Packung",
+      "bbox": [
+        251.45,
+        584.89,
+        301.42,
+        593.82
+      ],
+      "confidence": 0.9989
+    },
+    {
+      "label": "UNIT_PRICE",
+      "start": 127,
+      "end": 131,
+      "text": "(1 kg = 9.51)",
+      "bbox": [
+        243.78,
+        592.39,
+        284.79,
+        601.32
+      ],
+      "confidence": 0.9995
+    },
+    {
+      "label": "PRICE",
+      "start": 136,
+      "end": 137,
+      "text": "3.33",
+      "bbox": [
+        401.53,
+        564.7,
+        446.03,
+        591.58
+      ],
+      "confidence": 0.998
+    },
+    {
+      "label": "PRICE",
+      "start": 138,
+      "end": 139,
+      "text": "2.99",
+      "bbox": [
+        99.16,
+        757.45,
+        143.67,
+        784.34
+      ],
+      "confidence": 0.9977
+    },
+    {
+      "label": "VALID",
+      "start": 139,
+      "end": 142,
+      "text": "Mo, 24.8. – Sa, 29.8.",
+      "bbox": [
+        176.85,
+        13.98,
+        299.37,
+        31.09
+      ],
+      "confidence": 0.9983
+    }
+  ]
+}

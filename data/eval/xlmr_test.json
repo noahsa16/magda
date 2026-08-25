@@ -1,0 +1,394 @@
+{
+  "variant": "xlmr",
+  "checkpoint": "xlmr",
+  "split": "test",
+  "scope_kind": "split",
+  "num_pages": 116,
+  "created": "2026-08-25T08:51:59",
+  "protocol": "windowed",
+  "matching_schemes": {
+    "strict": {
+      "precision": 0.9222,
+      "recall": 0.9066,
+      "f1": 0.9143,
+      "correct": 5415,
+      "incorrect": 266,
+      "partial": 0,
+      "missing": 292,
+      "spurious": 191,
+      "possible": 5973,
+      "actual": 5872
+    },
+    "exact": {
+      "precision": 0.9259,
+      "recall": 0.9103,
+      "f1": 0.918,
+      "correct": 5437,
+      "incorrect": 244,
+      "partial": 0,
+      "missing": 292,
+      "spurious": 191,
+      "possible": 5973,
+      "actual": 5872
+    },
+    "partial": {
+      "precision": 0.9467,
+      "recall": 0.9307,
+      "f1": 0.9386,
+      "correct": 5437,
+      "incorrect": 0,
+      "partial": 244,
+      "missing": 292,
+      "spurious": 191,
+      "possible": 5973,
+      "actual": 5872
+    },
+    "type": {
+      "precision": 0.9622,
+      "recall": 0.9459,
+      "f1": 0.954,
+      "correct": 5650,
+      "incorrect": 31,
+      "partial": 0,
+      "missing": 292,
+      "spurious": 191,
+      "possible": 5973,
+      "actual": 5872
+    }
+  },
+  "matching_scheme_source": "SemEval-2013 Task 9.1 (MUC-5-Zaehlweise)",
+  "matching_per_label_type": {
+    "APP_PRICE": {
+      "precision": 0.8533,
+      "recall": 0.9209,
+      "f1": 0.8858,
+      "correct": 128,
+      "incorrect": 0,
+      "partial": 0,
+      "missing": 11,
+      "spurious": 22,
+      "possible": 139,
+      "actual": 150
+    },
+    "BRAND": {
+      "precision": 0.9854,
+      "recall": 0.9828,
+      "f1": 0.9841,
+      "correct": 744,
+      "incorrect": 0,
+      "partial": 0,
+      "missing": 13,
+      "spurious": 11,
+      "possible": 757,
+      "actual": 755
+    },
+    "DISCOUNT": {
+      "precision": 0.9846,
+      "recall": 1.0,
+      "f1": 0.9922,
+      "correct": 511,
+      "incorrect": 0,
+      "partial": 0,
+      "missing": 0,
+      "spurious": 8,
+      "possible": 511,
+      "actual": 519
+    },
+    "OLD_PRICE": {
+      "precision": 0.9297,
+      "recall": 0.9883,
+      "f1": 0.9581,
+      "correct": 423,
+      "incorrect": 0,
+      "partial": 0,
+      "missing": 5,
+      "spurious": 32,
+      "possible": 428,
+      "actual": 455
+    },
+    "PRICE": {
+      "precision": 0.9599,
+      "recall": 0.9665,
+      "f1": 0.9632,
+      "correct": 981,
+      "incorrect": 0,
+      "partial": 0,
+      "missing": 34,
+      "spurious": 41,
+      "possible": 1015,
+      "actual": 1022
+    },
+    "PRODUCT": {
+      "precision": 0.9534,
+      "recall": 0.9037,
+      "f1": 0.9279,
+      "correct": 1126,
+      "incorrect": 0,
+      "partial": 0,
+      "missing": 120,
+      "spurious": 55,
+      "possible": 1246,
+      "actual": 1181
+    },
+    "QUANTITY": {
+      "precision": 0.9485,
+      "recall": 0.8644,
+      "f1": 0.9045,
+      "correct": 848,
+      "incorrect": 0,
+      "partial": 0,
+      "missing": 133,
+      "spurious": 46,
+      "possible": 981,
+      "actual": 894
+    },
+    "UNIT_PRICE": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "correct": 782,
+      "incorrect": 0,
+      "partial": 0,
+      "missing": 0,
+      "spurious": 0,
+      "possible": 782,
+      "actual": 782
+    },
+    "VALID": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "correct": 114,
+      "incorrect": 0,
+      "partial": 0,
+      "missing": 0,
+      "spurious": 0,
+      "possible": 114,
+      "actual": 114
+    }
+  },
+  "window_stride": 128,
+  "words_without_prediction_unwindowed": 2397,
+  "report": {
+    "APP_PRICE": {
+      "precision": 0.8533333333333334,
+      "recall": 0.920863309352518,
+      "f1-score": 0.8858131487889273,
+      "support": 139
+    },
+    "BRAND": {
+      "precision": 0.9417218543046357,
+      "recall": 0.9392338177014531,
+      "f1-score": 0.9404761904761906,
+      "support": 757
+    },
+    "DISCOUNT": {
+      "precision": 0.9845857418111753,
+      "recall": 1.0,
+      "f1-score": 0.992233009708738,
+      "support": 511
+    },
+    "OLD_PRICE": {
+      "precision": 0.9296703296703297,
+      "recall": 0.9883177570093458,
+      "f1-score": 0.9580973952434881,
+      "support": 428
+    },
+    "PRICE": {
+      "precision": 0.9598825831702544,
+      "recall": 0.9665024630541872,
+      "f1-score": 0.9631811487481591,
+      "support": 1015
+    },
+    "PRODUCT": {
+      "precision": 0.7993226079593565,
+      "recall": 0.7576243980738363,
+      "f1-score": 0.7779151215492379,
+      "support": 1246
+    },
+    "QUANTITY": {
+      "precision": 0.9261744966442953,
+      "recall": 0.8440366972477065,
+      "f1-score": 0.8832,
+      "support": 981
+    },
+    "UNIT_PRICE": {
+      "precision": 0.9923273657289002,
+      "recall": 0.9923273657289002,
+      "f1-score": 0.9923273657289002,
+      "support": 782
+    },
+    "VALID": {
+      "precision": 0.9912280701754386,
+      "recall": 0.9912280701754386,
+      "f1-score": 0.9912280701754386,
+      "support": 114
+    },
+    "micro avg": {
+      "precision": 0.9221730245231607,
+      "recall": 0.9065796082370668,
+      "f1-score": 0.9143098353735755,
+      "support": 5973
+    },
+    "macro avg": {
+      "precision": 0.9309162647553022,
+      "recall": 0.9333482087048206,
+      "f1-score": 0.9316079389354532,
+      "support": 5973
+    },
+    "weighted avg": {
+      "precision": 0.9208660580695756,
+      "recall": 0.9065796082370668,
+      "f1-score": 0.9131919578816753,
+      "support": 5973
+    }
+  },
+  "report_no_windows": {
+    "APP_PRICE": {
+      "precision": 0.8503401360544217,
+      "recall": 0.8992805755395683,
+      "f1-score": 0.874125874125874,
+      "support": 139
+    },
+    "BRAND": {
+      "precision": 0.9421265141318977,
+      "recall": 0.9247027741083224,
+      "f1-score": 0.9333333333333333,
+      "support": 757
+    },
+    "DISCOUNT": {
+      "precision": 0.9845261121856866,
+      "recall": 0.9960861056751468,
+      "f1-score": 0.9902723735408561,
+      "support": 511
+    },
+    "OLD_PRICE": {
+      "precision": 0.9293598233995585,
+      "recall": 0.9836448598130841,
+      "f1-score": 0.9557321225879681,
+      "support": 428
+    },
+    "PRICE": {
+      "precision": 0.9625884732052579,
+      "recall": 0.9379310344827586,
+      "f1-score": 0.9500998003992015,
+      "support": 1015
+    },
+    "PRODUCT": {
+      "precision": 0.8079646017699115,
+      "recall": 0.7327447833065811,
+      "f1-score": 0.7685185185185185,
+      "support": 1246
+    },
+    "QUANTITY": {
+      "precision": 0.9325714285714286,
+      "recall": 0.8318042813455657,
+      "f1-score": 0.8793103448275862,
+      "support": 981
+    },
+    "UNIT_PRICE": {
+      "precision": 0.9922680412371134,
+      "recall": 0.9846547314578005,
+      "f1-score": 0.9884467265725289,
+      "support": 782
+    },
+    "VALID": {
+      "precision": 0.9903846153846154,
+      "recall": 0.9035087719298246,
+      "f1-score": 0.9449541284403671,
+      "support": 114
+    },
+    "micro avg": {
+      "precision": 0.9258807115451692,
+      "recall": 0.888833082203248,
+      "f1-score": 0.9069787306739558,
+      "support": 5973
+    },
+    "macro avg": {
+      "precision": 0.932458860659988,
+      "recall": 0.9104842130731837,
+      "f1-score": 0.9205325802606927,
+      "support": 5973
+    },
+    "weighted avg": {
+      "precision": 0.9241096798576585,
+      "recall": 0.888833082203248,
+      "f1-score": 0.905464304664474,
+      "support": 5973
+    }
+  },
+  "report_truncated": {
+    "APP_PRICE": {
+      "precision": 0.8503401360544217,
+      "recall": 0.9191176470588235,
+      "f1-score": 0.8833922261484098,
+      "support": 136
+    },
+    "BRAND": {
+      "precision": 0.9421265141318977,
+      "recall": 0.9395973154362416,
+      "f1-score": 0.9408602150537634,
+      "support": 745
+    },
+    "DISCOUNT": {
+      "precision": 0.9845261121856866,
+      "recall": 1.0,
+      "f1-score": 0.9922027290448342,
+      "support": 509
+    },
+    "OLD_PRICE": {
+      "precision": 0.9293598233995585,
+      "recall": 0.9882629107981221,
+      "f1-score": 0.9579067121729238,
+      "support": 426
+    },
+    "PRICE": {
+      "precision": 0.9625884732052579,
+      "recall": 0.9684638860630722,
+      "f1-score": 0.9655172413793104,
+      "support": 983
+    },
+    "PRODUCT": {
+      "precision": 0.8079646017699115,
+      "recall": 0.7608333333333334,
+      "f1-score": 0.7836909871244636,
+      "support": 1200
+    },
+    "QUANTITY": {
+      "precision": 0.9325714285714286,
+      "recall": 0.8571428571428571,
+      "f1-score": 0.8932676518883417,
+      "support": 952
+    },
+    "UNIT_PRICE": {
+      "precision": 0.9922680412371134,
+      "recall": 0.9922680412371134,
+      "f1-score": 0.9922680412371134,
+      "support": 776
+    },
+    "VALID": {
+      "precision": 0.9903846153846154,
+      "recall": 0.9903846153846154,
+      "f1-score": 0.9903846153846154,
+      "support": 104
+    },
+    "micro avg": {
+      "precision": 0.9258807115451692,
+      "recall": 0.9104784771051277,
+      "f1-score": 0.9181150021616946,
+      "support": 5831
+    },
+    "macro avg": {
+      "precision": 0.932458860659988,
+      "recall": 0.9351189562726865,
+      "f1-score": 0.9332767132704194,
+      "support": 5831
+    },
+    "weighted avg": {
+      "precision": 0.9245672403853634,
+      "recall": 0.9104784771051277,
+      "f1-score": 0.9170133920191466,
+      "support": 5831
+    }
+  }
+}

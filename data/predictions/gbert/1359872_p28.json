@@ -1,0 +1,2169 @@
+{
+  "page_id": "1359872_p28",
+  "catalog_id": "1359872",
+  "page": 28,
+  "width": 476.22,
+  "height": 841.89,
+  "model": "gbert",
+  "labels_from": "sonnet-5",
+  "created": "2026-08-25T11:33:13",
+  "num_words": 149,
+  "num_words_predicted": 149,
+  "truncated": false,
+  "words": [
+    {
+      "i": 0,
+      "text": "+",
+      "bbox": [
+        379.68,
+        534.93,
+        402.99,
+        583.62
+      ],
+      "label": "O",
+      "confidence": 0.883
+    },
+    {
+      "i": 1,
+      "text": "-60%",
+      "bbox": [
+        411.26,
+        303.82,
+        457.28,
+        327.96
+      ],
+      "label": "B-DISCOUNT",
+      "confidence": 0.997
+    },
+    {
+      "i": 2,
+      "text": "39.99",
+      "bbox": [
+        384.85,
+        340.17,
+        446.55,
+        369.19
+      ],
+      "label": "B-PRICE",
+      "confidence": 0.9944
+    },
+    {
+      "i": 3,
+      "text": "UVP",
+      "bbox": [
+        395.03,
+        368.65,
+        411.37,
+        379.65
+      ],
+      "label": "O",
+      "confidence": 0.9682
+    },
+    {
+      "i": 4,
+      "text": "99.99",
+      "bbox": [
+        412.99,
+        368.65,
+        436.37,
+        379.65
+      ],
+      "label": "B-OLD_PRICE",
+      "confidence": 0.9713
+    },
+    {
+      "i": 5,
+      "text": "Spülschwamm",
+      "bbox": [
+        346.3,
+        749.4,
+        394.81,
+        758.44
+      ],
+      "label": "B-PRODUCT",
+      "confidence": 0.9826
+    },
+    {
+      "i": 6,
+      "text": "Original*",
+      "bbox": [
+        396.01,
+        749.4,
+        425.88,
+        758.44
+      ],
+      "label": "I-PRODUCT",
+      "confidence": 0.9918
+    },
+    {
+      "i": 7,
+      "text": "oder",
+      "bbox": [
+        427.08,
+        749.48,
+        442.44,
+        758.41
+      ],
+      "label": "O",
+      "confidence": 0.9991
+    },
+    {
+      "i": 8,
+      "text": "Staubschwamm",
+      "bbox": [
+        346.3,
+        756.9,
+        399.13,
+        765.94
+      ],
+      "label": "B-PRODUCT",
+      "confidence": 0.9692
+    },
+    {
+      "i": 9,
+      "text": "Damp",
+      "bbox": [
+        400.33,
+        756.9,
+        419.99,
+        765.94
+      ],
+      "label": "I-PRODUCT",
+      "confidence": 0.9895
+    },
+    {
+      "i": 10,
+      "text": "Duster*",
+      "bbox": [
+        421.19,
+        756.9,
+        446.3,
+        765.94
+      ],
+      "label": "I-PRODUCT",
+      "confidence": 0.9964
+    },
+    {
+      "i": 11,
+      "text": "je",
+      "bbox": [
+        346.3,
+        764.48,
+        352.46,
+        773.41
+      ],
+      "label": "O",
+      "confidence": 0.9995
+    },
+    {
+      "i": 12,
+      "text": "Stück",
+      "bbox": [
+        353.96,
+        764.48,
+        371.35,
+        773.41
+      ],
+      "label": "O",
+      "confidence": 0.9992
+    },
+    {
+      "i": 13,
+      "text": "1.99,",
+      "bbox": [
+        372.85,
+        764.48,
+        389.56,
+        773.41
+      ],
+      "label": "B-PRICE",
+      "confidence": 0.9952
+    },
+    {
+      "i": 14,
+      "text": "UVP",
+      "bbox": [
+        390.9,
+        764.48,
+        403.76,
+        773.41
+      ],
+      "label": "O",
+      "confidence": 0.9944
+    },
+    {
+      "i": 15,
+      "text": "3.99",
+      "bbox": [
+        405.26,
+        764.48,
+        419.91,
+        773.41
+      ],
+      "label": "B-OLD_PRICE",
+      "confidence": 0.9735
+    },
+    {
+      "i": 16,
+      "text": "Power",
+      "bbox": [
+        346.3,
+        771.9,
+        368.57,
+        780.94
+      ],
+      "label": "B-PRODUCT",
+      "confidence": 0.9922
+    },
+    {
+      "i": 17,
+      "text": "Paste*",
+      "bbox": [
+        370.07,
+        771.9,
+        392.32,
+        780.94
+      ],
+      "label": "I-PRODUCT",
+      "confidence": 0.9766
+    },
+    {
+      "i": 18,
+      "text": "je",
+      "bbox": [
+        346.3,
+        779.48,
+        352.46,
+        788.41
+      ],
+      "label": "O",
+      "confidence": 0.9995
+    },
+    {
+      "i": 19,
+      "text": "Set",
+      "bbox": [
+        353.96,
+        779.48,
+        364.34,
+        788.41
+      ],
+      "label": "O",
+      "confidence": 0.9987
+    },
+    {
+      "i": 20,
+      "text": "5.99,",
+      "bbox": [
+        365.84,
+        779.48,
+        382.55,
+        788.41
+      ],
+      "label": "B-PRICE",
+      "confidence": 0.995
+    },
+    {
+      "i": 21,
+      "text": "UVP",
+      "bbox": [
+        383.9,
+        779.48,
+        396.75,
+        788.41
+      ],
+      "label": "O",
+      "confidence": 0.9929
+    },
+    {
+      "i": 22,
+      "text": "9.99",
+      "bbox": [
+        398.25,
+        779.48,
+        412.91,
+        788.41
+      ],
+      "label": "B-OLD_PRICE",
+      "confidence": 0.98
+    },
+    {
+      "i": 23,
+      "text": "-46%",
+      "bbox": [
+        414.35,
+        429.21,
+        451.63,
+        448.76
+      ],
+      "label": "B-DISCOUNT",
+      "confidence": 0.9974
+    },
+    {
+      "i": 24,
+      "text": "10.99",
+      "bbox": [
+        395.38,
+        459.64,
+        440.84,
+        481.03
+      ],
+      "label": "B-PRICE",
+      "confidence": 0.9947
+    },
+    {
+      "i": 25,
+      "text": "UVP",
+      "bbox": [
+        400.88,
+        481.14,
+        414.5,
+        490.31
+      ],
+      "label": "O",
+      "confidence": 0.9854
+    },
+    {
+      "i": 26,
+      "text": "20.69",
+      "bbox": [
+        415.85,
+        481.14,
+        435.34,
+        490.31
+      ],
+      "label": "B-OLD_PRICE",
+      "confidence": 0.9717
+    },
+    {
+      "i": 27,
+      "text": "Staubfilterbeutel-Jahrespackung*",
+      "bbox": [
+        22.68,
+        467.77,
+        133.48,
+        476.81
+      ],
+      "label": "B-PRODUCT",
+      "confidence": 0.9654
+    },
+    {
+      "i": 28,
+      "text": "•",
+      "bbox": [
+        22.68,
+        475.34,
+        26.41,
+        484.28
+      ],
+      "label": "O",
+      "confidence": 0.9994
+    },
+    {
+      "i": 29,
+      "text": "Mit",
+      "bbox": [
+        27.91,
+        475.34,
+        38.12,
+        484.28
+      ],
+      "label": "O",
+      "confidence": 0.9987
+    },
+    {
+      "i": 30,
+      "text": "Antiallergenfilter",
+      "bbox": [
+        39.62,
+        475.34,
+        95.97,
+        484.28
+      ],
+      "label": "O",
+      "confidence": 0.9986
+    },
+    {
+      "i": 31,
+      "text": "•",
+      "bbox": [
+        22.68,
+        482.84,
+        26.41,
+        491.78
+      ],
+      "label": "O",
+      "confidence": 0.9993
+    },
+    {
+      "i": 32,
+      "text": "Versch.",
+      "bbox": [
+        27.71,
+        482.84,
+        50.85,
+        491.78
+      ],
+      "label": "O",
+      "confidence": 0.9336
+    },
+    {
+      "i": 33,
+      "text": "Beutelausführungen",
+      "bbox": [
+        52.19,
+        482.84,
+        119.69,
+        491.78
+      ],
+      "label": "O",
+      "confidence": 0.9594
+    },
+    {
+      "i": 34,
+      "text": "je",
+      "bbox": [
+        22.68,
+        490.34,
+        28.84,
+        499.28
+      ],
+      "label": "O",
+      "confidence": 0.9997
+    },
+    {
+      "i": 35,
+      "text": "Packung",
+      "bbox": [
+        30.34,
+        490.34,
+        58.04,
+        499.28
+      ],
+      "label": "O",
+      "confidence": 0.9992
+    },
+    {
+      "i": 36,
+      "text": "Jeweils",
+      "bbox": [
+        60.94,
+        415.96,
+        90.01,
+        426.21
+      ],
+      "label": "O",
+      "confidence": 0.9986
+    },
+    {
+      "i": 37,
+      "text": "6er-Packung",
+      "bbox": [
+        91.66,
+        415.96,
+        140.71,
+        426.21
+      ],
+      "label": "B-QUANTITY",
+      "confidence": 0.8174
+    },
+    {
+      "i": 38,
+      "text": "Inkl.",
+      "bbox": [
+        350.55,
+        511.28,
+        368.2,
+        521.52
+      ],
+      "label": "O",
+      "confidence": 0.999
+    },
+    {
+      "i": 39,
+      "text": "Schwamm",
+      "bbox": [
+        369.71,
+        511.28,
+        409.97,
+        521.52
+      ],
+      "label": "O",
+      "confidence": 0.9941
+    },
+    {
+      "i": 40,
+      "text": "Bodenstaubsauger",
+      "bbox": [
+        242.36,
+        343.64,
+        304.6,
+        352.67
+      ],
+      "label": "B-PRODUCT",
+      "confidence": 0.9889
+    },
+    {
+      "i": 41,
+      "text": "30143*",
+      "bbox": [
+        305.8,
+        343.64,
+        330.43,
+        352.67
+      ],
+      "label": "I-PRODUCT",
+      "confidence": 0.9904
+    },
+    {
+      "i": 42,
+      "text": "•",
+      "bbox": [
+        242.36,
+        351.21,
+        246.1,
+        360.14
+      ],
+      "label": "O",
+      "confidence": 0.9995
+    },
+    {
+      "i": 43,
+      "text": "Leistung",
+      "bbox": [
+        247.6,
+        351.21,
+        274.96,
+        360.14
+      ],
+      "label": "O",
+      "confidence": 0.9993
+    },
+    {
+      "i": 44,
+      "text": "bis",
+      "bbox": [
+        276.46,
+        351.21,
+        285.76,
+        360.14
+      ],
+      "label": "O",
+      "confidence": 0.9994
+    },
+    {
+      "i": 45,
+      "text": "zu",
+      "bbox": [
+        287.26,
+        351.21,
+        294.88,
+        360.14
+      ],
+      "label": "O",
+      "confidence": 0.9993
+    },
+    {
+      "i": 46,
+      "text": "800",
+      "bbox": [
+        296.38,
+        351.21,
+        308.98,
+        360.14
+      ],
+      "label": "O",
+      "confidence": 0.9982
+    },
+    {
+      "i": 47,
+      "text": "W",
+      "bbox": [
+        310.33,
+        351.21,
+        316.8,
+        360.14
+      ],
+      "label": "O",
+      "confidence": 0.9976
+    },
+    {
+      "i": 48,
+      "text": "•",
+      "bbox": [
+        242.36,
+        358.71,
+        246.1,
+        367.64
+      ],
+      "label": "O",
+      "confidence": 0.9996
+    },
+    {
+      "i": 49,
+      "text": "Bis",
+      "bbox": [
+        247.6,
+        358.71,
+        256.91,
+        367.64
+      ],
+      "label": "O",
+      "confidence": 0.9995
+    },
+    {
+      "i": 50,
+      "text": "zu",
+      "bbox": [
+        258.41,
+        358.71,
+        266.02,
+        367.64
+      ],
+      "label": "O",
+      "confidence": 0.9995
+    },
+    {
+      "i": 51,
+      "text": "15",
+      "bbox": [
+        267.52,
+        358.71,
+        275.92,
+        367.64
+      ],
+      "label": "O",
+      "confidence": 0.9986
+    },
+    {
+      "i": 52,
+      "text": "kPa",
+      "bbox": [
+        277.42,
+        358.71,
+        289.04,
+        367.64
+      ],
+      "label": "O",
+      "confidence": 0.9984
+    },
+    {
+      "i": 53,
+      "text": "Saugleistung",
+      "bbox": [
+        290.54,
+        358.71,
+        333.36,
+        367.64
+      ],
+      "label": "O",
+      "confidence": 0.9992
+    },
+    {
+      "i": 54,
+      "text": "•",
+      "bbox": [
+        242.36,
+        366.21,
+        246.1,
+        375.14
+      ],
+      "label": "O",
+      "confidence": 0.9996
+    },
+    {
+      "i": 55,
+      "text": "Stufenlose",
+      "bbox": [
+        247.6,
+        366.21,
+        282.4,
+        375.14
+      ],
+      "label": "O",
+      "confidence": 0.9991
+    },
+    {
+      "i": 56,
+      "text": "Saugregulierung",
+      "bbox": [
+        283.9,
+        366.21,
+        339.08,
+        375.14
+      ],
+      "label": "O",
+      "confidence": 0.9992
+    },
+    {
+      "i": 57,
+      "text": "•",
+      "bbox": [
+        242.36,
+        373.71,
+        246.1,
+        382.64
+      ],
+      "label": "O",
+      "confidence": 0.9997
+    },
+    {
+      "i": 58,
+      "text": "Aktionsradius",
+      "bbox": [
+        247.6,
+        373.71,
+        291.72,
+        382.64
+      ],
+      "label": "O",
+      "confidence": 0.9995
+    },
+    {
+      "i": 59,
+      "text": "ca.",
+      "bbox": [
+        293.22,
+        373.71,
+        302.36,
+        382.64
+      ],
+      "label": "O",
+      "confidence": 0.9994
+    },
+    {
+      "i": 60,
+      "text": "5,50",
+      "bbox": [
+        303.7,
+        373.71,
+        318.36,
+        382.64
+      ],
+      "label": "O",
+      "confidence": 0.9954
+    },
+    {
+      "i": 61,
+      "text": "m",
+      "bbox": [
+        319.86,
+        373.71,
+        326.4,
+        382.64
+      ],
+      "label": "O",
+      "confidence": 0.9948
+    },
+    {
+      "i": 62,
+      "text": "je",
+      "bbox": [
+        242.36,
+        381.21,
+        248.53,
+        390.14
+      ],
+      "label": "O",
+      "confidence": 0.9995
+    },
+    {
+      "i": 63,
+      "text": "Stück",
+      "bbox": [
+        250.03,
+        381.21,
+        267.41,
+        390.14
+      ],
+      "label": "O",
+      "confidence": 0.9996
+    },
+    {
+      "i": 64,
+      "text": "Inkl.",
+      "bbox": [
+        341.41,
+        132.85,
+        359.06,
+        143.09
+      ],
+      "label": "O",
+      "confidence": 0.9994
+    },
+    {
+      "i": 65,
+      "text": "2-in-1-Bodendüse,",
+      "bbox": [
+        360.65,
+        132.85,
+        433.72,
+        143.09
+      ],
+      "label": "O",
+      "confidence": 0.9782
+    },
+    {
+      "i": 66,
+      "text": "ideal",
+      "bbox": [
+        435.31,
+        132.85,
+        454.96,
+        143.09
+      ],
+      "label": "O",
+      "confidence": 0.9984
+    },
+    {
+      "i": 67,
+      "text": "für",
+      "bbox": [
+        341.41,
+        141.85,
+        352.64,
+        152.1
+      ],
+      "label": "O",
+      "confidence": 0.9983
+    },
+    {
+      "i": 68,
+      "text": "Hartböden",
+      "bbox": [
+        354.34,
+        141.85,
+        395.69,
+        152.1
+      ],
+      "label": "O",
+      "confidence": 0.9971
+    },
+    {
+      "i": 69,
+      "text": "und",
+      "bbox": [
+        397.39,
+        141.85,
+        412.5,
+        152.1
+      ],
+      "label": "O",
+      "confidence": 0.9986
+    },
+    {
+      "i": 70,
+      "text": "Teppiche",
+      "bbox": [
+        414.2,
+        141.85,
+        448.83,
+        152.1
+      ],
+      "label": "O",
+      "confidence": 0.9981
+    },
+    {
+      "i": 71,
+      "text": "Mit",
+      "bbox": [
+        341.41,
+        159.57,
+        353.97,
+        169.81
+      ],
+      "label": "O",
+      "confidence": 0.9997
+    },
+    {
+      "i": 72,
+      "text": "wiederverwend-",
+      "bbox": [
+        355.67,
+        159.57,
+        421.51,
+        169.81
+      ],
+      "label": "O",
+      "confidence": 0.9997
+    },
+    {
+      "i": 73,
+      "text": "barem",
+      "bbox": [
+        341.41,
+        168.57,
+        366.59,
+        178.81
+      ],
+      "label": "O",
+      "confidence": 0.9991
+    },
+    {
+      "i": 74,
+      "text": "Staubbeutel",
+      "bbox": [
+        368.29,
+        168.57,
+        415.55,
+        178.81
+      ],
+      "label": "O",
+      "confidence": 0.9976
+    },
+    {
+      "i": 75,
+      "text": "Aktion",
+      "bbox": [
+        415.16,
+        679.7,
+        450.82,
+        693.75
+      ],
+      "label": "O",
+      "confidence": 0.9998
+    },
+    {
+      "i": 76,
+      "text": "1.99",
+      "bbox": [
+        395.86,
+        704.82,
+        440.36,
+        731.7
+      ],
+      "label": "B-PRICE",
+      "confidence": 0.9098
+    },
+    {
+      "i": 77,
+      "text": "Reinigungshelfer",
+      "bbox": [
+        22.68,
+        734.4,
+        79.74,
+        743.44
+      ],
+      "label": "B-PRODUCT",
+      "confidence": 0.9834
+    },
+    {
+      "i": 78,
+      "text": "GLITZER",
+      "bbox": [
+        22.68,
+        741.9,
+        47.43,
+        750.94
+      ],
+      "label": "I-PRODUCT",
+      "confidence": 0.6092
+    },
+    {
+      "i": 79,
+      "text": "LIMITED",
+      "bbox": [
+        48.63,
+        741.9,
+        73.72,
+        750.94
+      ],
+      "label": "I-PRODUCT",
+      "confidence": 0.7771
+    },
+    {
+      "i": 80,
+      "text": "EDITION*",
+      "bbox": [
+        74.92,
+        741.9,
+        104.3,
+        750.94
+      ],
+      "label": "I-PRODUCT",
+      "confidence": 0.7987
+    },
+    {
+      "i": 81,
+      "text": "•",
+      "bbox": [
+        22.68,
+        749.48,
+        26.41,
+        758.41
+      ],
+      "label": "O",
+      "confidence": 0.9975
+    },
+    {
+      "i": 82,
+      "text": "Bodenwischer-Starter-Set,",
+      "bbox": [
+        27.91,
+        749.48,
+        114.42,
+        758.41
+      ],
+      "label": "B-PRODUCT",
+      "confidence": 0.8974
+    },
+    {
+      "i": 83,
+      "text": "je",
+      "bbox": [
+        115.76,
+        749.48,
+        121.92,
+        758.41
+      ],
+      "label": "O",
+      "confidence": 0.998
+    },
+    {
+      "i": 84,
+      "text": "Set",
+      "bbox": [
+        123.42,
+        749.48,
+        133.8,
+        758.41
+      ],
+      "label": "O",
+      "confidence": 0.9945
+    },
+    {
+      "i": 85,
+      "text": "12.99",
+      "bbox": [
+        135.3,
+        749.48,
+        154.16,
+        758.41
+      ],
+      "label": "B-PRICE",
+      "confidence": 0.9564
+    },
+    {
+      "i": 86,
+      "text": "•",
+      "bbox": [
+        22.68,
+        756.98,
+        26.41,
+        765.91
+      ],
+      "label": "O",
+      "confidence": 0.9984
+    },
+    {
+      "i": 87,
+      "text": "Staubmagnet-Starter-Set",
+      "bbox": [
+        27.91,
+        756.98,
+        109.92,
+        765.91
+      ],
+      "label": "B-PRODUCT",
+      "confidence": 0.736
+    },
+    {
+      "i": 88,
+      "text": "•",
+      "bbox": [
+        22.68,
+        764.48,
+        26.41,
+        773.41
+      ],
+      "label": "O",
+      "confidence": 0.9988
+    },
+    {
+      "i": 89,
+      "text": "9er-Packung",
+      "bbox": [
+        27.91,
+        764.48,
+        69.19,
+        773.41
+      ],
+      "label": "B-QUANTITY",
+      "confidence": 0.6625
+    },
+    {
+      "i": 90,
+      "text": "Staubmagnet",
+      "bbox": [
+        70.69,
+        764.48,
+        115.02,
+        773.41
+      ],
+      "label": "B-PRODUCT",
+      "confidence": 0.5368
+    },
+    {
+      "i": 91,
+      "text": "Ersatztücher",
+      "bbox": [
+        116.52,
+        764.48,
+        156.56,
+        773.41
+      ],
+      "label": "I-PRODUCT",
+      "confidence": 0.9502
+    },
+    {
+      "i": 92,
+      "text": "oder",
+      "bbox": [
+        158.06,
+        764.48,
+        173.42,
+        773.41
+      ],
+      "label": "O",
+      "confidence": 0.9993
+    },
+    {
+      "i": 93,
+      "text": "•",
+      "bbox": [
+        22.68,
+        771.98,
+        26.41,
+        780.91
+      ],
+      "label": "O",
+      "confidence": 0.9991
+    },
+    {
+      "i": 94,
+      "text": "36er-Packung",
+      "bbox": [
+        27.91,
+        771.98,
+        73.39,
+        780.91
+      ],
+      "label": "B-QUANTITY",
+      "confidence": 0.7397
+    },
+    {
+      "i": 95,
+      "text": "trockene",
+      "bbox": [
+        74.89,
+        771.98,
+        103.74,
+        780.91
+      ],
+      "label": "B-PRODUCT",
+      "confidence": 0.4862
+    },
+    {
+      "i": 96,
+      "text": "Bodenwischtücher,",
+      "bbox": [
+        105.24,
+        771.98,
+        167.72,
+        780.91
+      ],
+      "label": "I-PRODUCT",
+      "confidence": 0.922
+    },
+    {
+      "i": 97,
+      "text": "je",
+      "bbox": [
+        27.91,
+        779.48,
+        34.08,
+        788.41
+      ],
+      "label": "O",
+      "confidence": 0.9992
+    },
+    {
+      "i": 98,
+      "text": "Set/Packung",
+      "bbox": [
+        35.58,
+        779.48,
+        76.65,
+        788.41
+      ],
+      "label": "O",
+      "confidence": 0.9932
+    },
+    {
+      "i": 99,
+      "text": "5.99",
+      "bbox": [
+        78.15,
+        779.48,
+        92.81,
+        788.41
+      ],
+      "label": "B-PRICE",
+      "confidence": 0.9919
+    },
+    {
+      "i": 100,
+      "text": "Inkl.",
+      "bbox": [
+        274.14,
+        533.11,
+        291.79,
+        543.35
+      ],
+      "label": "O",
+      "confidence": 0.999
+    },
+    {
+      "i": 101,
+      "text": "8",
+      "bbox": [
+        293.49,
+        533.11,
+        298.39,
+        543.35
+      ],
+      "label": "O",
+      "confidence": 0.8426
+    },
+    {
+      "i": 102,
+      "text": "Tüchern",
+      "bbox": [
+        300.09,
+        533.11,
+        330.48,
+        543.35
+      ],
+      "label": "O",
+      "confidence": 0.9066
+    },
+    {
+      "i": 103,
+      "text": "Inkl.",
+      "bbox": [
+        63.12,
+        525.99,
+        80.76,
+        536.24
+      ],
+      "label": "O",
+      "confidence": 0.9993
+    },
+    {
+      "i": 104,
+      "text": "7",
+      "bbox": [
+        82.46,
+        525.99,
+        87.37,
+        536.24
+      ],
+      "label": "O",
+      "confidence": 0.8241
+    },
+    {
+      "i": 105,
+      "text": "Tüchern",
+      "bbox": [
+        63.12,
+        535.0,
+        93.5,
+        545.24
+      ],
+      "label": "O",
+      "confidence": 0.8369
+    },
+    {
+      "i": 106,
+      "text": "36er-MAXIPACK",
+      "bbox": [
+        50.17,
+        670.46,
+        110.84,
+        680.7
+      ],
+      "label": "O",
+      "confidence": 0.806
+    },
+    {
+      "i": 107,
+      "text": "9er-MAXIPACK",
+      "bbox": [
+        252.17,
+        686.94,
+        308.04,
+        697.18
+      ],
+      "label": "O",
+      "confidence": 0.6996
+    },
+    {
+      "i": 108,
+      "text": "Aktion",
+      "bbox": [
+        296.58,
+        721.0,
+        332.24,
+        735.05
+      ],
+      "label": "O",
+      "confidence": 0.9998
+    },
+    {
+      "i": 109,
+      "text": "5.99",
+      "bbox": [
+        277.27,
+        746.12,
+        321.78,
+        773.0
+      ],
+      "label": "B-PRICE",
+      "confidence": 0.9489
+    },
+    {
+      "i": 110,
+      "text": "Ab",
+      "bbox": [
+        199.9,
+        14.05,
+        217.21,
+        30.92
+      ],
+      "label": "B-VALID",
+      "confidence": 0.977
+    },
+    {
+      "i": 111,
+      "text": "Do,",
+      "bbox": [
+        220.01,
+        14.05,
+        241.29,
+        30.92
+      ],
+      "label": "I-VALID",
+      "confidence": 0.928
+    },
+    {
+      "i": 112,
+      "text": "20.8.",
+      "bbox": [
+        244.09,
+        14.05,
+        276.33,
+        30.92
+      ],
+      "label": "I-VALID",
+      "confidence": 0.9925
+    },
+    {
+      "i": 113,
+      "text": "22_01-11-14",
+      "bbox": [
+        5.05,
+        762.91,
+        12.19,
+        796.77
+      ],
+      "label": "O",
+      "confidence": 0.9984
+    },
+    {
+      "i": 114,
+      "text": "*",
+      "bbox": [
+        17.01,
+        818.73,
+        20.5,
+        827.07
+      ],
+      "label": "O",
+      "confidence": 0.999
+    },
+    {
+      "i": 115,
+      "text": "Dieser",
+      "bbox": [
+        22.04,
+        818.73,
+        41.75,
+        827.07
+      ],
+      "label": "O",
+      "confidence": 0.9998
+    },
+    {
+      "i": 116,
+      "text": "Artikel",
+      "bbox": [
+        43.29,
+        818.73,
+        63.86,
+        827.07
+      ],
+      "label": "O",
+      "confidence": 0.9998
+    },
+    {
+      "i": 117,
+      "text": "ist",
+      "bbox": [
+        65.4,
+        818.73,
+        72.56,
+        827.07
+      ],
+      "label": "O",
+      "confidence": 0.9998
+    },
+    {
+      "i": 118,
+      "text": "ggf.",
+      "bbox": [
+        74.1,
+        818.73,
+        86.38,
+        827.07
+      ],
+      "label": "O",
+      "confidence": 0.9998
+    },
+    {
+      "i": 119,
+      "text": "nicht",
+      "bbox": [
+        87.77,
+        818.73,
+        103.13,
+        827.07
+      ],
+      "label": "O",
+      "confidence": 0.9998
+    },
+    {
+      "i": 120,
+      "text": "in",
+      "bbox": [
+        104.67,
+        818.73,
+        110.59,
+        827.07
+      ],
+      "label": "O",
+      "confidence": 0.9998
+    },
+    {
+      "i": 121,
+      "text": "allen",
+      "bbox": [
+        112.13,
+        818.73,
+        127.91,
+        827.07
+      ],
+      "label": "O",
+      "confidence": 0.9999
+    },
+    {
+      "i": 122,
+      "text": "Filialen",
+      "bbox": [
+        129.45,
+        818.73,
+        152.48,
+        827.07
+      ],
+      "label": "O",
+      "confidence": 0.9999
+    },
+    {
+      "i": 123,
+      "text": "erhältlich.",
+      "bbox": [
+        154.02,
+        818.73,
+        185.72,
+        827.07
+      ],
+      "label": "O",
+      "confidence": 0.9999
+    },
+    {
+      "i": 124,
+      "text": "Aufgrund",
+      "bbox": [
+        187.11,
+        818.73,
+        216.14,
+        827.07
+      ],
+      "label": "O",
+      "confidence": 0.9998
+    },
+    {
+      "i": 125,
+      "text": "begrenzter",
+      "bbox": [
+        217.68,
+        818.73,
+        252.17,
+        827.07
+      ],
+      "label": "O",
+      "confidence": 0.9998
+    },
+    {
+      "i": 126,
+      "text": "Vorratsmengen",
+      "bbox": [
+        253.52,
+        818.73,
+        301.49,
+        827.07
+      ],
+      "label": "O",
+      "confidence": 0.9998
+    },
+    {
+      "i": 127,
+      "text": "kann",
+      "bbox": [
+        303.03,
+        818.73,
+        318.43,
+        827.07
+      ],
+      "label": "O",
+      "confidence": 0.9998
+    },
+    {
+      "i": 128,
+      "text": "der",
+      "bbox": [
+        319.97,
+        818.73,
+        330.43,
+        827.07
+      ],
+      "label": "O",
+      "confidence": 0.9998
+    },
+    {
+      "i": 129,
+      "text": "Artikel",
+      "bbox": [
+        331.97,
+        818.73,
+        352.54,
+        827.07
+      ],
+      "label": "O",
+      "confidence": 0.9998
+    },
+    {
+      "i": 130,
+      "text": "bereits",
+      "bbox": [
+        354.08,
+        818.73,
+        375.63,
+        827.07
+      ],
+      "label": "O",
+      "confidence": 0.9998
+    },
+    {
+      "i": 131,
+      "text": "kurz",
+      "bbox": [
+        377.17,
+        818.73,
+        390.51,
+        827.07
+      ],
+      "label": "O",
+      "confidence": 0.9998
+    },
+    {
+      "i": 132,
+      "text": "nach",
+      "bbox": [
+        392.05,
+        818.73,
+        406.82,
+        827.07
+      ],
+      "label": "O",
+      "confidence": 0.9998
+    },
+    {
+      "i": 133,
+      "text": "Öffnung",
+      "bbox": [
+        408.36,
+        818.73,
+        433.75,
+        827.07
+      ],
+      "label": "O",
+      "confidence": 0.9999
+    },
+    {
+      "i": 134,
+      "text": "ausverkauft",
+      "bbox": [
+        22.04,
+        826.73,
+        58.83,
+        835.07
+      ],
+      "label": "O",
+      "confidence": 0.9999
+    },
+    {
+      "i": 135,
+      "text": "sein.",
+      "bbox": [
+        60.37,
+        826.73,
+        75.09,
+        835.07
+      ],
+      "label": "O",
+      "confidence": 0.9998
+    },
+    {
+      "i": 136,
+      "text": "Die",
+      "bbox": [
+        76.49,
+        826.73,
+        86.84,
+        835.07
+      ],
+      "label": "O",
+      "confidence": 0.9998
+    },
+    {
+      "i": 137,
+      "text": "Abgabe",
+      "bbox": [
+        88.38,
+        826.73,
+        112.16,
+        835.07
+      ],
+      "label": "O",
+      "confidence": 0.9999
+    },
+    {
+      "i": 138,
+      "text": "erfolgt",
+      "bbox": [
+        113.7,
+        826.73,
+        135.15,
+        835.07
+      ],
+      "label": "O",
+      "confidence": 0.9999
+    },
+    {
+      "i": 139,
+      "text": "nur",
+      "bbox": [
+        136.69,
+        826.73,
+        147.24,
+        835.07
+      ],
+      "label": "O",
+      "confidence": 0.9999
+    },
+    {
+      "i": 140,
+      "text": "in",
+      "bbox": [
+        148.78,
+        826.73,
+        154.7,
+        835.07
+      ],
+      "label": "O",
+      "confidence": 0.9998
+    },
+    {
+      "i": 141,
+      "text": "haushaltsüblichen",
+      "bbox": [
+        156.24,
+        826.73,
+        213.18,
+        835.07
+      ],
+      "label": "O",
+      "confidence": 0.9999
+    },
+    {
+      "i": 142,
+      "text": "Mengen.",
+      "bbox": [
+        214.72,
+        826.73,
+        242.02,
+        835.07
+      ],
+      "label": "O",
+      "confidence": 0.9999
+    },
+    {
+      "i": 143,
+      "text": "Alle",
+      "bbox": [
+        243.42,
+        826.73,
+        255.33,
+        835.07
+      ],
+      "label": "O",
+      "confidence": 0.9998
+    },
+    {
+      "i": 144,
+      "text": "Preise",
+      "bbox": [
+        256.87,
+        826.73,
+        275.74,
+        835.07
+      ],
+      "label": "O",
+      "confidence": 0.9998
+    },
+    {
+      "i": 145,
+      "text": "ohne",
+      "bbox": [
+        277.28,
+        826.73,
+        293.32,
+        835.07
+      ],
+      "label": "O",
+      "confidence": 0.9998
+    },
+    {
+      "i": 146,
+      "text": "Deko.",
+      "bbox": [
+        294.86,
+        826.73,
+        312.92,
+        835.07
+      ],
+      "label": "O",
+      "confidence": 0.9998
+    },
+    {
+      "i": 147,
+      "text": "Druckfehler",
+      "bbox": [
+        314.31,
+        826.73,
+        350.84,
+        835.07
+      ],
+      "label": "O",
+      "confidence": 0.9998
+    },
+    {
+      "i": 148,
+      "text": "vorbehalten.",
+      "bbox": [
+        352.38,
+        826.73,
+        392.63,
+        835.07
+      ],
+      "label": "O",
+      "confidence": 0.9998
+    }
+  ],
+  "entities": [
+    {
+      "label": "DISCOUNT",
+      "start": 1,
+      "end": 2,
+      "text": "-60%",
+      "bbox": [
+        411.26,
+        303.82,
+        457.28,
+        327.96
+      ],
+      "confidence": 0.997
+    },
+    {
+      "label": "PRICE",
+      "start": 2,
+      "end": 3,
+      "text": "39.99",
+      "bbox": [
+        384.85,
+        340.17,
+        446.55,
+        369.19
+      ],
+      "confidence": 0.9944
+    },
+    {
+      "label": "OLD_PRICE",
+      "start": 4,
+      "end": 5,
+      "text": "99.99",
+      "bbox": [
+        412.99,
+        368.65,
+        436.37,
+        379.65
+      ],
+      "confidence": 0.9713
+    },
+    {
+      "label": "PRODUCT",
+      "start": 5,
+      "end": 7,
+      "text": "Spülschwamm Original*",
+      "bbox": [
+        346.3,
+        749.4,
+        425.88,
+        758.44
+      ],
+      "confidence": 0.9872
+    },
+    {
+      "label": "PRODUCT",
+      "start": 8,
+      "end": 11,
+      "text": "Staubschwamm Damp Duster*",
+      "bbox": [
+        346.3,
+        756.9,
+        446.3,
+        765.94
+      ],
+      "confidence": 0.985
+    },
+    {
+      "label": "PRICE",
+      "start": 13,
+      "end": 14,
+      "text": "1.99,",
+      "bbox": [
+        372.85,
+        764.48,
+        389.56,
+        773.41
+      ],
+      "confidence": 0.9952
+    },
+    {
+      "label": "OLD_PRICE",
+      "start": 15,
+      "end": 16,
+      "text": "3.99",
+      "bbox": [
+        405.26,
+        764.48,
+        419.91,
+        773.41
+      ],
+      "confidence": 0.9735
+    },
+    {
+      "label": "PRODUCT",
+      "start": 16,
+      "end": 18,
+      "text": "Power Paste*",
+      "bbox": [
+        346.3,
+        771.9,
+        392.32,
+        780.94
+      ],
+      "confidence": 0.9844
+    },
+    {
+      "label": "PRICE",
+      "start": 20,
+      "end": 21,
+      "text": "5.99,",
+      "bbox": [
+        365.84,
+        779.48,
+        382.55,
+        788.41
+      ],
+      "confidence": 0.995
+    },
+    {
+      "label": "OLD_PRICE",
+      "start": 22,
+      "end": 23,
+      "text": "9.99",
+      "bbox": [
+        398.25,
+        779.48,
+        412.91,
+        788.41
+      ],
+      "confidence": 0.98
+    },
+    {
+      "label": "DISCOUNT",
+      "start": 23,
+      "end": 24,
+      "text": "-46%",
+      "bbox": [
+        414.35,
+        429.21,
+        451.63,
+        448.76
+      ],
+      "confidence": 0.9974
+    },
+    {
+      "label": "PRICE",
+      "start": 24,
+      "end": 25,
+      "text": "10.99",
+      "bbox": [
+        395.38,
+        459.64,
+        440.84,
+        481.03
+      ],
+      "confidence": 0.9947
+    },
+    {
+      "label": "OLD_PRICE",
+      "start": 26,
+      "end": 27,
+      "text": "20.69",
+      "bbox": [
+        415.85,
+        481.14,
+        435.34,
+        490.31
+      ],
+      "confidence": 0.9717
+    },
+    {
+      "label": "PRODUCT",
+      "start": 27,
+      "end": 28,
+      "text": "Staubfilterbeutel-Jahrespackung*",
+      "bbox": [
+        22.68,
+        467.77,
+        133.48,
+        476.81
+      ],
+      "confidence": 0.9654
+    },
+    {
+      "label": "QUANTITY",
+      "start": 37,
+      "end": 38,
+      "text": "6er-Packung",
+      "bbox": [
+        91.66,
+        415.96,
+        140.71,
+        426.21
+      ],
+      "confidence": 0.8174
+    },
+    {
+      "label": "PRODUCT",
+      "start": 40,
+      "end": 42,
+      "text": "Bodenstaubsauger 30143*",
+      "bbox": [
+        242.36,
+        343.64,
+        330.43,
+        352.67
+      ],
+      "confidence": 0.9896
+    },
+    {
+      "label": "PRICE",
+      "start": 76,
+      "end": 77,
+      "text": "1.99",
+      "bbox": [
+        395.86,
+        704.82,
+        440.36,
+        731.7
+      ],
+      "confidence": 0.9098
+    },
+    {
+      "label": "PRODUCT",
+      "start": 77,
+      "end": 81,
+      "text": "Reinigungshelfer GLITZER LIMITED EDITION*",
+      "bbox": [
+        22.68,
+        734.4,
+        104.3,
+        750.94
+      ],
+      "confidence": 0.7921
+    },
+    {
+      "label": "PRODUCT",
+      "start": 82,
+      "end": 83,
+      "text": "Bodenwischer-Starter-Set,",
+      "bbox": [
+        27.91,
+        749.48,
+        114.42,
+        758.41
+      ],
+      "confidence": 0.8974
+    },
+    {
+      "label": "PRICE",
+      "start": 85,
+      "end": 86,
+      "text": "12.99",
+      "bbox": [
+        135.3,
+        749.48,
+        154.16,
+        758.41
+      ],
+      "confidence": 0.9564
+    },
+    {
+      "label": "PRODUCT",
+      "start": 87,
+      "end": 88,
+      "text": "Staubmagnet-Starter-Set",
+      "bbox": [
+        27.91,
+        756.98,
+        109.92,
+        765.91
+      ],
+      "confidence": 0.736
+    },
+    {
+      "label": "QUANTITY",
+      "start": 89,
+      "end": 90,
+      "text": "9er-Packung",
+      "bbox": [
+        27.91,
+        764.48,
+        69.19,
+        773.41
+      ],
+      "confidence": 0.6625
+    },
+    {
+      "label": "PRODUCT",
+      "start": 90,
+      "end": 92,
+      "text": "Staubmagnet Ersatztücher",
+      "bbox": [
+        70.69,
+        764.48,
+        156.56,
+        773.41
+      ],
+      "confidence": 0.7435
+    },
+    {
+      "label": "QUANTITY",
+      "start": 94,
+      "end": 95,
+      "text": "36er-Packung",
+      "bbox": [
+        27.91,
+        771.98,
+        73.39,
+        780.91
+      ],
+      "confidence": 0.7397
+    },
+    {
+      "label": "PRODUCT",
+      "start": 95,
+      "end": 97,
+      "text": "trockene Bodenwischtücher,",
+      "bbox": [
+        74.89,
+        771.98,
+        167.72,
+        780.91
+      ],
+      "confidence": 0.7041
+    },
+    {
+      "label": "PRICE",
+      "start": 99,
+      "end": 100,
+      "text": "5.99",
+      "bbox": [
+        78.15,
+        779.48,
+        92.81,
+        788.41
+      ],
+      "confidence": 0.9919
+    },
+    {
+      "label": "PRICE",
+      "start": 109,
+      "end": 110,
+      "text": "5.99",
+      "bbox": [
+        277.27,
+        746.12,
+        321.78,
+        773.0
+      ],
+      "confidence": 0.9489
+    },
+    {
+      "label": "VALID",
+      "start": 110,
+      "end": 113,
+      "text": "Ab Do, 20.8.",
+      "bbox": [
+        199.9,
+        14.05,
+        276.33,
+        30.92
+      ],
+      "confidence": 0.9658
+    }
+  ]
+}
