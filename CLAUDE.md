@@ -485,6 +485,22 @@ eine Liste auszugeben.
   GBERT, und *innerhalb* dieser Differenz ist der Layout-Anteil null.
   Ein Lauf je Arm, keine Seed-Streuung gemessen. Details:
   `reports/woche-06.md`.
+- **Der Bildgewinn ist ein Zuordnungs-, kein Erkennungsgewinn** – ablesbar an
+  den Matching-Schemata, die `magda eval` ohnehin mitschreibt. Er schrumpft
+  mit jeder Lockerung des Schemas: strict +0.0096, exact +0.0079, partial
+  +0.0043, type +0.0021. In MUC-Zählungen von GBERT zu LayoutXLM: zehn
+  übersehene Entities weniger (313 → 303), aber **69 Zuordnungsfehler weniger**
+  (272 → 203). Der Typfehleranteil halbiert sich (0.0046 → 0.0022), der
+  Grenzfehleranteil sinkt um ein Fünftel (0.0207 → 0.0161).
+  Das erklärt beide Hälften des Befunds: PRODUCT leidet an Grenzfehlern
+  (Sortenzusätze – die offene Teamfrage), BRAND an Typfehlern (Marke oder
+  Produktname), und beides entscheidet die Stellung auf der Kachel. Und es
+  erklärt, warum Wortkoordinaten nichts beitragen: `bbox` sagt, *wo* ein Wort
+  steht, nicht *wie es gesetzt ist* – Schriftgröße und Fettung stehen im Bild,
+  und selbst 49 grobe Bildkacheln übertragen davon genug.
+  **Wer die vier Schemata berichtet, nennt dazu, welches die Primärzahl ist**:
+  `strict` (Span und Typ exakt) ist es, alle anderen sind nachsichtiger und
+  ergeben höhere Werte für dieselbe Ausgabe.
 - **APP_PRICE wird vom Seitenbild nicht gelöst – gegenteilig belegt.** Der
   rein visuelle Fall ist genau der, bei dem LayoutXLM *verliert*: 0.882 gegen
   LiLTs 0.906, das ohne Bild arbeitet. Der Grund steht schon in der

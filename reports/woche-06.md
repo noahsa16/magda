@@ -196,6 +196,53 @@ Feine lokale Farbe liefert er nicht.
 VALID (−0.076 bei 114 Instanzen) ist zu dünn für eine Deutung; eine einzelne
 Instanz bewegt dort 0.9 Punkte.
 
+### Der Gewinn ist kein Erkennungsgewinn
+
+`magda eval` misst zusätzlich in den vier Matching-Schemata von SemEval-2013
+Task 9.1 (MUC-5-Zählweise). Sie unterscheiden, *woran* ein Treffer scheitert,
+und der Bildgewinn schrumpft mit jeder Lockerung:
+
+| Schema | zählt als Treffer | gbert | xlmr | lilt | layoutxlm | Bildschritt |
+|---|---|---:|---:|---:|---:|---:|
+| strict | Span **und** Typ exakt | 0.9084 | 0.9143 | 0.9140 | 0.9236 | **+0.0096** |
+| exact | Span exakt, Typ egal | 0.9130 | 0.9180 | 0.9179 | 0.9258 | +0.0079 |
+| partial | Span überlappt | 0.9337 | 0.9386 | 0.9376 | 0.9419 | +0.0043 |
+| type | Typ + Überlappung | 0.9477 | 0.9540 | 0.9521 | 0.9542 | **+0.0021** |
+
+Als Fehlerarten gelesen — jede Zeile ist die Differenz zweier Schemata:
+
+| | gbert | xlmr | lilt | layoutxlm |
+|---|---:|---:|---:|---:|
+| Typfehler (`exact − strict`) | 0.0046 | 0.0037 | 0.0039 | **0.0022** |
+| Grenzfehler (`partial − exact`) | 0.0207 | 0.0206 | 0.0197 | **0.0161** |
+| gar nicht gefunden (`1 − type`) | 0.0523 | 0.0460 | 0.0479 | 0.0458 |
+
+Die MUC-Zählungen sagen dasselbe direkt. Von GBERT zu LayoutXLM:
+
+| | gbert | layoutxlm | |
+|---|---:|---:|---:|
+| korrekt | 5388 | 5467 | +79 |
+| falscher Typ / Span | 272 | 203 | **−69** |
+| übersehen | 313 | 303 | −10 |
+| erfunden | 229 | 195 | −34 |
+
+**LayoutXLM findet nicht mehr Entities — es ordnet sie richtiger zu.** Zehn
+übersehene Entities weniger stehen 69 Zuordnungsfehlern weniger gegenüber. Der
+Typfehleranteil ist praktisch halbiert, der Grenzfehleranteil um ein Fünftel
+gesunken.
+
+Das ist die mechanistische Bestätigung des Label-Befunds. Die beiden Gewinner
+sind PRODUCT und BRAND, und deren dokumentierte Fehlermodi sind genau diese
+zwei: PRODUCT leidet an **Grenzfehlern** (wo endet der Produktname, gehört der
+Sortenzusatz dazu — die offene Teamfrage), BRAND an **Typfehlern** (ist
+„BÄCKERKRÖNUNG" Marke oder Produktname). Beides entscheidet die Stellung auf
+der Kachel: fett in der Kopfzeile oder klein in der Beschreibung.
+
+Und es erklärt, warum LiLT nichts beiträgt. Wortkoordinaten sagen, *wo* ein
+Wort steht, aber nicht, *wie es gesetzt ist*. Der Unterschied zwischen
+Markenzeile und Beschreibungszeile ist Schriftgröße und Fettung — im Bild
+sichtbar, in `bbox` nicht. Selbst 49 grobe Bildkacheln übertragen davon genug.
+
 ## Was es kostet
 
 Die Projektfrage ist Kosten, nicht Perfektion.
