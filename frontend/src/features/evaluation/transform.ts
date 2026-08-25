@@ -41,9 +41,62 @@ export function variantLabel(variant: string): string {
   return VARIANT_LABELS[variant] ?? variant
 }
 
+/**
+ * Reports, die nur einen Teil der Labels messen – nicht vergleichbar.
+ *
+ * `flair_llm_test.json` traegt `variant` und `report` und kommt deshalb durch
+ * die Formpruefung von `/api/evaluation`. Sein micro-F1 gilt aber nur fuer
+ * BRAND (0.281 ueber 24 Instanzen), weil `flair/ner-german-large` von unseren
+ * acht Labels nur dieses eine kennt. Als Spalte neben den vier Armen gelesen
+ * waere das ein katastrophal schlechtes Modell statt einer Antwort auf eine
+ * andere Frage.
+ *
+ * Die alte, fest zweispaltige Seite hat das aus Versehen verdeckt. Eine Seite,
+ * die alle gefundenen Arme zeigt, muss es ausdruecklich tun.
+ */
+export function restrictedArms(
+  reports: EvalReport[],
+): { variant: string; labels: string[] }[] {
+  return reports
+    .filter((r) => r.restricted_to?.length)
+    .map((r) => ({ variant: r.variant, labels: r.restricted_to as string[] }))
+}
+
+/**
+ * Reports genau eines Splits – der Testsplit, wenn es ihn gibt.
+ *
+ * `data/eval/` ist ein Archiv: dort liegen Reports mehrerer Splits und
+ * mehrerer Läufe nebeneinander. Belegter Fall (25.08.2026): drei Dateien mit
+ * `variant: "gbert"` – der Testlauf über 116 Seiten sowie zwei Dev-Reports
+ * über je 21 Seiten aus einem früheren Split. `perEntityRows` schreibt alle
+ * in dieselbe Spalte, und welcher gewinnt, entschied die Reihenfolge der
+ * Dateinamen.
+ *
+ * Der Testsplit hat Vorrang, weil er die berichtete Zahl trägt. Kommt eine
+ * Variante darin trotzdem doppelt vor (zwei Läufe, gleicher Split), gewinnt
+ * der jüngere – nachvollziehbar statt alphabetisch.
+ */
+export function reportsOfOneSplit(reports: EvalReport[]): EvalReport[] {
+  if (reports.length === 0) return []
+  const splits = new Map<string, number>()
+  for (const r of reports) splits.set(r.split, (splits.get(r.split) ?? 0) + 1)
+  const gewaehlt = splits.has("test")
+    ? "test"
+    : [...splits.entries()].sort((a, b) => b[1] - a[1])[0][0]
+
+  const neuester = new Map<string, EvalReport>()
+  for (const r of reports.filter((r) => r.split === gewaehlt)) {
+    const bisher = neuester.get(r.variant)
+    if (!bisher || r.created > bisher.created) neuester.set(r.variant, r)
+  }
+  return [...neuester.values()]
+}
+
 /** Welche Arme wirklich ausgewertet sind, in Kettenreihenfolge. */
 export function variantsOf(reports: EvalReport[]): string[] {
-  const found = [...new Set(reports.map((r) => r.variant))]
+  const found = [...new Set(
+    reports.filter((r) => !r.restricted_to?.length).map((r) => r.variant),
+  )]
   const known = VARIANT_ORDER.filter((v) => found.includes(v))
   const unknown = found.filter((v) => !VARIANT_ORDER.includes(v)).sort()
   return [...known, ...unknown]

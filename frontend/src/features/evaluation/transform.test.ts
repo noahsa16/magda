@@ -2,7 +2,8 @@ import { describe, expect, it } from "vitest"
 import type { EvalReport, SchemeCounts, SignificanceReport } from "@/lib/types"
 import {
   errorComposition, hasProtocol, overallF1, perEntityRows, reportOf,
-  schemeRows, significanceFor, sortRows, variantPairs, variantsOf,
+  restrictedArms, reportsOfOneSplit, schemeRows, significanceFor, sortRows,
+  variantPairs, variantsOf,
 } from "./transform"
 
 const metrics = (f1: number, support = 10) => ({
@@ -35,6 +36,37 @@ const VIER: EvalReport[] = [
 ]
 
 describe("variantsOf", () => {
+  it("laesst eingeschraenkte Vergleichsarme aus dem Vergleich heraus", () => {
+    // `flair_llm_test.json` traegt `variant` und `report` und kommt deshalb
+    // durch die Formpruefung der API. Sein micro-F1 ist aber auf BRAND
+    // beschraenkt (0.281 ueber 24 Instanzen) - als fuenfte Spalte neben den
+    // vier Armen gelesen waere das ein katastrophal schlechtes Modell statt
+    // einer Antwort auf eine andere Frage. Solange die Spalte die
+    // Einschraenkung nicht mitfuehrt, gehoert sie nicht in die Tabelle.
+    const mitFlair: EvalReport[] = [
+      ...REPORTS,
+      {
+        variant: "flair", split: "test", num_pages: 116, created: "2026-08-02T12:00:00",
+        restricted_to: ["BRAND"],
+        report: { BRAND: metrics(0.28), "micro avg": metrics(0.28, 24) },
+      },
+    ]
+
+    expect(variantsOf(mitFlair)).toEqual(["gbert", "layoutxlm"])
+  })
+
+  it("nennt eingeschraenkte Arme trotzdem, damit sie nicht verschwinden", () => {
+    const flair: EvalReport = {
+      variant: "flair", split: "test", num_pages: 116, created: "2026-08-02T12:00:00",
+      restricted_to: ["BRAND"],
+      report: { BRAND: metrics(0.28) },
+    }
+
+    expect(restrictedArms([...REPORTS, flair])).toEqual([
+      { variant: "flair", labels: ["BRAND"] },
+    ])
+  })
+
   it("ordnet die Arme entlang der Ablationskette, nicht alphabetisch", () => {
     // xlmr -> lilt -> layoutxlm ist die Kette, in der jeder Schritt genau eine
     // Zutat hinzufuegt. Alphabetisch stuende layoutxlm vor lilt vor xlmr und
@@ -242,5 +274,40 @@ describe("sortRows nach Variante", () => {
     // sonst liest sich "nicht gemessen" wie "bester Wert".
     expect(sortRows(ROWS, "lilt", true).at(-1)?.entity).toBe("PRICE")
     expect(sortRows(ROWS, "lilt", false).at(-1)?.entity).toBe("PRICE")
+  })
+})
+
+
+describe("reportsOfOneSplit", () => {
+  // Belegter Fall (25.08.2026): in data/eval/ lagen drei Reports mit
+  // variant "gbert" - gbert_test.json (116 Seiten) sowie gbert_dev.json und
+  // gbert-sonnet-5-app_dev.json aus einem frueheren Lauf (je 21 Seiten).
+  // perEntityRows schreibt sie alle in dieselbe Spalte; welcher gewinnt,
+  // entschied die Reihenfolge der Dateien.
+  const gemischt: EvalReport[] = [
+    { variant: "gbert", split: "dev", num_pages: 21, created: "2026-08-02T10:00:00",
+      report: { PRODUCT: metrics(0.99), "micro avg": metrics(0.99) } },
+    { variant: "gbert", split: "test", num_pages: 116, created: "2026-08-25T10:00:00",
+      report: { PRODUCT: metrics(0.78), "micro avg": metrics(0.9084) } },
+    { variant: "lilt", split: "test", num_pages: 116, created: "2026-08-25T10:00:00",
+      report: { PRODUCT: metrics(0.78), "micro avg": metrics(0.914) } },
+  ]
+
+  it("nimmt den Testsplit, wenn es einen gibt", () => {
+    const gewaehlt = reportsOfOneSplit(gemischt)
+    expect(gewaehlt).toHaveLength(2)
+    expect(gewaehlt.every((r) => r.split === "test")).toBe(true)
+  })
+
+  it("laesst keine Variante doppelt uebrig", () => {
+    // Das ist der eigentliche Schaden: zwei Reports derselben Variante
+    // ueberschreiben einander stillschweigend in derselben Spalte.
+    const varianten = reportsOfOneSplit(gemischt).map((r) => r.variant)
+    expect(new Set(varianten).size).toBe(varianten.length)
+  })
+
+  it("faellt auf den haeufigsten Split zurueck, wenn test fehlt", () => {
+    const nurDev = gemischt.filter((r) => r.split === "dev")
+    expect(reportsOfOneSplit(nurDev)).toEqual(nurDev)
   })
 })

@@ -18,8 +18,9 @@ import { EvaluationEmptyState } from "./empty-state"
 import { ProtocolCard } from "./protocol-card"
 import { SchemeCard } from "./scheme-card"
 import {
-  type MetricKey, type Row, overallF1, perEntityRows, significanceFor, sortRows,
-  variantLabel, variantPairs, variantsOf,
+  type MetricKey, type Row, overallF1, perEntityRows, reportsOfOneSplit,
+  restrictedArms, significanceFor, sortRows, variantLabel, variantPairs,
+  variantsOf,
 } from "./transform"
 
 const METRIC_LABELS: Record<MetricKey, string> = {
@@ -102,15 +103,24 @@ export function EvaluationPage() {
     )
   }
 
-  const variants = variantsOf(data)
+  // Eingeschraenkte Reports (Flair misst nur BRAND) gehoeren in keine Spalte
+  // dieser Seite: ihr micro-F1 beantwortet eine andere Frage. Genannt werden
+  // sie trotzdem, sonst verschwinden sie stillschweigend aus dem Projekt.
+  const restricted = restrictedArms(data)
+  // Genau ein Split und je Variante genau ein Report: data/eval/ ist ein
+  // Archiv mehrerer Laeufe, und zwei Reports derselben Variante ueberschreiben
+  // einander sonst still in derselben Spalte.
+  const comparable = reportsOfOneSplit(data.filter((r) => !r.restricted_to?.length))
+
+  const variants = variantsOf(comparable)
   const pairs = variantPairs(variants)
   const pair = pairs[Math.min(pairIndex, pairs.length - 1)]
   const alone = variants.length < 2
   const paired = pair ? significanceFor(significance.data, pair[0], pair[1]) : null
 
   const rows = sortRows(
-    perEntityRows(data, metric, protocol, pair), sort.key, sort.descending)
-  const reference = data[0]
+    perEntityRows(comparable, metric, protocol, pair), sort.key, sort.descending)
+  const reference = comparable[0] ?? data[0]
 
   const toggleSort = (key: SortKey) =>
     setSort((s) => ({ key, descending: s.key === key ? !s.descending : true }))
@@ -134,7 +144,9 @@ export function EvaluationPage() {
 
       <ResultCard
         variants={variants}
-        f1={Object.fromEntries(variants.map((v) => [v, overallF1(data, v, protocol)]))}
+    f1={Object.fromEntries(
+          variants.map((v) => [v, overallF1(comparable, v, protocol)]),
+        )}
         pairs={pairs}
         pairIndex={Math.min(pairIndex, Math.max(pairs.length - 1, 0))}
         onPairChange={setPairIndex}
@@ -150,9 +162,26 @@ export function EvaluationPage() {
         </p>
       )}
 
-      <SchemeCard reports={data} />
+      {restricted.length > 0 && (
+        <p className="rounded-md border-l-4 border-foreground/40 bg-muted/40 px-4 py-3 text-sm text-muted-foreground">
+          Nicht in der Tabelle:{" "}
+          {restricted.map((r, i) => (
+            <span key={r.variant}>
+              {i > 0 && ", "}
+              <span className="font-mono text-xs">{r.variant}</span> (nur{" "}
+              {r.labels.join(", ")})
+            </span>
+          ))}
+          . Ein Arm, der nur einen Teil der Labels kennt, hat ein micro-F1 über
+          eine andere Grundmenge – nebeneinandergestellt läse es sich wie ein
+          schlechteres Modell statt wie eine andere Frage. Der Report liegt in{" "}
+          <span className="font-mono text-xs">data/eval/</span>.
+        </p>
+      )}
 
-      <ProtocolCard reports={data} protocol={protocol} onProtocolChange={setProtocol} />
+      <SchemeCard reports={comparable} />
+
+      <ProtocolCard reports={comparable} protocol={protocol} onProtocolChange={setProtocol} />
 
       <Card className="border-2 border-foreground">
         <CardHeader className="flex-row flex-wrap items-center justify-between gap-3">
