@@ -39,6 +39,20 @@ export PIP_BREAK_SYSTEM_PACKAGES=1
 # Editierbar, damit `from magda import ...` in den Skripten aufgeht, ohne dass
 # jemand PYTHONPATH setzen muss.
 pip install -q -e .
+# torchvision: detectron2 importiert es in seinen layers, und neuere
+# RunPod-PyTorch-Images bringen es NICHT mehr mit (geprueft 25.08.2026 auf
+# pytorch:1.0.3-cu1281-torch291: torch und torchaudio da, torchvision nicht).
+# Der Ausfall kommt erst nach dem Bau von detectron2 und mitten im dritten
+# Trainingslauf als "No module named 'torchvision'".
+#
+# Die torch-Version wird dabei festgehalten: ein blankes `pip install
+# torchvision` zieht das neueste torch nach (im Fehlerfall 2.9.1 -> 2.11.0)
+# und bricht damit die ABI, gegen die detectron2 gleich uebersetzt wird. Der
+# Import geht danach noch durch, die kompilierten Ops nicht mehr.
+TORCH_VERSION=$(python -c "import torch; print(torch.__version__.split('+')[0])")
+pip install -q "torch==$TORCH_VERSION" torchvision \\
+  || echo "WARNUNG: torchvision fehlgeschlagen - layoutxlm wird nicht laufen."
+
 # Der visuelle Backbone von LayoutLMv2/LayoutXLM. Wird uebersetzt, dauert
 # einige Minuten. Ohne ihn laeuft nur die GBERT-Variante.
 #
@@ -49,6 +63,13 @@ pip install -q -e .
 pip install -q --no-build-isolation \\
   "git+https://github.com/facebookresearch/detectron2.git" \\
   || echo "WARNUNG: detectron2 fehlgeschlagen - nur layoutxlm faellt aus, die anderen drei Arme brauchen es nicht."
+
+# Beides zusammen einmal wirklich anfassen, bevor Stunden Rechenzeit daran
+# haengen: der Import von detectron2.modeling ist die Stelle, an der ein
+# fehlendes oder unpassendes torchvision auffliegt.
+python -c "import detectron2.modeling" 2>/dev/null \\
+  && echo "detectron2 mit torchvision: ok" \\
+  || echo "WARNUNG: detectron2.modeling nicht importierbar - layoutxlm wird ausfallen."
 
 # Der teuerste denkbare Fehler: PyTorch findet die GPU nicht, trainiert
 # stillschweigend auf der CPU, und die gemietete Karte steht daneben. Lieber
