@@ -164,7 +164,10 @@ export type SchemeKey = "strict" | "exact" | "partial" | "type"
 export type ProtocolKey = "report" | "report_no_windows" | "report_truncated"
 
 export interface EvalReport {
-  variant: "gbert" | "layoutxlm"
+  // Offen, nicht als Union: die Arme stehen in `config.VARIANTS` im Backend,
+  // und eine zweite Liste hier driftet davon ab. Die Anzeigereihenfolge
+  // regelt `transform.variantsOf`, nicht der Typ.
+  variant: string
   split: string
   num_pages: number
   created: string
@@ -199,7 +202,7 @@ export interface SignificanceReport {
 }
 
 export interface ModelStatus {
-  variant: "layoutxlm" | "gbert"
+  variant: string
   trained: boolean
   epoch: number | null
   steps: number | null

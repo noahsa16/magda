@@ -35,8 +35,12 @@ function IntervalBar({
     <div className="relative h-6">
       <div className="absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-border" />
       <div
-        className={`absolute top-1/2 h-2 -translate-y-1/2 rounded-full ${tone}`}
-        style={{ left: `${left}%`, width: `${Math.max(right - left, 0.5)}%` }}
+        className="absolute top-1/2 h-2 -translate-y-1/2 rounded-full"
+        style={{
+          left: `${left}%`,
+          width: `${Math.max(right - left, 0.5)}%`,
+          backgroundColor: tone,
+        }}
       />
       {/* Der Punktschätzer als senkrechter Strich: ein Punkt auf dem Balken
           verschwindet, sobald das Intervall schmal wird. */}
@@ -69,10 +73,11 @@ export interface Estimate {
   label: string
   f1: number
   ci95: [number, number]
+  /** Farbe des Arms als Hex – dieselbe Zuordnung wie im Balkendiagramm. */
   tone: string
 }
 
-/** Die beiden Modelle auf einer Achse – die Frage ist, ob sich die Balken überlappen. */
+/** Die verglichenen Modelle auf einer Achse – die Frage ist, ob sich die Balken überlappen. */
 export function ModelIntervals({ estimates }: { estimates: Estimate[] }) {
   const values = estimates.flatMap((e) => [e.ci95[0], e.ci95[1]])
   const pad = (Math.max(...values) - Math.min(...values)) * 0.15 || 0.01

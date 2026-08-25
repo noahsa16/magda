@@ -34,6 +34,19 @@ const EVAL: EvalReport[] = [
   },
 ]
 
+/** Alle vier Arme, wie nach einem vollstaendigen Pod-Lauf. */
+const VIER: EvalReport[] = [
+  ...EVAL,
+  {
+    variant: "xlmr", split: "test", num_pages: 100, created: "2026-08-25T10:00:00",
+    report: { PRODUCT: metrics(0.80, 1003), "micro avg": metrics(0.881, 5080) },
+  },
+  {
+    variant: "lilt", split: "test", num_pages: 100, created: "2026-08-25T10:00:00",
+    report: { PRODUCT: metrics(0.83, 1003), "micro avg": metrics(0.890, 5080) },
+  },
+]
+
 const SIGNIFICANCE = [{
   created: "2026-08-02T23:36:07", labels_from: "sonnet-5", pages: 100, clusters: 43,
   cluster_threshold: 0.7,
@@ -46,6 +59,57 @@ const SIGNIFICANCE = [{
     significant: false, clusters: 43,
   },
 }] as unknown as SignificanceReport[]
+
+describe("EvaluationPage mit vier Armen", () => {
+  it("zeigt jeden ausgewerteten Arm mit seiner Zutat", async () => {
+    // Vier Kacheln statt zwei - und jede nennt, was der Arm sieht. Ohne das
+    // ist die Reihe vier Zahlen ohne die Frage, die sie beantworten.
+    mockFetch({ "/api/evaluation": VIER, "/api/significance": SIGNIFICANCE })
+    renderWithProviders(<EvaluationPage />)
+
+    expect(await screen.findByText("nur Text · deutscher Encoder")).toBeInTheDocument()
+    expect(screen.getByText("nur Text · XLM-R")).toBeInTheDocument()
+    expect(screen.getByText("Text + Layout")).toBeInTheDocument()
+    expect(screen.getByText("Text + Layout + Bild")).toBeInTheDocument()
+  })
+
+  it("ordnet die Spalten entlang der Kette, nicht nach Eingangsreihenfolge", async () => {
+    // In VIER stehen layoutxlm und xlmr vor lilt. Die Tabelle muss trotzdem
+    // gbert, XLM-R, LiLT, LayoutXLM zeigen - sonst liest sich die Kette
+    // rueckwaerts und die Δ-Spalte daneben ergibt keinen Sinn.
+    mockFetch({ "/api/evaluation": VIER, "/api/significance": SIGNIFICANCE })
+    renderWithProviders(<EvaluationPage />)
+
+    // Die letzte Tabelle der Seite ist die pro Entity. Die Schema-Tabelle
+    // darueber kennt nur zwei Arme - Schemata stehen erst in Reports ab der
+    // Umstellung, und genau deshalb darf sie hier nicht mitgezaehlt werden.
+    const tabellen = await screen.findAllByRole("table")
+    const heads = within(tabellen[tabellen.length - 1])
+      .getAllByRole("columnheader")
+      .map((h) => h.textContent)
+
+    expect(heads.filter((h) => h?.includes("F1") && !h?.includes("Δ"))).toEqual([
+      "GBERT F1", "XLM-R F1", "LiLT F1", "LayoutXLM F1",
+    ])
+  })
+
+  it("wechselt mit dem Vergleichspaar auch die Δ-Spalte", async () => {
+    // Der Sinn der Kette: "was bringt Layout" ist XLM-R gegen LiLT, und diese
+    // Frage soll die Seite stellen koennen, ohne dass jemand Code aendert.
+    mockFetch({ "/api/evaluation": VIER, "/api/significance": SIGNIFICANCE })
+    renderWithProviders(<EvaluationPage />)
+
+    await userEvent.click(
+      await screen.findByRole("button", { name: /XLM-R → LiLT/ }),
+    )
+
+    expect(
+      await screen.findByRole("columnheader", { name: /Δ XLM-R→LiLT/ }),
+    ).toBeInTheDocument()
+    // 0.83 (lilt) - 0.80 (xlmr) auf PRODUCT
+    expect(screen.getByText("+0.030")).toBeInTheDocument()
+  })
+})
 
 describe("EvaluationPage", () => {
   it("erklärt im Empty State, was hier entsteht, statt nur ein Kommando zu zeigen", async () => {
@@ -92,7 +156,9 @@ describe("EvaluationPage", () => {
 
     // Auf die Kopfzahl eingegrenzt: 0.894 steht auch in der Schema-Tabelle,
     // und die hängt nicht am Protokoll.
-    const headline = (await screen.findByText("GBERT · nur Text"))
+    // Ueber die Zutatenzeile statt ueber "GBERT": der blosse Name steht auch
+    // im Tabellenkopf, die Zutat nur auf der Kachel.
+    const headline = (await screen.findByText("nur Text · deutscher Encoder"))
       .parentElement as HTMLElement
 
     expect(within(headline).getByText("0.894")).toBeInTheDocument()
