@@ -209,6 +209,35 @@ und der Bildgewinn schrumpft mit jeder Lockerung:
 | partial | Span überlappt | 0.9337 | 0.9386 | 0.9376 | 0.9419 | +0.0043 |
 | type | Typ + Überlappung | 0.9477 | 0.9540 | 0.9521 | 0.9542 | **+0.0021** |
 
+Alle vier Arme in allen vier Schemata, micro über den ganzen Testsplit:
+
+| Arm | strict | exact | partial | type |
+|---|---:|---:|---:|---:|
+| gbert | 0.9084 | 0.9130 | 0.9337 | 0.9477 |
+| xlmr | 0.9143 | 0.9180 | 0.9386 | 0.9540 |
+| lilt | 0.9140 | 0.9179 | 0.9376 | 0.9521 |
+| **layoutxlm** | **0.9236** | **0.9258** | **0.9419** | **0.9542** |
+| *Spanne zwischen den Armen* | *0.0152* | *0.0128* | *0.0082* | *0.0065* |
+
+Mit Precision und Recall, für den schwächsten und den besten Arm:
+
+| | strict | exact | partial | type |
+|---|---|---|---|---|
+| gbert | 0.915 / 0.902 | 0.919 / 0.907 | 0.940 / 0.927 | 0.955 / 0.941 |
+| layoutxlm | 0.932 / 0.915 | 0.934 / 0.917 | 0.951 / 0.933 | 0.963 / 0.946 |
+
+**Die Arme rücken zusammen, je nachsichtiger gezählt wird** — der Abstand
+schrumpft von 0.0152 auf 0.0065, bei `type` liegen alle vier zwischen 0.948
+und 0.954. Das ist die Kernaussage von der anderen Seite: Beim bloßen Finden
+sind sich die Modelle weitgehend einig; verschieden sind sie in der
+Span-Grenze und in der Typwahl.
+
+Die Zählwerke bestätigen, dass alle vier Schemata dieselbe Grundmenge messen:
+`possible` ist überall 5973, `actual` überall 5889, und **übersehen (313) wie
+erfunden (229) sind über alle vier Zeilen identisch**. Bewertet werden nur die
+Fälle, in denen sich Vorhersage und Referenz überhaupt begegnen — was sich
+ändert, ist ausschließlich, wie streng dieses Begegnen zählt.
+
 Als Fehlerarten gelesen — jede Zeile ist die Differenz zweier Schemata:
 
 | | gbert | xlmr | lilt | layoutxlm |
@@ -271,8 +300,15 @@ gesamte Zuwachs sitzt bei PRODUCT — also bei dem Label mit der offenen
 Konventionsfrage. Wer `type` berichtet, sagt der Sache nach: *„Wir zählen die
 Sortenzusatz-Frage weg."*
 
+Und die Schemawahl entscheidet mehr als die Höhe der Zahl: Sie räumt fast den
+ganzen *Modellunterschied* weg. Bei `strict` trennen die vier Arme 0.0152, bei
+`type` nur noch 0.0065 — dieselben vier Läufe, dieselbe Datei, und je nach
+Zeile fiele die Antwort auf „lohnt der visuelle Backbone?" anders aus.
+
 Deshalb bleibt `strict` die Primärzahl, und deshalb muss das Schema **vor** der
-Messung feststehen. Nachträglich das nachsichtigste zu wählen ist dieselbe
+Messung feststehen. Inhaltlich trägt sie auch: Die nächste Stufe braucht exakte
+Spans, weil der Produktname so in die Datenbankzeile geht — eine um ein Wort
+verschobene Grenze steht dort mit drin. Nachträglich das nachsichtigste zu wählen ist dieselbe
 Bewegung wie eine Heuristik an dem Kriterium zu messen, nach dem sie selbst
 zuordnet — nur unauffälliger, weil alle vier Zahlen aus demselben Lauf stammen
 und einzeln korrekt sind.
