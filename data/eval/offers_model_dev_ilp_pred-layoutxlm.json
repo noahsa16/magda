@@ -1,0 +1,96 @@
+{
+  "source": "layoutxlm",
+  "reference": "data/offer_groups/claude-sonnet-5",
+  "provenance": [
+    "llm"
+  ],
+  "splits": "dev",
+  "threshold": 0.68,
+  "decoder": "ilp",
+  "checkpoint": "/Users/noahsamel/PycharmProjects/magda/checkpoints/offer_pairs/model.pt",
+  "model_provenance": {
+    "features": "geometrie",
+    "reference": "claude-sonnet-5",
+    "kind": [
+      "llm"
+    ],
+    "labels": "sonnet-5",
+    "splits": "train",
+    "pages": 494,
+    "decoder": "ilp"
+  },
+  "ilp": {
+    "components": 233,
+    "optimised": 176,
+    "capped": 0,
+    "largest_capped": 0
+  },
+  "chain": {
+    "labels": "sonnet-5",
+    "entity": {
+      "precision": 0.9154,
+      "recall": 0.9501,
+      "f1": 0.9324,
+      "correct": 2455,
+      "incorrect": 83,
+      "partial": 0,
+      "missing": 46,
+      "spurious": 144,
+      "possible": 2584,
+      "actual": 2682
+    },
+    "ref_pairs_teacher": 7351
+  },
+  "agreement": {
+    "pages": 56,
+    "entities": 2682,
+    "unassignable": 187,
+    "ref_pairs": 7128,
+    "sys_pairs": 7300,
+    "shared_pairs": 6724,
+    "ref_groups": 422,
+    "sys_groups": 427,
+    "exact_groups": 332,
+    "ref_groups_without_entities": 0,
+    "pair_f1": 0.9320765178818963,
+    "group_f1": 0.7820965842167256
+  },
+  "heuristic": {
+    "pages": 56,
+    "entities": 2682,
+    "unassignable": 187,
+    "ref_pairs": 7128,
+    "sys_pairs": 6431,
+    "shared_pairs": 5617,
+    "ref_groups": 422,
+    "sys_groups": 519,
+    "exact_groups": 225,
+    "ref_groups_without_entities": 0,
+    "pair_f1": 0.8285271775204661,
+    "group_f1": 0.4782146652497343
+  },
+  "arithmetic": {
+    "pages": 56,
+    "prices": 509,
+    "confirmed": 246,
+    "contradicted": 28,
+    "unresolved": 46,
+    "unjudgeable": 189,
+    "offers": 501,
+    "judged": 274,
+    "accuracy": 0.8978102189781022,
+    "coverage": 0.5383104125736738
+  },
+  "arithmetic_heuristic": {
+    "pages": 56,
+    "prices": 509,
+    "confirmed": 215,
+    "contradicted": 47,
+    "unresolved": 52,
+    "unjudgeable": 195,
+    "offers": 591,
+    "judged": 262,
+    "accuracy": 0.8206106870229007,
+    "coverage": 0.5147347740667977
+  }
+}
