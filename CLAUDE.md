@@ -109,6 +109,7 @@ magda offers-teacher task 1342821_p10       # Aufgabe einer Seite (Entities + Bi
 magda offers-verify --reference-from claude-sonnet-5   # Gruppierung nachrechnen
 magda offers-model train --labels-from sonnet-5        # Paarmodell lernen (mit Kalibrierung)
 magda offers-model eval --labels-from sonnet-5         # gegen Lehrer und Arithmetik messen
+magda offers-probe --encoder lilt   # bringt ein Span-Embedding dem Paarmodell etwas?
 magda offers-sequence               # fasst eine flache OFFER-Folge das Angebot?
 magda blackbox-eval --pages <liste> --dry-run   # LLM-Blackbox gegen die eigene Pipeline
 magda bundle --labels-from sonnet-5 # Trainingspaket für eine fremde GPU
@@ -1191,6 +1192,37 @@ eine Liste auszugeben.
   es rund 14, und der Fehlermodus, auf den ein Textencoder zielt, ist
   belegt. Verworfen ist damit nur der *direkte* Sprung zu end-to-end, nicht
   der Weg.
+- **Der billige Weg dorthin ist gemessen und trägt nicht** (`magda
+  offers-probe`, 29.08.2026, 30 Train-Cluster, Sonden-Test über 10
+  Vorlagen, 43872 Paare). Eingefrorene, mittelgepoolte Span-Embeddings
+  kosten Punkte, statt welche zu bringen – bei **beiden** Encodern und in
+  jeder Kombination:
+
+  | Merkmale | AUC (lilt) | Paar-F1 | AUC (gbert) | Paar-F1 |
+  |---|---:|---:|---:|---:|
+  | geometrie (35) | **0.965** | 0.779 | **0.965** | 0.779 |
+  | +lexik (43) | 0.956 | **0.801** | 0.956 | **0.801** |
+  | Embedding allein (1536) | 0.852 | 0.503 | 0.813 | 0.469 |
+  | geometrie + Embedding | 0.962 | 0.773 | 0.959 | 0.746 |
+  | alles | 0.961 | 0.764 | 0.958 | 0.741 |
+
+  Dass **GBERT schlechter abschneidet als LiLT** widerlegt die naheliegende
+  Erklärung „LiLT ist layout-aware, also redundant zur Geometrie" – der
+  reine Textencoder ist noch schwächer. Eine Erklärung, die dazu passt und
+  **ungeprüft** ist: Beide Encoder sind auf Token-Klassifikation
+  feingetunt, ihr letzter Hidden State zeigt also Richtung Labelidentität –
+  und der Entity-Typ steckt als One-Hot längst im Merkmalsvektor.
+  **Was damit widerlegt ist und was nicht:** widerlegt ist der *billige*
+  Weg – einmal vorrechnen, cachen, als Block anhängen. Nicht widerlegt ist
+  end-to-end, wo die Repräsentation sich der Relationsaufgabe anpassen
+  könnte; das ist die Architektur mit 0.6276 auf FUNSD und kostet fünf
+  Fold-Finetunings je Gitterzelle. Der Spike stärkt also gerade das
+  Argument, dass die Abkürzung das Finetuning nicht ersetzt.
+  **Grenzen der Sonde:** kein Dekoder, gemessen wird Paar-F1 statt
+  Gruppen-F1; 20 Trainings- und 10 Holdout-Vorlagen; eine Poolingvariante
+  (Mittelwert) und eine Paarbildung (`[|Δ|, ⊙]`). Sie taugt für den
+  Vergleich zweier Merkmalsmengen, nicht als Ersatz für `magda
+  offers-grid`.
 - **Der Rechner ist größer, als CLAUDE.md an einer Stelle behauptet.** Der
   Satz „auf einem 8-GB-Mac füllt LayoutXLM den Swap" begründet den
   RunPod-Weg; Noahs Maschine ist ein MacBook Air M2 mit **16 GB**, und

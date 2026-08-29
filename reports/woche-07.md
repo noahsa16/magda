@@ -445,6 +445,64 @@ Der Aufwand dafür waren zwanzig Minuten und eine Auszählung. Das ist die
 billigste Stelle, an der ein Merkmal sterben kann — vor dem Messlauf, nicht
 danach.
 
+## Der billige Weg zu Embeddings ist gemessen — und er trägt nicht
+
+In der Offen-Liste dieses Berichts stand „eingefrorene LiLT-Span-Embeddings
+als weiterer Block, danach". Die Idee ist naheliegend: In den 35 Merkmalen
+steckt keine lexikalische Information, das Modell hat also keinen Zugriff
+auf Textsemantik. Statt end-to-end zu trainieren rechnet man die
+Span-Vektoren einmal vor, cacht sie und hängt sie als Block an.
+
+Bevor dafür ein Cache und ein Merkmalsblock entstehen, beantwortet `magda
+offers-probe` die Vorfrage auf wenigen Seiten und ohne Reduktion. Der volle
+Weg wäre teuer: 768 Dimensionen mal vier Kombinationen mal 780000
+Trainingspaare sind rund 10 GB, es braucht also eine Dimensionsreduktion,
+und die ist eine Entwurfsentscheidung mit eigenen Freiheitsgraden. Fällt
+die Vorfrage negativ aus, ist die Reduktion gegenstandslos.
+
+Sie fällt negativ aus, bei beiden Encodern und in jeder Kombination
+(30 Train-Cluster, Holdout über 10 Vorlagen, 43872 Paare, MLP-Sonde):
+
+| Merkmale | AUC (lilt) | Paar-F1 | AUC (gbert) | Paar-F1 |
+|---|---:|---:|---:|---:|
+| geometrie (35) | **0.965** | 0.779 | **0.965** | 0.779 |
+| +lexik (43) | 0.956 | **0.801** | 0.956 | **0.801** |
+| Embedding allein (1536) | 0.852 | 0.503 | 0.813 | 0.469 |
+| geometrie + Embedding | 0.962 | 0.773 | 0.959 | 0.746 |
+| alles | 0.961 | 0.764 | 0.958 | 0.741 |
+
+Die Embeddings tragen Signal — 0.85 und 0.81 liegen weit über dem
+Münzwurf. Nur eben keines, das die Geometrie nicht schon hat: dazugelegt
+kosten sie in jeder Zeile Punkte.
+
+**Die erste Erklärung war falsch, und das ist der interessante Teil.**
+Naheliegend war „LiLT ist selbst layout-aware, sein Span-Vektor kodiert die
+Position, die die 35 Merkmale explizit ausrechnen". Dann müsste GBERT als
+reiner Textencoder *besser* abschneiden. Er schneidet schlechter ab (0.813
+gegen 0.852 allein, 0.746 gegen 0.773 dazugelegt). Was dazu passt und
+ungeprüft bleibt: Beide Encoder sind auf Token-Klassifikation feingetunt,
+ihr letzter Hidden State zeigt also Richtung Labelidentität — und der
+Entity-Typ steht als One-Hot längst im Merkmalsvektor.
+
+**Was widerlegt ist und was nicht.** Widerlegt ist der billige Weg: einmal
+vorrechnen, cachen, als Block anhängen. Nicht widerlegt ist end-to-end, wo
+die Repräsentation sich der Relationsaufgabe anpassen könnte — das ist die
+Architektur mit 0.6276 auf FUNSD und kostet fünf Fold-Finetunings je
+Gitterzelle. Der Spike stärkt damit gerade das Argument, dass die Abkürzung
+das Finetuning nicht ersetzt.
+
+**Grenzen der Sonde, die zu jeder Nennung gehören:** Sie kennt keinen
+Dekoder und wertet Paar-F1 aus, nicht Gruppen-F1 — und der Dekoder ist der
+gemessen größte Hebel des Projekts. 20 Trainings- und 10 Holdout-Vorlagen
+sind wenig. Und geprüft ist eine Poolingvariante (Mittelwert) und eine
+Paarbildung (`[|Δ|, ⊙]`). Aus demselben Grund ist die Zeile `+lexik` hier
+**kein** Ergebnis für den Lexikblock: seine trennenden Merkmale wirken über
+den Dekoder auf die Gruppe, und genau die Zahl bildet die Sonde nicht.
+
+Der Aufwand für diese Antwort war eine knappe Stunde. Ein Embedding-Cache
+plus Merkmalsblock plus Gitterlauf wären ein Tag gewesen, mit demselben
+Ausgang.
+
 ## Offen
 
 - **Die Deckenmessung auf mehr Seiten wiederholen** und ein
@@ -461,10 +519,11 @@ danach.
   Prozess — der gepaarte Bootstrap vergleicht nur Varianten, deren
   seitenweise Zählungen zusammen vorliegen. Ein zweiter Lauf neben dem
   laufenden ist deshalb richtig, kein Nachteil.
-- **Eingefrorene LiLT-Span-Embeddings** als weiterer Block, danach. Einmal
-  je Seite vorrechnen und cachen, dann lernt nur der Kopf — lokal, im
-  bestehenden Messaufbau. Erst wenn das trägt, lohnt die Frage nach
-  end-to-end und damit nach der GPU.
+- ~~**Eingefrorene LiLT-Span-Embeddings** als weiterer Block~~ — gemessen
+  und erledigt (siehe oben). Offen bleibt die teure Variante: ein
+  Relationskopf end-to-end auf LiLT, fünf Fold-Finetunings je Gitterzelle.
+  Dafür bräuchte man die GPU für die *Messung*, nicht fürs Training. Vor
+  dieser Miete steht der Lexikblock.
 - **Der Endvergleich gegen die LLM-Blackbox.** `magda blackbox-eval` ist
   gebaut und ungefahren; drei Entscheidungen sind getroffen (kein neutraler
   Richter, beste lokale Konfiguration, `sonnet-5` als Baseline), das Design
