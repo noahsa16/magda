@@ -97,13 +97,13 @@ def _cmd_train(args, parser):
     blocks = _blocks(args.features, parser)
     decoder = args.decoder or DEFAULT_TRAIN_DECODER
 
-    calibration = None
+    calibration, ilp_counters = None, None
     if args.folds > 1:
-        calibration = offer_model.calibrate(
+        calibration, ilp_counters = _count_capping(decoder, lambda: offer_model.calibrate(
             pages, reference.assignments, folds=args.folds,
             epochs=args.epochs, seed=args.seed, hidden=hidden,
             objective=args.objective, decoder=decoder, blocks=blocks,
-        )
+        ))
 
     model = offer_model.train(
         pages, reference.assignments, epochs=args.epochs, seed=args.seed,
@@ -142,10 +142,16 @@ def _cmd_train(args, parser):
         with open(curve_path, "w") as f:
             json.dump({"source": source, "splits": args.splits, "folds": args.folds,
                        "hidden": list(hidden), "epochs": args.epochs,
-                       **calibration}, f, indent=2, ensure_ascii=False)
+                       "ilp": ilp_counters, **calibration}, f, indent=2,
+                      ensure_ascii=False)
 
         print(f"Schwelle out-of-fold ueber {calibration['pages']} Seiten "
               f"(Kriterium {calibration['objective']}): {calibration['threshold']}")
+        if ilp_counters and ilp_counters["capped"]:
+            print(f"  Achtung: {ilp_counters['capped']} von "
+                  f"{ilp_counters['components']} Komponenten gekappt "
+                  f"(groesste {ilp_counters['largest_capped']} Entities). "
+                  f"Dort ist die Kurve Union-Find, kein ILP.")
         print()
         print(f"  {'Kriterium':<12} {'Schwelle':>9} {'Paar-F1':>9} {'Gruppen-F1':>11} {'Angebote':>9}")
         for name, row in (("Paar-F1", calibration["best_pair_f1"]),
@@ -182,7 +188,14 @@ def _cmd_eval(args, parser):
     def grouping(page):
         return offers_gold.offers_from_reference(page, _assignment(model, page, threshold))
 
-    agreement = offers_gold.collect(pages, reference, grouping=grouping)
+    # Die Kappung des ILP gehoert in den Report, nicht nur in `offers-grid`:
+    # Wo sie greift, ist das Ergebnis Union-Find, und eine Zahl ohne diese
+    # Angabe sieht aus wie ein ILP-Ergebnis, ohne eines zu sein. Gezaehlt
+    # wird genau der eine Dekodierdurchlauf von `agreement` - `verdict`
+    # dekodiert dieselben Seiten noch einmal und wuerde sonst doppelt zaehlen.
+    capping = _count_capping(model.decoder, lambda: offers_gold.collect(
+        pages, reference, grouping=grouping))
+    agreement, ilp_counters = capping
     verdict = offers_verify.collect(
         pages, {p["page_id"]: _assignment(model, p, threshold) for p in pages}
     )
@@ -208,6 +221,7 @@ def _cmd_eval(args, parser):
         "decoder": model.decoder,
         "checkpoint": str(args.checkpoint),
         "model_provenance": model.provenance,
+        "ilp": ilp_counters,
         "agreement": agreement.to_dict(),
         "heuristic": heuristic.to_dict(),
         "arithmetic": verdict.to_dict(),
@@ -225,6 +239,11 @@ def _cmd_eval(args, parser):
 
     print(f"Splits: {args.splits}   Seiten: {agreement.pages}   "
           f"Schwelle: {threshold}   Dekoder: {model.decoder}")
+    if ilp_counters:
+        print(f"ILP: {ilp_counters['optimised']} Komponenten optimiert, "
+              f"{ilp_counters['capped']} gekappt"
+              + (f" (groesste {ilp_counters['largest_capped']} Entities - dort"
+                 f" ist das Ergebnis Union-Find)" if ilp_counters["capped"] else ""))
     print(f"Lehrer: data/offer_groups/{config.model_slug(args.reference_from)}")
     print()
     print("Uebereinstimmung mit dem Lehrer (andere Seiten als im Training):")
@@ -384,6 +403,21 @@ def _cmd_variants(args, parser):
     print("    verschenkt der Dekoder sie: ein Variantenblock ist ein Stern um")
     print("    den Produktnamen, die Transitivitaet des ILP verlangt eine Clique.")
     print(f"\nReport: {out_path}")
+
+
+def _count_capping(decoder: str, run):
+    """Einen Dekodierdurchlauf ausfuehren und die ILP-Kappung dazu zaehlen.
+
+    Zuruecksetzen und Ablesen gehoeren zusammen: `LAST_RUN` ist Modulzustand
+    und akkumuliert sonst ueber mehrere Durchlaeufe derselben Seiten hinweg.
+    """
+    if decoder != "ilp":
+        return run(), None
+    from magda import offer_ilp
+
+    offer_ilp.reset_counters()
+    result = run()
+    return result, dict(offer_ilp.LAST_RUN)
 
 
 def _assignment(model, page: dict, threshold: float) -> dict[int, int]:
