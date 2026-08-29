@@ -29,7 +29,7 @@ Parametern. Geändert wurde eine Zahl. Der Gewinn ist größer als der jedes
 Merkmalsblocks (+0.044) und größer als der Dekoderwechsel Union-Find → ILP
 selbst (+0.100), der bis dahin als der große Hebel des Projekts galt.
 
-Vier Dinge stehen am Ende der Woche:
+Sechs Dinge stehen am Ende der Woche:
 
 1. **Das Verfahren fragmentiert nicht mehr.** 429 gebildete Angebote gegen
    422 in der Referenz; die Heuristik bildet 510.
@@ -43,6 +43,11 @@ Vier Dinge stehen am Ende der Woche:
 5. **Die Decke ist erstmals gemessen statt geschätzt: Gruppen-F1 0.916**
    zwischen zwei unabhängigen Annotatoren. Über 0.778 liegen damit rund 14
    Punkte Luft — die Arbeit lohnt weiter.
+6. **Die Kette ist erstmals als Kette gemessen.** Auf Schüler-Entities
+   statt Lehrer-Entities bleibt Gruppen-F1 bei 0.781–0.782 — Fehler der
+   ersten Stufe nehmen Aufgabe weg, aber keine Qualität. Damit hat die
+   beste lokale Konfiguration eine Zahl: LayoutXLM plus Paarmodell,
+   0.932 / 0.782 auf Dev.
 
 ## Wie die Notbremse eine Metrik entschied
 
@@ -343,6 +348,103 @@ Merkmals- oder Architekturidee lohnt der Blick auf die Konstanten, die
 zwischen Modell und Metrik stehen. Die Antwort auf „das muss doch besser
 gehen" lag nicht im Modell.
 
+## Nachtrag vom Abend: die Kette ist eine Zahl
+
+Bis heute stand die Gruppierungsqualität immer auf Lehrer-Entities. Das ist
+die halbe Auskunft: im Einsatz füttert Stufe 1 die Stufe 2, und deren Fehler
+nehmen Arbeit weg, bevor die Gruppierung anfängt. `magda offers-model eval
+--predictions <modell>` berichtet die Kette deshalb jetzt in einem Stück.
+Gemessen über dieselben 56 Dev-Seiten, alle drei Zeilen gegen dieselbe
+Referenz:
+
+| Entity-Quelle | Entity-F1 | Referenzpaare | Paar-F1 | Gruppen-F1 | Angebote |
+|---|---:|---:|---:|---:|---:|
+| sonnet-5 (Lehrer) | – | 7351 (1.000) | 0.929 | 0.778 | 429 |
+| layoutxlm | **0.932** | 7128 (0.970) | **0.932** | **0.782** | 427 |
+| gbert | 0.927 | 7026 (0.956) | 0.926 | 0.781 | 426 |
+
+Der Befund steckt in der Flachheit der letzten Spalte. Auf Schüler-Entities
+liegt Gruppen-F1 bei 0.782 und 0.781 gegen 0.778 auf den Entities des
+Lehrers — die Fehler der ersten Stufe pflanzen sich **nicht** in die
+Qualität der zweiten fort. Was sie tun, steht in der dritten Spalte: 3,0 %
+bzw. 4,4 % der Referenzpaare verschwinden, weil eine Entity fehlt. Das ist
+kein Qualitätsverlust, sondern ein kleinerer Nenner, und genau deshalb
+gehört die Zahl neben die anderen. Wer nur Gruppen-F1 liest, hält eine
+Verkleinerung der Aufgabe für eine Verbesserung.
+
+Damit hat die „beste lokale Konfiguration" aus der Blackbox-Entscheidung
+erstmals eine Zahl: **LayoutXLM plus Paarmodell, 0.932 / 0.782 auf Dev.**
+LayoutXLMs Vorsprung bei den Entities (0.932 gegen 0.927, überlebende Paare
+0.970 gegen 0.956) passt zum gemessenen Bildgewinn aus Woche 6 und trägt
+bis in die Gruppierung durch. Die arithmetische Gegenprobe hält die
+Reihenfolge: 0.912 (Lehrer), 0.898 (layoutxlm), 0.878 (gbert) bei Abdeckung
+um 0.54.
+
+Ein Nebenbefund, der für die Heuristik spricht — gegen sie: Ihr Gruppen-F1
+fällt von 0.524 auf 0.478 bzw. 0.457, sobald sie mit Schüler-Entities
+arbeitet. Das Paarmodell bleibt stabil. Ein Verfahren, das nur auf sauberen
+Eingaben funktioniert, ist für den Einsatzfall das schlechtere.
+
+*Einschränkungen:* Dev stammt aus den Trainingswochen, die Entity-Qualität
+ist dort in-distribution-optimistisch; kein Konfidenzintervall; Richter
+bleibt ein LLM-Lehrer.
+
+Aufgefallen ist dabei ein Namensfehler: `offers_model_dev_ilp.json` hieß
+unabhängig von der Entity-Quelle gleich, ein Lauf auf Vorhersagen
+überschrieb also den auf Lehrer-Entities. Zwei Antworten auf verschiedene
+Fragen unter einem Dateinamen — dieselbe Falle wie bei den Archivordnern in
+Woche 6. Der Name trägt jetzt ein `_pred-<modell>`.
+
+## Der lexikalische Block ist gebaut, nicht gemessen
+
+Bis heute las **kein einziges** der 35 Merkmale ein Wort. Das Paarmodell
+entscheidet nach Lage, Typ, Farbe und Nachbarschaft; der Text der Seite
+kommt darin nicht vor. Dabei liegt die Struktur der Kachel offen im
+Textlayer, und zwar in genau den Wörtern, die als `O` durchs Labeling
+fallen. Ausgezählt über die 494 Trainingsseiten:
+
+| Signal | Treffer |
+|---|---:|
+| Preise gesamt | 7411 |
+| … mit Mengenaktion („je", „statt", „nur") in den 3 Wörtern davor | 2033 |
+| … mit Einheit („Stück", „Set") in den 3 Wörtern davor | 2029 |
+| … mit „Aktion" in den 2 Wörtern davor | 1117 |
+| Wörter des Kleingedruckten | 1733 |
+| „oder" | 772 |
+
+Daraus ist ein Block `lexical` mit acht binären Merkmalen geworden: vier
+`_before`-Merkmale, die binden („je Stück 9.99" hängt den Preis an die
+Beschreibung davor), und zwei `_between`-Merkmale, die trennen („Aktion"
+öffnet einen neuen Preisblock, „oder" trennt zwei Angebote — dieselbe
+Grenze, die `labeling.trim_spans` schon beim Labeln zieht). Messbar als
+Varianten `lexik` und `anker+lexik`.
+
+**Gemessen ist davon nichts.** Der Block ist gebaut, getestet und
+abschaltbar; die Zahl kommt aus demselben Aufbau wie bei den Kontext- und
+Farbmerkmalen — fünf Folds, out-of-fold, gepaart über Duplikat-Cluster. Bis
+dahin ist er eine Vermutung mit Belegen, kein Ergebnis.
+
+### Ein Merkmal, das vor der Messung fiel
+
+Der belegte Legendenfall `1347387_p31` („④ Pflanztopf-Set … je Set 8.99",
+von der Heuristik vertauscht) sollte über die Nummer lösbar sein, und die
+Nummer steht tatsächlich im Textlayer: die Ziffern 1–5 liegen als eigene
+Textläufe am Seitenanfang und -ende, ihre Boxen sitzen aber an den Kacheln.
+In Lesereihenfolge unerreichbar weit weg, über die Box genau am Angebot —
+dieselbe Trennung von Reihenfolge und Lage, die den Preis von seinem
+Produkt trennt.
+
+Über den Mittelpunktsabstand zugeordnet entscheidet allerdings ein
+Gleichstand: „Pflanztopf-Set" liegt 29,6 von seiner „4" entfernt, sein
+Preis „8.99" liegt 29,0 von der „5" des Nachbarangebots. Das Merkmal bekäme
+**genau den Fall falsch, für den es gebaut war**. Es ist deshalb entfernt
+statt mitgeführt worden; wer es wieder aufnimmt, braucht eine gerichtete
+Zuordnung (die Nummer steht *vor* ihrem Eintrag), nicht den Abstand.
+
+Der Aufwand dafür waren zwanzig Minuten und eine Auszählung. Das ist die
+billigste Stelle, an der ein Merkmal sterben kann — vor dem Messlauf, nicht
+danach.
+
 ## Offen
 
 - **Die Deckenmessung auf mehr Seiten wiederholen** und ein
@@ -354,10 +456,11 @@ gehen" lag nicht im Modell.
   zu Farbe und Anker stammen aus einem Lauf über 75 Seiten; die Referenz
   hat inzwischen 666. Ein echter +0.02-Effekt läge in beiden Intervallen
   unentdeckt. Dazu kommt, dass beide mit gekapptem ILP gemessen wurden.
-- **Lexikalische Merkmale** als neuer Block — `FEATURE_BLOCKS` ist genau
-  dafür gebaut. Legendenmarker, Ordnungsrelationen über Preiswerte,
-  „Aktion" als Grenzsignal. Durch die gemessene Decke ist das kein
-  Griff ins Blaue mehr: 14 Punkte Luft, und der Zielfehler ist belegt.
+- **Den lexikalischen Block messen.** Gebaut ist er (siehe oben), gemessen
+  nicht. Der Lauf braucht `geometrie, anker, lexik, anker+lexik` in *einem*
+  Prozess — der gepaarte Bootstrap vergleicht nur Varianten, deren
+  seitenweise Zählungen zusammen vorliegen. Ein zweiter Lauf neben dem
+  laufenden ist deshalb richtig, kein Nachteil.
 - **Eingefrorene LiLT-Span-Embeddings** als weiterer Block, danach. Einmal
   je Seite vorrechnen und cachen, dann lernt nur der Kopf — lokal, im
   bestehenden Messaufbau. Erst wenn das trägt, lohnt die Frage nach

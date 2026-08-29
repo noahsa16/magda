@@ -1201,10 +1201,15 @@ eine Liste auszugeben.
   weiterzureichen.
 - **Die Gruppierungsläufe sind single-threaded, und deshalb hilft RunPod
   dort nicht.** Gemessen am 29.08.2026: `magda offers-grid` und `magda
-  offers-model train` stehen bei 96 % CPU, also einem Kern von acht, ohne
-  CBC-Kindprozesse. Eine GPU ist gegenstandslos – die Zeit steckt im
-  LP-Solver, nicht im Netz mit seinen 4097 Parametern –, und mehr Kerne
-  bringen ohne Parallelisierung nichts. Der Hebel wäre, die unabhängigen
+  offers-model train` belegen zusammen einen Kern von acht. Eine GPU ist
+  gegenstandslos – die Zeit steckt im LP-Solver, nicht im Netz mit seinen
+  4097 Parametern –, und mehr Kerne bringen ohne Parallelisierung nichts.
+  *Korrektur vom 29.08.2026, später am Tag:* Hier stand „ohne
+  CBC-Kindprozesse". Das ist falsch – PuLP ruft das CBC-Binary als eigenen
+  Prozess auf (`pulp/solverdir/cbc/osx/i64/cbc`), und der trägt die Last,
+  während der Python-Prozess bei 0 % wartet. Wer nur den Elternprozess
+  misst, hält den Lauf für hängend. An der Schlussfolgerung ändert das
+  nichts: ein Kern, ein Solver, keine Parallelität. Der Hebel wäre, die unabhängigen
   Varianten als eigene Prozesse zu starten (aus 7 Stunden werden ~100
   Minuten). **Was dem entgegensteht, ist kein technisches, sondern ein
   methodisches Problem:** `offer_grid.paired_bootstrap` braucht die
@@ -1248,8 +1253,43 @@ eine Liste auszugeben.
   entschied. Das gekappte Bild (Paar-F1-Optimum bei 0.96 mit Gruppen-F1
   0.429 gegen Gruppen-Optimum bei 0.82 mit Paar-F1 0.518) war kein
   Eigenschaft der Metriken, sondern ein Artefakt der Notbremse.
+- **Die Kette kostet fast nichts – gemessen am 29.08.2026 über 56 Dev-Seiten,
+  beide Entity-Quellen gegen dieselbe Referenz.** `magda offers-model eval
+  --predictions <modell>` berichtet die Kette jetzt in einem Stück
+  (Entity-F1 → überlebende Referenzpaare → Paar-F1 → Gruppen-F1), weil
+  jede Stufe den Nenner der nächsten verkleinert:
+
+  | Entity-Quelle | Entity-F1 | Referenzpaare | Paar-F1 | Gruppen-F1 | Angebote |
+  |---|---:|---:|---:|---:|---:|
+  | sonnet-5 (Lehrer) | – | 7351 (1.000) | 0.929 | 0.778 | 429 |
+  | layoutxlm | **0.932** | 7128 (0.970) | **0.932** | **0.782** | 427 |
+  | gbert | 0.927 | 7026 (0.956) | 0.926 | 0.781 | 426 |
+
+  **Der Befund ist die Flachheit der Spalte Gruppen-F1**: 0.778 auf
+  Lehrer-Entities, 0.782 und 0.781 auf Schüler-Entities. Fehler der ersten
+  Stufe pflanzen sich also *nicht* in die Qualität der zweiten fort – sie
+  nehmen nur Aufgabe weg (3,0 % bzw. 4,4 % der Referenzpaare). Damit hat
+  die „beste lokale Konfiguration" aus der Blackbox-Entscheidung erstmals
+  eine Zahl: **LayoutXLM + Paarmodell = 0.932 / 0.782 auf Dev.**
+  Zwei Nebenbefunde: LayoutXLMs Vorsprung bei den Entities (0.932 gegen
+  0.927, überlebende Paare 0.970 gegen 0.956) passt zum gemessenen
+  Bildgewinn und trägt bis in die Gruppierung durch. Und **die Heuristik
+  verträgt Schüler-Entities schlecht** – ihr Gruppen-F1 fällt von 0.524 auf
+  0.478 (layoutxlm) bzw. 0.457 (gbert), während das Paarmodell stabil
+  bleibt. Die arithmetische Gegenprobe stützt die Reihenfolge: 0.912
+  (Lehrer), 0.898 (layoutxlm), 0.878 (gbert) bei Abdeckung um 0.54.
+  **Einschränkungen:** Dev stammt aus den Trainingswochen, die
+  Entity-Qualität ist dort in-distribution-optimistisch; kein
+  Konfidenzintervall; Richter ist ein LLM-Lehrer, gemessen wird
+  Übereinstimmung. Und `data/eval/offers_model_dev_ilp.json` hieß bis
+  heute unabhängig von der Entity-Quelle gleich – ein Lauf auf
+  Vorhersagen überschrieb den auf Lehrer-Entities. Jetzt trägt der Name
+  ein `_pred-<modell>`.
 - **Die Kette ist erstmals ende-zu-ende gemessen – und die Zahl steigt, weil
-  das Problem schrumpft.** Bis zum 10.08.2026 war das unmöglich:
+  das Problem schrumpft.** *(Erstbefund vom 10.08.2026, überholt durch den
+  Absatz darüber: 21 Dev-Seiten, alter Split, 51 Referenzseiten. Die
+  Warnung vor dem Nenner gilt unverändert und ist der Grund, warum die
+  Kette heute mitberichtet wird.)* Bis zum 10.08.2026 war das unmöglich:
   `data/predictions/gbert` hatte 101 Seiten (alle Test),
   `data/offer_groups/claude-sonnet-5` 51 (alle Train/Dev), **Schnittmenge
   null**. Nach `magda predict gbert --split dev` treffen sich beide auf 21
@@ -1362,6 +1402,32 @@ eine Liste auszugeben.
   Hinweise. Richter bleibt ein LLM-Lehrer, gemessen wird Übereinstimmung.
   Ob die Farbmerkmale bleiben oder fallen, ist eine Teamentscheidung – nicht
   vertretbar wäre nur, sie mitzuführen und dabei die alte Dev-Zahl zu zitieren.
+- **Bis zum 29.08.2026 las kein einziges Merkmal des Paarmodells den Text.**
+  Die 35 Merkmale in `offer_pairs.py` kennen Lage, Typ, Farbe und
+  Nachbarschaft – kein Wort. Dabei trägt der Textlayer die Struktur der
+  Kachel offen, und zwar in Wörtern, die als `O` durchs Labeling fallen:
+  ausgezählt über die 494 Trainingsseiten tragen von 7411 Preisen **2033
+  eine Mengenaktion** („je", „statt", „nur") und **2029 eine Einheit**
+  („Stück", „Set") in den drei Wörtern davor, **1117 ein „Aktion"** in den
+  zwei davor; dazu 1733 Treffer auf Wörtern des Kleingedruckten und 772
+  „oder". Der neue Block `lexical` (acht binäre Merkmale) macht daraus
+  Eingabe: vier `_before`-Merkmale binden, zwei `_between`-Merkmale
+  trennen. Messbar als Varianten `lexik` und `anker+lexik` in `magda
+  offers-grid`. **Noch nicht gemessen** – die Zahl kommt aus demselben
+  Aufbau wie bei den Kontext- und Farbmerkmalen (5 Folds, out-of-fold,
+  gepaart über Duplikat-Cluster).
+- **Die Legendennummer steht im Textlayer und ist trotzdem kein Merkmal
+  geworden.** Auf `1347387_p31` liegen die Ziffern 1–5 als eigene
+  Textläufe am Seitenanfang und -ende, ihre Boxen sitzen aber an den
+  Kacheln – in Lesereihenfolge unerreichbar weit weg, über die Box genau
+  am Angebot. In zwei Größen: eine schmale Legendenspalte am linken Rand
+  (Höhe 8,4) und Badges auf den Produktfotos (Höhe 13,3). Über den
+  Mittelpunktsabstand zugeordnet entscheidet ein Gleichstand:
+  „Pflanztopf-Set" liegt 29,6 von seiner „4" entfernt, sein Preis „8.99"
+  liegt 29,0 von der „5" des Nachbarangebots – das Merkmal bekäme genau
+  den belegten Fall falsch, für den es gebaut war. Deshalb entfernt statt
+  mitgeführt. Wer es wieder aufnimmt, braucht eine **gerichtete**
+  Zuordnung (die Nummer steht *vor* ihrem Eintrag), nicht den Abstand.
 - **Clusterweise ziehen heißt nicht automatisch fair ziehen.**
   `dataset.subset_by_clusters` sortierte zuerst nach absteigender
   Clustergröße – naheliegend und genau falschherum: die Duplikate landen
@@ -1689,6 +1755,18 @@ eine Liste auszugeben.
               vor_preis += i + 1 < len(tags) and tags[i + 1] == "B-PRICE"
   print(total, vor_preis)
   ```
+- **Gerichtete Relationen statt „gehören zusammen"?** Vorschlag von außen
+  (29.08.2026), noch nicht gebaut. Heute lernt das Paarmodell eine
+  *symmetrische* Frage: gehören i und j zum selben Angebot? Gerichtet
+  gestellt – PRODUCT → PRICE, QUANTITY → PRICE, BRAND → PRODUCT – ist die
+  Aufgabe womöglich leichter, weil BRAND und VALID nicht direkt aufeinander
+  zeigen müssen, sondern beide auf dieselbe Mitte. Der Haken sitzt in der
+  Ableitung: um eine gerichtete Zielgröße aus `data/offer_groups/` zu
+  gewinnen, braucht jede Referenzgruppe einen Kopf – und **982 von 5491
+  Gruppen (17,9 %) haben zwei oder mehr PRODUCT**. Der Kopf ist damit selbst
+  eine Modellierungsentscheidung, kein Datum. Als *hartes* Constraint im ILP
+  ist dieselbe Zahl schon der Widerlegungsgrund (siehe oben); als weiche
+  gerichtete Relation ist die Frage offen. Entscheidung steht aus.
 - Label-Set ist ein Entwurf und wird nach Sichtung der ersten gelabelten Seiten
   finalisiert.
 
