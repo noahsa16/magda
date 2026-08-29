@@ -73,17 +73,35 @@ MAX_ROUNDS = 40
 #       0.70             6               0.001 s    0.51 s
 #       0.90+            1               0.001 s    0.02 s
 #
-# Die Kosten haengen allein an der groessten Komponente. Bei den
-# kalibrierten Schwellen (0.94 bis 0.96) kostet das ILP nichts; teuer wird
-# nur der untere Rand des Kalibrierungsrasters, den am Ende ohnehin kein
-# Kriterium waehlt.
+# Die Kosten haengen allein an der groessten Komponente.
 #
 # **Die Kappung ist keine Kleinigkeit fuer die Auslegung der Kurve:** Wo sie
 # greift, *ist* das ILP Union-Find - und zwar an genau der Stelle, an der es
 # seinen Vorteil ausspielen sollte. Die Schwellenkurve ist deshalb nur
 # oberhalb der Kappung aussagekraeftig. Wie oft sie greift, zaehlt
 # `LAST_RUN` mit und gehoert in jeden Report.
-MAX_COMPONENT = 40
+#
+# **Von 40 auf 120 angehoben am 29.08.2026, und der Grund ist gemessen.**
+# Mit 40 kappte der Dev-Lauf des auf 494 Seiten neu trainierten Paarmodells
+# 5 von 297 Komponenten, die groesste mit 111 Entities. Diese 5 Blobs
+# erzeugten 20903 der 26279 vorhergesagten Paare - 80 % - und drueckten
+# Paar-F1 auf 0.398, waehrend Gruppen-F1 bei 0.659 stand. Die Kappung war
+# also nicht ein bisschen ungenau, sie entschied die Metrik.
+#
+# Ohne Kappung loest dieselbe 111er-Komponente in 6 bis 28 s und zerfaellt
+# in 15 Gruppen mit hoechstens 11 Entities - das ILP kann den Fall, es
+# durfte ihn nur nicht anfassen. Ueber eine Stichprobe von 12 Train-Seiten
+# und das ganze Kalibrierungsraster (0.50 bis 0.90) kostet 120 gegenueber
+# 40 den Faktor 2.7 und kappt dabei kein einziges Mal; die groesste
+# gebildete Gruppe faellt von 64 auf 17. Teurer wird dabei das *obere*
+# Ende, nicht das untere - unten spart die Kappung ja gerade die Arbeit,
+# die sie kaputtmacht.
+#
+# Der Wert deckt die groesste beobachtete Komponente mit Reserve, er ist
+# keine Garantie. Ob er reicht, sagt `LAST_RUN["capped"]` in jedem Report -
+# steht dort etwas anderes als 0, ist die Kurve wieder nur teilweise ein
+# ILP-Ergebnis.
+MAX_COMPONENT = 120
 
 # Zaehlwerk des letzten Laufs. Ein Modul-Zustand ist unschoen, aber die
 # Alternative waere ein Rueckgabewert an jedem Aufrufer entlang bis in den
