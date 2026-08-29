@@ -294,6 +294,15 @@ eine Liste auszugeben.
   Abbruch, den es nie gab. Maßgeblich ist der eingetragene Exit-Code. Tests, die
   einen Lauf starten, müssen auf den Pump-Thread warten, bevor sie `RUNS_DIR`
   zurückdrehen – sonst landet der Testlauf im echten `data/runs/`.
+- **Ein Python-Kind an einer Pipe puffert blockweise, und `bufsize=1` ändert
+  daran nichts.** Das Argument steuert nur das Lesen im Elternprozess.
+  Belegt am 30.08.2026: `magda offers-grid` lief 7,5 Stunden in eine
+  umgeleitete Datei und hinterließ sie **0 Bytes** groß – die fünf
+  Fortschrittszeilen füllten den 8-KB-Puffer nie. Im Frontend traf es
+  dieselben Schritte, also gerade die langen, bei denen man zusehen will.
+  `runner.py` setzt jetzt `PYTHONUNBUFFERED=1`; wer von Hand umleitet,
+  nimmt `python -u` oder dieselbe Variable. Ohne das ist ein Lauf ohne
+  Ausgabe nicht von einem hängenden zu unterscheiden.
 - **`data/runs/` ist die einzige Spur eines Laufs nach dem Backend-Neustart.**
   Der Ringpuffer in `runner.py` hält nur 400 Zeilen für die Live-Ansicht. Wer
   einen Fehlschlag untersucht, liest den Log auf der Platte. Aufgeräumt wird
