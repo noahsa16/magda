@@ -1476,6 +1476,52 @@ eine Liste auszugeben.
   Hinweise. Richter bleibt ein LLM-Lehrer, gemessen wird Übereinstimmung.
   Ob die Farbmerkmale bleiben oder fallen, ist eine Teamentscheidung – nicht
   vertretbar wäre nur, sie mitzuführen und dabei die alte Dev-Zahl zu zitieren.
+  **Überholt am 30.08.2026** – siehe den nächsten Punkt. Der Lauf dort misst
+  über 494 statt 54 Trainingsseiten, mit `MAX_COMPONENT = 120` statt 40 und
+  auf Dev statt out-of-fold. Drei Änderungen auf einmal, die Zahlen sind
+  deshalb nicht direkt vergleichbar; die Farbmerkmale drehen darin ihr
+  Vorzeichen.
+- **Der Lexikblock ist der größte Merkmalsgewinn des Projekts – und er sitzt
+  ganz im blinden Fleck** (30.08.2026, 7 Varianten in einem Prozess, 6 h 19
+  Rechenzeit, Training auf 494 Seiten, Messung auf 56 Dev-Seiten in 25
+  Duplikat-Clustern, ILP, Schwelle je Variante out-of-fold auf `group_f1`
+  kalibriert; `data/eval/offers_grid_dev_ilp.json`):
+
+  | Variante | Merkmale | Paar-F1 | Gruppen-F1 | Angebote | Differenz gegen `basis` | p |
+  |---|---:|---:|---:|---:|---|---:|
+  | basis | 30 | 0.918 | 0.702 | 453 | – | – |
+  | geometrie | 35 | 0.929 | 0.778 | 429 | +0.076 [+0.028, +0.142] | 0.000 |
+  | farbe | 34 | 0.933 | 0.745 | 450 | +0.044 [+0.013, +0.075] | 0.008 |
+  | beide | 39 | 0.935 | 0.798 | 430 | +0.096 [+0.036, +0.167] | 0.000 |
+  | anker | 38 | 0.943 | 0.783 | 423 | +0.082 [+0.016, +0.148] | 0.010 |
+  | **lexik** | 43 | 0.941 | **0.821** | 431 | **+0.119 [+0.058, +0.184]** | 0.000 |
+  | anker+lexik | 46 | 0.929 | 0.778 | 424 | +0.076 [+0.033, +0.128] | 0.000 |
+
+  **Der ganze Effekt liegt dort, wo die Rechnung schweigt.** Im blinden Fleck
+  hebt `lexik` Gruppen-F1 von 0.478 auf **0.709** (+0.232 [+0.136, +0.375],
+  p = 0.000); im prüfbaren Bereich ist **kein einziger** der sechs
+  Vergleiche signifikant (p 0.056 bis 0.574). Das ist kein Widerspruch,
+  sondern die Bestätigung der Arbeitsteilung: wo ein Grundpreis steht,
+  reicht die Geometrie schon.
+  **Drei Nebenbefunde:** Der Anker bringt auf der Geometrie nichts (0.783
+  gegen 0.778) und **schadet auf dem Lexikblock obendrauf** (`anker+lexik`
+  0.778 gegen `lexik` 0.821) – beide Blöcke lesen „Aktion", der Anker ist
+  darin schon enthalten. Die Farbmerkmale drehen ihr Vorzeichen gegen den
+  11.08.-Lauf (+0.044 statt −0.008), was aber durch drei gleichzeitige
+  Änderungen konfundiert ist und unter Bonferroni nicht hält. Und **keine
+  einzige Komponente wurde gekappt** (`capped: 0` in allen sieben
+  Varianten) – die 120 halten.
+  **Einschränkungen:** 18 Vergleiche ohne Korrektur für multiples Testen,
+  und die drei Bereiche sind nicht unabhängig (alle Paare = blind +
+  prüfbar). Bei Bonferroni (0.05/18) fallen `farbe` (0.008 / 0.012) und
+  `anker` gesamt (0.010) heraus; belastbar sind `geometrie`, `beide`,
+  `lexik` und `anker+lexik`. **Differenzen zwischen zwei Varianten haben
+  kein Intervall** – der gepaarte Bootstrap läuft nur gegen `basis`, weil
+  `per_page` nicht im Report steht. 25 Cluster, ein Lauf, keine
+  Seed-Streuung; Dev stammt aus den Trainingswochen, ist also
+  in-distribution-optimistisch. Richter bleibt ein LLM-Lehrer, gemessen
+  wird Übereinstimmung. Gegen die gemessene Decke (0.916) bleiben von
+  0.821 noch **9,5 Punkte**.
 - **Bis zum 29.08.2026 las kein einziges Merkmal des Paarmodells den Text.**
   Die 35 Merkmale in `offer_pairs.py` kennen Lage, Typ, Farbe und
   Nachbarschaft – kein Wort. Dabei trägt der Textlayer die Struktur der
@@ -1487,9 +1533,8 @@ eine Liste auszugeben.
   „oder". Der neue Block `lexical` (acht binäre Merkmale) macht daraus
   Eingabe: vier `_before`-Merkmale binden, zwei `_between`-Merkmale
   trennen. Messbar als Varianten `lexik` und `anker+lexik` in `magda
-  offers-grid`. **Noch nicht gemessen** – die Zahl kommt aus demselben
-  Aufbau wie bei den Kontext- und Farbmerkmalen (5 Folds, out-of-fold,
-  gepaart über Duplikat-Cluster).
+  offers-grid`. **Gemessen am 30.08.2026: der größte Merkmalsgewinn des
+  Projekts** (+0.119 Gruppen-F1, siehe oben).
 - **Die Legendennummer steht im Textlayer und ist trotzdem kein Merkmal
   geworden.** Auf `1347387_p31` liegen die Ziffern 1–5 als eigene
   Textläufe am Seitenanfang und -ende, ihre Boxen sitzen aber an den

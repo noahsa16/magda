@@ -1,6 +1,6 @@
 # Woche 7 — Eine Konstante war der größte Hebel des Projekts
 
-Stand: 29.08.2026
+Stand: 30.08.2026 (Bericht vom 29.08., Lexikblock am 30.08. nachgemessen)
 
 ## Kurzfassung
 
@@ -26,10 +26,12 @@ kalibriert, Referenz `data/offer_groups/claude-sonnet-5/`.)*
 
 Dieselbe Architektur, dieselben 35 Merkmale, dasselbe Netz mit 4097
 Parametern. Geändert wurde eine Zahl. Der Gewinn ist größer als der jedes
-Merkmalsblocks (+0.044) und größer als der Dekoderwechsel Union-Find → ILP
-selbst (+0.100), der bis dahin als der große Hebel des Projekts galt.
+damals gemessenen Merkmalsblocks (+0.044) und größer als der Dekoderwechsel
+Union-Find → ILP selbst (+0.100), der bis dahin als der große Hebel des
+Projekts galt. Einen Tag später hat der Lexikblock mit +0.119 gleichgezogen
+— gegen eine andere Basis gemessen, aber in derselben Größenordnung.
 
-Sechs Dinge stehen am Ende der Woche:
+Sieben Dinge stehen am Ende der Woche:
 
 1. **Das Verfahren fragmentiert nicht mehr.** 429 gebildete Angebote gegen
    422 in der Referenz; die Heuristik bildet 510.
@@ -42,12 +44,16 @@ Sechs Dinge stehen am Ende der Woche:
    der Relationskopf auf LiLT, ist in seiner Erwartung korrigiert.
 5. **Die Decke ist erstmals gemessen statt geschätzt: Gruppen-F1 0.916**
    zwischen zwei unabhängigen Annotatoren. Über 0.778 liegen damit rund 14
-   Punkte Luft — die Arbeit lohnt weiter.
+   Punkte Luft — die Arbeit lohnt weiter. Nach Punkt 7 sind es noch 9,5.
 6. **Die Kette ist erstmals als Kette gemessen.** Auf Schüler-Entities
    statt Lehrer-Entities bleibt Gruppen-F1 bei 0.781–0.782 — Fehler der
    ersten Stufe nehmen Aufgabe weg, aber keine Qualität. Damit hat die
    beste lokale Konfiguration eine Zahl: LayoutXLM plus Paarmodell,
    0.932 / 0.782 auf Dev.
+7. **Der lexikalische Block ist gebaut und gemessen** und schlägt mit
+   +0.119 Gruppen-F1 jeden bisherigen Merkmalsblock. Der Gewinn liegt
+   vollständig im blinden Fleck, also dort, wo die Arithmetik nichts
+   sagen kann.
 
 ## Wie die Notbremse eine Metrik entschied
 
@@ -395,7 +401,7 @@ unabhängig von der Entity-Quelle gleich, ein Lauf auf Vorhersagen
 Fragen unter einem Dateinamen — dieselbe Falle wie bei den Archivordnern in
 Woche 6. Der Name trägt jetzt ein `_pred-<modell>`.
 
-## Der lexikalische Block ist gebaut, nicht gemessen
+## Der lexikalische Block: warum er gebaut wurde
 
 Bis heute las **kein einziges** der 35 Merkmale ein Wort. Das Paarmodell
 entscheidet nach Lage, Typ, Farbe und Nachbarschaft; der Text der Seite
@@ -419,10 +425,8 @@ Beschreibung davor), und zwei `_between`-Merkmale, die trennen („Aktion"
 Grenze, die `labeling.trim_spans` schon beim Labeln zieht). Messbar als
 Varianten `lexik` und `anker+lexik`.
 
-**Gemessen ist davon nichts.** Der Block ist gebaut, getestet und
-abschaltbar; die Zahl kommt aus demselben Aufbau wie bei den Kontext- und
-Farbmerkmalen — fünf Folds, out-of-fold, gepaart über Duplikat-Cluster. Bis
-dahin ist er eine Vermutung mit Belegen, kein Ergebnis.
+Bis zum Abend des 29.08. war das eine Vermutung mit Belegen, kein
+Ergebnis. Die Messung steht zwei Abschnitte weiter unten.
 
 ### Ein Merkmal, das vor der Messung fiel
 
@@ -444,6 +448,93 @@ Zuordnung (die Nummer steht *vor* ihrem Eintrag), nicht den Abstand.
 Der Aufwand dafür waren zwanzig Minuten und eine Auszählung. Das ist die
 billigste Stelle, an der ein Merkmal sterben kann — vor dem Messlauf, nicht
 danach.
+
+## Der Lexikblock ist gemessen: +0.119, und er sitzt im blinden Fleck
+
+Der Lauf vom 30.08.2026 misst sieben Varianten in **einem** Prozess — nötig,
+weil der gepaarte Bootstrap die seitenweisen Zählungen aller Varianten
+zusammen braucht. 22 740 s reine Variantenzeit (6 h 19) auf einem Kern,
+Training auf 494 Trainingsseiten, Messung auf 56 Dev-Seiten in 25
+Duplikat-Clustern, ILP-Dekoder, Schwelle je Variante out-of-fold auf
+`group_f1` kalibriert. Report: `data/eval/offers_grid_dev_ilp.json`.
+
+| Variante | Merkmale | Paar-F1 | Gruppen-F1 | Angebote | Differenz gegen `basis` | p |
+|---|---:|---:|---:|---:|---|---:|
+| basis | 30 | 0.918 | 0.702 | 453 | – | – |
+| geometrie | 35 | 0.929 | 0.778 | 429 | +0.076 [+0.028, +0.142] | 0.000 |
+| farbe | 34 | 0.933 | 0.745 | 450 | +0.044 [+0.013, +0.075] | 0.008 |
+| beide | 39 | 0.935 | 0.798 | 430 | +0.096 [+0.036, +0.167] | 0.000 |
+| anker | 38 | 0.943 | 0.783 | 423 | +0.082 [+0.016, +0.148] | 0.010 |
+| **lexik** | 43 | 0.941 | **0.821** | 431 | **+0.119 [+0.058, +0.184]** | 0.000 |
+| anker+lexik | 46 | 0.929 | 0.778 | 424 | +0.076 [+0.033, +0.128] | 0.000 |
+
+Die Referenz enthält 422 Angebote. `lexik` bildet 431, `basis` 453 — der
+Block nimmt der Fragmentierung den Rest.
+
+### Der Gewinn liegt vollständig dort, wo die Rechnung schweigt
+
+| Variante | Gruppen-F1 blind | Differenz | p | Gruppen-F1 prüfbar | p |
+|---|---:|---|---:|---:|---:|
+| basis | 0.478 | – | – | 0.841 | – |
+| geometrie | 0.654 | +0.176 | 0.002 | 0.850 | 0.364 |
+| farbe | 0.538 | +0.060 | 0.012 | 0.872 | 0.172 |
+| beide | 0.696 | +0.219 | 0.002 | 0.857 | 0.078 |
+| anker | 0.647 | +0.169 | 0.000 | 0.860 | 0.574 |
+| **lexik** | **0.709** | **+0.232** | 0.000 | **0.885** | 0.056 |
+| anker+lexik | 0.649 | +0.172 | 0.000 | 0.851 | 0.556 |
+
+Im prüfbaren Bereich ist **kein einziger** der sechs Vergleiche
+signifikant. Das ist kein enttäuschendes Nebenergebnis, sondern die
+Bestätigung einer Arbeitsteilung, die das Projekt schon vermutet hatte: wo
+ein Grundpreis steht, reicht die Geometrie, und Menge × Grundpreis fängt
+den Rest. Der blinde Fleck — Non-Food, keine Rechnung möglich — war der
+Bereich, für den die Merkmale gebaut wurden, und er steigt von 0.478 auf
+0.709. Das ist gut die Hälfte des Abstands zur gemessenen Decke.
+
+### Der Anker ist überflüssig geworden und schadet in Kombination
+
+`anker` liegt mit 0.783 praktisch auf `geometrie` (0.778); der Block
+verdient sein Geld nicht. Schlimmer: `anker+lexik` fällt mit 0.778 hinter
+`lexik` (0.821) zurück. Beide Blöcke lesen dasselbe Wort — „Aktion" ist
+`action_before_i/j` im Lexikblock und zugleich der Kern des Ankers. Die
+Verdopplung bringt keine Information und kostet Parameter.
+
+Das ist die zweite Stelle in dieser Woche, an der ein Merkmal an der
+Messung stirbt statt an einer Meinung — die erste war die Legendennummer,
+und die starb schon vor dem Messlauf.
+
+### Die Farbmerkmale drehen ihr Vorzeichen — mit drei Vorbehalten
+
+Am 11.08. waren sie −0.008 über alle Paare und −0.051 im blinden Fleck,
+also aktiv schädlich. Jetzt sind sie +0.044 (p = 0.008) beziehungsweise
++0.060 (p = 0.012), und `beide` steht im blinden Fleck bei +0.219.
+
+**Das ist kein sauberer Widerspruchsbeleg.** Zwischen den beiden Läufen
+haben sich drei Dinge gleichzeitig geändert: der Messaufbau (damals
+`--cross-validate` über 68 Cluster, heute Dev-Holdout über 25), die
+Referenzgröße (54 → 494 Trainingsseiten) und `MAX_COMPONENT` (40 → 120).
+Welches davon die Umkehr trägt, sagt dieser Lauf nicht. Dazu hält die
+Farbe unter Bonferroni nicht. Belastbar ist nur: der frühere Negativbefund
+gilt für seinen Aufbau, nicht als Eigenschaft der Merkmale.
+
+### Was der Lauf nicht hergibt
+
+- **18 Vergleiche ohne Korrektur für multiples Testen**, und die drei
+  Bereiche sind nicht unabhängig (alle Paare = blind + prüfbar). Bei
+  Bonferroni (0.05/18 = 0.0028) fallen `farbe` in beiden Bereichen und
+  `anker` über alle Paare heraus. Belastbar bleiben `geometrie`, `beide`,
+  `lexik` und `anker+lexik`.
+- **Differenzen zwischen zwei Varianten haben kein Intervall.** Der
+  gepaarte Bootstrap läuft nur gegen `basis`, weil `per_page` nicht in den
+  Report geschrieben wird. „`lexik` schlägt `geometrie` um +0.043" ist
+  deshalb eine Punktschätzung — genau die Aussage, die das Projekt sonst
+  nicht macht.
+- 25 Auswertungs-Cluster, ein Lauf, keine Seed-Streuung. Dev stammt aus den
+  Trainingswochen und ist damit in-distribution-optimistisch.
+- Richter ist ein LLM-Lehrer. Gemessen wird Übereinstimmung, nicht
+  Richtigkeit.
+- Gegen die gemessene Decke (0.916) bleiben von 0.821 noch **9,5 Punkte**.
+  Vor einer Woche waren es 21.
 
 ## Der billige Weg zu Embeddings ist gemessen — und er trägt nicht
 
@@ -510,15 +601,26 @@ Ausgang.
   zweite Nachkommastelle.
 - **Konfidenzintervall für den Dev-Vorsprung** über einen gepaarten
   Bootstrap über die 25 Cluster.
-- **Die Ablationen auf der vollen Referenz wiederholen.** Die Null-Befunde
-  zu Farbe und Anker stammen aus einem Lauf über 75 Seiten; die Referenz
-  hat inzwischen 666. Ein echter +0.02-Effekt läge in beiden Intervallen
-  unentdeckt. Dazu kommt, dass beide mit gekapptem ILP gemessen wurden.
-- **Den lexikalischen Block messen.** Gebaut ist er (siehe oben), gemessen
-  nicht. Der Lauf braucht `geometrie, anker, lexik, anker+lexik` in *einem*
-  Prozess — der gepaarte Bootstrap vergleicht nur Varianten, deren
-  seitenweise Zählungen zusammen vorliegen. Ein zweiter Lauf neben dem
-  laufenden ist deshalb richtig, kein Nachteil.
+- ~~**Die Ablationen auf der vollen Referenz wiederholen.**~~ ~~**Den
+  lexikalischen Block messen.**~~ Beides am 30.08.2026 erledigt (siehe
+  oben). Was daraus neu offen ist, steht in den nächsten drei Punkten.
+- **`per_page` in den Gitter-Report schreiben.** Ohne die seitenweisen
+  Zählungen gibt es Intervalle nur gegen `basis`; „`lexik` schlägt
+  `geometrie`" bleibt eine Punktschätzung. Dieselbe Änderung macht die
+  Parallelisierung methodisch unbedenklich — der gepaarte Bootstrap
+  braucht die Zahlen, nicht denselben Prozess.
+- **Den Gitterlauf parallelisieren.** Er belegt einen von acht Kernen,
+  obwohl er auf drei Ebenen unabhängig ist (7 Varianten × 5 Folds × 25
+  Schwellen). Aus 6 h 19 würden auf diesem Rechner rund 100 Minuten.
+- **Über den Anker entscheiden.** Er ist durch den Lexikblock ersetzt und
+  schadet in Kombination mit ihm. Ersatzlos streichen ist naheliegend;
+  eine Teamentscheidung ist es trotzdem, weil er in `offer_pairs.py` als
+  eigener Block dokumentiert ist.
+- **Die Dekodierzeit je Seite in `magda offers-model eval` mitschreiben.**
+  Gemessen wurden 0,56 s je Dev-Seite gegen 0,264 s fürs Labeln — die
+  Zahl trennt Messapparatur von Pipeline und trägt die Kostenaussage des
+  Projekts mit. Sie steht bisher nur in einem Ad-hoc-Skript, also nicht im
+  Repo.
 - ~~**Eingefrorene LiLT-Span-Embeddings** als weiterer Block~~ — gemessen
   und erledigt (siehe oben). Offen bleibt die teure Variante: ein
   Relationskopf end-to-end auf LiLT, fünf Fold-Finetunings je Gitterzelle.
