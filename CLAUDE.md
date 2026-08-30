@@ -1240,6 +1240,39 @@ eine Liste auszugeben.
   selbst nimmt. Entweder gilt der Satz für einen anderen Rechner im Team
   oder er ist veraltet – vor der nächsten GPU-Miete nachprüfen, statt ihn
   weiterzureichen.
+- **Der ILP-Dekoder lief unter Rosetta, und das hat einen Messlauf
+  gekostet.** Der Gitterlauf vom 29.08. wurde nach **14 h 55 ohne
+  Ergebnis** abgebrochen. Ursache war nicht die Komponentengröße, sondern
+  der Solver: PuLPs mitgeliefertes CBC ist ein **x86_64-Binary** und läuft
+  auf dem M2 unter Rosetta, und `PULP_CBC_CMD` startet **je
+  Schnittebenen-Runde einen neuen Prozess**, schreibt das Modell als MPS
+  und liest es wieder ein – bei der beobachteten Instanz 1,9 MB pro Runde.
+  Was wie „eine harte Instanz" aussah, waren vier *Runden* derselben
+  93er-Komponente zu je 1,5 bis 2 Stunden.
+  Gemessen an genau dieser Instanz (93 Entities, 4278 binäre Variablen,
+  6772 nachgereichte Dreiecke): **HiGHS 96 s, CBC nach 900 s noch nicht
+  fertig**, Zielwert beide Male 990.238714. Faktor also mindestens 9,4.
+  `offer_ilp._solver()` nimmt jetzt HiGHS und fällt ohne highspy auf CBC
+  zurück – gleiches Ergebnis, längerer Lauf. Der Wechsel ist methodisch
+  folgenlos, das hält `test_beide_solver_finden_dasselbe_optimum` fest.
+- **Komponenten dieser Größe sind der Normalfall, nicht der Ausreißer.**
+  Ausgezählt über 40 Trainingsseiten, ohne Solver (die Komponentenbildung
+  hängt nur an den Kantengewichten):
+
+  | Schwelle | größte | >40 Entities | >80 |
+  |---|---:|---:|---:|
+  | 0.52 | 119 | 18 | 2 |
+  | 0.68 (Arbeitsschwelle) | 118 | 12 | 1 |
+  | 0.92 | 46 | 1 | 0 |
+
+  Der Gitterlauf löst so etwas je Variante, Fold und Schwelle dutzendfach.
+  **Das hängt direkt an `MAX_COMPONENT` 40 → 120:** Der Sprung hat
+  Gruppen-F1 um 12 Punkte gehoben und zugleich genau diese 90- bis
+  118er-Brocken ans ILP gegeben statt an Union-Find – dreifache Knotenzahl,
+  neunfache Variablenzahl. Im Trainingslauf fiel das nicht auf, weil der
+  einmal dekodiert statt über das ganze Raster. Die Konsequenz ist nicht,
+  die Kappung zurückzudrehen, sondern das ILP für 120 Knoten tauglich zu
+  halten.
 - **Die Gruppierungsläufe sind single-threaded, und deshalb hilft RunPod
   dort nicht.** Gemessen am 29.08.2026: `magda offers-grid` und `magda
   offers-model train` belegen zusammen einen Kern von acht. Eine GPU ist
