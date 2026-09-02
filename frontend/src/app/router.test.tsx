@@ -10,7 +10,7 @@ vi.stubGlobal("fetch", vi.fn(async () => new Response("[]", {
 })))
 
 describe("App-Shell", () => {
-  it("zeigt die Navigation mit allen vier Bereichen", async () => {
+  it("zeigt die Navigation mit allen fünf Bereichen", async () => {
     const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
     const router = createMemoryRouter(routes, { initialEntries: ["/"] })
     render(
@@ -24,6 +24,8 @@ describe("App-Shell", () => {
     // gemeinsamen Einstieg: "wessen Labels?" ist die erste Frage.
     expect(screen.getByRole("link", { name: /Daten/ })).toHaveAttribute("href", "/labels")
     expect(screen.getByRole("link", { name: /Ergebnis/ })).toBeInTheDocument()
-    expect(screen.queryByRole("link", { name: /Demo/ })).not.toBeInTheDocument()
+    // Ein fremdes PDF ohne den Umweg über data/ - eigener Einstieg neben der
+    // Ernte-Pipeline, siehe magda.pipeline.extract_offers.
+    expect(screen.getByRole("link", { name: /Demo/ })).toHaveAttribute("href", "/demo")
   })
 })
