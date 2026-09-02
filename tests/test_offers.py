@@ -1,11 +1,24 @@
 import json
 import sqlite3
 
-from magda.offers import cluster_page, entities_from_page, write_sqlite
+from magda.offers import _quantity_in_unit, cluster_page, entities_from_page, write_sqlite
 
 
 def _word(text, x0, y0, x1, y1):
     return {"text": text, "bbox": [x0, y0, x1, y1]}
+
+
+def test_mehrfachpackung_multipliziert_menge_mit_multiplikator():
+    """"2 x 350 g" ist 0.7 kg, nicht 0.35 - der belegte Fall aus CLAUDE.md."""
+    assert _quantity_in_unit("2 x 350 g", "kg") == 0.7
+    assert _quantity_in_unit("6x1,5 l", "l") == 9.0
+    assert _quantity_in_unit("2 × 350 g", "kg") == 0.7
+
+
+def test_menge_ohne_multiplikator_bleibt_unveraendert():
+    assert _quantity_in_unit("800-g-Packung", "kg") == 0.8
+    assert _quantity_in_unit("250 g", "kg") == 0.25
+    assert _quantity_in_unit("kein Zahlwort hier", "kg") is None
 
 
 def test_entities_enthalten_text_box_und_kontext():

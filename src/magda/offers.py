@@ -465,6 +465,11 @@ def _make_offer(page_id: str, offer_id: int, members: list[Entity]) -> Offer:
 
 
 _QUANTITY_RE = re.compile(r"(\d+(?:[.,]\d+)?)\s*-?\s*(kg|g|ml|l)\b", re.IGNORECASE)
+# Mehrfachpackungen: "2 x 350 g", "6x1,5 l", "2 × 350 g" - der Multiplikator
+# steht immer VOR der Menge, nie dahinter (kein belegter Gegenfall im Korpus).
+_MULTIPLIER_QUANTITY_RE = re.compile(
+    r"(\d+(?:[.,]\d+)?)\s*[x×]\s*(\d+(?:[.,]\d+)?)\s*-?\s*(kg|g|ml|l)\b", re.IGNORECASE
+)
 _UNIT_PRICE_RE = re.compile(r"1\s*(kg|l)\s*=\s*(\d+(?:[.,]\d+)?)", re.IGNORECASE)
 _NUMBER_RE = re.compile(r"(\d+(?:[.,]\d+)?)")
 
@@ -481,15 +486,21 @@ def _price_value(text: str) -> float | None:
 def _quantity_in_unit(text: str, unit: str) -> float | None:
     """Menge in derselben Einheit wie ein Grundpreis, z.B. "800-g-Packung" -> 0.8 fuer unit="kg".
 
-    Mehrfachpackungen ("6 x 1,5 l") werden nicht erkannt - das Regex liest nur
-    das erste Zahl-Einheit-Paar, ohne den Multiplikator. Bewusst kein Fehler:
-    ein falscher Erwartungswert findet dann einfach keinen passenden Preis und
-    aendert nichts, statt eine falsche Zuordnung zu erzwingen.
+    Mehrfachpackungen ("2 x 350 g", "6x1,5 l") werden erkannt: der
+    Multiplikator wird auf die Menge multipliziert, bevor sie umgerechnet
+    wird - "2 x 350 g" liefert fuer unit="kg" 0.7, nicht 0.35. Ohne
+    Multiplikator im Text ("800-g-Packung") bleibt das Verhalten unveraendert.
     """
-    match = _QUANTITY_RE.search(text)
-    if not match:
-        return None
-    value, found_unit = _to_float(match.group(1)), match.group(2).lower()
+    multiplier_match = _MULTIPLIER_QUANTITY_RE.search(text)
+    if multiplier_match:
+        multiplier = _to_float(multiplier_match.group(1))
+        value = _to_float(multiplier_match.group(2)) * multiplier
+        found_unit = multiplier_match.group(3).lower()
+    else:
+        match = _QUANTITY_RE.search(text)
+        if not match:
+            return None
+        value, found_unit = _to_float(match.group(1)), match.group(2).lower()
     if unit == "kg" and found_unit == "g":
         return value / 1000
     if unit == "l" and found_unit == "ml":
