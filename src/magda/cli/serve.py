@@ -58,6 +58,15 @@ def main(argv=None):
     except ModuleNotFoundError:
         sys.exit("uvicorn fehlt. Einmalig: pip install -e '.[dev]'")
 
+    # Einmal je Start statt bei jedem Request: data/uploads/ waechst mit
+    # jedem Demo-Versuch, und anders als data/runs/ gibt es dafuer kein
+    # Zahllimit, nur ein Alter, ab dem ein Ergebnis niemanden mehr interessiert.
+    from magda import uploads
+
+    removed = uploads.prune()
+    if removed:
+        print(f"{removed} alte Demo-Uploads aufgeraeumt.")
+
     vite = _starte_frontend() if args.frontend else None
     if vite is not None:
         print("Frontend: http://localhost:5173")

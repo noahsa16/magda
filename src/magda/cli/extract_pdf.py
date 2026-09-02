@@ -55,6 +55,16 @@ def main(argv=None):
         help="Gerenderte Seitenbilder zusätzlich hier ablegen (sonst nur "
              "temporär für LayoutXLM/Farbmerkmale genutzt und verworfen).",
     )
+    parser.add_argument(
+        "--render-images", action="store_true",
+        help="Seitenbild auch rendern, wenn weder Variante noch Paarmodell es "
+             "brauchen (z.B. gbert) - für --images-dir ohne eigenen Bildbedarf.",
+    )
+    parser.add_argument(
+        "--no-embed-images", action="store_true",
+        help="Seitenbilder nicht base64-kodiert in --out .json einbetten. Nur "
+             "sinnvoll zusammen mit --images-dir, sonst gehen sie verloren.",
+    )
     args = parser.parse_args(argv)
 
     pdf_path = Path(args.pdf)
@@ -73,7 +83,9 @@ def main(argv=None):
     print(f"Modelle geladen in {time.perf_counter() - t0:.1f}s.", file=sys.stderr)
 
     pdf_bytes = pdf_path.read_bytes()
-    result = pipeline.extract_offers(pdf_bytes, models, progress=_progress)
+    result = pipeline.extract_offers(
+        pdf_bytes, models, progress=_progress, render_images=args.render_images,
+    )
 
     print(
         f"\n{len(result.pages)} Seiten, {len(result.offers)} Angebote "
@@ -99,14 +111,16 @@ def main(argv=None):
                 written += 1
         print(f"{written} Seitenbilder -> {images_dir}", file=sys.stderr)
 
+    embed_images = not args.no_embed_images
+
     if not args.out:
-        print(pipeline.to_json(result))
+        print(pipeline.to_json(result, embed_images=embed_images))
         return
 
     out_path = Path(args.out)
     suffix = out_path.suffix.lower()
     if suffix == ".json":
-        out_path.write_text(pipeline.to_json(result), encoding="utf-8")
+        out_path.write_text(pipeline.to_json(result, embed_images=embed_images), encoding="utf-8")
     elif suffix == ".csv":
         out_path.write_text(pipeline.to_csv(result), encoding="utf-8")
     elif suffix in (".sqlite", ".db"):

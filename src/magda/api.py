@@ -17,13 +17,13 @@ import tempfile
 from datetime import datetime
 from typing import Literal
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
 from magda import (
     agreement, catalog_meta, catalogs, checkpoints, config, dedupe, jobs, runner,
-    runs, scraping,
+    runs, scraping, uploads,
 )
 from magda import label_audit, offer_teacher, offers_gold
 from magda.gold import count_by_status, words_hash
@@ -953,3 +953,31 @@ def put_audit_verdict(label: str, key: str, payload: AuditVerdict):
 
     label_audit.save_audit(data)
     return {"key": key, "applied_to": len(affected), "summary": label_audit.summarize(data)}
+
+
+# ---------------------------------------------------------------------------
+# Demo (data/uploads/, sechste und letzte Schreibstelle der API)
+# ---------------------------------------------------------------------------
+# Ein fremdes PDF, hochgeladen oder aus einer Katalog-URL zusammengesetzt,
+# läuft über `magda.pipeline.extract_offers` - ohne data/raw, data/words oder
+# data/predictions zu berühren. Verarbeitet wird über den Runner (Job
+# "extract-pdf", siehe jobs.py), nicht inline im Request: Ein Prospekt mit
+# vierzig Seiten braucht Sekunden bis Minuten, und ein FastAPI-Handler ist
+# der falsche Ort für einen so langen synchronen Aufruf.
+
+
+def _valid_upload_id(upload_id: str) -> str:
+    if not uploads.is_valid_id(upload_id):
+        raise HTTPException(400, f"Ungültige Upload-ID: {upload_id!r}")
+    return upload_id
+
+
+@app.post("/api/demo/upload")
+async def demo_upload(file: UploadFile = File(...)):
+    if file.content_type != "application/pdf":
+        raise HTTPException(400, f"Nur PDF erlaubt, bekommen: {file.content_type}")
+    data = await file.read()
+    try:
+        return uploads.save_pdf(data)
+    except uploads.InvalidUpload as e:
+        raise HTTPException(400, str(e))

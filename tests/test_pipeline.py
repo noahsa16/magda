@@ -208,6 +208,35 @@ def test_to_json_ist_ohne_binaerdaten_decodierbar(monkeypatch):
     assert all(p["png_base64"] is None for p in payload["pages"])
 
 
+def test_render_images_erzwingt_seitenbild_auch_ohne_variantenbedarf(monkeypatch):
+    """gbert braucht selbst kein Bild - die Demo zeichnet Angebots-Boxen aber
+    unabhaengig von der Variante, deshalb render_images=True als Override."""
+    import magda.predict as predict_module
+
+    monkeypatch.setattr(predict_module, "predict_pages", _make_fake_predict_pages(_TAGS_BY_PAGE))
+    result = pipeline.extract_offers(_build_pdf(), _fake_models(), render_images=True)
+
+    # Seite 4 ist leer (kein Textlayer) und wird uebersprungen, bevor ueberhaupt
+    # ein Bild gerendert wuerde - die drei anderen tragen alle eins.
+    assert all(p.png_bytes is not None for p in result.pages[:3])
+    assert result.pages[3].png_bytes is None
+
+
+def test_to_json_embed_images_false_laesst_base64_weg(monkeypatch):
+    import json
+
+    import magda.predict as predict_module
+
+    monkeypatch.setattr(predict_module, "predict_pages", _make_fake_predict_pages(_TAGS_BY_PAGE))
+    result = pipeline.extract_offers(_build_pdf(), _fake_models(), render_images=True)
+
+    payload = json.loads(pipeline.to_json(result, embed_images=False))
+    # Ohne die Nutzlast waeren die Bilder verloren, gaebe es sie nicht separat
+    # ueber --images-dir (magda.cli.extract_pdf) - hier wird nur geprueft,
+    # dass embed_images=False sie tatsaechlich weglaesst.
+    assert all(p["png_base64"] is None for p in payload["pages"])
+
+
 def test_to_sqlite_hat_dasselbe_schema_wie_write_sqlite(monkeypatch, tmp_path):
     result = _run(monkeypatch)
     pipeline_db = tmp_path / "pipeline.sqlite"

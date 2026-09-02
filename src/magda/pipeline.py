@@ -170,6 +170,7 @@ def extract_offers(
     models: LoadedModels,
     *,
     progress: Callable[[int, int, float], None] | None = None,
+    render_images: bool = False,
 ) -> PipelineResult:
     """Baut aus einem mehrseitigen PDF Wörter, Entities und Angebote je Seite.
 
@@ -185,6 +186,14 @@ def extract_offers(
     `doc_id` (Grundlage für die Seiten-IDs `<doc_id>_p<n>`) ist der Hash der
     PDF-Bytes, nicht ein Dateiname - ein fremdes PDF hat keine Katalog-ID, und
     zwei Aufrufe mit demselben Inhalt sollen dieselben Seiten-IDs ergeben.
+
+    `render_images=True` erzwingt das Rendern jeder Seite unabhängig davon,
+    ob Variante oder Paarmodell ein Bild brauchen - für `gbert` (kein Bild
+    nötig) wäre `png_bytes` sonst durchgehend `None`. Die Demo braucht das
+    Seitenbild trotzdem, um Angebots-Boxen darauf zu zeichnen, egal welche
+    Variante gewählt wurde; ohne den eigenen Bedarf jeder Variante/jedes
+    Paarmodells zu kennen, wäre das sonst nur über den Umweg "immer Bild"
+    für alle drei magda-Wege (`magda predict`, `magda offers`, hier) lösbar.
     """
     import fitz  # PyMuPDF
 
@@ -236,7 +245,7 @@ def extract_offers(
             }
 
             png_bytes = None
-            if models.spec.image or needs_pixels:
+            if models.spec.image or needs_pixels or render_images:
                 png_bytes = render_png_page(doc[i])
                 (images_dir / f"{page_id}.png").write_bytes(png_bytes)
 
@@ -302,8 +311,14 @@ def _offer_to_json(offer: PipelineOffer) -> dict:
     return payload
 
 
-def to_json(result: PipelineResult) -> str:
-    """Das ganze Ergebnis als JSON-String - Seitenbilder base64-kodiert."""
+def to_json(result: PipelineResult, *, embed_images: bool = True) -> str:
+    """Das ganze Ergebnis als JSON-String - Seitenbilder base64-kodiert.
+
+    `embed_images=False` lässt `png_base64` durchgehend `None`, auch wenn
+    `png_bytes` vorliegt: Wer die Seitenbilder ohnehin separat ablegt (die
+    Demo über `--images-dir`, siehe `cli/extract_pdf.py`), soll sie nicht ein
+    zweites Mal - base64-aufgebläht - in derselben Datei tragen.
+    """
     import base64
 
     payload = {
@@ -318,7 +333,7 @@ def to_json(result: PipelineResult) -> str:
                 "height": page.height,
                 "png_base64": (
                     base64.b64encode(page.png_bytes).decode("ascii")
-                    if page.png_bytes else None
+                    if embed_images and page.png_bytes else None
                 ),
                 "words": page.words,
                 "entities": page.entities,
