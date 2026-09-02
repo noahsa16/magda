@@ -86,12 +86,39 @@ def _pair_model_grouping(checkpoint_path, parser):
         entities = [e for e in offers.entities_from_page(page) if e.type in offers.VALUE_TYPES]
         page_id = page.get("page_id") or "unknown"
         groups = model.group_page(page, model.threshold)
-        return [
-            offers._make_offer(page_id, index, [entities[i] for i in group])
-            for index, group in enumerate(groups)
-        ]
+        # Fuer die Konfidenz genuegen dieselben Kantenwahrscheinlichkeiten,
+        # die `group_page` intern schon berechnet hat - hier trotzdem neu
+        # angefragt statt sie aus `group_page` herauszureichen: die Methode
+        # ist der oeffentliche Vertrag von `PairClassifier`, ein zweiter
+        # interner Rueckgabewert nur fuer diesen Aufrufer waere Kopplung an
+        # ein Implementierungsdetail.
+        scores = model.score_page(page) if groups else {}
+        result = []
+        for index, group in enumerate(groups):
+            offer = offers._make_offer(page_id, index, [entities[i] for i in group])
+            offer.confidence = _group_confidence(group, scores)
+            result.append(offer)
+        return result
 
     return grouping
+
+
+def _group_confidence(group: list[int], scores: dict) -> float:
+    """Mittel der Paarwahrscheinlichkeiten aller Entity-Paare einer Gruppe.
+
+    Eine Einer-Gruppe hat kein Paar und damit kein Signal vom Modell - 1.0
+    ist hier keine gemessene Sicherheit, sondern die Konvention "nichts
+    widerspricht sich, weil es nichts zu vergleichen gibt" (dieselbe Regel,
+    mit der `magda offers-model eval` Ein-Entity-Gruppen behandelt)."""
+    if len(group) <= 1:
+        return 1.0
+    values = [
+        scores[(min(a, b), max(a, b))]
+        for i, a in enumerate(group)
+        for b in group[i + 1:]
+        if (min(a, b), max(a, b)) in scores
+    ]
+    return sum(values) / len(values) if values else 1.0
 
 
 def main(argv=None):

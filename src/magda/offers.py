@@ -89,6 +89,11 @@ class Offer:
     page_id: str
     bbox: tuple[float, float, float, float]
     entities: list[Entity]
+    # Nur von `--grouper pair-model` gesetzt (Mittel der Paarwahrscheinlichkeiten
+    # ueber alle Entity-Paare der Gruppe). Die Heuristik kennt keine
+    # Wahrscheinlichkeit, dort bleibt es NULL - kein geschaetzter Wert, der
+    # Sicherheit vortaeuscht, wo keine gemessen wurde.
+    confidence: float | None = None
 
     def values(self) -> dict[str, str | None]:
         result: dict[str, str | None] = {entity_type.lower(): None for entity_type in ENTITY_TYPES}
@@ -816,7 +821,16 @@ def write_sqlite(
     pair-model` reicht stattdessen `PairClassifier.group_page` durch. `grouper`
     ist nur die Buchfuehrung dazu: welches Verfahren steckt hinter dieser
     Zeile, neben `source` (welche Labelquelle).
+
+    `arithmetic` (Menge x Grundpreis, `offers_verify.judge_offers`) wird
+    unabhaengig vom Verfahren fuer jedes Angebot berechnet - die Rechnung ist
+    dieselbe unbeteiligte Kontrolle wie in `magda offers-model eval`, egal ob
+    die Gruppierung von der Heuristik oder vom Paarmodell stammt. `confidence`
+    dagegen ist Sache der Gruppierungsfunktion selbst: nur wer Wahrscheinlichkeiten
+    kennt (das Paarmodell), setzt sie auf dem `Offer`; sonst bleibt sie NULL.
     """
+    from magda import offers_verify
+
     db_path.parent.mkdir(parents=True, exist_ok=True)
     with sqlite3.connect(db_path) as conn:
         _create_schema(conn)
@@ -833,7 +847,9 @@ def write_sqlite(
         entity_count = 0
         variant_count = 0
         for page in pages:
-            for offer in grouping(page):
+            page_offers = grouping(page)
+            arithmetic = offers_verify.judge_offers(page, page_offers)
+            for offer, verdict in zip(page_offers, arithmetic):
                 values = offer.values()
                 bbox_json = json.dumps(list(offer.bbox))
                 cursor = conn.execute(
@@ -841,9 +857,10 @@ def write_sqlite(
                     insert into offers (
                         source, grouper, page_id, offer_index, bbox,
                         product, brand, price, old_price, quantity,
-                        discount, valid, unit_price, app_price
+                        discount, valid, unit_price, app_price,
+                        confidence, arithmetic
                     )
-                    values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """,
                     (
                         source,
@@ -860,6 +877,8 @@ def write_sqlite(
                         values["valid"],
                         values["unit_price"],
                         values["app_price"],
+                        offer.confidence,
+                        verdict,
                     ),
                 )
                 db_offer_id = int(cursor.lastrowid)
@@ -935,6 +954,8 @@ def _create_schema(conn: sqlite3.Connection) -> None:
             valid text,
             unit_price text,
             app_price text,
+            confidence real,
+            arithmetic text,
             unique(source, page_id, offer_index)
         );
 
@@ -986,3 +1007,7 @@ def _migrate_schema(conn: sqlite3.Connection) -> None:
     existing = {row[1] for row in conn.execute("pragma table_info(offers)")}
     if "grouper" not in existing:
         conn.execute("alter table offers add column grouper text not null default 'heuristic'")
+    if "confidence" not in existing:
+        conn.execute("alter table offers add column confidence real")
+    if "arithmetic" not in existing:
+        conn.execute("alter table offers add column arithmetic text")

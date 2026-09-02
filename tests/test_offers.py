@@ -176,6 +176,65 @@ def test_sqlite_export_schreibt_angebote_und_entity_context(tmp_path):
     assert entities[0][4] == "Produkt 1.99"
 
 
+def test_sqlite_export_schreibt_confidence_und_arithmetisches_urteil(tmp_path):
+    """confidence kommt von der Gruppierungsfunktion (hier gesetzt, wie es
+    `--grouper pair-model` tut), arithmetic wird unabhaengig davon fuer jedes
+    Angebot berechnet (`offers_verify.judge_offers`) - hier 0,205 kg x
+    3,37 EUR/kg = 0,69 EUR, also bestaetigt."""
+    page = {
+        "page_id": "1_p1",
+        "width": 500,
+        "height": 800,
+        "words": [
+            _word("Produkt", 40, 100, 90, 112),
+            _word("0,205 kg", 40, 116, 90, 128),
+            _word("(1 kg = 3.37)", 100, 116, 190, 128),
+            _word("0.69", 40, 132, 90, 144),
+        ],
+        "tags": ["B-PRODUCT", "B-QUANTITY", "B-UNIT_PRICE", "B-PRICE"],
+    }
+    db = tmp_path / "offers.sqlite"
+
+    def fake_grouping(page):
+        offer = Offer(id=0, page_id=page["page_id"], bbox=(0, 0, 1, 1),
+                      entities=entities_from_page(page), confidence=0.87)
+        return [offer]
+
+    write_sqlite([page], db, source="test-model", grouping=fake_grouping, grouper="pair-model")
+
+    with sqlite3.connect(db) as conn:
+        row = conn.execute("select confidence, arithmetic from offers").fetchone()
+
+    assert row == (0.87, "confirmed")
+
+
+def test_sqlite_export_confidence_ist_null_bei_der_heuristik(tmp_path):
+    page = {
+        "page_id": "1_p1",
+        "width": 500,
+        "height": 800,
+        "words": [_word("Marke", 40, 100, 80, 112), _word("Produkt", 40, 116, 90, 128)],
+        "tags": ["B-BRAND", "B-PRODUCT"],
+    }
+    db = tmp_path / "offers.sqlite"
+
+    write_sqlite([page], db, source="test-model")
+
+    with sqlite3.connect(db) as conn:
+        row = conn.execute("select confidence, arithmetic from offers").fetchone()
+
+    assert row == (None, "unverifiable")
+
+
+def test_group_confidence_mittelt_paarwahrscheinlichkeiten():
+    from magda.cli.offers import _group_confidence
+
+    scores = {(0, 1): 0.9, (0, 2): 0.7, (1, 2): 0.5}
+
+    assert _group_confidence([0, 1, 2], scores) == pytest.approx((0.9 + 0.7 + 0.5) / 3)
+    assert _group_confidence([0], scores) == 1.0
+
+
 def test_write_sqlite_nutzt_uebergebene_gruppierungsfunktion(tmp_path):
     """`write_sqlite` ruft nicht mehr fest `cluster_page` - jede Callable
     Seite -> list[Offer] muss durchgereicht werden, samt ihres Namens in der
