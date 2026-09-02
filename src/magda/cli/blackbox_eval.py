@@ -149,13 +149,21 @@ def main(argv=None):
                 errors.append(f"{page_id}: {path} fehlt (data/raw aus dem Drive-Archiv)")
                 continue
             try:
-                raw = blackbox.extract_deals_from_page(
+                raw = blackbox.extract_deals_from_page_with_retry(
                     path.read_bytes(), client, args.model)
                 blackbox_page = [
-                    {"name": deal.get("name"),
+                    {"name": " ".join(
+                        part for part in (deal.get("brand"), deal.get("product")) if part
+                     ).strip(),
                      "price": blackbox_eval.parse_price(deal.get("price")),
-                     "original_price": blackbox_eval.parse_price(
-                         deal.get("original_price"))}
+                     "original_price": blackbox_eval.parse_price(deal.get("old_price")),
+                     # Noch nicht Teil des Vergleichs (compare_pages kennt nur
+                     # COMMON_FIELDS) - bleiben im Report fuer eine spaetere
+                     # arithmetische Gegenprobe erhalten.
+                     "quantity": deal.get("quantity"),
+                     "unit_price": deal.get("unit_price"),
+                     "app_price": blackbox_eval.parse_price(deal.get("app_price")),
+                     "discount_pct": deal.get("discount_pct")}
                     for deal in raw if isinstance(deal, dict)
                 ]
                 blackbox_deals[page_id] = blackbox_page
@@ -202,6 +210,7 @@ def main(argv=None):
     payload = {
         "pages": page_ids,
         "model": args.model,
+        "prompt_version": None if args.dry_run else blackbox.PROMPT_VERSION,
         "labels_from": config.model_slug(args.labels_from),
         "predictions": config.model_slug(args.predictions),
         "reference_is_llm": True,
@@ -209,6 +218,7 @@ def main(argv=None):
         "seconds": {"own_grouping": round(own_seconds, 3),
                     "blackbox": round(blackbox_seconds, 1)},
         "comparisons": comparisons,
+        "blackbox_deals": blackbox_deals,
         "errors": errors,
     }
     config.EVAL_DIR.mkdir(parents=True, exist_ok=True)
