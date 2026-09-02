@@ -7,6 +7,7 @@ Aufruf:
     magda offers --db data/offers/offers.sqlite
     magda offers --grouper heuristic
     magda offers --grouper pair-model --checkpoint checkpoints/offer_pairs/model.pt
+    magda offers --grouper pair-model --limit 20   # Probelauf, ILP kostet Zeit je Seite
 
 Quelle ist standardmaessig ein Labelordner unter data/labeled/ (words[] mit
 bbox und tags[] als BIO-Folge). Mit --predictions wird stattdessen
@@ -134,6 +135,10 @@ def main(argv=None):
                              "(Gruppen-F1 0.821 gegen 0.524 der Heuristik)")
     parser.add_argument("--checkpoint", default=str(DEFAULT_CHECKPOINT),
                         help="Paarmodell-Checkpoint fuer --grouper pair-model")
+    parser.add_argument("--limit", type=int, default=None,
+                        help="Nur so viele Seiten (Probelauf). Das ILP kann je Seite "
+                             "Sekunden bis Minuten brauchen - ohne Limit laeuft ein "
+                             "Probelauf ueber die ganze Quelle mit.")
     args = parser.parse_args(argv)
 
     grouping = (
@@ -158,6 +163,9 @@ def main(argv=None):
         pages = _load_labeled_pages(source)
         if not pages:
             parser.exit(1, f"Keine gelabelten Seiten in {config.labeled_dir(source)} gefunden.\n")
+
+    if args.limit is not None:
+        pages = pages[: args.limit]
 
     stats = offers.write_sqlite(
         pages, db_path=Path(args.db), source=source, grouping=grouping, grouper=args.grouper

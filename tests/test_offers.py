@@ -297,3 +297,35 @@ def test_pair_model_grouper_bricht_bei_fehlendem_checkpoint_klar_ab(tmp_path, ca
 
     assert beendet.value.code == 1
     assert "Checkpoint fehlt" in capsys.readouterr().err
+
+
+def test_limit_beschraenkt_die_anzahl_der_seiten(tmp_path, monkeypatch):
+    """`--limit` ist der Probelauf-Riegel: das ILP kann je Seite Sekunden bis
+    Minuten brauchen, ein Testlauf soll nicht ueber die ganze Quelle laufen."""
+    from magda import config
+    from magda.cli import offers as cli_offers
+
+    labeled = tmp_path / "labeled" / "test-model"
+    labeled.mkdir(parents=True)
+    for i in range(3):
+        page = {
+            "page_id": f"p{i}",
+            "width": 500,
+            "height": 800,
+            "words": [_word("Marke", 40, 100, 80, 112)],
+            "tags": ["B-BRAND"],
+        }
+        (labeled / f"p{i}.json").write_text(json.dumps(page))
+
+    monkeypatch.setattr(config, "LABELED_DIR", tmp_path / "labeled")
+    monkeypatch.setattr(config, "LABELED_ARCHIVE_DIR", tmp_path / "labeled_archive")
+
+    db = tmp_path / "offers.sqlite"
+    cli_offers.main([
+        "--source", "test-model", "--grouper", "heuristic",
+        "--db", str(db), "--limit", "2",
+    ])
+
+    with sqlite3.connect(db) as conn:
+        rows = conn.execute("select distinct page_id from offers").fetchall()
+    assert len(rows) == 2
