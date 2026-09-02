@@ -11,6 +11,8 @@ das kaum auf – die Metrik zählt nur, was im Fenster liegt. Für die
 Angebots-Rekonstruktion schon: auf `1351605_p19` fehlten 27 Entities am Stück.
 """
 
+from pathlib import Path
+
 import torch
 from PIL import Image
 from torch.utils.data import Dataset
@@ -30,12 +32,17 @@ class WindowDataset(Dataset):
     """
 
     def __init__(self, pages: list[dict], tokenizer, max_length: int, stride: int,
-                 variant: Variant):
+                 variant: Variant, images_dir=None):
         self.encodings = []
         self.word_ids = []
         self.page_index = []
         self.variant = variant
         self.page_ids = [page["page_id"] for page in pages]
+        # None statt eines Default-Arguments: `IMAGES_DIR` an dieser Stelle
+        # fest zu binden hätte den Wert beim Modulimport eingefroren und
+        # `magda.pipeline.extract_offers` gezwungen, entweder nach data/images/
+        # zu schreiben oder das globale `config.IMAGES_DIR` zu verbiegen.
+        self.images_dir = Path(images_dir) if images_dir is not None else IMAGES_DIR
         self.image_processor = (
             LayoutLMv2ImageProcessor(apply_ocr=False) if variant.image else None
         )
@@ -82,7 +89,7 @@ class WindowDataset(Dataset):
         item = {k: torch.tensor(v) for k, v in self.encodings[idx].items()}
         if not self.variant.image:
             return item
-        image_file = IMAGES_DIR / f"{self.page_ids[self.page_index[idx]]}.png"
+        image_file = self.images_dir / f"{self.page_ids[self.page_index[idx]]}.png"
         with Image.open(image_file) as page_image:
             pixels = self.image_processor(
                 page_image.convert("RGB"), return_tensors="pt"
