@@ -1,7 +1,10 @@
+import argparse
 import json
 import sqlite3
 
-from magda.offers import _quantity_in_unit, cluster_page, entities_from_page, write_sqlite
+import pytest
+
+from magda.offers import Offer, _quantity_in_unit, cluster_page, entities_from_page, write_sqlite
 
 
 def _word(text, x0, y0, x1, y1):
@@ -106,3 +109,67 @@ def test_sqlite_export_schreibt_angebote_und_entity_context(tmp_path):
     assert entities[0][0:2] == ("BRAND", "Marke")
     assert json.loads(entities[0][2]) == [40, 100, 80, 112]
     assert entities[0][4] == "Produkt 1.99"
+
+
+def test_write_sqlite_nutzt_uebergebene_gruppierungsfunktion(tmp_path):
+    """`write_sqlite` ruft nicht mehr fest `cluster_page` - jede Callable
+    Seite -> list[Offer] muss durchgereicht werden, samt ihres Namens in der
+    neuen Spalte `grouper`.
+
+    Die Fake-Gruppierung liefert absichtlich ein anderes Ergebnis als
+    `cluster_page` (0 statt 1 Angebot fuer diese Seite) - sonst waere der
+    Test gruen, auch wenn `write_sqlite` den Parameter ignoriert und heimlich
+    weiter `cluster_page` aufruft."""
+    page = {
+        "page_id": "1_p1",
+        "width": 500,
+        "height": 800,
+        "words": [_word("Marke", 40, 100, 80, 112), _word("Produkt", 40, 116, 90, 128)],
+        "tags": ["B-BRAND", "B-PRODUCT"],
+    }
+    db = tmp_path / "offers.sqlite"
+    assert len(cluster_page(page)) == 1  # zur Kontrolle: die Heuristik faende hier ein Angebot
+
+    def fake_grouping(page):
+        return []
+
+    stats = write_sqlite([page], db, source="test-model", grouping=fake_grouping, grouper="fake")
+
+    assert stats["offers"] == 0
+    with sqlite3.connect(db) as conn:
+        rows = conn.execute("select source, grouper from offers").fetchall()
+    assert rows == []
+
+
+def test_write_sqlite_ohne_grouper_bleibt_bei_der_heuristik(tmp_path):
+    """Rueckwaertskompatibilitaet: alte Aufrufe ohne `grouping`/`grouper`
+    verhalten sich wie vor der Aenderung."""
+    page = {
+        "page_id": "1_p1",
+        "width": 500,
+        "height": 800,
+        "words": [_word("Marke", 40, 100, 80, 112), _word("Produkt", 40, 116, 90, 128)],
+        "tags": ["B-BRAND", "B-PRODUCT"],
+    }
+    db = tmp_path / "offers.sqlite"
+
+    write_sqlite([page], db, source="test-model")
+
+    with sqlite3.connect(db) as conn:
+        row = conn.execute("select grouper from offers").fetchone()
+    assert row == ("heuristic",)
+
+
+def test_pair_model_grouper_bricht_bei_fehlendem_checkpoint_klar_ab(tmp_path, capsys):
+    """Kein stiller Rueckfall auf die Heuristik - `magda offers --grouper
+    pair-model` ohne Checkpoint muss abbrechen, nicht weiterlaufen."""
+    from magda.cli.offers import _pair_model_grouping
+
+    missing = tmp_path / "does-not-exist.pt"
+    parser = argparse.ArgumentParser()
+
+    with pytest.raises(SystemExit) as beendet:
+        _pair_model_grouping(missing, parser)
+
+    assert beendet.value.code == 1
+    assert "Checkpoint fehlt" in capsys.readouterr().err

@@ -746,31 +746,47 @@ def cluster_page(
     return offers
 
 
-def write_sqlite(pages: list[dict], db_path: Path, source: str) -> dict:
-    """Schreibt Angebotscluster in eine SQLite-Datenbank."""
+def write_sqlite(
+    pages: list[dict],
+    db_path: Path,
+    source: str,
+    *,
+    grouping=cluster_page,
+    grouper: str = "heuristic",
+) -> dict:
+    """Schreibt Angebotscluster in eine SQLite-Datenbank.
+
+    `grouping` ist austauschbar (Callable Seite -> Liste von `Offer`) -
+    Default bleibt die Heuristik `cluster_page`. `magda offers --grouper
+    pair-model` reicht stattdessen `PairClassifier.group_page` durch. `grouper`
+    ist nur die Buchfuehrung dazu: welches Verfahren steckt hinter dieser
+    Zeile, neben `source` (welche Labelquelle).
+    """
     db_path.parent.mkdir(parents=True, exist_ok=True)
     with sqlite3.connect(db_path) as conn:
         _create_schema(conn)
+        _migrate_schema(conn)
         conn.execute("delete from offer_entities where source = ?", (source,))
         conn.execute("delete from offers where source = ?", (source,))
 
         offer_count = 0
         entity_count = 0
         for page in pages:
-            for offer in cluster_page(page):
+            for offer in grouping(page):
                 values = offer.values()
                 bbox_json = json.dumps(list(offer.bbox))
                 cursor = conn.execute(
                     """
                     insert into offers (
-                        source, page_id, offer_index, bbox,
+                        source, grouper, page_id, offer_index, bbox,
                         product, brand, price, old_price, quantity,
                         discount, valid, unit_price, app_price
                     )
-                    values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """,
                     (
                         source,
+                        grouper,
                         offer.page_id,
                         offer.id,
                         bbox_json,
@@ -820,6 +836,7 @@ def _create_schema(conn: sqlite3.Connection) -> None:
         create table if not exists offers (
             id integer primary key autoincrement,
             source text not null,
+            grouper text not null default 'heuristic',
             page_id text not null,
             offer_index integer not null,
             bbox text not null,
@@ -857,3 +874,16 @@ def _create_schema(conn: sqlite3.Connection) -> None:
             on offer_entities(source, entity_type);
         """
     )
+
+
+def _migrate_schema(conn: sqlite3.Connection) -> None:
+    """Spalten nachruesten, die es beim Anlegen der Datenbank noch nicht gab.
+
+    `create table if not exists` legt neue Spalten nicht nachtraeglich an -
+    die seit dem 02.08.2026 versionierte `data/offers/offers.sqlite` kennt
+    `grouper` noch nicht. Ohne diesen Schritt wuerde jeder Insert auf einer
+    aelteren Datenbank an der fehlenden Spalte scheitern.
+    """
+    existing = {row[1] for row in conn.execute("pragma table_info(offers)")}
+    if "grouper" not in existing:
+        conn.execute("alter table offers add column grouper text not null default 'heuristic'")
