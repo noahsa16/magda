@@ -346,6 +346,51 @@ def to_json(result: PipelineResult, *, embed_images: bool = True) -> str:
     return json.dumps(payload, ensure_ascii=False, indent=2)
 
 
+def from_json(text: str) -> PipelineResult:
+    """Baut ein `PipelineResult` aus der Ausgabe von `to_json` zurück.
+
+    Ohne `png_bytes` (die Demo legt Seitenbilder separat unter --images-dir
+    ab, siehe `embed_images` oben) - für `to_csv`/`to_sqlite` reicht das,
+    beide lesen nur Wörter, Entities und Angebotsfelder. Gebraucht vom
+    Export-Endpunkt der Demo, der csv/sqlite aus dem einmal geschriebenen
+    JSON erzeugt, statt Modell und Paarmodell ein zweites Mal laufen zu lassen.
+    """
+    payload = json.loads(text)
+
+    def _offer(raw: dict, page_index: int) -> PipelineOffer:
+        return PipelineOffer(
+            page_index=page_index,
+            bbox=tuple(raw["bbox"]),
+            product=raw["product"], brand=raw["brand"], price=raw["price"],
+            old_price=raw["old_price"], quantity=raw["quantity"],
+            unit_price=raw["unit_price"], app_price=raw["app_price"],
+            discount=raw["discount"], valid=raw["valid"],
+            variants=[offers.Variant(**v) for v in raw["variants"]],
+            confidence=raw["confidence"], arithmetic=raw["arithmetic"],
+            entity_word_ranges=raw["entity_word_ranges"],
+        )
+
+    pages: list[PipelinePage] = []
+    flat_offers: list[PipelineOffer] = []
+    for raw_page in payload["pages"]:
+        page_offers = [_offer(o, raw_page["page_index"]) for o in raw_page["offers"]]
+        flat_offers.extend(page_offers)
+        pages.append(PipelinePage(
+            page_index=raw_page["page_index"], width=raw_page["width"],
+            height=raw_page["height"], words=raw_page["words"],
+            entities=raw_page["entities"], offers=page_offers, png_bytes=None,
+        ))
+
+    return PipelineResult(
+        doc_id=payload["doc_id"],
+        pages=pages,
+        offers=flat_offers,
+        timing=payload["timing"],
+        models=ModelInfo(**payload["models"]),
+        pages_without_text=payload["pages_without_text"],
+    )
+
+
 _CSV_FIELDS = [
     "page_index", "product", "brand", "position", "quantity", "unit_price",
     "price", "old_price", "app_price", "discount", "valid", "confidence",

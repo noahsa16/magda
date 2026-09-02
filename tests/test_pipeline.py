@@ -237,6 +237,17 @@ def test_to_json_embed_images_false_laesst_base64_weg(monkeypatch):
     assert all(p["png_base64"] is None for p in payload["pages"])
 
 
+def test_from_json_rekonstruiert_ein_gleichwertiges_pipeline_result(monkeypatch):
+    """Traegt den Export-Endpunkt der Demo: csv/sqlite aus dem einmal
+    geschriebenen JSON, ohne Modell und Paarmodell erneut laufen zu lassen."""
+    result = _run(monkeypatch)
+    reconstructed = pipeline.from_json(pipeline.to_json(result))
+
+    assert reconstructed.doc_id == result.doc_id
+    assert reconstructed.pages_without_text == result.pages_without_text
+    assert pipeline.to_csv(reconstructed) == pipeline.to_csv(result)
+
+
 def test_to_sqlite_hat_dasselbe_schema_wie_write_sqlite(monkeypatch, tmp_path):
     result = _run(monkeypatch)
     pipeline_db = tmp_path / "pipeline.sqlite"

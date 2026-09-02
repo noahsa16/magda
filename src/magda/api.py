@@ -15,10 +15,11 @@ import json
 import os
 import tempfile
 from datetime import datetime
+from pathlib import Path
 from typing import Literal
 
 from fastapi import FastAPI, File, HTTPException, UploadFile
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, Response
 from pydantic import BaseModel
 
 from magda import (
@@ -1004,3 +1005,71 @@ def demo_from_url(req: FromUrlRequest):
         raise HTTPException(400, str(e))
     except Exception as e:
         raise HTTPException(400, f"Katalog nicht erreichbar: {e}")
+
+
+@app.get("/api/demo/{upload_id}")
+def get_demo_result(upload_id: str):
+    upload_id = _valid_upload_id(upload_id)
+    result_file = uploads.result_path(upload_id)
+    if not result_file.exists():
+        raise HTTPException(
+            404, "Noch kein Ergebnis für diese ID - lief der Job `extract-pdf` schon durch?"
+        )
+    with open(result_file) as f:
+        return json.load(f)
+
+
+@app.get("/api/demo/{upload_id}/page/{page}.png")
+def get_demo_page_image(upload_id: str, page: int):
+    """Das gerenderte Seitenbild - separat von /api/demo/{id}, damit das
+    Frontend nicht die ganze (womöglich viele MB große) Ergebnis-JSON laden
+    muss, nur um ein <img> zu befüllen.
+
+    Dateiname trägt den doc_id-Präfix, den `cli/extract_pdf.py --images-dir`
+    vergibt (`<doc_id>_p<n>.png`, doc_id = Hash der PDF-Bytes, ungleich der
+    Upload-ID) - deshalb Glob statt eines festen Namens.
+    """
+    upload_id = _valid_upload_id(upload_id)
+    directory = uploads.images_dir(upload_id)
+    matches = sorted(directory.glob(f"*_p{page}.png")) if directory.is_dir() else []
+    if not matches:
+        raise HTTPException(404, f"Kein Bild für Seite {page}.")
+    return FileResponse(matches[0], media_type="image/png")
+
+
+@app.get("/api/demo/{upload_id}/export")
+def export_demo_result(upload_id: str, format: Literal["csv", "json", "sqlite"]):
+    """Export als Download. csv/sqlite werden aus dem gespeicherten JSON neu
+    gebaut (`pipeline.from_json`), statt Modell und Paarmodell ein zweites
+    Mal laufen zu lassen - das JSON trägt schon alles, was beide brauchen."""
+    upload_id = _valid_upload_id(upload_id)
+    result_file = uploads.result_path(upload_id)
+    if not result_file.exists():
+        raise HTTPException(404, "Noch kein Ergebnis für diese ID.")
+
+    if format == "json":
+        return FileResponse(
+            result_file, media_type="application/json", filename=f"magda-{upload_id}.json",
+        )
+
+    from magda import pipeline
+
+    result = pipeline.from_json(result_file.read_text())
+    if format == "csv":
+        return Response(
+            pipeline.to_csv(result),
+            media_type="text/csv",
+            headers={"Content-Disposition": f'attachment; filename="magda-{upload_id}.csv"'},
+        )
+
+    # sqlite: to_sqlite schreibt nach Pfad, nicht in den Speicher - eine
+    # Temp-Datei ist hier der kürzeste Weg zu einer Antwort mit Bytes.
+    with tempfile.TemporaryDirectory() as tmp:
+        db_path = Path(tmp) / "export.sqlite"
+        pipeline.to_sqlite(result, db_path)
+        data = db_path.read_bytes()
+    return Response(
+        data,
+        media_type="application/x-sqlite3",
+        headers={"Content-Disposition": f'attachment; filename="magda-{upload_id}.sqlite"'},
+    )
