@@ -60,6 +60,29 @@ class Entity:
     context_after: str
 
 
+@dataclass(frozen=True)
+class Variant:
+    """Eine Groessenvariante eines Angebots, z.B. "Pfanne 24 cm" zu 14.99.
+
+    Belegt (CLAUDE.md, "Groessenvarianten paaren sich positionsweise"): von
+    43 Bloecken mit mehreren Mengen *und* mehreren Grundpreisen gehen 26
+    positionsweise auf, 0 nur in anderer Reihenfolge - die i-te Menge in
+    Lesereihenfolge gehoert zum i-ten Preis in Lesereihenfolge, kein
+    zusaetzliches Label und keine Geometrie noetig.
+    """
+
+    position: int
+    quantity: str | None
+    price: str | None
+    old_price: str | None
+    unit_price: str | None
+    app_price: str | None
+
+
+# Reihenfolge ist die Spaltenreihenfolge der SQLite-Tabelle `offer_variants`.
+_VARIANT_TYPES = ("QUANTITY", "UNIT_PRICE", "PRICE", "OLD_PRICE", "APP_PRICE")
+
+
 @dataclass
 class Offer:
     id: int
@@ -73,6 +96,38 @@ class Offer:
             parts = [entity.text for entity in self.entities if entity.type == entity_type]
             result[entity_type.lower()] = " | ".join(parts) if parts else None
         return result
+
+    def variants(self) -> list[Variant]:
+        """Paart QUANTITY/UNIT_PRICE/PRICE/OLD_PRICE/APP_PRICE positionsweise.
+
+        Sortiert je Typ nach Wortindex (Lesereihenfolge), dann die i-te
+        Entity jedes Typs zu einer Variante zusammengefasst - fehlt ein Typ
+        an Position i, bleibt das Feld leer, es wird nicht mit einem anderen
+        Typ verrechnet. Ein Angebot mit hoechstens einer Entity je Typ
+        bekommt so genau eine Variante; eines ganz ohne diese fuenf Typen
+        (nur BRAND/VALID) keine.
+        """
+        columns = {
+            entity_type: [
+                entity.text for entity in sorted(
+                    (e for e in self.entities if e.type == entity_type),
+                    key=lambda e: e.start,
+                )
+            ]
+            for entity_type in _VARIANT_TYPES
+        }
+        count = max((len(texts) for texts in columns.values()), default=0)
+        return [
+            Variant(
+                position=i,
+                quantity=columns["QUANTITY"][i] if i < len(columns["QUANTITY"]) else None,
+                unit_price=columns["UNIT_PRICE"][i] if i < len(columns["UNIT_PRICE"]) else None,
+                price=columns["PRICE"][i] if i < len(columns["PRICE"]) else None,
+                old_price=columns["OLD_PRICE"][i] if i < len(columns["OLD_PRICE"]) else None,
+                app_price=columns["APP_PRICE"][i] if i < len(columns["APP_PRICE"]) else None,
+            )
+            for i in range(count)
+        ]
 
 
 def _union_bbox(boxes: list[tuple[float, float, float, float]]) -> tuple[float, float, float, float]:
@@ -767,10 +822,16 @@ def write_sqlite(
         _create_schema(conn)
         _migrate_schema(conn)
         conn.execute("delete from offer_entities where source = ?", (source,))
+        conn.execute(
+            "delete from offer_variants where offer_id in "
+            "(select id from offers where source = ?)",
+            (source,),
+        )
         conn.execute("delete from offers where source = ?", (source,))
 
         offer_count = 0
         entity_count = 0
+        variant_count = 0
         for page in pages:
             for offer in grouping(page):
                 values = offer.values()
@@ -826,8 +887,33 @@ def write_sqlite(
                         ),
                     )
                     entity_count += 1
+                for variant in offer.variants():
+                    conn.execute(
+                        """
+                        insert into offer_variants (
+                            offer_id, position, quantity, price,
+                            old_price, unit_price, app_price
+                        )
+                        values (?, ?, ?, ?, ?, ?, ?)
+                        """,
+                        (
+                            db_offer_id,
+                            variant.position,
+                            variant.quantity,
+                            variant.price,
+                            variant.old_price,
+                            variant.unit_price,
+                            variant.app_price,
+                        ),
+                    )
+                    variant_count += 1
         conn.commit()
-    return {"pages": len(pages), "offers": offer_count, "entities": entity_count}
+    return {
+        "pages": len(pages),
+        "offers": offer_count,
+        "entities": entity_count,
+        "variants": variant_count,
+    }
 
 
 def _create_schema(conn: sqlite3.Connection) -> None:
@@ -866,12 +952,25 @@ def _create_schema(conn: sqlite3.Connection) -> None:
             context_after text not null
         );
 
+        create table if not exists offer_variants (
+            id integer primary key autoincrement,
+            offer_id integer not null references offers(id) on delete cascade,
+            position integer not null,
+            quantity text,
+            price text,
+            old_price text,
+            unit_price text,
+            app_price text
+        );
+
         create index if not exists idx_offers_source_page
             on offers(source, page_id);
         create index if not exists idx_offer_entities_offer
             on offer_entities(offer_id);
         create index if not exists idx_offer_entities_type
             on offer_entities(source, entity_type);
+        create index if not exists idx_offer_variants_offer
+            on offer_variants(offer_id);
         """
     )
 

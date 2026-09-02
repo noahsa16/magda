@@ -4,11 +4,24 @@ import sqlite3
 
 import pytest
 
-from magda.offers import Offer, _quantity_in_unit, cluster_page, entities_from_page, write_sqlite
+from magda.offers import (
+    Entity,
+    Offer,
+    Variant,
+    _quantity_in_unit,
+    cluster_page,
+    entities_from_page,
+    write_sqlite,
+)
 
 
 def _word(text, x0, y0, x1, y1):
     return {"text": text, "bbox": [x0, y0, x1, y1]}
+
+
+def _entity(entity_type, text, start):
+    return Entity(id=start, type=entity_type, text=text, bbox=(0.0, 0.0, 1.0, 1.0),
+                  start=start, end=start + 1, context_before="", context_after="")
 
 
 def test_mehrfachpackung_multipliziert_menge_mit_multiplikator():
@@ -79,6 +92,53 @@ def test_cluster_ordnen_preis_produkt_und_marke_ueber_layout_zu():
     assert offers[1].values()["price"] == "1.29"
 
 
+def test_variants_paart_mengen_und_preise_positionsweise():
+    """Pfanne: 20 cm 9.99 / 24 cm 14.99 / 28 cm 17.99 - drei Groessen, drei
+    Preise, je positionsweise in Lesereihenfolge gepaart (belegter Fall aus
+    CLAUDE.md: 26 von 26 aufloesbaren Faellen gehen positionsweise auf, 0 nur
+    in anderer Reihenfolge). Die Entities stehen absichtlich nicht in
+    Lesereihenfolge in der Liste - `variants()` sortiert nach Wortindex, nicht
+    nach Listenposition."""
+    entities = [
+        _entity("PRICE", "17.99", 6),
+        _entity("QUANTITY", "20 cm", 1),
+        _entity("PRICE", "9.99", 2),
+        _entity("PRODUCT", "Pfanne", 0),
+        _entity("QUANTITY", "28 cm", 5),
+        _entity("QUANTITY", "24 cm", 3),
+        _entity("PRICE", "14.99", 4),
+    ]
+    offer = Offer(id=0, page_id="p1", bbox=(0, 0, 1, 1), entities=entities)
+
+    variants = offer.variants()
+
+    assert [v.position for v in variants] == [0, 1, 2]
+    assert [(v.quantity, v.price) for v in variants] == [
+        ("20 cm", "9.99"), ("24 cm", "14.99"), ("28 cm", "17.99"),
+    ]
+
+
+def test_variants_mit_je_einer_entity_ergibt_genau_eine_variante():
+    entities = [
+        _entity("PRODUCT", "Marke", 0),
+        _entity("QUANTITY", "250 g", 1),
+        _entity("PRICE", "1.99", 2),
+    ]
+    offer = Offer(id=0, page_id="p1", bbox=(0, 0, 1, 1), entities=entities)
+
+    assert offer.variants() == [
+        Variant(position=0, quantity="250 g", price="1.99",
+                old_price=None, unit_price=None, app_price=None)
+    ]
+
+
+def test_variants_ohne_relevante_typen_ist_leer():
+    offer = Offer(id=0, page_id="p1", bbox=(0, 0, 1, 1),
+                  entities=[_entity("BRAND", "Marke", 0)])
+
+    assert offer.variants() == []
+
+
 def test_sqlite_export_schreibt_angebote_und_entity_context(tmp_path):
     page = {
         "page_id": "1_p1",
@@ -95,7 +155,7 @@ def test_sqlite_export_schreibt_angebote_und_entity_context(tmp_path):
 
     stats = write_sqlite([page], db, source="test-model")
 
-    assert stats == {"pages": 1, "offers": 1, "entities": 3}
+    assert stats == {"pages": 1, "offers": 1, "entities": 3, "variants": 1}
     with sqlite3.connect(db) as conn:
         offer = conn.execute(
             "select source, page_id, brand, product, price from offers"
@@ -104,8 +164,13 @@ def test_sqlite_export_schreibt_angebote_und_entity_context(tmp_path):
             "select entity_type, text, bbox, context_before, context_after "
             "from offer_entities order by word_start"
         ).fetchall()
+        variant = conn.execute(
+            "select position, quantity, price, old_price, unit_price, app_price "
+            "from offer_variants"
+        ).fetchone()
 
     assert offer == ("test-model", "1_p1", "Marke", "Produkt", "1.99")
+    assert variant == (0, None, "1.99", None, None, None)
     assert entities[0][0:2] == ("BRAND", "Marke")
     assert json.loads(entities[0][2]) == [40, 100, 80, 112]
     assert entities[0][4] == "Produkt 1.99"
