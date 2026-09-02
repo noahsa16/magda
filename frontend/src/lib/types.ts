@@ -421,3 +421,88 @@ export interface AuditSummary {
   unsure: number
   judged: number
 }
+
+// ---------------------------------------------------------------------------
+// Demo (magda.pipeline / /api/demo) - ein fremdes PDF, ohne Umweg über data/.
+// ---------------------------------------------------------------------------
+
+/** Antwort von /api/demo/upload und /api/demo/from-url. */
+export interface DemoUpload {
+  upload_id: string
+  pages: number
+  bytes: number
+}
+
+export interface DemoEntity {
+  id: number
+  type: string
+  text: string
+  bbox: [number, number, number, number]
+  start: number
+  end: number
+  context_before: string
+  context_after: string
+}
+
+/** Eine Größenvariante (magda.offers.Variant) - eine Zeile in der kleinen
+ * Tabelle, wenn ein Angebot mehr als eine trägt. */
+export interface DemoVariant {
+  position: number
+  quantity: string | null
+  price: string | null
+  old_price: string | null
+  unit_price: string | null
+  app_price: string | null
+}
+
+/** Urteil der arithmetischen Gegenprobe (magda.offers_verify.judge_offers) -
+ * bestätigt/widerlegt/unaufgelöst nur, wo ein Grundpreis vorliegt, sonst
+ * "unverifiable". */
+export type ArithmeticVerdict = "confirmed" | "contradicted" | "unresolved" | "unverifiable"
+
+export interface DemoOffer {
+  page_index: number
+  bbox: [number, number, number, number]
+  product: string | null
+  brand: string | null
+  price: string | null
+  old_price: string | null
+  quantity: string | null
+  unit_price: string | null
+  app_price: string | null
+  discount: string | null
+  valid: string | null
+  variants: DemoVariant[]
+  /** Nur bei --grouper pair-model gesetzt; null bei der geometrischen Heuristik. */
+  confidence: number | null
+  arithmetic: ArithmeticVerdict
+  entity_word_ranges: { type: string; start: number; end: number }[]
+}
+
+export interface DemoPage {
+  page_index: number
+  width: number
+  height: number
+  /** Nur gesetzt, wenn --no-embed-images nicht verwendet wurde - der
+   * Demo-Job liefert Seitenbilder über einen eigenen Endpunkt. */
+  png_base64: string | null
+  words: Word[]
+  entities: DemoEntity[]
+  offers: DemoOffer[]
+}
+
+export interface DemoModels {
+  variant: string
+  checkpoint: string
+  pairs_checkpoint: string
+  pair_threshold: number
+}
+
+export interface DemoResult {
+  doc_id: string
+  models: DemoModels
+  timing: { extract: number; ner: number; grouping: number }
+  pages_without_text: string[]
+  pages: DemoPage[]
+  offers: DemoOffer[]
+}

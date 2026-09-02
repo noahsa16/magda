@@ -13,6 +13,9 @@ const items = [
   // beantwortet sich in einer Ordnerebene besser als in zwei Menüpunkten.
   { title: "Daten", url: "/labels" },
   { title: "Ergebnis", url: "/evaluation" },
+  // Eigener, fremder Weg: kein Katalog aus der Ernte, sondern ein einzelnes
+  // PDF von außen - magda.pipeline.extract_offers statt data/.
+  { title: "Demo", url: "/demo" },
 ]
 
 function BackendStatus() {
