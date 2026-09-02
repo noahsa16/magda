@@ -227,7 +227,7 @@ def test_sqlite_export_confidence_ist_null_bei_der_heuristik(tmp_path):
 
 
 def test_group_confidence_mittelt_paarwahrscheinlichkeiten():
-    from magda.cli.offers import _group_confidence
+    from magda.offers import _group_confidence
 
     scores = {(0, 1): 0.9, (0, 2): 0.7, (1, 2): 0.5}
 

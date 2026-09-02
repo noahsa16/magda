@@ -24,6 +24,7 @@ import re
 import sqlite3
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Callable
 
 from magda.labels import ENTITY_TYPES, bio_to_spans
 
@@ -524,6 +525,57 @@ def _make_offer(page_id: str, offer_id: int, members: list[Entity]) -> Offer:
     )
 
 
+def _group_confidence(group: list[int], scores: dict) -> float:
+    """Mittel der Paarwahrscheinlichkeiten aller Entity-Paare einer Gruppe.
+
+    Eine Einer-Gruppe hat kein Paar und damit kein Signal vom Modell - 1.0
+    ist hier keine gemessene Sicherheit, sondern die Konvention "nichts
+    widerspricht sich, weil es nichts zu vergleichen gibt" (dieselbe Regel,
+    mit der `magda offers-model eval` Ein-Entity-Gruppen behandelt)."""
+    if len(group) <= 1:
+        return 1.0
+    values = [
+        scores[(min(a, b), max(a, b))]
+        for i, a in enumerate(group)
+        for b in group[i + 1:]
+        if (min(a, b), max(a, b)) in scores
+    ]
+    return sum(values) / len(values) if values else 1.0
+
+
+def pair_model_grouping(model) -> Callable[[dict], list[Offer]]:
+    """Baut die Gruppierungsfunktion aus einem geladenen Paarmodell.
+
+    Eine Stelle fuer `magda offers --grouper pair-model` und
+    `magda.pipeline.extract_offers` - beide sollen aus denselben
+    Kantenwahrscheinlichkeiten dieselbe Konfidenz je Angebot ableiten, statt
+    zwei Implementierungen, die leise auseinanderlaufen. Der Checkpoint
+    selbst (samt Fehlermeldung bei fehlender Datei) bleibt Sache des
+    Aufrufers - hier steht nur, was ein bereits geladenes `PairClassifier`
+    aus einer Seite macht.
+    """
+
+    def grouping(page: dict) -> list[Offer]:
+        entities = [e for e in entities_from_page(page) if e.type in VALUE_TYPES]
+        page_id = page.get("page_id") or "unknown"
+        groups = model.group_page(page, model.threshold)
+        # Fuer die Konfidenz genuegen dieselben Kantenwahrscheinlichkeiten,
+        # die `group_page` intern schon berechnet hat - hier trotzdem neu
+        # angefragt statt sie aus `group_page` herauszureichen: die Methode
+        # ist der oeffentliche Vertrag von `PairClassifier`, ein zweiter
+        # interner Rueckgabewert nur fuer diesen Aufrufer waere Kopplung an
+        # ein Implementierungsdetail.
+        scores = model.score_page(page) if groups else {}
+        result = []
+        for index, group in enumerate(groups):
+            offer = _make_offer(page_id, index, [entities[i] for i in group])
+            offer.confidence = _group_confidence(group, scores)
+            result.append(offer)
+        return result
+
+    return grouping
+
+
 _QUANTITY_RE = re.compile(r"(\d+(?:[.,]\d+)?)\s*-?\s*(kg|g|ml|l)\b", re.IGNORECASE)
 # Mehrfachpackungen: "2 x 350 g", "6x1,5 l", "2 × 350 g" - der Multiplikator
 # steht immer VOR der Menge, nie dahinter (kein belegter Gegenfall im Korpus).
@@ -806,6 +858,102 @@ def cluster_page(
     return offers
 
 
+def _insert_offers(
+    conn: sqlite3.Connection,
+    source: str,
+    grouper: str,
+    page_offers: list[Offer],
+    arithmetic_verdicts: list[str],
+) -> tuple[int, int, int]:
+    """Schreibt die Angebote einer Seite samt Entities und Varianten.
+
+    Herausgezogen aus `write_sqlite`, damit `magda.pipeline.to_sqlite` genau
+    dasselbe Schema fuellt, ohne die Insert-Anweisungen ein zweites Mal zu
+    pflegen - zwei Kopien derselben SQL laufen frueher oder spaeter
+    auseinander. Rueckgabe: (offers, entities, variants) fuer die Buchfuehrung
+    des Aufrufers.
+    """
+    offer_count = entity_count = variant_count = 0
+    for offer, verdict in zip(page_offers, arithmetic_verdicts):
+        values = offer.values()
+        bbox_json = json.dumps(list(offer.bbox))
+        cursor = conn.execute(
+            """
+            insert into offers (
+                source, grouper, page_id, offer_index, bbox,
+                product, brand, price, old_price, quantity,
+                discount, valid, unit_price, app_price,
+                confidence, arithmetic
+            )
+            values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                source,
+                grouper,
+                offer.page_id,
+                offer.id,
+                bbox_json,
+                values["product"],
+                values["brand"],
+                values["price"],
+                values["old_price"],
+                values["quantity"],
+                values["discount"],
+                values["valid"],
+                values["unit_price"],
+                values["app_price"],
+                offer.confidence,
+                verdict,
+            ),
+        )
+        db_offer_id = int(cursor.lastrowid)
+        offer_count += 1
+        for entity in offer.entities:
+            conn.execute(
+                """
+                insert into offer_entities (
+                    source, offer_id, page_id, entity_type, text, bbox,
+                    word_start, word_end, context_before, context_after
+                )
+                values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    source,
+                    db_offer_id,
+                    offer.page_id,
+                    entity.type,
+                    entity.text,
+                    json.dumps(list(entity.bbox)),
+                    entity.start,
+                    entity.end,
+                    entity.context_before,
+                    entity.context_after,
+                ),
+            )
+            entity_count += 1
+        for variant in offer.variants():
+            conn.execute(
+                """
+                insert into offer_variants (
+                    offer_id, position, quantity, price,
+                    old_price, unit_price, app_price
+                )
+                values (?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    db_offer_id,
+                    variant.position,
+                    variant.quantity,
+                    variant.price,
+                    variant.old_price,
+                    variant.unit_price,
+                    variant.app_price,
+                ),
+            )
+            variant_count += 1
+    return offer_count, entity_count, variant_count
+
+
 def write_sqlite(
     pages: list[dict],
     db_path: Path,
@@ -849,83 +997,10 @@ def write_sqlite(
         for page in pages:
             page_offers = grouping(page)
             arithmetic = offers_verify.judge_offers(page, page_offers)
-            for offer, verdict in zip(page_offers, arithmetic):
-                values = offer.values()
-                bbox_json = json.dumps(list(offer.bbox))
-                cursor = conn.execute(
-                    """
-                    insert into offers (
-                        source, grouper, page_id, offer_index, bbox,
-                        product, brand, price, old_price, quantity,
-                        discount, valid, unit_price, app_price,
-                        confidence, arithmetic
-                    )
-                    values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                    """,
-                    (
-                        source,
-                        grouper,
-                        offer.page_id,
-                        offer.id,
-                        bbox_json,
-                        values["product"],
-                        values["brand"],
-                        values["price"],
-                        values["old_price"],
-                        values["quantity"],
-                        values["discount"],
-                        values["valid"],
-                        values["unit_price"],
-                        values["app_price"],
-                        offer.confidence,
-                        verdict,
-                    ),
-                )
-                db_offer_id = int(cursor.lastrowid)
-                offer_count += 1
-                for entity in offer.entities:
-                    conn.execute(
-                        """
-                        insert into offer_entities (
-                            source, offer_id, page_id, entity_type, text, bbox,
-                            word_start, word_end, context_before, context_after
-                        )
-                        values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                        """,
-                        (
-                            source,
-                            db_offer_id,
-                            offer.page_id,
-                            entity.type,
-                            entity.text,
-                            json.dumps(list(entity.bbox)),
-                            entity.start,
-                            entity.end,
-                            entity.context_before,
-                            entity.context_after,
-                        ),
-                    )
-                    entity_count += 1
-                for variant in offer.variants():
-                    conn.execute(
-                        """
-                        insert into offer_variants (
-                            offer_id, position, quantity, price,
-                            old_price, unit_price, app_price
-                        )
-                        values (?, ?, ?, ?, ?, ?, ?)
-                        """,
-                        (
-                            db_offer_id,
-                            variant.position,
-                            variant.quantity,
-                            variant.price,
-                            variant.old_price,
-                            variant.unit_price,
-                            variant.app_price,
-                        ),
-                    )
-                    variant_count += 1
+            oc, ec, vc = _insert_offers(conn, source, grouper, page_offers, arithmetic)
+            offer_count += oc
+            entity_count += ec
+            variant_count += vc
         conn.commit()
     return {
         "pages": len(pages),
