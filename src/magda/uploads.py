@@ -1,6 +1,7 @@
 """Uploads für die Demo: ein fremdes PDF, ohne Umweg über data/raw oder Kataloge.
 
-Die Demo verarbeitet ein einzelnes PDF über `magda.pipeline.extract_offers`,
+Die Demo verarbeitet ein einzelnes PDF (hochgeladen oder aus einer
+Penny-Katalog-URL zusammengesetzt) über `magda.pipeline.extract_offers`,
 gestartet vom Runner (`magda extract-pdf` als Job, siehe `jobs.py`). Dieses
 Modul kümmert sich um das, was davor und danach an der Platte passiert:
 Ablage unter einer vom Server vergebenen ID, nie unter dem Dateinamen des
@@ -18,7 +19,7 @@ from pathlib import Path
 
 import fitz
 
-from magda import config
+from magda import config, scraping
 
 # secrets.token_hex(16) -> 32 Hex-Zeichen. Dieselbe Länge steht als Muster in
 # jobs.py und in der API - eine Konstante statt einer Zahl an drei Stellen.
@@ -91,6 +92,36 @@ def save_pdf(data: bytes) -> dict:
         raise InvalidUpload(f"PDF lässt sich nicht lesen: {error}") from None
 
     return {"upload_id": upload_id, "pages": pages, "bytes": len(data)}
+
+
+def merge_catalog_pdf(url: str, max_pages: int = 40) -> bytes:
+    """Lädt einen Penny-Katalog seitenweise und fügt ihn zu einem PDF zusammen.
+
+    `scraping.download_catalog` liefert je Seite ein eigenes einseitiges PDF
+    (das Format des Blätterkatalogs) und ruft dabei - wie `probe_catalog` -
+    nie die übergebene URL selbst ab, sondern liest nur die catalogId daraus
+    und baut eigene, feste URLs. `extract_offers` erwartet dagegen ein
+    einziges mehrseitiges Dokument, deshalb der Zusammenbau hier.
+    """
+    import requests
+
+    session = requests.Session()
+    merged = fitz.open()
+    try:
+        for _, pdf_bytes in scraping.download_catalog(url, session, max_pages):
+            with fitz.open(stream=pdf_bytes, filetype="pdf") as page_doc:
+                merged.insert_pdf(page_doc)
+        if merged.page_count == 0:
+            raise InvalidUpload(f"Katalog hat keine abrufbare Seite geliefert: {url}")
+        return merged.tobytes()
+    finally:
+        merged.close()
+
+
+def from_url(url: str, max_pages: int = 40) -> dict:
+    """Katalog laden, zusammenfügen und wie einen Upload ablegen - dieselbe
+    ID-Vergabe und Validierung, nur eine andere Quelle für die Bytes."""
+    return save_pdf(merge_catalog_pdf(url, max_pages))
 
 
 def prune(max_age_days: int = 7) -> int:

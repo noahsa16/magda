@@ -966,6 +966,11 @@ def put_audit_verdict(label: str, key: str, payload: AuditVerdict):
 # der falsche Ort für einen so langen synchronen Aufruf.
 
 
+class FromUrlRequest(BaseModel):
+    url: str
+    max_pages: int = 40
+
+
 def _valid_upload_id(upload_id: str) -> str:
     if not uploads.is_valid_id(upload_id):
         raise HTTPException(400, f"Ungültige Upload-ID: {upload_id!r}")
@@ -981,3 +986,21 @@ async def demo_upload(file: UploadFile = File(...)):
         return uploads.save_pdf(data)
     except uploads.InvalidUpload as e:
         raise HTTPException(400, str(e))
+
+
+@app.post("/api/demo/from-url")
+def demo_from_url(req: FromUrlRequest):
+    """Lädt einen Penny-Katalog und fügt ihn zu einem PDF zusammen - dieselbe
+    Ablage wie ein Upload, nur eine andere Quelle für die Bytes.
+
+    Netzfehler werden zu 400, wie bei `probe_catalog`: für den Nutzer ist ein
+    unerreichbarer Katalog eine fehlerhafte Eingabe, kein Serverfehler.
+    """
+    try:
+        return uploads.from_url(req.url, req.max_pages)
+    except uploads.InvalidUpload as e:
+        raise HTTPException(400, str(e))
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+    except Exception as e:
+        raise HTTPException(400, f"Katalog nicht erreichbar: {e}")

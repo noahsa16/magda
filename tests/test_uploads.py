@@ -9,7 +9,7 @@ import time
 import fitz
 import pytest
 
-from magda import config, uploads
+from magda import config, scraping, uploads
 
 
 @pytest.fixture
@@ -24,6 +24,16 @@ def _tiny_pdf(pages: int = 2) -> bytes:
     for i in range(pages):
         page = doc.new_page(width=100, height=100)
         page.insert_text((10, 30), f"Seite {i + 1}", fontsize=10)
+    data = doc.tobytes()
+    doc.close()
+    return data
+
+
+def _single_page_pdf(text: str) -> bytes:
+    """Ein einseitiges PDF - das Format, in dem der Blätterkatalog jede
+    Prospektseite einzeln ausliefert (`scraping.download_catalog`)."""
+    doc = fitz.open()
+    doc.new_page(width=100, height=100).insert_text((10, 30), text, fontsize=10)
     data = doc.tobytes()
     doc.close()
     return data
@@ -102,3 +112,60 @@ def test_prune_entfernt_nur_alte_uploads(uploads_dir):
 def test_prune_ohne_verzeichnis_ist_folgenlos(tmp_path, monkeypatch):
     monkeypatch.setattr(config, "UPLOADS_DIR", tmp_path / "nie_angelegt")
     assert uploads.prune() == 0
+
+
+# ---------------------------------------------------------------------------
+# URL-Import: ein Katalog wird seitenweise geladen und zusammengefuegt
+# ---------------------------------------------------------------------------
+
+
+def _fake_download_catalog(pages: int):
+    def fake(url, session, max_pages):
+        for i in range(1, pages + 1):
+            yield i, _single_page_pdf(f"Seite {i}")
+    return fake
+
+
+def test_merge_catalog_pdf_fuegt_einzelseiten_zu_einem_dokument_zusammen(monkeypatch):
+    monkeypatch.setattr(scraping, "download_catalog", _fake_download_catalog(3))
+
+    merged = uploads.merge_catalog_pdf("https://x/?catalogId=1")
+
+    with fitz.open(stream=merged, filetype="pdf") as doc:
+        assert doc.page_count == 3
+
+
+def test_merge_catalog_pdf_ohne_seiten_ist_ein_fehler(monkeypatch):
+    monkeypatch.setattr(scraping, "download_catalog", _fake_download_catalog(0))
+
+    with pytest.raises(uploads.InvalidUpload, match="keine abrufbare Seite"):
+        uploads.merge_catalog_pdf("https://x/?catalogId=1")
+
+
+def test_merge_catalog_pdf_ruft_nie_die_uebergebene_url_direkt_ab(monkeypatch):
+    """Dasselbe Muster wie `scraping.probe_catalog`: nur die catalogId aus der
+    URL wird gelesen, `download_catalog` baut eigene, feste URLs - hier nur
+    geprueft, dass merge_catalog_pdf keinen eigenen Request obendrauf macht."""
+    calls = []
+
+    def fake(url, session, max_pages):
+        calls.append(url)
+        yield 1, _single_page_pdf("Seite 1")
+
+    monkeypatch.setattr(scraping, "download_catalog", fake)
+    uploads.merge_catalog_pdf("https://evil.example/?catalogId=42")
+
+    # download_catalog wurde aufgerufen (mit der ganzen URL als Parameter,
+    # wie scraping.download_catalog es auch tut) - ein zweiter, eigener
+    # Request von merge_catalog_pdf selbst existiert nicht.
+    assert calls == ["https://evil.example/?catalogId=42"]
+
+
+def test_from_url_legt_das_zusammengefuegte_pdf_wie_einen_upload_ab(uploads_dir, monkeypatch):
+    monkeypatch.setattr(scraping, "download_catalog", _fake_download_catalog(4))
+
+    result = uploads.from_url("https://x/?catalogId=1")
+
+    assert uploads.is_valid_id(result["upload_id"])
+    assert result["pages"] == 4
+    assert uploads.pdf_path(result["upload_id"]).is_file()
