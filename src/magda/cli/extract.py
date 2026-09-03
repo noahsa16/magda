@@ -3,6 +3,12 @@
 Schreibt pro Seite eine JSON-Datei nach data/words/ und das gerenderte
 Seitenbild nach data/images/. Bereits verarbeitete Seiten werden übersprungen,
 das Skript lässt sich also jederzeit erneut laufen lassen.
+
+`--render-missing` ist der Weg für einen frischen Klon: `data/words/` ist
+versioniert, `data/images/` nicht, und der normale Lauf überspringt eine Seite
+schon an der vorhandenen Wortdatei – er rendert dann kein einziges Bild. Die
+Option holt genau diese Bilder nach und rührt die Wortlisten nicht an, denn
+deren Reihenfolge ist der Vertrag, an dem alle Label-Indizes hängen.
 """
 
 import argparse
@@ -17,10 +23,35 @@ from magda.gold import words_hash
 from magda.ocr import extract_words, render_png
 
 
+def render_missing(pdfs):
+    """Fehlende Seitenbilder nachrendern, ohne data/words/ anzufassen."""
+    rendered = 0
+    for pdf_path in tqdm(pdfs, desc="Rendere Seitenbilder", unit="Seite"):
+        page_id = f"{pdf_path.parent.name}_p{pdf_path.stem.removeprefix('bk_')}"
+        # Nur Seiten, die auch eine Wortdatei haben: alles andere ist entweder
+        # ein Duplikat oder nie extrahiert worden, und ein Bild dafür wäre nur
+        # Masse ohne Leser.
+        if not (WORDS_DIR / f"{page_id}.json").exists():
+            continue
+        image_file = IMAGES_DIR / f"{page_id}.png"
+        if image_file.exists():
+            continue
+        image_file.write_bytes(render_png(pdf_path.read_bytes()))
+        rendered += 1
+    print(f"{rendered} Seitenbilder nachgerendert.")
+    return rendered
+
+
 def main(argv=None):
     # Der Schritt hat keine Optionen, braucht den Parser aber trotzdem: sonst
     # beantwortet `magda extract --help` die Frage, indem es losläuft.
-    argparse.ArgumentParser(description=__doc__).parse_args(argv)
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--render-missing",
+        action="store_true",
+        help="nur fehlende Seitenbilder nachrendern, data/words/ unverändert lassen",
+    )
+    args = parser.parse_args(argv)
 
     WORDS_DIR.mkdir(parents=True, exist_ok=True)
     IMAGES_DIR.mkdir(parents=True, exist_ok=True)
@@ -28,6 +59,10 @@ def main(argv=None):
     pdfs = sorted(RAW_DIR.glob("*/bk_*.pdf"))
     if not pdfs:
         sys.exit("Keine PDFs in data/raw/ gefunden. Erst `magda download` laufen lassen.")
+
+    if args.render_missing:
+        render_missing(pdfs)
+        return
 
     # Seiten, an denen schon Arbeit hängt, zuerst: bei einer Duplikat gewinnt,
     # wer zuerst drankommt. In reiner Sortierreihenfolge gewönne der Katalog
