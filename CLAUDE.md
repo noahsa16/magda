@@ -244,6 +244,28 @@ eine Liste auszugeben.
   `raw = words + excluded + pending`, und `pending > 0` ist echte offene
   Arbeit. Ohne diese Buchführung sieht die Übersicht aus, als hätte die
   Pipeline ein Drittel der Seiten liegen lassen (327 geladen, 196 extrahiert).
+- **Ein frischer Klon bekommt keine Seitenbilder, und `magda extract` meldet
+  dabei Erfolg.** Der Schritt überspringt eine Seite an ihrer vorhandenen
+  Wortdatei, *bevor* er das PNG rendert – `data/words/` ist versioniert,
+  `data/images/` nicht. Gemessen am 03.09.2026 auf dem vollen Korpus: „0 Seiten
+  verarbeitet, 666 schon vorhanden", null Bilder. Der Annotator zeigt danach
+  leere Seiten, und README wie `docs/archive/README.md` haben genau diesen
+  falschen Befehl empfohlen. Der Weg ist `magda extract --render-missing`; es
+  rührt `data/words/` nicht an, weil die Wortreihenfolge der Vertrag ist.
+  Naheliegend und falsch wäre, stattdessen `data/words/` zu löschen: das
+  entwertet jeden Label-Index in `data/labeled/` und `gold/`.
+  Allgemeiner: Eine Ableitung ist nur so gut wie der Schritt, der sie
+  herstellt. `data/images` wurde ausgelagert mit der Begründung „deterministisch
+  reproduzierbar" – reproduzierbar war sie, der dokumentierte Befehl tat es nur
+  nicht.
+- **43 Seitenbilder liegen als Ausnahme doch in git** (seit 03.09.2026): die
+  Seiten der Handannotation aus `data/annotation_task.json`, also Katalog
+  1364390 plus vier Cluster-Vertreter, 89 MB, als Positivliste in
+  `.gitignore`. Grund ist der Adressat – wer nur annotiert, soll nicht erst
+  1,1 GB aus Drive holen, um 43 von 668 Bildern zu bekommen. Abgelegt sind sie
+  **byte-identisch, nicht verkleinert**: `offer_pairs.load_pixels` liest
+  dieselben Dateien, verkleinerte ergäben auf einem anderen Rechner andere
+  Farbmerkmale. Kein Präzedenzfall für die nächste Erntewoche (~440 MB).
 - **`catalog_meta.json` hält fest, zu welcher Region ein Katalog gehört.**
   Penny's Markt-API kennt nur die laufende Woche; ungespeichert ist die
   Zuordnung nach sieben Tagen weg und ein Katalog nur noch eine sechsstellige

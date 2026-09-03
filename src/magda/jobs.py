@@ -76,6 +76,14 @@ JOBS: dict[str, Job] = {
     "extract": Job(
         title="Wörter extrahieren",
         what="PyMuPDF liest Text und Koordinaten aus dem PDF-Textlayer und rendert je ein PNG.",
+        params=(
+            Param(
+                "--render-missing", "flag", "Nur fehlende Seitenbilder",
+                help="Rendert fehlende PNGs nach und lässt data/words/ unangetastet – "
+                     "der Weg für einen frischen Klon, in dem die Wortlisten schon aus "
+                     "git kommen und der normale Lauf deshalb kein Bild schreibt.",
+            ),
+        ),
     ),
     "label": Job(
         title="LLM-Labeling",

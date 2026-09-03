@@ -22,11 +22,17 @@ abgedeckt.
 ## Aufsetzen
 
 ```bash
-git fetch && git switch data/kw34-labeln
-.venv/bin/pip install -e '.[dev]'      # falls noch nicht geschehen
+git clone https://github.com/noahsa16/magda.git && cd magda
+python -m venv .venv && source .venv/bin/activate
+pip install -e '.[dev]'
 cd frontend && npm install && cd ..
 magda serve --frontend                  # API 8000, Oberfläche 5173
 ```
+
+Mehr ist nicht nötig. **Kein Google Drive, kein `.env`, kein `magda extract`:**
+die 43 Seitenbilder dieser Aufgabe liegen im Repo, alles andere unter `data/`
+ohnehin. Wer das Repo schon hat, holt sich den Stand mit
+`git switch development && git pull`.
 
 Dann http://localhost:5173/group öffnen. Oben steht ein blauer Kasten
 „Aufgabe für Kjell und Bogdan" mit Fortschritt und dem Knopf **Nächste
