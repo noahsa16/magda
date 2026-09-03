@@ -2,6 +2,7 @@ import { AlertTriangle } from "lucide-react"
 import type { ReactNode } from "react"
 import { Progress } from "@/components/ui/progress"
 import type { CatalogTile } from "@/lib/types"
+import { cn } from "@/lib/utils"
 import { chunkByWeek } from "@/lib/weeks"
 
 interface CatalogGridProps {
@@ -10,6 +11,10 @@ interface CatalogGridProps {
   unit: string
   onSelect: (id: string) => void
   emptyHint?: ReactNode
+  /** Katalog-ID -> Zahl der Seiten aus der Annotationsaufgabe. Kacheln mit
+   * Eintrag werden hervorgehoben, damit die Aufgabe nicht in 40 gleich
+   * aussehenden Kacheln untergeht. */
+  taskCounts?: Map<string, number>
 }
 
 /** Ladedatum als TT.MM., der Rest ist bei Wochenprospekten Rauschen. */
@@ -22,10 +27,12 @@ function Tile({
   tile,
   unit,
   onSelect,
+  taskPages,
 }: {
   tile: CatalogTile
   unit: string
   onSelect: (id: string) => void
+  taskPages?: number
 }) {
   const invalid = tile.stale + tile.broken
   const pct = tile.pages > 0 ? (tile.done / tile.pages) * 100 : 0
@@ -34,11 +41,18 @@ function Tile({
     <button
       type="button"
       onClick={() => onSelect(tile.id)}
-      className="plate space-y-2 rounded-xl border-2 border-foreground bg-card p-4 text-left transition-colors hover:bg-accent"
+      className={cn(
+        "plate space-y-2 rounded-xl border-2 bg-card p-4 text-left transition-colors hover:bg-accent",
+        taskPages ? "border-[var(--riso-blue)] ring-2 ring-[var(--riso-blue)]/40" : "border-foreground",
+      )}
     >
       <div className="flex items-baseline justify-between gap-2">
         <p className="font-mono text-base font-bold tracking-tight">{tile.id}</p>
-        {tile.pages === 1 && (
+        {taskPages ? (
+          <span className="shrink-0 rounded-full bg-[var(--riso-blue)] px-2 py-0.5 font-mono text-[10px] uppercase tracking-widest text-white">
+            Aufgabe · {taskPages} {taskPages === 1 ? "Seite" : "Seiten"}
+          </span>
+        ) : tile.pages === 1 && (
           <span
             className="shrink-0 rounded-full border border-border px-2 py-0.5 font-mono text-[10px] uppercase tracking-widest text-muted-foreground"
             title="Diese Region unterscheidet sich bundesweit an genau einer Seite"
@@ -86,7 +100,7 @@ function Tile({
   )
 }
 
-export function CatalogGrid({ tiles, unit, onSelect, emptyHint }: CatalogGridProps) {
+export function CatalogGrid({ tiles, unit, onSelect, emptyHint, taskCounts }: CatalogGridProps) {
   if (tiles.length === 0) {
     return (
       <div className="flex h-64 items-center justify-center rounded-xl border-2 border-dashed border-foreground/30 px-6 text-center">
@@ -113,7 +127,7 @@ export function CatalogGrid({ tiles, unit, onSelect, emptyHint }: CatalogGridPro
           )}
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {week.map((tile) => (
-              <Tile key={tile.id} tile={tile} unit={unit} onSelect={onSelect} />
+              <Tile key={tile.id} tile={tile} unit={unit} onSelect={onSelect} taskPages={taskCounts?.get(tile.id)} />
             ))}
           </div>
         </section>

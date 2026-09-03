@@ -1,0 +1,2395 @@
+{
+  "page_id": "1356098_p25",
+  "catalog_id": "1356098",
+  "page": 25,
+  "width": 476.22,
+  "height": 841.89,
+  "model": "layoutxlm",
+  "labels_from": "sonnet-5",
+  "created": "2026-08-29T18:59:43",
+  "num_words": 157,
+  "num_words_predicted": 157,
+  "truncated": false,
+  "words": [
+    {
+      "i": 0,
+      "text": "DEAL…",
+      "bbox": [
+        366.78,
+        53.51,
+        437.26,
+        87.4
+      ],
+      "label": "O",
+      "confidence": 0.9972
+    },
+    {
+      "i": 1,
+      "text": "TOP",
+      "bbox": [
+        367.05,
+        33.37,
+        414.25,
+        67.25
+      ],
+      "label": "O",
+      "confidence": 0.9993
+    },
+    {
+      "i": 2,
+      "text": "-30%",
+      "bbox": [
+        420.02,
+        491.57,
+        457.3,
+        511.12
+      ],
+      "label": "B-DISCOUNT",
+      "confidence": 0.9978
+    },
+    {
+      "i": 3,
+      "text": "34.99",
+      "bbox": [
+        401.05,
+        522.0,
+        446.51,
+        543.39
+      ],
+      "label": "B-PRICE",
+      "confidence": 0.998
+    },
+    {
+      "i": 4,
+      "text": "UVP",
+      "bbox": [
+        406.55,
+        543.5,
+        420.17,
+        552.67
+      ],
+      "label": "O",
+      "confidence": 0.9951
+    },
+    {
+      "i": 5,
+      "text": "50.00",
+      "bbox": [
+        421.52,
+        543.5,
+        441.01,
+        552.67
+      ],
+      "label": "B-OLD_PRICE",
+      "confidence": 0.9928
+    },
+    {
+      "i": 6,
+      "text": "Herren-Sportschuhe*",
+      "bbox": [
+        244.02,
+        537.42,
+        313.05,
+        546.46
+      ],
+      "label": "B-PRODUCT",
+      "confidence": 0.9978
+    },
+    {
+      "i": 7,
+      "text": "Versch.",
+      "bbox": [
+        244.02,
+        545.0,
+        267.15,
+        553.93
+      ],
+      "label": "I-PRODUCT",
+      "confidence": 0.3639
+    },
+    {
+      "i": 8,
+      "text": "Größen,",
+      "bbox": [
+        268.5,
+        545.0,
+        294.93,
+        553.93
+      ],
+      "label": "I-PRODUCT",
+      "confidence": 0.6789
+    },
+    {
+      "i": 9,
+      "text": "je",
+      "bbox": [
+        244.02,
+        552.5,
+        250.18,
+        561.43
+      ],
+      "label": "O",
+      "confidence": 0.9994
+    },
+    {
+      "i": 10,
+      "text": "Paar",
+      "bbox": [
+        251.68,
+        552.5,
+        266.07,
+        561.43
+      ],
+      "label": "O",
+      "confidence": 0.9984
+    },
+    {
+      "i": 11,
+      "text": "Damen-",
+      "bbox": [
+        17.01,
+        474.53,
+        43.32,
+        483.56
+      ],
+      "label": "B-PRODUCT",
+      "confidence": 0.9981
+    },
+    {
+      "i": 12,
+      "text": "Sweatpants*",
+      "bbox": [
+        17.01,
+        482.03,
+        59.64,
+        491.06
+      ],
+      "label": "I-PRODUCT",
+      "confidence": 0.9983
+    },
+    {
+      "i": 13,
+      "text": "•",
+      "bbox": [
+        17.01,
+        489.6,
+        20.74,
+        498.53
+      ],
+      "label": "O",
+      "confidence": 0.9997
+    },
+    {
+      "i": 14,
+      "text": "80%",
+      "bbox": [
+        22.24,
+        489.6,
+        36.0,
+        498.53
+      ],
+      "label": "O",
+      "confidence": 0.9995
+    },
+    {
+      "i": 15,
+      "text": "Baumwolle/",
+      "bbox": [
+        37.5,
+        489.6,
+        78.56,
+        498.53
+      ],
+      "label": "O",
+      "confidence": 0.9988
+    },
+    {
+      "i": 16,
+      "text": "20%",
+      "bbox": [
+        22.24,
+        497.1,
+        36.0,
+        506.03
+      ],
+      "label": "O",
+      "confidence": 0.9995
+    },
+    {
+      "i": 17,
+      "text": "Polyester",
+      "bbox": [
+        37.5,
+        497.1,
+        67.76,
+        506.03
+      ],
+      "label": "O",
+      "confidence": 0.9992
+    },
+    {
+      "i": 18,
+      "text": "•",
+      "bbox": [
+        17.01,
+        504.6,
+        20.74,
+        513.53
+      ],
+      "label": "O",
+      "confidence": 0.9997
+    },
+    {
+      "i": 19,
+      "text": "Versch.",
+      "bbox": [
+        22.04,
+        504.6,
+        45.18,
+        513.53
+      ],
+      "label": "B-PRODUCT",
+      "confidence": 0.6724
+    },
+    {
+      "i": 20,
+      "text": "Größen",
+      "bbox": [
+        46.52,
+        504.6,
+        70.89,
+        513.53
+      ],
+      "label": "O",
+      "confidence": 0.7886
+    },
+    {
+      "i": 21,
+      "text": "je",
+      "bbox": [
+        17.01,
+        512.1,
+        23.17,
+        521.03
+      ],
+      "label": "O",
+      "confidence": 0.9998
+    },
+    {
+      "i": 22,
+      "text": "Stück",
+      "bbox": [
+        24.67,
+        512.1,
+        42.06,
+        521.03
+      ],
+      "label": "O",
+      "confidence": 0.9997
+    },
+    {
+      "i": 23,
+      "text": "7.99,",
+      "bbox": [
+        43.56,
+        512.1,
+        60.27,
+        521.03
+      ],
+      "label": "B-PRICE",
+      "confidence": 0.9903
+    },
+    {
+      "i": 24,
+      "text": "12.99",
+      "bbox": [
+        61.61,
+        512.1,
+        80.46,
+        521.03
+      ],
+      "label": "B-OLD_PRICE",
+      "confidence": 0.9921
+    },
+    {
+      "i": 25,
+      "text": "2er-Packung",
+      "bbox": [
+        90.71,
+        412.07,
+        139.76,
+        422.31
+      ],
+      "label": "B-QUANTITY",
+      "confidence": 0.9001
+    },
+    {
+      "i": 26,
+      "text": "Damen-T-Shirts*",
+      "bbox": [
+        17.01,
+        434.03,
+        70.13,
+        443.07
+      ],
+      "label": "B-PRODUCT",
+      "confidence": 0.9979
+    },
+    {
+      "i": 27,
+      "text": "•",
+      "bbox": [
+        17.01,
+        441.61,
+        20.74,
+        450.54
+      ],
+      "label": "O",
+      "confidence": 0.9997
+    },
+    {
+      "i": 28,
+      "text": "95%",
+      "bbox": [
+        22.24,
+        441.61,
+        36.0,
+        450.54
+      ],
+      "label": "O",
+      "confidence": 0.9995
+    },
+    {
+      "i": 29,
+      "text": "Baumwolle/",
+      "bbox": [
+        37.5,
+        441.61,
+        78.56,
+        450.54
+      ],
+      "label": "O",
+      "confidence": 0.999
+    },
+    {
+      "i": 30,
+      "text": "5%",
+      "bbox": [
+        22.24,
+        449.11,
+        31.8,
+        458.04
+      ],
+      "label": "O",
+      "confidence": 0.9995
+    },
+    {
+      "i": 31,
+      "text": "Elasthan",
+      "bbox": [
+        33.3,
+        449.11,
+        61.09,
+        458.04
+      ],
+      "label": "O",
+      "confidence": 0.9992
+    },
+    {
+      "i": 32,
+      "text": "•",
+      "bbox": [
+        17.01,
+        456.61,
+        20.74,
+        465.54
+      ],
+      "label": "O",
+      "confidence": 0.9997
+    },
+    {
+      "i": 33,
+      "text": "Versch.",
+      "bbox": [
+        22.04,
+        456.61,
+        45.18,
+        465.54
+      ],
+      "label": "B-PRODUCT",
+      "confidence": 0.6082
+    },
+    {
+      "i": 34,
+      "text": "Größen",
+      "bbox": [
+        46.52,
+        456.61,
+        70.9,
+        465.54
+      ],
+      "label": "O",
+      "confidence": 0.8618
+    },
+    {
+      "i": 35,
+      "text": "je",
+      "bbox": [
+        17.01,
+        464.11,
+        23.17,
+        473.04
+      ],
+      "label": "O",
+      "confidence": 0.9998
+    },
+    {
+      "i": 36,
+      "text": "Packung",
+      "bbox": [
+        24.67,
+        464.11,
+        52.37,
+        473.04
+      ],
+      "label": "O",
+      "confidence": 0.9995
+    },
+    {
+      "i": 37,
+      "text": "4.99,",
+      "bbox": [
+        53.87,
+        464.11,
+        70.58,
+        473.04
+      ],
+      "label": "B-PRICE",
+      "confidence": 0.9872
+    },
+    {
+      "i": 38,
+      "text": "7.99",
+      "bbox": [
+        71.92,
+        464.11,
+        86.58,
+        473.04
+      ],
+      "label": "B-OLD_PRICE",
+      "confidence": 0.9934
+    },
+    {
+      "i": 39,
+      "text": "Aktion",
+      "bbox": [
+        194.3,
+        494.23,
+        229.96,
+        508.28
+      ],
+      "label": "O",
+      "confidence": 0.9998
+    },
+    {
+      "i": 40,
+      "text": "4.99",
+      "bbox": [
+        174.99,
+        519.34,
+        219.5,
+        546.23
+      ],
+      "label": "B-PRICE",
+      "confidence": 0.9108
+    },
+    {
+      "i": 41,
+      "text": "Weitere",
+      "bbox": [
+        48.15,
+        78.87,
+        73.19,
+        87.31
+      ],
+      "label": "O",
+      "confidence": 0.9997
+    },
+    {
+      "i": 42,
+      "text": "Farbkombinationen",
+      "bbox": [
+        74.59,
+        78.87,
+        137.93,
+        87.31
+      ],
+      "label": "O",
+      "confidence": 0.9997
+    },
+    {
+      "i": 43,
+      "text": "-35%",
+      "bbox": [
+        404.46,
+        274.06,
+        450.47,
+        298.19
+      ],
+      "label": "B-DISCOUNT",
+      "confidence": 0.9981
+    },
+    {
+      "i": 44,
+      "text": "15.99",
+      "bbox": [
+        378.05,
+        310.4,
+        439.75,
+        339.43
+      ],
+      "label": "B-PRICE",
+      "confidence": 0.9985
+    },
+    {
+      "i": 45,
+      "text": "UVP",
+      "bbox": [
+        388.22,
+        338.89,
+        404.57,
+        349.89
+      ],
+      "label": "O",
+      "confidence": 0.994
+    },
+    {
+      "i": 46,
+      "text": "24.90",
+      "bbox": [
+        406.19,
+        338.89,
+        429.57,
+        349.89
+      ],
+      "label": "B-OLD_PRICE",
+      "confidence": 0.9937
+    },
+    {
+      "i": 47,
+      "text": "5er-Set",
+      "bbox": [
+        301.97,
+        281.67,
+        329.85,
+        291.91
+      ],
+      "label": "B-QUANTITY",
+      "confidence": 0.9624
+    },
+    {
+      "i": 48,
+      "text": "Herren-Retroshorts*",
+      "bbox": [
+        24.85,
+        321.37,
+        91.54,
+        330.41
+      ],
+      "label": "B-PRODUCT",
+      "confidence": 0.9977
+    },
+    {
+      "i": 49,
+      "text": "•",
+      "bbox": [
+        24.85,
+        328.95,
+        28.59,
+        337.88
+      ],
+      "label": "O",
+      "confidence": 0.9997
+    },
+    {
+      "i": 50,
+      "text": "95%",
+      "bbox": [
+        30.09,
+        328.95,
+        43.84,
+        337.88
+      ],
+      "label": "O",
+      "confidence": 0.9997
+    },
+    {
+      "i": 51,
+      "text": "Baumwolle/5%",
+      "bbox": [
+        45.34,
+        328.95,
+        95.96,
+        337.88
+      ],
+      "label": "O",
+      "confidence": 0.9995
+    },
+    {
+      "i": 52,
+      "text": "Elasthan",
+      "bbox": [
+        97.46,
+        328.95,
+        125.25,
+        337.88
+      ],
+      "label": "O",
+      "confidence": 0.9995
+    },
+    {
+      "i": 53,
+      "text": "•",
+      "bbox": [
+        24.85,
+        336.45,
+        28.59,
+        345.38
+      ],
+      "label": "O",
+      "confidence": 0.9998
+    },
+    {
+      "i": 54,
+      "text": "Größen:",
+      "bbox": [
+        30.09,
+        336.45,
+        56.82,
+        345.38
+      ],
+      "label": "O",
+      "confidence": 0.9992
+    },
+    {
+      "i": 55,
+      "text": "5/M–8/XXL,",
+      "bbox": [
+        58.32,
+        336.45,
+        94.63,
+        345.38
+      ],
+      "label": "O",
+      "confidence": 0.9996
+    },
+    {
+      "i": 56,
+      "text": "nicht",
+      "bbox": [
+        95.97,
+        336.45,
+        112.12,
+        345.38
+      ],
+      "label": "O",
+      "confidence": 0.9998
+    },
+    {
+      "i": 57,
+      "text": "alle",
+      "bbox": [
+        113.62,
+        336.45,
+        125.98,
+        345.38
+      ],
+      "label": "O",
+      "confidence": 0.9997
+    },
+    {
+      "i": 58,
+      "text": "Größen",
+      "bbox": [
+        127.48,
+        336.45,
+        151.85,
+        345.38
+      ],
+      "label": "O",
+      "confidence": 0.9993
+    },
+    {
+      "i": 59,
+      "text": "in",
+      "bbox": [
+        153.35,
+        336.45,
+        159.62,
+        345.38
+      ],
+      "label": "O",
+      "confidence": 0.9997
+    },
+    {
+      "i": 60,
+      "text": "jeder",
+      "bbox": [
+        30.09,
+        343.95,
+        47.32,
+        352.88
+      ],
+      "label": "O",
+      "confidence": 0.9998
+    },
+    {
+      "i": 61,
+      "text": "Farbkombination",
+      "bbox": [
+        48.82,
+        343.95,
+        105.19,
+        352.88
+      ],
+      "label": "O",
+      "confidence": 0.9996
+    },
+    {
+      "i": 62,
+      "text": "erhältlich",
+      "bbox": [
+        106.69,
+        343.95,
+        137.86,
+        352.88
+      ],
+      "label": "O",
+      "confidence": 0.9998
+    },
+    {
+      "i": 63,
+      "text": "je",
+      "bbox": [
+        24.85,
+        351.45,
+        31.02,
+        360.38
+      ],
+      "label": "O",
+      "confidence": 0.9998
+    },
+    {
+      "i": 64,
+      "text": "Set",
+      "bbox": [
+        32.52,
+        351.45,
+        42.9,
+        360.38
+      ],
+      "label": "O",
+      "confidence": 0.9997
+    },
+    {
+      "i": 65,
+      "text": "Aktion",
+      "bbox": [
+        194.3,
+        732.34,
+        229.96,
+        746.39
+      ],
+      "label": "O",
+      "confidence": 0.9997
+    },
+    {
+      "i": 66,
+      "text": "12.99",
+      "bbox": [
+        174.51,
+        760.11,
+        219.98,
+        781.5
+      ],
+      "label": "B-PRICE",
+      "confidence": 0.8575
+    },
+    {
+      "i": 67,
+      "text": "6-teilig",
+      "bbox": [
+        81.03,
+        595.47,
+        109.67,
+        605.71
+      ],
+      "label": "B-QUANTITY",
+      "confidence": 0.7921
+    },
+    {
+      "i": 68,
+      "text": "HOME",
+      "bbox": [
+        17.01,
+        745.74,
+        36.3,
+        754.78
+      ],
+      "label": "B-BRAND",
+      "confidence": 0.9983
+    },
+    {
+      "i": 69,
+      "text": "IDEAS",
+      "bbox": [
+        37.5,
+        745.74,
+        56.23,
+        754.78
+      ],
+      "label": "I-BRAND",
+      "confidence": 0.9961
+    },
+    {
+      "i": 70,
+      "text": "Living",
+      "bbox": [
+        57.43,
+        745.74,
+        77.15,
+        754.78
+      ],
+      "label": "O",
+      "confidence": 0.7679
+    },
+    {
+      "i": 71,
+      "text": "Frottier-Handtücher-Set*",
+      "bbox": [
+        17.01,
+        753.24,
+        97.95,
+        762.28
+      ],
+      "label": "B-PRODUCT",
+      "confidence": 0.9985
+    },
+    {
+      "i": 72,
+      "text": "100%",
+      "bbox": [
+        17.01,
+        760.82,
+        34.96,
+        769.75
+      ],
+      "label": "O",
+      "confidence": 0.9985
+    },
+    {
+      "i": 73,
+      "text": "Baumwolle,",
+      "bbox": [
+        36.46,
+        760.82,
+        76.58,
+        769.75
+      ],
+      "label": "O",
+      "confidence": 0.9986
+    },
+    {
+      "i": 74,
+      "text": "bestehend",
+      "bbox": [
+        77.92,
+        760.82,
+        112.92,
+        769.75
+      ],
+      "label": "O",
+      "confidence": 0.9995
+    },
+    {
+      "i": 75,
+      "text": "aus",
+      "bbox": [
+        114.42,
+        760.82,
+        125.65,
+        769.75
+      ],
+      "label": "O",
+      "confidence": 0.9994
+    },
+    {
+      "i": 76,
+      "text": "je",
+      "bbox": [
+        127.15,
+        760.82,
+        133.31,
+        769.75
+      ],
+      "label": "O",
+      "confidence": 0.9998
+    },
+    {
+      "i": 77,
+      "text": "2:",
+      "bbox": [
+        134.81,
+        760.82,
+        141.37,
+        769.75
+      ],
+      "label": "O",
+      "confidence": 0.9954
+    },
+    {
+      "i": 78,
+      "text": "•",
+      "bbox": [
+        17.01,
+        768.32,
+        20.74,
+        777.25
+      ],
+      "label": "O",
+      "confidence": 0.9997
+    },
+    {
+      "i": 79,
+      "text": "Gästetüchern,",
+      "bbox": [
+        22.24,
+        768.32,
+        67.51,
+        777.25
+      ],
+      "label": "B-PRODUCT",
+      "confidence": 0.9533
+    },
+    {
+      "i": 80,
+      "text": "je",
+      "bbox": [
+        68.85,
+        768.32,
+        75.02,
+        777.25
+      ],
+      "label": "O",
+      "confidence": 0.9997
+    },
+    {
+      "i": 81,
+      "text": "ca.",
+      "bbox": [
+        76.52,
+        768.32,
+        85.66,
+        777.25
+      ],
+      "label": "O",
+      "confidence": 0.9994
+    },
+    {
+      "i": 82,
+      "text": "B",
+      "bbox": [
+        87.0,
+        768.32,
+        91.29,
+        777.25
+      ],
+      "label": "O",
+      "confidence": 0.9202
+    },
+    {
+      "i": 83,
+      "text": "30",
+      "bbox": [
+        92.79,
+        768.32,
+        101.19,
+        777.25
+      ],
+      "label": "O",
+      "confidence": 0.9298
+    },
+    {
+      "i": 84,
+      "text": "x",
+      "bbox": [
+        102.69,
+        768.32,
+        106.49,
+        777.25
+      ],
+      "label": "O",
+      "confidence": 0.9351
+    },
+    {
+      "i": 85,
+      "text": "L",
+      "bbox": [
+        107.99,
+        768.32,
+        110.99,
+        777.25
+      ],
+      "label": "O",
+      "confidence": 0.9091
+    },
+    {
+      "i": 86,
+      "text": "50",
+      "bbox": [
+        112.49,
+        768.32,
+        120.89,
+        777.25
+      ],
+      "label": "O",
+      "confidence": 0.9276
+    },
+    {
+      "i": 87,
+      "text": "cm",
+      "bbox": [
+        122.39,
+        768.32,
+        132.05,
+        777.25
+      ],
+      "label": "O",
+      "confidence": 0.948
+    },
+    {
+      "i": 88,
+      "text": "•",
+      "bbox": [
+        17.01,
+        775.82,
+        20.74,
+        784.75
+      ],
+      "label": "O",
+      "confidence": 0.9997
+    },
+    {
+      "i": 89,
+      "text": "Handtüchern,",
+      "bbox": [
+        22.24,
+        775.82,
+        66.73,
+        784.75
+      ],
+      "label": "B-PRODUCT",
+      "confidence": 0.9218
+    },
+    {
+      "i": 90,
+      "text": "je",
+      "bbox": [
+        68.08,
+        775.82,
+        74.24,
+        784.75
+      ],
+      "label": "O",
+      "confidence": 0.9998
+    },
+    {
+      "i": 91,
+      "text": "ca.",
+      "bbox": [
+        75.74,
+        775.82,
+        84.88,
+        784.75
+      ],
+      "label": "O",
+      "confidence": 0.9994
+    },
+    {
+      "i": 92,
+      "text": "B",
+      "bbox": [
+        86.23,
+        775.82,
+        90.52,
+        784.75
+      ],
+      "label": "O",
+      "confidence": 0.9324
+    },
+    {
+      "i": 93,
+      "text": "50",
+      "bbox": [
+        92.02,
+        775.82,
+        100.42,
+        784.75
+      ],
+      "label": "O",
+      "confidence": 0.9134
+    },
+    {
+      "i": 94,
+      "text": "x",
+      "bbox": [
+        101.92,
+        775.82,
+        105.71,
+        784.75
+      ],
+      "label": "O",
+      "confidence": 0.9233
+    },
+    {
+      "i": 95,
+      "text": "L",
+      "bbox": [
+        107.21,
+        775.82,
+        110.21,
+        784.75
+      ],
+      "label": "O",
+      "confidence": 0.9055
+    },
+    {
+      "i": 96,
+      "text": "90",
+      "bbox": [
+        111.71,
+        775.82,
+        120.11,
+        784.75
+      ],
+      "label": "O",
+      "confidence": 0.9282
+    },
+    {
+      "i": 97,
+      "text": "cm",
+      "bbox": [
+        121.61,
+        775.82,
+        131.27,
+        784.75
+      ],
+      "label": "O",
+      "confidence": 0.9523
+    },
+    {
+      "i": 98,
+      "text": "und",
+      "bbox": [
+        132.77,
+        775.82,
+        145.55,
+        784.75
+      ],
+      "label": "O",
+      "confidence": 0.9988
+    },
+    {
+      "i": 99,
+      "text": "•",
+      "bbox": [
+        17.01,
+        783.32,
+        20.74,
+        792.25
+      ],
+      "label": "O",
+      "confidence": 0.9996
+    },
+    {
+      "i": 100,
+      "text": "Duschtüchern,",
+      "bbox": [
+        22.24,
+        783.32,
+        68.91,
+        792.25
+      ],
+      "label": "B-PRODUCT",
+      "confidence": 0.837
+    },
+    {
+      "i": 101,
+      "text": "je",
+      "bbox": [
+        70.25,
+        783.32,
+        76.42,
+        792.25
+      ],
+      "label": "O",
+      "confidence": 0.9998
+    },
+    {
+      "i": 102,
+      "text": "ca.",
+      "bbox": [
+        77.92,
+        783.32,
+        87.06,
+        792.25
+      ],
+      "label": "O",
+      "confidence": 0.9995
+    },
+    {
+      "i": 103,
+      "text": "B",
+      "bbox": [
+        88.4,
+        783.32,
+        92.69,
+        792.25
+      ],
+      "label": "O",
+      "confidence": 0.9157
+    },
+    {
+      "i": 104,
+      "text": "70",
+      "bbox": [
+        94.19,
+        783.32,
+        102.59,
+        792.25
+      ],
+      "label": "O",
+      "confidence": 0.9328
+    },
+    {
+      "i": 105,
+      "text": "x",
+      "bbox": [
+        104.09,
+        783.32,
+        107.88,
+        792.25
+      ],
+      "label": "O",
+      "confidence": 0.9278
+    },
+    {
+      "i": 106,
+      "text": "L",
+      "bbox": [
+        109.38,
+        783.32,
+        112.38,
+        792.25
+      ],
+      "label": "O",
+      "confidence": 0.8988
+    },
+    {
+      "i": 107,
+      "text": "130",
+      "bbox": [
+        113.88,
+        783.32,
+        126.48,
+        792.25
+      ],
+      "label": "O",
+      "confidence": 0.9306
+    },
+    {
+      "i": 108,
+      "text": "cm",
+      "bbox": [
+        127.98,
+        783.32,
+        137.64,
+        792.25
+      ],
+      "label": "O",
+      "confidence": 0.9606
+    },
+    {
+      "i": 109,
+      "text": "je",
+      "bbox": [
+        17.01,
+        790.82,
+        23.17,
+        799.75
+      ],
+      "label": "O",
+      "confidence": 0.9998
+    },
+    {
+      "i": 110,
+      "text": "Set",
+      "bbox": [
+        24.67,
+        790.82,
+        35.05,
+        799.75
+      ],
+      "label": "O",
+      "confidence": 0.9996
+    },
+    {
+      "i": 111,
+      "text": "Weitere",
+      "bbox": [
+        178.1,
+        641.03,
+        198.81,
+        648.17
+      ],
+      "label": "O",
+      "confidence": 0.9996
+    },
+    {
+      "i": 112,
+      "text": "Farben",
+      "bbox": [
+        200.01,
+        641.03,
+        218.07,
+        648.17
+      ],
+      "label": "O",
+      "confidence": 0.9995
+    },
+    {
+      "i": 113,
+      "text": "Shaper-Tights*",
+      "bbox": [
+        17.01,
+        522.63,
+        65.2,
+        531.67
+      ],
+      "label": "B-PRODUCT",
+      "confidence": 0.9986
+    },
+    {
+      "i": 114,
+      "text": "•",
+      "bbox": [
+        17.01,
+        530.21,
+        20.74,
+        539.14
+      ],
+      "label": "O",
+      "confidence": 0.9997
+    },
+    {
+      "i": 115,
+      "text": "80%",
+      "bbox": [
+        22.24,
+        530.21,
+        36.0,
+        539.14
+      ],
+      "label": "O",
+      "confidence": 0.9991
+    },
+    {
+      "i": 116,
+      "text": "Polyester/",
+      "bbox": [
+        37.5,
+        530.21,
+        70.76,
+        539.14
+      ],
+      "label": "O",
+      "confidence": 0.9974
+    },
+    {
+      "i": 117,
+      "text": "20%",
+      "bbox": [
+        22.24,
+        537.71,
+        36.0,
+        546.64
+      ],
+      "label": "O",
+      "confidence": 0.9994
+    },
+    {
+      "i": 118,
+      "text": "Elasthan",
+      "bbox": [
+        37.5,
+        537.71,
+        65.29,
+        546.64
+      ],
+      "label": "O",
+      "confidence": 0.9992
+    },
+    {
+      "i": 119,
+      "text": "•",
+      "bbox": [
+        17.01,
+        545.21,
+        20.74,
+        554.14
+      ],
+      "label": "O",
+      "confidence": 0.9997
+    },
+    {
+      "i": 120,
+      "text": "7/8-",
+      "bbox": [
+        22.24,
+        545.21,
+        35.78,
+        554.14
+      ],
+      "label": "O",
+      "confidence": 0.8407
+    },
+    {
+      "i": 121,
+      "text": "oder",
+      "bbox": [
+        37.22,
+        545.21,
+        51.96,
+        554.14
+      ],
+      "label": "O",
+      "confidence": 0.9995
+    },
+    {
+      "i": 122,
+      "text": "1/1-Länge",
+      "bbox": [
+        53.4,
+        545.21,
+        85.79,
+        554.14
+      ],
+      "label": "O",
+      "confidence": 0.867
+    },
+    {
+      "i": 123,
+      "text": "je",
+      "bbox": [
+        17.01,
+        552.71,
+        23.17,
+        561.64
+      ],
+      "label": "O",
+      "confidence": 0.9998
+    },
+    {
+      "i": 124,
+      "text": "Stück",
+      "bbox": [
+        24.67,
+        552.71,
+        42.06,
+        561.64
+      ],
+      "label": "O",
+      "confidence": 0.9997
+    },
+    {
+      "i": 125,
+      "text": "7.99,",
+      "bbox": [
+        43.56,
+        552.71,
+        60.27,
+        561.64
+      ],
+      "label": "B-PRICE",
+      "confidence": 0.9854
+    },
+    {
+      "i": 126,
+      "text": "9.99",
+      "bbox": [
+        61.61,
+        552.71,
+        76.27,
+        561.64
+      ],
+      "label": "B-OLD_PRICE",
+      "confidence": 0.9953
+    },
+    {
+      "i": 127,
+      "text": "Aktion",
+      "bbox": [
+        420.83,
+        732.34,
+        456.49,
+        746.39
+      ],
+      "label": "O",
+      "confidence": 0.9997
+    },
+    {
+      "i": 128,
+      "text": "5.99",
+      "bbox": [
+        401.53,
+        757.45,
+        446.03,
+        784.34
+      ],
+      "label": "B-PRICE",
+      "confidence": 0.8035
+    },
+    {
+      "i": 129,
+      "text": "8",
+      "bbox": [
+        275.85,
+        573.28,
+        280.75,
+        583.53
+      ],
+      "label": "B-QUANTITY",
+      "confidence": 0.982
+    },
+    {
+      "i": 130,
+      "text": "Paar",
+      "bbox": [
+        282.45,
+        573.28,
+        299.79,
+        583.53
+      ],
+      "label": "I-QUANTITY",
+      "confidence": 0.9648
+    },
+    {
+      "i": 131,
+      "text": "Sneakersocken*",
+      "bbox": [
+        244.02,
+        723.78,
+        297.18,
+        732.81
+      ],
+      "label": "B-PRODUCT",
+      "confidence": 0.9967
+    },
+    {
+      "i": 132,
+      "text": "Versch.",
+      "bbox": [
+        244.02,
+        731.35,
+        267.15,
+        740.28
+      ],
+      "label": "I-PRODUCT",
+      "confidence": 0.4192
+    },
+    {
+      "i": 133,
+      "text": "Größen,",
+      "bbox": [
+        268.5,
+        731.35,
+        294.93,
+        740.28
+      ],
+      "label": "I-PRODUCT",
+      "confidence": 0.747
+    },
+    {
+      "i": 134,
+      "text": "je",
+      "bbox": [
+        244.02,
+        738.85,
+        250.18,
+        747.78
+      ],
+      "label": "O",
+      "confidence": 0.9998
+    },
+    {
+      "i": 135,
+      "text": "Packung",
+      "bbox": [
+        251.68,
+        738.85,
+        279.38,
+        747.78
+      ],
+      "label": "O",
+      "confidence": 0.9994
+    },
+    {
+      "i": 136,
+      "text": "6.99",
+      "bbox": [
+        280.88,
+        738.85,
+        295.53,
+        747.78
+      ],
+      "label": "B-PRICE",
+      "confidence": 0.9866
+    },
+    {
+      "i": 137,
+      "text": "6",
+      "bbox": [
+        278.98,
+        667.18,
+        283.89,
+        677.43
+      ],
+      "label": "B-QUANTITY",
+      "confidence": 0.9851
+    },
+    {
+      "i": 138,
+      "text": "Paar",
+      "bbox": [
+        285.59,
+        667.18,
+        302.93,
+        677.43
+      ],
+      "label": "I-QUANTITY",
+      "confidence": 0.9761
+    },
+    {
+      "i": 139,
+      "text": "Sneakersocken*",
+      "bbox": [
+        244.02,
+        775.74,
+        297.18,
+        784.78
+      ],
+      "label": "B-PRODUCT",
+      "confidence": 0.9976
+    },
+    {
+      "i": 140,
+      "text": "Größen:",
+      "bbox": [
+        244.02,
+        783.32,
+        270.75,
+        792.25
+      ],
+      "label": "O",
+      "confidence": 0.9792
+    },
+    {
+      "i": 141,
+      "text": "35/38–43/46,",
+      "bbox": [
+        272.25,
+        783.32,
+        317.5,
+        792.25
+      ],
+      "label": "O",
+      "confidence": 0.9707
+    },
+    {
+      "i": 142,
+      "text": "je",
+      "bbox": [
+        244.02,
+        790.82,
+        250.18,
+        799.75
+      ],
+      "label": "O",
+      "confidence": 0.9998
+    },
+    {
+      "i": 143,
+      "text": "Packung",
+      "bbox": [
+        251.68,
+        790.82,
+        279.38,
+        799.75
+      ],
+      "label": "O",
+      "confidence": 0.9995
+    },
+    {
+      "i": 144,
+      "text": "5.99,",
+      "bbox": [
+        280.88,
+        790.82,
+        297.59,
+        799.75
+      ],
+      "label": "B-PRICE",
+      "confidence": 0.9908
+    },
+    {
+      "i": 145,
+      "text": "UVP",
+      "bbox": [
+        298.93,
+        790.82,
+        311.79,
+        799.75
+      ],
+      "label": "O",
+      "confidence": 0.998
+    },
+    {
+      "i": 146,
+      "text": "13.99",
+      "bbox": [
+        313.29,
+        790.82,
+        332.14,
+        799.75
+      ],
+      "label": "B-OLD_PRICE",
+      "confidence": 0.9944
+    },
+    {
+      "i": 147,
+      "text": "Weitere",
+      "bbox": [
+        146.63,
+        295.01,
+        167.34,
+        302.16
+      ],
+      "label": "O",
+      "confidence": 0.9997
+    },
+    {
+      "i": 148,
+      "text": "Farben",
+      "bbox": [
+        168.54,
+        295.01,
+        186.61,
+        302.16
+      ],
+      "label": "O",
+      "confidence": 0.9997
+    },
+    {
+      "i": 149,
+      "text": "im",
+      "bbox": [
+        187.81,
+        295.01,
+        194.65,
+        302.16
+      ],
+      "label": "O",
+      "confidence": 0.9997
+    },
+    {
+      "i": 150,
+      "text": "Set",
+      "bbox": [
+        195.85,
+        295.01,
+        204.16,
+        302.16
+      ],
+      "label": "O",
+      "confidence": 0.9998
+    },
+    {
+      "i": 151,
+      "text": "Weitere",
+      "bbox": [
+        419.57,
+        652.62,
+        440.28,
+        659.77
+      ],
+      "label": "O",
+      "confidence": 0.9997
+    },
+    {
+      "i": 152,
+      "text": "Farben",
+      "bbox": [
+        441.48,
+        652.62,
+        459.55,
+        659.77
+      ],
+      "label": "O",
+      "confidence": 0.9997
+    },
+    {
+      "i": 153,
+      "text": "Ab",
+      "bbox": [
+        199.95,
+        14.05,
+        217.26,
+        30.92
+      ],
+      "label": "B-VALID",
+      "confidence": 0.9947
+    },
+    {
+      "i": 154,
+      "text": "Do,",
+      "bbox": [
+        220.06,
+        14.05,
+        241.34,
+        30.92
+      ],
+      "label": "I-VALID",
+      "confidence": 0.9959
+    },
+    {
+      "i": 155,
+      "text": "13.8.",
+      "bbox": [
+        244.14,
+        14.05,
+        276.27,
+        30.92
+      ],
+      "label": "I-VALID",
+      "confidence": 0.9986
+    },
+    {
+      "i": 156,
+      "text": "23_12",
+      "bbox": [
+        464.12,
+        780.49,
+        471.26,
+        796.77
+      ],
+      "label": "O",
+      "confidence": 0.9997
+    }
+  ],
+  "entities": [
+    {
+      "label": "DISCOUNT",
+      "start": 2,
+      "end": 3,
+      "text": "-30%",
+      "bbox": [
+        420.02,
+        491.57,
+        457.3,
+        511.12
+      ],
+      "confidence": 0.9978
+    },
+    {
+      "label": "PRICE",
+      "start": 3,
+      "end": 4,
+      "text": "34.99",
+      "bbox": [
+        401.05,
+        522.0,
+        446.51,
+        543.39
+      ],
+      "confidence": 0.998
+    },
+    {
+      "label": "OLD_PRICE",
+      "start": 5,
+      "end": 6,
+      "text": "50.00",
+      "bbox": [
+        421.52,
+        543.5,
+        441.01,
+        552.67
+      ],
+      "confidence": 0.9928
+    },
+    {
+      "label": "PRODUCT",
+      "start": 6,
+      "end": 9,
+      "text": "Herren-Sportschuhe* Versch. Größen,",
+      "bbox": [
+        244.02,
+        537.42,
+        313.05,
+        553.93
+      ],
+      "confidence": 0.6802
+    },
+    {
+      "label": "PRODUCT",
+      "start": 11,
+      "end": 13,
+      "text": "Damen- Sweatpants*",
+      "bbox": [
+        17.01,
+        474.53,
+        59.64,
+        491.06
+      ],
+      "confidence": 0.9982
+    },
+    {
+      "label": "PRODUCT",
+      "start": 19,
+      "end": 20,
+      "text": "Versch.",
+      "bbox": [
+        22.04,
+        504.6,
+        45.18,
+        513.53
+      ],
+      "confidence": 0.6724
+    },
+    {
+      "label": "PRICE",
+      "start": 23,
+      "end": 24,
+      "text": "7.99,",
+      "bbox": [
+        43.56,
+        512.1,
+        60.27,
+        521.03
+      ],
+      "confidence": 0.9903
+    },
+    {
+      "label": "OLD_PRICE",
+      "start": 24,
+      "end": 25,
+      "text": "12.99",
+      "bbox": [
+        61.61,
+        512.1,
+        80.46,
+        521.03
+      ],
+      "confidence": 0.9921
+    },
+    {
+      "label": "QUANTITY",
+      "start": 25,
+      "end": 26,
+      "text": "2er-Packung",
+      "bbox": [
+        90.71,
+        412.07,
+        139.76,
+        422.31
+      ],
+      "confidence": 0.9001
+    },
+    {
+      "label": "PRODUCT",
+      "start": 26,
+      "end": 27,
+      "text": "Damen-T-Shirts*",
+      "bbox": [
+        17.01,
+        434.03,
+        70.13,
+        443.07
+      ],
+      "confidence": 0.9979
+    },
+    {
+      "label": "PRODUCT",
+      "start": 33,
+      "end": 34,
+      "text": "Versch.",
+      "bbox": [
+        22.04,
+        456.61,
+        45.18,
+        465.54
+      ],
+      "confidence": 0.6082
+    },
+    {
+      "label": "PRICE",
+      "start": 37,
+      "end": 38,
+      "text": "4.99,",
+      "bbox": [
+        53.87,
+        464.11,
+        70.58,
+        473.04
+      ],
+      "confidence": 0.9872
+    },
+    {
+      "label": "OLD_PRICE",
+      "start": 38,
+      "end": 39,
+      "text": "7.99",
+      "bbox": [
+        71.92,
+        464.11,
+        86.58,
+        473.04
+      ],
+      "confidence": 0.9934
+    },
+    {
+      "label": "PRICE",
+      "start": 40,
+      "end": 41,
+      "text": "4.99",
+      "bbox": [
+        174.99,
+        519.34,
+        219.5,
+        546.23
+      ],
+      "confidence": 0.9108
+    },
+    {
+      "label": "DISCOUNT",
+      "start": 43,
+      "end": 44,
+      "text": "-35%",
+      "bbox": [
+        404.46,
+        274.06,
+        450.47,
+        298.19
+      ],
+      "confidence": 0.9981
+    },
+    {
+      "label": "PRICE",
+      "start": 44,
+      "end": 45,
+      "text": "15.99",
+      "bbox": [
+        378.05,
+        310.4,
+        439.75,
+        339.43
+      ],
+      "confidence": 0.9985
+    },
+    {
+      "label": "OLD_PRICE",
+      "start": 46,
+      "end": 47,
+      "text": "24.90",
+      "bbox": [
+        406.19,
+        338.89,
+        429.57,
+        349.89
+      ],
+      "confidence": 0.9937
+    },
+    {
+      "label": "QUANTITY",
+      "start": 47,
+      "end": 48,
+      "text": "5er-Set",
+      "bbox": [
+        301.97,
+        281.67,
+        329.85,
+        291.91
+      ],
+      "confidence": 0.9624
+    },
+    {
+      "label": "PRODUCT",
+      "start": 48,
+      "end": 49,
+      "text": "Herren-Retroshorts*",
+      "bbox": [
+        24.85,
+        321.37,
+        91.54,
+        330.41
+      ],
+      "confidence": 0.9977
+    },
+    {
+      "label": "PRICE",
+      "start": 66,
+      "end": 67,
+      "text": "12.99",
+      "bbox": [
+        174.51,
+        760.11,
+        219.98,
+        781.5
+      ],
+      "confidence": 0.8575
+    },
+    {
+      "label": "QUANTITY",
+      "start": 67,
+      "end": 68,
+      "text": "6-teilig",
+      "bbox": [
+        81.03,
+        595.47,
+        109.67,
+        605.71
+      ],
+      "confidence": 0.7921
+    },
+    {
+      "label": "BRAND",
+      "start": 68,
+      "end": 70,
+      "text": "HOME IDEAS",
+      "bbox": [
+        17.01,
+        745.74,
+        56.23,
+        754.78
+      ],
+      "confidence": 0.9972
+    },
+    {
+      "label": "PRODUCT",
+      "start": 71,
+      "end": 72,
+      "text": "Frottier-Handtücher-Set*",
+      "bbox": [
+        17.01,
+        753.24,
+        97.95,
+        762.28
+      ],
+      "confidence": 0.9985
+    },
+    {
+      "label": "PRODUCT",
+      "start": 79,
+      "end": 80,
+      "text": "Gästetüchern,",
+      "bbox": [
+        22.24,
+        768.32,
+        67.51,
+        777.25
+      ],
+      "confidence": 0.9533
+    },
+    {
+      "label": "PRODUCT",
+      "start": 89,
+      "end": 90,
+      "text": "Handtüchern,",
+      "bbox": [
+        22.24,
+        775.82,
+        66.73,
+        784.75
+      ],
+      "confidence": 0.9218
+    },
+    {
+      "label": "PRODUCT",
+      "start": 100,
+      "end": 101,
+      "text": "Duschtüchern,",
+      "bbox": [
+        22.24,
+        783.32,
+        68.91,
+        792.25
+      ],
+      "confidence": 0.837
+    },
+    {
+      "label": "PRODUCT",
+      "start": 113,
+      "end": 114,
+      "text": "Shaper-Tights*",
+      "bbox": [
+        17.01,
+        522.63,
+        65.2,
+        531.67
+      ],
+      "confidence": 0.9986
+    },
+    {
+      "label": "PRICE",
+      "start": 125,
+      "end": 126,
+      "text": "7.99,",
+      "bbox": [
+        43.56,
+        552.71,
+        60.27,
+        561.64
+      ],
+      "confidence": 0.9854
+    },
+    {
+      "label": "OLD_PRICE",
+      "start": 126,
+      "end": 127,
+      "text": "9.99",
+      "bbox": [
+        61.61,
+        552.71,
+        76.27,
+        561.64
+      ],
+      "confidence": 0.9953
+    },
+    {
+      "label": "PRICE",
+      "start": 128,
+      "end": 129,
+      "text": "5.99",
+      "bbox": [
+        401.53,
+        757.45,
+        446.03,
+        784.34
+      ],
+      "confidence": 0.8035
+    },
+    {
+      "label": "QUANTITY",
+      "start": 129,
+      "end": 131,
+      "text": "8 Paar",
+      "bbox": [
+        275.85,
+        573.28,
+        299.79,
+        583.53
+      ],
+      "confidence": 0.9734
+    },
+    {
+      "label": "PRODUCT",
+      "start": 131,
+      "end": 134,
+      "text": "Sneakersocken* Versch. Größen,",
+      "bbox": [
+        244.02,
+        723.78,
+        297.18,
+        740.28
+      ],
+      "confidence": 0.721
+    },
+    {
+      "label": "PRICE",
+      "start": 136,
+      "end": 137,
+      "text": "6.99",
+      "bbox": [
+        280.88,
+        738.85,
+        295.53,
+        747.78
+      ],
+      "confidence": 0.9866
+    },
+    {
+      "label": "QUANTITY",
+      "start": 137,
+      "end": 139,
+      "text": "6 Paar",
+      "bbox": [
+        278.98,
+        667.18,
+        302.93,
+        677.43
+      ],
+      "confidence": 0.9806
+    },
+    {
+      "label": "PRODUCT",
+      "start": 139,
+      "end": 140,
+      "text": "Sneakersocken*",
+      "bbox": [
+        244.02,
+        775.74,
+        297.18,
+        784.78
+      ],
+      "confidence": 0.9976
+    },
+    {
+      "label": "PRICE",
+      "start": 144,
+      "end": 145,
+      "text": "5.99,",
+      "bbox": [
+        280.88,
+        790.82,
+        297.59,
+        799.75
+      ],
+      "confidence": 0.9908
+    },
+    {
+      "label": "OLD_PRICE",
+      "start": 146,
+      "end": 147,
+      "text": "13.99",
+      "bbox": [
+        313.29,
+        790.82,
+        332.14,
+        799.75
+      ],
+      "confidence": 0.9944
+    },
+    {
+      "label": "VALID",
+      "start": 153,
+      "end": 156,
+      "text": "Ab Do, 13.8.",
+      "bbox": [
+        199.95,
+        14.05,
+        276.27,
+        30.92
+      ],
+      "confidence": 0.9964
+    }
+  ]
+}

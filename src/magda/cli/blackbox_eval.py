@@ -28,14 +28,19 @@ Dass der Probelauf schweigt, ist kein Schoenheitsfehler: er rechnet
 `test_cluster_pages.txt` laufen liesse, haette den Testsplit angefasst,
 bevor der Schlussbatch ueberhaupt beginnt.
 
-Vor dem Schlussbatch ist ausserdem zu entscheiden, was "Referenz" heisst.
-Heute sind es `cluster_page`-Angebote aus den Lehrer-Labels - also
-**dieselbe Gruppierungsheuristik**, die auch auf der eigenen Seite laeuft.
-Die Zeile "eigene gegen Referenz" vergleicht damit die Heuristik weitgehend
-mit sich selbst und faellt entsprechend hoch aus; "Blackbox gegen Referenz"
-vergleicht Methode *und* Entities. Die Alternative waere
-`data/offer_groups/`. Der Testlauf ist nicht wiederholbar - die Entscheidung
-faellt vorher.
+Was "Referenz" heisst, entscheidet `--reference-groups`. Der Default
+`heuristic` bildet `cluster_page`-Angebote aus den Lehrer-Labels - also
+**dieselbe Gruppierungsheuristik**, die mit `--grouper heuristic` auch auf
+der eigenen Seite laeuft. Die Zeile "eigene gegen Referenz" vergleicht damit
+die Heuristik weitgehend mit sich selbst und faellt entsprechend hoch aus.
+Gemessen am 03.09.2026 (`scripts/blackbox_decompose.py`): Heuristik gegen
+Heuristik-Referenz 0.839, Paarmodell gegen dieselbe Referenz 0.695 - obwohl
+das Paarmodell auf dem vollen Testsplit Gruppen-F1 0.778 gegen 0.439
+erreicht. Gegen die Teacher-Gruppierung (`--reference-groups teacher`)
+dreht sich das Bild: 0.811 gegen 0.708. Wer den Grouper wechselt, muss die
+Referenz mitwechseln, sonst misst er die Selbstaehnlichkeit der Heuristik.
+Die Blackbox-Antworten liegen als `blackbox_deals` im Report; ein Wechsel
+von Grouper oder Referenz braucht deshalb keinen neuen API-Lauf.
 """
 
 from __future__ import annotations
@@ -55,15 +60,66 @@ def _pdf_path(page_id: str):
     return config.RAW_DIR / catalog / f"bk_{int(page)}.pdf"
 
 
-def _deals_by_page(pages: list[dict]) -> dict[str, list[dict]]:
-    """Angebote der eigenen Pipeline, auf die gemeinsame Feldmenge projiziert."""
-    from magda import offers
+def _offers_of(page: dict, grouper: str, model=None):
+    """Angebote einer Seite nach der gewaehlten Gruppierungsmethode.
 
+    "heuristic" ist `offers.cluster_page` - reine Abstands-/Preisregeln,
+    kein Training. "pair-model" ist das trainierte Paarmodell samt
+    ILP-Dekoder (`checkpoints/offer_pairs/model.pt`), das schwaechere von
+    beiden ist bewusst der Default, um bestehende Laeufe nicht stillschweigend
+    zu aendern - fuer die "beste lokale Konfiguration" explizit anfordern.
+    """
+    if grouper == "heuristic":
+        from magda import offers
+        return offers.cluster_page(page)
+
+    from magda import offers_gold
+    assignment = {
+        word: group_id
+        for group_id, group in enumerate(model.group_page_words(page, model.threshold))
+        for word in group
+    }
+    return offers_gold.offers_from_reference(page, assignment)
+
+
+def _deals_by_page(pages: list[dict], grouper: str = "heuristic", model=None) -> dict[str, list[dict]]:
+    """Angebote der eigenen Pipeline, auf die gemeinsame Feldmenge projiziert."""
     result: dict[str, list[dict]] = {}
     fragments = 0
     for page in pages:
         deals = []
-        for offer in offers.cluster_page(page):
+        for offer in _offers_of(page, grouper, model):
+            deal = blackbox_eval.deal_from_offer(offer)
+            if deal is None:
+                fragments += 1
+            else:
+                deals.append(deal)
+        result[page["page_id"]] = deals
+    result["__fragments__"] = fragments  # type: ignore[assignment]
+    return result
+
+
+def _teacher_deals_by_page(pages: list[dict], reference_from: str) -> dict[str, list[dict]]:
+    """Angebote aus der tatsaechlichen Teacher-Gruppierung (data/offer_groups/),
+    statt aus `cluster_page` auf den Lehrer-Labels neu gebaut.
+
+    Der Unterschied ist real: `cluster_page` auf Lehrer-Labels ist dieselbe
+    Heuristik wie auf der eigenen Seite und damit teilweise ein Vergleich der
+    Heuristik mit sich selbst (siehe Moduldocstring). data/offer_groups/
+    ist die tatsaechlich vom Teacher gebildete Gruppierung.
+    """
+    from magda import offer_teacher, offers_gold
+
+    reference = offers_gold.load_reference(offer_teacher.teacher_dir(reference_from))
+    result: dict[str, list[dict]] = {}
+    fragments = 0
+    for page in pages:
+        assignment = reference.assignments.get(page["page_id"])
+        if assignment is None:
+            result[page["page_id"]] = []
+            continue
+        deals = []
+        for offer in offers_gold.offers_from_reference(page, assignment):
             deal = blackbox_eval.deal_from_offer(offer)
             if deal is None:
                 fragments += 1
@@ -92,6 +148,26 @@ def main(argv=None):
                         help="Labelquelle der Referenzangebote")
     parser.add_argument("--predictions", default="gbert",
                         help="Vorhersagevariante der eigenen Pipeline")
+    parser.add_argument("--grouper", default="heuristic",
+                        choices=("heuristic", "pair-model"),
+                        help="Wie die eigene Seite Entities zu Angeboten gruppiert.\n"
+                             "heuristic = offers.cluster_page (Default, ungetraint).\n"
+                             "pair-model = trainiertes Paarmodell + ILP-Dekoder")
+    parser.add_argument("--checkpoint", default=None,
+                        help="Checkpoint fuer --grouper pair-model "
+                             "(Default: checkpoints/offer_pairs/model.pt)")
+    parser.add_argument("--reference-groups", default="heuristic",
+                        choices=("heuristic", "teacher"),
+                        help="Wie die Referenzangebote gebildet werden.\n"
+                             "heuristic = offers.cluster_page auf den Lehrer-Labels\n"
+                             "  (Default - Achtung, das ist dieselbe Heuristik wie\n"
+                             "  --grouper heuristic und vergleicht sich teilweise\n"
+                             "  selbst, siehe Moduldocstring).\n"
+                             "teacher = data/offer_groups/<--reference-from>, die\n"
+                             "  tatsaechlich vom Teacher gebildete Gruppierung")
+    parser.add_argument("--reference-from", default="claude-sonnet-5",
+                        help="Gruppierung unter data/offer_groups/ fuer "
+                             "--reference-groups teacher")
     parser.add_argument("--model", default=config.CHAT_AI_VISION_MODEL,
                         help="Vision-Modell fuer die Blackbox")
     parser.add_argument("--dry-run", action="store_true",
@@ -119,17 +195,31 @@ def main(argv=None):
                        f"z. B. {sorted(missing)[0]}. Erst `magda predict "
                        f"{args.predictions}` auf diesen Seiten laufen lassen.\n")
 
+    grouper_model = None
+    if args.grouper == "pair-model":
+        from magda import offer_model
+        from magda.cli.offers_model import DEFAULT_CHECKPOINT
+        grouper_model = offer_model.load(args.checkpoint or DEFAULT_CHECKPOINT)
+
     started = time.perf_counter()
-    reference = _deals_by_page(reference_pages)
-    own = _deals_by_page(predicted_pages)
+    if args.reference_groups == "teacher":
+        reference = _teacher_deals_by_page(reference_pages, args.reference_from)
+    else:
+        reference = _deals_by_page(reference_pages)
+    own = _deals_by_page(predicted_pages, args.grouper, grouper_model)
     own_fragments = own.pop("__fragments__")
     reference.pop("__fragments__")
     own_seconds = time.perf_counter() - started
 
+    ref_source = (f"data/offer_groups/{config.model_slug(args.reference_from)}"
+                  if args.reference_groups == "teacher"
+                  else f"data/labeled/{config.model_slug(args.labels_from)} "
+                       f"(cluster_page auf Lehrer-Labels)")
     print(f"Seiten:     {len(page_ids)}")
-    print(f"Referenz:   Angebote aus data/labeled/{config.model_slug(args.labels_from)} "
+    print(f"Referenz:   Angebote aus {ref_source} "
           f"(LLM-erzeugt - die Zahlen messen Naehe, nicht Richtigkeit)")
-    print(f"Eigene:     data/predictions/{config.model_slug(args.predictions)}, "
+    print(f"Eigene:     data/predictions/{config.model_slug(args.predictions)} "
+          f"+ --grouper {args.grouper}, "
           f"{own_fragments} Fragmente ohne Produkt-und-Preis verworfen")
     print()
 
@@ -149,13 +239,21 @@ def main(argv=None):
                 errors.append(f"{page_id}: {path} fehlt (data/raw aus dem Drive-Archiv)")
                 continue
             try:
-                raw = blackbox.extract_deals_from_page(
+                raw = blackbox.extract_deals_from_page_with_retry(
                     path.read_bytes(), client, args.model)
                 blackbox_page = [
-                    {"name": deal.get("name"),
+                    {"name": " ".join(
+                        part for part in (deal.get("brand"), deal.get("product")) if part
+                     ).strip(),
                      "price": blackbox_eval.parse_price(deal.get("price")),
-                     "original_price": blackbox_eval.parse_price(
-                         deal.get("original_price"))}
+                     "original_price": blackbox_eval.parse_price(deal.get("old_price")),
+                     # Noch nicht Teil des Vergleichs (compare_pages kennt nur
+                     # COMMON_FIELDS) - bleiben im Report fuer eine spaetere
+                     # arithmetische Gegenprobe erhalten.
+                     "quantity": deal.get("quantity"),
+                     "unit_price": deal.get("unit_price"),
+                     "app_price": blackbox_eval.parse_price(deal.get("app_price")),
+                     "discount_pct": deal.get("discount_pct")}
                     for deal in raw if isinstance(deal, dict)
                 ]
                 blackbox_deals[page_id] = blackbox_page
@@ -202,17 +300,30 @@ def main(argv=None):
     payload = {
         "pages": page_ids,
         "model": args.model,
+        "prompt_version": None if args.dry_run else blackbox.PROMPT_VERSION,
         "labels_from": config.model_slug(args.labels_from),
         "predictions": config.model_slug(args.predictions),
+        "grouper": args.grouper,
+        "reference_groups": args.reference_groups,
+        "reference_from": config.model_slug(args.reference_from)
+                          if args.reference_groups == "teacher" else None,
         "reference_is_llm": True,
         "own_fragments": own_fragments,
         "seconds": {"own_grouping": round(own_seconds, 3),
                     "blackbox": round(blackbox_seconds, 1)},
         "comparisons": comparisons,
+        "blackbox_deals": blackbox_deals,
         "errors": errors,
     }
     config.EVAL_DIR.mkdir(parents=True, exist_ok=True)
-    out_path = config.EVAL_DIR / "blackbox_test.json"
+    # Modell, Grouper und Referenzquelle gehoeren alle in den Dateinamen wie
+    # ueberall sonst im Projekt (offers_model_*, offers_variants_*, ...):
+    # ohne das ueberschreibt ein zweiter Lauf mit anderem --grouper oder
+    # --reference-groups den vorigen Report still, obwohl er eine andere
+    # Frage beantwortet.
+    suffix = f"_{args.grouper}" if args.grouper != "heuristic" else ""
+    suffix += f"_ref-{args.reference_groups}" if args.reference_groups != "heuristic" else ""
+    out_path = config.EVAL_DIR / f"blackbox_test_{config.model_slug(args.model)}{suffix}.json"
     with open(out_path, "w") as f:
         json.dump(payload, f, indent=2, ensure_ascii=False)
     print(f"\nReport: {out_path}")

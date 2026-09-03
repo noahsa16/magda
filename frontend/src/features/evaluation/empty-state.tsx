@@ -39,11 +39,15 @@ export function EvaluationEmptyState() {
             entspricht dem, was im Proposal steht.
           </p>
           <p className="text-muted-foreground">
-            Sobald beide Varianten ausgewertet sind, vergleicht diese Seite sie Balken für Balken
-            pro Entity-Typ. Die Differenz im F1 zwischen{" "}
-            <span className="font-mono text-xs">layoutxlm</span> (Text und Position) und{" "}
-            <span className="font-mono text-xs">gbert</span> (nur Text) ist das eigentliche
-            Ergebnis des Projekts.
+            Sobald mehrere Varianten ausgewertet sind, vergleicht diese Seite sie Balken für
+            Balken pro Entity-Typ. Verglichen wird immer ein <em>Paar</em>, und die Arme sind so
+            gewählt, dass zwischen benachbarten genau eine Zutat liegt:{" "}
+            <span className="font-mono text-xs">xlmr</span> (nur Text) →{" "}
+            <span className="font-mono text-xs">lilt</span> (+ Layout) →{" "}
+            <span className="font-mono text-xs">layoutxlm</span> (+ Bild). Nur so ist eine
+            Differenz einer Ursache zuschreibbar;{" "}
+            <span className="font-mono text-xs">gbert</span> steht daneben als bester deutscher
+            Textencoder.
           </p>
           <Button asChild>
             <Link to="/">
@@ -63,7 +67,7 @@ export function EvaluationEmptyState() {
       <ol className="grid gap-3 border-t-2 border-foreground pt-5 sm:grid-cols-3">
         {[
           { n: "01", t: "Seiten labeln", d: "Mindestens ein paar Dutzend Seiten in data/labeled." },
-          { n: "02", t: "Beide Modelle trainieren", d: "layoutxlm und gbert, sonst fehlt der Vergleich." },
+          { n: "02", t: "Mindestens zwei Arme trainieren", d: "gbert, xlmr, lilt, layoutxlm – ohne zwei fehlt der Vergleich." },
           { n: "03", t: "Auswerten", d: "Schreibt je einen Report nach data/eval." },
         ].map((s) => (
           <li key={s.n} className="flex gap-3">

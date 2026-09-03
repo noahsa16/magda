@@ -164,7 +164,10 @@ export type SchemeKey = "strict" | "exact" | "partial" | "type"
 export type ProtocolKey = "report" | "report_no_windows" | "report_truncated"
 
 export interface EvalReport {
-  variant: "gbert" | "layoutxlm"
+  // Offen, nicht als Union: die Arme stehen in `config.VARIANTS` im Backend,
+  // und eine zweite Liste hier driftet davon ab. Die Anzeigereihenfolge
+  // regelt `transform.variantsOf`, nicht der Typ.
+  variant: string
   split: string
   num_pages: number
   created: string
@@ -178,6 +181,12 @@ export interface EvalReport {
   report_truncated?: Record<string, EntityMetrics>
   matching_schemes?: Record<SchemeKey, SchemeCounts>
   matching_scheme_source?: string
+  /**
+   * Auf welche Labels dieser Report beschränkt ist (Flair-Arm: nur BRAND).
+   * Ein solcher Report beantwortet eine andere Frage als die vier Arme und
+   * darf nicht in dieselbe Tabelle.
+   */
+  restricted_to?: string[]
   matching_per_label_type?: Record<string, SchemeCounts>
 }
 
@@ -199,7 +208,7 @@ export interface SignificanceReport {
 }
 
 export interface ModelStatus {
-  variant: "layoutxlm" | "gbert"
+  variant: string
   trained: boolean
   epoch: number | null
   steps: number | null
@@ -345,6 +354,15 @@ export interface OfferGroupingSummary {
   stale: boolean
 }
 
+/** Die abgesprochene Handannotations-Aufgabe – aus /api/annotation-task. */
+export interface AnnotationTask {
+  title: string
+  created: string | null
+  for: string[]
+  why: string
+  pages: string[]
+}
+
 /** Eine Kachel in der Prospekt-Übersicht. Gleiche Form für beide Werkzeuge. */
 export interface CatalogTile {
   id: string
@@ -411,4 +429,89 @@ export interface AuditSummary {
   wrong: number
   unsure: number
   judged: number
+}
+
+// ---------------------------------------------------------------------------
+// Demo (magda.pipeline / /api/demo) - ein fremdes PDF, ohne Umweg über data/.
+// ---------------------------------------------------------------------------
+
+/** Antwort von /api/demo/upload und /api/demo/from-url. */
+export interface DemoUpload {
+  upload_id: string
+  pages: number
+  bytes: number
+}
+
+export interface DemoEntity {
+  id: number
+  type: string
+  text: string
+  bbox: [number, number, number, number]
+  start: number
+  end: number
+  context_before: string
+  context_after: string
+}
+
+/** Eine Größenvariante (magda.offers.Variant) - eine Zeile in der kleinen
+ * Tabelle, wenn ein Angebot mehr als eine trägt. */
+export interface DemoVariant {
+  position: number
+  quantity: string | null
+  price: string | null
+  old_price: string | null
+  unit_price: string | null
+  app_price: string | null
+}
+
+/** Urteil der arithmetischen Gegenprobe (magda.offers_verify.judge_offers) -
+ * bestätigt/widerlegt/unaufgelöst nur, wo ein Grundpreis vorliegt, sonst
+ * "unverifiable". */
+export type ArithmeticVerdict = "confirmed" | "contradicted" | "unresolved" | "unverifiable"
+
+export interface DemoOffer {
+  page_index: number
+  bbox: [number, number, number, number]
+  product: string | null
+  brand: string | null
+  price: string | null
+  old_price: string | null
+  quantity: string | null
+  unit_price: string | null
+  app_price: string | null
+  discount: string | null
+  valid: string | null
+  variants: DemoVariant[]
+  /** Nur bei --grouper pair-model gesetzt; null bei der geometrischen Heuristik. */
+  confidence: number | null
+  arithmetic: ArithmeticVerdict
+  entity_word_ranges: { type: string; start: number; end: number }[]
+}
+
+export interface DemoPage {
+  page_index: number
+  width: number
+  height: number
+  /** Nur gesetzt, wenn --no-embed-images nicht verwendet wurde - der
+   * Demo-Job liefert Seitenbilder über einen eigenen Endpunkt. */
+  png_base64: string | null
+  words: Word[]
+  entities: DemoEntity[]
+  offers: DemoOffer[]
+}
+
+export interface DemoModels {
+  variant: string
+  checkpoint: string
+  pairs_checkpoint: string
+  pair_threshold: number
+}
+
+export interface DemoResult {
+  doc_id: string
+  models: DemoModels
+  timing: { extract: number; ner: number; grouping: number }
+  pages_without_text: string[]
+  pages: DemoPage[]
+  offers: DemoOffer[]
 }

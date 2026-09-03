@@ -1,0 +1,3523 @@
+{
+  "pages": [
+    "1364390_p1",
+    "1364390_p10",
+    "1364390_p11",
+    "1364390_p12",
+    "1364390_p13",
+    "1364390_p14",
+    "1364390_p15",
+    "1364390_p16",
+    "1364390_p17",
+    "1364390_p18",
+    "1364390_p19",
+    "1364390_p2",
+    "1364390_p20",
+    "1364390_p21",
+    "1364390_p22",
+    "1364390_p23",
+    "1364390_p24",
+    "1364390_p25",
+    "1364390_p26",
+    "1364390_p27",
+    "1364390_p28",
+    "1364390_p29",
+    "1364390_p3",
+    "1364390_p30",
+    "1364390_p31",
+    "1364390_p32",
+    "1364390_p33",
+    "1364390_p34",
+    "1364390_p35",
+    "1364390_p36",
+    "1364390_p37",
+    "1364390_p38",
+    "1364390_p40",
+    "1364390_p5",
+    "1364390_p6",
+    "1364390_p7",
+    "1364390_p8",
+    "1364390_p9",
+    "1364393_p15",
+    "1364393_p25",
+    "1364411_p9",
+    "1364420_p8"
+  ],
+  "model": "mistral-medium-3.5-128b",
+  "prompt_version": 1,
+  "labels_from": "sonnet-5",
+  "predictions": "layoutxlm",
+  "reference_is_llm": true,
+  "own_fragments": 133,
+  "seconds": {
+    "own_grouping": 0.073,
+    "blackbox": 1416.2
+  },
+  "comparisons": {
+    "eigene_vs_referenz": {
+      "matched": 222,
+      "only_system": 42,
+      "only_reference": 43,
+      "system": 264,
+      "reference": 265,
+      "precision": 0.8409090909090909,
+      "recall": 0.8377358490566038,
+      "f1": 0.8393194706994329,
+      "pages": 42
+    },
+    "blackbox_vs_referenz": {
+      "matched": 151,
+      "only_system": 221,
+      "only_reference": 114,
+      "system": 372,
+      "reference": 265,
+      "precision": 0.40591397849462363,
+      "recall": 0.569811320754717,
+      "f1": 0.4740973312401883,
+      "pages": 42
+    },
+    "blackbox_vs_eigene": {
+      "matched": 164,
+      "only_system": 208,
+      "only_reference": 100,
+      "system": 372,
+      "reference": 264,
+      "precision": 0.44086021505376344,
+      "recall": 0.6212121212121212,
+      "f1": 0.5157232704402517,
+      "pages": 42
+    }
+  },
+  "blackbox_deals": {
+    "1364390_p1": [
+      {
+        "name": "Ramazzotti Limoncello",
+        "price": 9.99,
+        "original_price": null,
+        "quantity": "1 l",
+        "unit_price": "(1 l = 12.69)",
+        "app_price": 8.88,
+        "discount_pct": -28
+      },
+      {
+        "name": "Ramazzotti Amaro",
+        "price": 9.99,
+        "original_price": null,
+        "quantity": "0,7 l",
+        "unit_price": "(1 l = 14.27)",
+        "app_price": 8.88,
+        "discount_pct": -28
+      },
+      {
+        "name": "Dr. Oetker Die Ofenfrische Diavolo",
+        "price": 4.44,
+        "original_price": 5.39,
+        "quantity": "405 g",
+        "unit_price": "(1 kg = 4.42)",
+        "app_price": null,
+        "discount_pct": -17
+      },
+      {
+        "name": "Dr. Oetker Die Ofenfrische Salami",
+        "price": 4.44,
+        "original_price": 5.39,
+        "quantity": "390 g",
+        "unit_price": "(1 kg = 4.59)",
+        "app_price": null,
+        "discount_pct": -17
+      },
+      {
+        "name": "Kinder Riegel Big Pack",
+        "price": 4.44,
+        "original_price": 5.39,
+        "quantity": "20 x 21 g",
+        "unit_price": "(1 kg = 10.57)",
+        "app_price": null,
+        "discount_pct": -17
+      },
+      {
+        "name": "duplo Big Pack",
+        "price": 4.44,
+        "original_price": 5.39,
+        "quantity": "20 x 18,2 g",
+        "unit_price": "(1 kg = 12.20)",
+        "app_price": null,
+        "discount_pct": -17
+      },
+      {
+        "name": "Dr. Oetker Die Ofenfrische",
+        "price": 1.79,
+        "original_price": 3.69,
+        "quantity": "1 kg",
+        "unit_price": null,
+        "app_price": null,
+        "discount_pct": -51
+      },
+      {
+        "name": "Kernlose Tafeltrauben",
+        "price": 1.79,
+        "original_price": 3.69,
+        "quantity": "500 g",
+        "unit_price": "(1 kg = 2.22)",
+        "app_price": null,
+        "discount_pct": -51
+      },
+      {
+        "name": "Dunkle, kernlose Tafeltrauben",
+        "price": 1.11,
+        "original_price": null,
+        "quantity": "500-g-Schale",
+        "unit_price": "(1 kg = 2.22)",
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "Ferrero Kinder Riegel Big Pack",
+        "price": 1.11,
+        "original_price": null,
+        "quantity": "20 x 21 g",
+        "unit_price": null,
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "Ferrero duplo Big Pack",
+        "price": 1.11,
+        "original_price": null,
+        "quantity": "20 x 18,2 g",
+        "unit_price": null,
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "Kerrygold Original irische Butter",
+        "price": 1.79,
+        "original_price": 3.49,
+        "quantity": "250 g",
+        "unit_price": "(1 kg = 7.16)",
+        "app_price": 1.49,
+        "discount_pct": -48
+      },
+      {
+        "name": "Melitta Kaffee des Jahres Auslese Klassisch",
+        "price": 5.99,
+        "original_price": 10.35,
+        "quantity": "500 g",
+        "unit_price": "(1 kg = 11.98)",
+        "app_price": 5.77,
+        "discount_pct": -42
+      },
+      {
+        "name": "Puda Weizenmehl Type 405",
+        "price": 0.99,
+        "original_price": null,
+        "quantity": "2 kg",
+        "unit_price": "(1 kg = 0.50)",
+        "app_price": null,
+        "discount_pct": null
+      }
+    ],
+    "1364390_p10": [
+      {
+        "name": "Almette Frischkäsezubereitung Versch. Sorten",
+        "price": 0.99,
+        "original_price": null,
+        "quantity": "150 g",
+        "unit_price": "(1 kg = 6.60)",
+        "app_price": 0.99,
+        "discount_pct": -50
+      },
+      {
+        "name": "Almette Natur",
+        "price": 1.11,
+        "original_price": 1.99,
+        "quantity": "180 g",
+        "unit_price": "(1 kg = 6.17)",
+        "app_price": null,
+        "discount_pct": -44
+      },
+      {
+        "name": "Almette Kräter",
+        "price": 1.11,
+        "original_price": 1.99,
+        "quantity": "180 g",
+        "unit_price": "(1 kg = 6.17)",
+        "app_price": null,
+        "discount_pct": -44
+      },
+      {
+        "name": "Grünländer Käsescheiben Versch. Sorten",
+        "price": 1.79,
+        "original_price": 2.99,
+        "quantity": "156 g",
+        "unit_price": "(1 kg = 11.47)",
+        "app_price": null,
+        "discount_pct": -40
+      },
+      {
+        "name": "Grünländer Cremig mit extra Rahm",
+        "price": 1.79,
+        "original_price": 2.99,
+        "quantity": null,
+        "unit_price": null,
+        "app_price": null,
+        "discount_pct": -40
+      },
+      {
+        "name": "Grünländer Würzig länger gereift",
+        "price": 1.79,
+        "original_price": 2.99,
+        "quantity": null,
+        "unit_price": null,
+        "app_price": null,
+        "discount_pct": -40
+      },
+      {
+        "name": "Milram Frühlings Quark",
+        "price": 0.99,
+        "original_price": 1.45,
+        "quantity": "185 g",
+        "unit_price": "(1 kg = 5.35)",
+        "app_price": null,
+        "discount_pct": -31
+      },
+      {
+        "name": "Milram Petersilien Quark",
+        "price": 0.99,
+        "original_price": 1.45,
+        "quantity": "185 g",
+        "unit_price": "(1 kg = 5.35)",
+        "app_price": null,
+        "discount_pct": -31
+      },
+      {
+        "name": "Salakis Schafskäse",
+        "price": 1.99,
+        "original_price": 3.99,
+        "quantity": "180 g",
+        "unit_price": "(1 kg = 11.06)",
+        "app_price": null,
+        "discount_pct": -50
+      },
+      {
+        "name": "Grillparty Grillkäse",
+        "price": 1.79,
+        "original_price": null,
+        "quantity": "150 g",
+        "unit_price": "(1 kg = 11.93)",
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "Iglo Schlemmer-Filet Versch. Sorten",
+        "price": 2.99,
+        "original_price": 4.89,
+        "quantity": "380 g",
+        "unit_price": "(1 kg = 7.87)",
+        "app_price": 2.69,
+        "discount_pct": -38
+      },
+      {
+        "name": "Wagner Piccolinis Salami",
+        "price": 1.99,
+        "original_price": 3.69,
+        "quantity": "270 g",
+        "unit_price": "(1 kg = 7.37)",
+        "app_price": 1.79,
+        "discount_pct": -46
+      },
+      {
+        "name": "Dr. Oetker Die Ofenfrische Diavolo",
+        "price": 1.79,
+        "original_price": 3.69,
+        "quantity": "405 g",
+        "unit_price": "(1 kg = 4.42)",
+        "app_price": null,
+        "discount_pct": -51
+      },
+      {
+        "name": "Dr. Oetker Die Ofenfrische Salami",
+        "price": 1.79,
+        "original_price": 3.69,
+        "quantity": "390 g",
+        "unit_price": "(1 kg = 4.59)",
+        "app_price": null,
+        "discount_pct": -51
+      }
+    ],
+    "1364390_p11": [
+      {
+        "name": "LÄTTA Halbfett-margarine",
+        "price": 1.29,
+        "original_price": 2.29,
+        "quantity": "450 g",
+        "unit_price": "(1 kg = 2.87)",
+        "app_price": null,
+        "discount_pct": -43
+      },
+      {
+        "name": "Ehrmann Obstgarten Vanille",
+        "price": 0.39,
+        "original_price": 0.79,
+        "quantity": "125 g",
+        "unit_price": "(1 kg = 3.12)",
+        "app_price": null,
+        "discount_pct": -50
+      },
+      {
+        "name": "Ehrmann Obstgarten Erdbeere",
+        "price": 0.39,
+        "original_price": 0.79,
+        "quantity": "125 g",
+        "unit_price": "(1 kg = 3.12)",
+        "app_price": null,
+        "discount_pct": -50
+      },
+      {
+        "name": "Müller Froop Pfirsich-Maracuja",
+        "price": 0.35,
+        "original_price": null,
+        "quantity": "150 g",
+        "unit_price": "(1 kg = 2.33)",
+        "app_price": 0.35,
+        "discount_pct": -55
+      },
+      {
+        "name": "Müller Froop Erdbeere",
+        "price": 0.44,
+        "original_price": 0.79,
+        "quantity": "500 g",
+        "unit_price": "(1 kg = 0.88)",
+        "app_price": null,
+        "discount_pct": -44
+      },
+      {
+        "name": "Landliebe Haltbare Landmilch 1,5% Fett",
+        "price": 0.99,
+        "original_price": null,
+        "quantity": "1 l",
+        "unit_price": null,
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "Landliebe Haltbare Landmilch 3,5% Fett",
+        "price": 0.99,
+        "original_price": null,
+        "quantity": "1 l",
+        "unit_price": null,
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "Penny Zukunfts-Bauer Naturjoghurt mild 1,5% Fett",
+        "price": 0.69,
+        "original_price": 0.89,
+        "quantity": "500 g",
+        "unit_price": "(1 kg = 1.38)",
+        "app_price": 0.69,
+        "discount_pct": -22
+      },
+      {
+        "name": "Penny Zukunfts-Bauer Fettarmer Joghurt 1,5% Fett",
+        "price": 0.69,
+        "original_price": 0.89,
+        "quantity": "500 g",
+        "unit_price": "(1 kg = 1.38)",
+        "app_price": 0.69,
+        "discount_pct": -22
+      },
+      {
+        "name": "YFOOD Trinkmahlzeit Classic",
+        "price": 2.99,
+        "original_price": null,
+        "quantity": "0.25 l",
+        "unit_price": "(1 l = 5.98)",
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "Innocent Smoothie Johannisbeere, Erdbeere & Apfel",
+        "price": 1.69,
+        "original_price": null,
+        "quantity": "0.25 l",
+        "unit_price": "(1 l = 6.76)",
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "Innocent Smoothie Mango & Apfel",
+        "price": 1.69,
+        "original_price": null,
+        "quantity": "0.25 l",
+        "unit_price": "(1 l = 6.76)",
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "Zum Dorfkrug Pudding Schokolade",
+        "price": 1.99,
+        "original_price": null,
+        "quantity": "375 g",
+        "unit_price": "(1 kg = 5.31)",
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "Zum Dorfkrug Pudding Rote Grütze",
+        "price": 1.99,
+        "original_price": null,
+        "quantity": "375 g",
+        "unit_price": "(1 kg = 5.31)",
+        "app_price": null,
+        "discount_pct": null
+      }
+    ],
+    "1364390_p12": [
+      {
+        "name": "Landfreund Suppennudeln",
+        "price": 1.39,
+        "original_price": null,
+        "quantity": "500 g",
+        "unit_price": "(1 kg = 2.78)",
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "Landfreund Faden Nudeln",
+        "price": 1.19,
+        "original_price": 1.39,
+        "quantity": "500 g",
+        "unit_price": null,
+        "app_price": null,
+        "discount_pct": -14
+      },
+      {
+        "name": "Landfreund Gabel Spaghetti",
+        "price": 1.19,
+        "original_price": 1.39,
+        "quantity": "500 g",
+        "unit_price": null,
+        "app_price": null,
+        "discount_pct": -14
+      },
+      {
+        "name": "Landfreund Bandnudeln",
+        "price": 1.19,
+        "original_price": null,
+        "quantity": "500 g",
+        "unit_price": "(1 kg = 2.38)",
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "Landfreund Dinkel Spaghetti",
+        "price": 0.99,
+        "original_price": 1.29,
+        "quantity": "500 g",
+        "unit_price": "(1 kg = 1.98)",
+        "app_price": null,
+        "discount_pct": -23
+      },
+      {
+        "name": "Landfreund Dinkel Spirelli",
+        "price": 0.99,
+        "original_price": 1.29,
+        "quantity": "500 g",
+        "unit_price": "(1 kg = 1.98)",
+        "app_price": null,
+        "discount_pct": -23
+      },
+      {
+        "name": "Landfreund Nudeln",
+        "price": 0.99,
+        "original_price": null,
+        "quantity": "500 g",
+        "unit_price": "(1 kg = 1.98)",
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "Landfreund Schwäbische Spätzle",
+        "price": 1.39,
+        "original_price": null,
+        "quantity": "500 g",
+        "unit_price": "(1 kg = 2.78)",
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "Landfreund Spiralen",
+        "price": null,
+        "original_price": null,
+        "quantity": "500 g",
+        "unit_price": null,
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "Landfreund Maccheronelli",
+        "price": null,
+        "original_price": null,
+        "quantity": "500 g",
+        "unit_price": null,
+        "app_price": null,
+        "discount_pct": null
+      }
+    ],
+    "1364390_p13": [
+      {
+        "name": "Landfreund Semmelknödel",
+        "price": 0.79,
+        "original_price": 0.99,
+        "quantity": "6 Stück",
+        "unit_price": "(1 kg = 3.95)",
+        "app_price": null,
+        "discount_pct": -20
+      },
+      {
+        "name": "Landfreund Kartoffelpüree",
+        "price": 1.19,
+        "original_price": null,
+        "quantity": "3 x 115 g",
+        "unit_price": "(1 kg = 3.45)",
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "Landfreund Bratkartoffeln mit Speck & Zwiebeln",
+        "price": 1.19,
+        "original_price": 1.39,
+        "quantity": "1 kg",
+        "unit_price": "(1 kg = 2.98)",
+        "app_price": null,
+        "discount_pct": -14
+      },
+      {
+        "name": "Landfreund Parboiled Spitzenreis Langkorn",
+        "price": 1.19,
+        "original_price": 1.39,
+        "quantity": "1 kg",
+        "unit_price": null,
+        "app_price": null,
+        "discount_pct": -14
+      },
+      {
+        "name": "Landfreund Langkorn-Spitzenreis",
+        "price": 1.39,
+        "original_price": 1.59,
+        "quantity": "8 x 125 g",
+        "unit_price": null,
+        "app_price": null,
+        "discount_pct": -12
+      },
+      {
+        "name": "Landfreund Paniermehl",
+        "price": 1.29,
+        "original_price": 1.69,
+        "quantity": "1 kg",
+        "unit_price": null,
+        "app_price": null,
+        "discount_pct": -23
+      },
+      {
+        "name": "Landfreund Hartweizengrieß",
+        "price": 0.69,
+        "original_price": null,
+        "quantity": "500 g",
+        "unit_price": "(1 kg = 1.38)",
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "Landfreund Weichweizengrieß",
+        "price": 0.69,
+        "original_price": null,
+        "quantity": "500 g",
+        "unit_price": "(1 kg = 1.38)",
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "Landfreund Milchreis Spitzenqualität",
+        "price": 0.79,
+        "original_price": 0.99,
+        "quantity": "500 g",
+        "unit_price": "(1 kg = 1.98)",
+        "app_price": null,
+        "discount_pct": -20
+      }
+    ],
+    "1364390_p14": [
+      {
+        "name": "BÄCKERKRÖNUNG Apfelteileck Blätterteig mit Apfelstücken",
+        "price": 1.0,
+        "original_price": 1.38,
+        "quantity": "2 Stück",
+        "unit_price": "je Stück 0.50",
+        "app_price": null,
+        "discount_pct": -28
+      },
+      {
+        "name": "BÄCKERKRÖNUNG Schokodonut",
+        "price": 0.39,
+        "original_price": 0.55,
+        "quantity": "1 Stück",
+        "unit_price": null,
+        "app_price": null,
+        "discount_pct": -29
+      },
+      {
+        "name": "BÄCKERKRÖNUNG Kartoffel-Zwiebel-Brot",
+        "price": 1.59,
+        "original_price": null,
+        "quantity": "500 g",
+        "unit_price": "(1 kg = 4.54)",
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "BÄCKERKRÖNUNG Pizza Margherita",
+        "price": 0.79,
+        "original_price": 0.99,
+        "quantity": "1 Stück",
+        "unit_price": null,
+        "app_price": null,
+        "discount_pct": -20
+      },
+      {
+        "name": "BÄCKERKRÖNUNG Der fruchtig-süß gefüllte Mehrfruchtberliner",
+        "price": 0.45,
+        "original_price": null,
+        "quantity": "1 Stück",
+        "unit_price": null,
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "BÄCKERKRÖNUNG Weizenmischbrot",
+        "price": 1.85,
+        "original_price": null,
+        "quantity": "1000 g",
+        "unit_price": null,
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "BÄCKERKRÖNUNG Ciabatta",
+        "price": 0.79,
+        "original_price": null,
+        "quantity": "300 g",
+        "unit_price": "(1 kg = 2.63)",
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "BÄCKERKRÖNUNG Walnussfeigenbrot",
+        "price": 1.99,
+        "original_price": null,
+        "quantity": "350 g",
+        "unit_price": "(1 kg = 5.69)",
+        "app_price": null,
+        "discount_pct": null
+      }
+    ],
+    "1364390_p15": [],
+    "1364390_p16": [
+      {
+        "name": "SAN FABIO Lasagne al Bronzo",
+        "price": 0.89,
+        "original_price": 1.19,
+        "quantity": "500 g",
+        "unit_price": "(1 kg = 1,78)",
+        "app_price": null,
+        "discount_pct": -25
+      },
+      {
+        "name": "SAN FABIO Gnocchi di Patate",
+        "price": 0.69,
+        "original_price": 0.99,
+        "quantity": "500 g",
+        "unit_price": "(1 kg = 1,38)",
+        "app_price": null,
+        "discount_pct": -30
+      },
+      {
+        "name": "SAN FABIO Tortellini tricolore Con Carne",
+        "price": 0.99,
+        "original_price": null,
+        "quantity": "250 g",
+        "unit_price": "(1 kg = 3,96)",
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "SAN FABIO Pesto alla genovese",
+        "price": 0.99,
+        "original_price": null,
+        "quantity": "190 g",
+        "unit_price": "(1 kg = 5,21)",
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "SAN FABIO Pasta-Sauce Carbonara",
+        "price": 1.29,
+        "original_price": 1.49,
+        "quantity": "400 g",
+        "unit_price": "(1 kg = 3,23)",
+        "app_price": null,
+        "discount_pct": -13
+      },
+      {
+        "name": "SAN FABIO Tomato Phantastico Versch. Sorten",
+        "price": 0.99,
+        "original_price": 1.19,
+        "quantity": "580 ml",
+        "unit_price": "(1 l = 2,61)",
+        "app_price": null,
+        "discount_pct": -16
+      }
+    ],
+    "1364390_p17": [
+      {
+        "name": "SAN FABIO Mozzarella Schnittfest, gerieben",
+        "price": 1.39,
+        "original_price": 1.79,
+        "quantity": "250 g",
+        "unit_price": "(1 kg = 5.56)",
+        "app_price": null,
+        "discount_pct": -22
+      },
+      {
+        "name": "SAN FABIO Mini Mozzarella Leicht",
+        "price": 1.29,
+        "original_price": null,
+        "quantity": "245 g",
+        "unit_price": "(1 kg = 10.32)",
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "SAN FABIO Fertiggericht Versch. Sorten",
+        "price": 1.69,
+        "original_price": 1.99,
+        "quantity": "400 g",
+        "unit_price": "(1 kg = 4.23)",
+        "app_price": null,
+        "discount_pct": -15
+      },
+      {
+        "name": "SAN FABIO Grana Padano",
+        "price": 3.69,
+        "original_price": 3.99,
+        "quantity": "200 g",
+        "unit_price": "(1 kg = 18.45)",
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "SAN FABIO Steinofen-Pizza Versch. Sorten",
+        "price": 2.99,
+        "original_price": 3.49,
+        "quantity": "355 g",
+        "unit_price": "(1 kg = 4.21)",
+        "app_price": null,
+        "discount_pct": -14
+      },
+      {
+        "name": "SAN FABIO Steinofen-Pizza Margherita",
+        "price": 2.99,
+        "original_price": null,
+        "quantity": "300 g",
+        "unit_price": "(1 kg = 3.32)",
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "SAN FABIO Mini Pizza Salami",
+        "price": 2.49,
+        "original_price": null,
+        "quantity": "360 g",
+        "unit_price": "(1 kg = 6.92)",
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "SAN FABIO Limonata Limonade",
+        "price": 0.49,
+        "original_price": 0.59,
+        "quantity": "0.25 l",
+        "unit_price": "(1 l = 1.48)",
+        "app_price": null,
+        "discount_pct": -16
+      },
+      {
+        "name": "SAN FABIO Spritz Orange, aromatisiert, Cocktail",
+        "price": 0.99,
+        "original_price": null,
+        "quantity": "275 ml",
+        "unit_price": "(1 l = 3.60)",
+        "app_price": null,
+        "discount_pct": null
+      }
+    ],
+    "1364390_p18": [
+      {
+        "name": "JACOBS Ganze Bohnen Versch. Sorten",
+        "price": 12.99,
+        "original_price": null,
+        "quantity": "1.000 g",
+        "unit_price": null,
+        "app_price": 11.99,
+        "discount_pct": -38
+      },
+      {
+        "name": "JACOBS Café Crema Gold",
+        "price": 11.99,
+        "original_price": 20.99,
+        "quantity": "500 g",
+        "unit_price": null,
+        "app_price": null,
+        "discount_pct": -42
+      },
+      {
+        "name": "KABA Suchard Express Kakao",
+        "price": 1.99,
+        "original_price": 2.99,
+        "quantity": "400 g",
+        "unit_price": "(1 kg = 4.98)",
+        "app_price": null,
+        "discount_pct": -33
+      },
+      {
+        "name": "Milka Haselnusscreme",
+        "price": 4.49,
+        "original_price": 5.29,
+        "quantity": "777 g",
+        "unit_price": "(1 kg = 5.78)",
+        "app_price": null,
+        "discount_pct": -15
+      },
+      {
+        "name": "LOACKER Maxi Napolitaner Versch. Sorten",
+        "price": 1.89,
+        "original_price": 2.69,
+        "quantity": "167.5 g",
+        "unit_price": "(1 kg = 11.28)",
+        "app_price": null,
+        "discount_pct": -29
+      },
+      {
+        "name": "MIDI Farcì Kao oder Fragola",
+        "price": 1.79,
+        "original_price": null,
+        "quantity": "280 g",
+        "unit_price": "(1 kg = 6.39)",
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "ÖLZ Rosinen Brötchen oder Strudel",
+        "price": 1.99,
+        "original_price": 2.29,
+        "quantity": "250 g | 350 g",
+        "unit_price": "(1 kg = 7.96) oder (1 kg = 5.69)",
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "NESTLÉ Lion oder KitKat",
+        "price": 1.79,
+        "original_price": 3.19,
+        "quantity": "5 x 51 g | 4 x 41.5 g",
+        "unit_price": "(1 kg = 11.55) oder (1 kg = 10.78)",
+        "app_price": null,
+        "discount_pct": -43
+      },
+      {
+        "name": "Schogetten Schokolade Versch. Sorten",
+        "price": 0.99,
+        "original_price": 1.79,
+        "quantity": "100 g",
+        "unit_price": "(1 kg = 9.90)",
+        "app_price": null,
+        "discount_pct": -44
+      },
+      {
+        "name": "Schogetten Weiße Pistazie",
+        "price": 0.99,
+        "original_price": 1.79,
+        "quantity": "100 g",
+        "unit_price": null,
+        "app_price": null,
+        "discount_pct": -44
+      },
+      {
+        "name": "Schogetten Edel-Alpenvollmilch",
+        "price": 0.99,
+        "original_price": 1.79,
+        "quantity": "100 g",
+        "unit_price": null,
+        "app_price": null,
+        "discount_pct": -44
+      }
+    ],
+    "1364390_p19": [
+      {
+        "name": "Ebly Sonnenweizen Im Kochbeutel oder lose",
+        "price": 1.79,
+        "original_price": null,
+        "quantity": "500 g",
+        "unit_price": "(1 kg = 3.58)",
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "Glocken Genuss Pur Teigware Versch. Sorten, zu 100% aus Hartweizen",
+        "price": 1.99,
+        "original_price": null,
+        "quantity": "1 kg",
+        "unit_price": null,
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "Mirácoli Pasta Klassiker Maccheroni oder Spaghetti",
+        "price": 2.99,
+        "original_price": null,
+        "quantity": "560 g | 610 g",
+        "unit_price": "(1 kg = 4.90)",
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "Ferrero Raffaello",
+        "price": 4.39,
+        "original_price": null,
+        "quantity": "260 g",
+        "unit_price": "(1 kg = 16.88)",
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "Ferrero Kinder Schoko-Bons",
+        "price": 4.44,
+        "original_price": 4.99,
+        "quantity": "550 g",
+        "unit_price": "(1 kg = 12.69)",
+        "app_price": null,
+        "discount_pct": -11
+      },
+      {
+        "name": "Ben's Original Süß-Sauer Sauce Extra Ananas oder Extra Gemüse",
+        "price": 1.79,
+        "original_price": 2.79,
+        "quantity": "400 g",
+        "unit_price": "(1 kg = 4.48)",
+        "app_price": null,
+        "discount_pct": -35
+      },
+      {
+        "name": "Kühne Balsamico Versch. Sorten",
+        "price": 2.79,
+        "original_price": null,
+        "quantity": "500 ml",
+        "unit_price": "(1 l = 5.58)",
+        "app_price": null,
+        "discount_pct": null
+      }
+    ],
+    "1364390_p2": [
+      {
+        "name": "ZESPRI Grüne Kiwi",
+        "price": 0.44,
+        "original_price": null,
+        "quantity": null,
+        "unit_price": null,
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "Blaue Feige",
+        "price": 0.49,
+        "original_price": null,
+        "quantity": null,
+        "unit_price": null,
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "CHIQUITA Bananen",
+        "price": 1.99,
+        "original_price": null,
+        "quantity": null,
+        "unit_price": null,
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "EVELINA Deutsche rote Äpfel",
+        "price": 1.69,
+        "original_price": null,
+        "quantity": "1 kg-Schale",
+        "unit_price": null,
+        "app_price": 1.69,
+        "discount_pct": null
+      },
+      {
+        "name": "Chrysantheme",
+        "price": 1.29,
+        "original_price": null,
+        "quantity": "10,5-cm-Topf",
+        "unit_price": null,
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "Glattblattaster",
+        "price": 1.89,
+        "original_price": null,
+        "quantity": "12-cm-Topf",
+        "unit_price": null,
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "Herbstlicher Spankorb",
+        "price": 4.99,
+        "original_price": null,
+        "quantity": null,
+        "unit_price": null,
+        "app_price": null,
+        "discount_pct": null
+      }
+    ],
+    "1364390_p20": [
+      {
+        "name": "Rotkäppchen Sekt Versch. Sorten",
+        "price": 2.88,
+        "original_price": 4.39,
+        "quantity": "0,75 l",
+        "unit_price": "(1 l = 3,84)",
+        "app_price": null,
+        "discount_pct": -34
+      },
+      {
+        "name": "Rotkäppchen Sekt Versch. Sorten",
+        "price": 3.29,
+        "original_price": 4.99,
+        "quantity": "1 l",
+        "unit_price": null,
+        "app_price": null,
+        "discount_pct": -42
+      },
+      {
+        "name": "hohes C Vitamin Water Elektrolytes Zitrone Limette",
+        "price": 1.29,
+        "original_price": 1.69,
+        "quantity": "0,75 l",
+        "unit_price": "(1 l = 1,72)",
+        "app_price": null,
+        "discount_pct": -23
+      },
+      {
+        "name": "hohes C Vitamin Water Elektrolytes 2+1 Calcium Magnesium",
+        "price": 1.29,
+        "original_price": 1.69,
+        "quantity": "0,75 l",
+        "unit_price": "(1 l = 1,72)",
+        "app_price": null,
+        "discount_pct": -23
+      },
+      {
+        "name": "SpritZ Arom. weinhal. Cocktail versch. Sorten",
+        "price": 1.29,
+        "original_price": null,
+        "quantity": "0,75 l",
+        "unit_price": "(1 l = 1,72)",
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "BACARDÍ Mischgetränk Piña Colada",
+        "price": 1.99,
+        "original_price": 2.79,
+        "quantity": "0,25 l",
+        "unit_price": "(1 l = 7,96)",
+        "app_price": null,
+        "discount_pct": -28
+      },
+      {
+        "name": "BACARDÍ Mischgetränk Razz Mojito",
+        "price": 1.99,
+        "original_price": 2.79,
+        "quantity": "0,25 l",
+        "unit_price": "(1 l = 7,96)",
+        "app_price": null,
+        "discount_pct": -28
+      },
+      {
+        "name": "GÖSSER Natur Radler Ohne oder mit Alkohol",
+        "price": 0.79,
+        "original_price": 1.09,
+        "quantity": "0,5 l",
+        "unit_price": "(1 l = 1,58)",
+        "app_price": null,
+        "discount_pct": -27
+      },
+      {
+        "name": "GÖSSER Natur Radler Ohne oder mit Alkohol",
+        "price": 0.79,
+        "original_price": 1.09,
+        "quantity": "0,25 l",
+        "unit_price": "(1 l = 2,18)",
+        "app_price": null,
+        "discount_pct": -27
+      },
+      {
+        "name": "Corona Extra Mexican Beer",
+        "price": 9.99,
+        "original_price": 13.44,
+        "quantity": "12 x 355 ml",
+        "unit_price": "(1 l = 2,35)",
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "Oberbräu Hell",
+        "price": 3.33,
+        "original_price": 4.99,
+        "quantity": "6 x 0,33 l",
+        "unit_price": "(1 l = 1,68)",
+        "app_price": null,
+        "discount_pct": -33
+      },
+      {
+        "name": "Spritz, Coca-Cola, Mezzo Mix oder Fanta",
+        "price": 1.11,
+        "original_price": 1.59,
+        "quantity": "0,25 l",
+        "unit_price": "(1 l = 0,89)",
+        "app_price": 0.99,
+        "discount_pct": -30
+      }
+    ],
+    "1364390_p21": [
+      {
+        "name": "Coca-Cola Friendspack Original Taste",
+        "price": 5.99,
+        "original_price": 7.99,
+        "quantity": "10 x 0,33 l",
+        "unit_price": "(1 l = 1.82)",
+        "app_price": null,
+        "discount_pct": -25
+      },
+      {
+        "name": "Arizona Eistee Peach Iced Tea",
+        "price": 1.39,
+        "original_price": null,
+        "quantity": "1,75 l",
+        "unit_price": "(1 l = 0.79)",
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "STORCK Nimm2 Soft Verschiedene Sorten",
+        "price": 1.99,
+        "original_price": null,
+        "quantity": "345 g",
+        "unit_price": "(1 kg = 5.77)",
+        "app_price": 1.69,
+        "discount_pct": -15
+      },
+      {
+        "name": "STORCK Nimm2 Soft Sommer Hit",
+        "price": 1.99,
+        "original_price": null,
+        "quantity": "300 g",
+        "unit_price": "(1 kg = 6.63)",
+        "app_price": 1.69,
+        "discount_pct": -15
+      },
+      {
+        "name": "Lorenz Nichas XL Fun Pack",
+        "price": 1.99,
+        "original_price": 2.99,
+        "quantity": "170 g",
+        "unit_price": "(1 kg = 11.71)",
+        "app_price": null,
+        "discount_pct": -33
+      },
+      {
+        "name": "Funny-frisch Kessel Chips Cross Cut Ranch & Paprika",
+        "price": 1.49,
+        "original_price": 2.49,
+        "quantity": "250 g",
+        "unit_price": "(1 kg = 10.36)",
+        "app_price": null,
+        "discount_pct": -40
+      },
+      {
+        "name": "Sagrotan No Touch Hygiene Seife",
+        "price": 2.49,
+        "original_price": 2.59,
+        "quantity": "250 ml",
+        "unit_price": "(1 l = 9.96)",
+        "app_price": null,
+        "discount_pct": 0
+      },
+      {
+        "name": "Viss Reiniger Allesreiniger",
+        "price": 1.99,
+        "original_price": 2.29,
+        "quantity": "750 ml",
+        "unit_price": "(1 l = 2.65)",
+        "app_price": null,
+        "discount_pct": -13
+      },
+      {
+        "name": "Tempo 4-lagig Soft & Sensitiv",
+        "price": 2.99,
+        "original_price": 3.85,
+        "quantity": "50 x 10 Stück",
+        "unit_price": null,
+        "app_price": 2.79,
+        "discount_pct": -22
+      },
+      {
+        "name": "Tempo 4-lagig Soft & Sensitiv",
+        "price": 2.99,
+        "original_price": 3.85,
+        "quantity": "24 x 9 Stück",
+        "unit_price": null,
+        "app_price": 2.79,
+        "discount_pct": -27
+      },
+      {
+        "name": "Bruno Banani Eau de Parfum",
+        "price": 2.49,
+        "original_price": 10.99,
+        "quantity": "50 ml",
+        "unit_price": "(1 l = 366.33)",
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "Bruno Banani Duschgel",
+        "price": 2.49,
+        "original_price": null,
+        "quantity": "250 ml",
+        "unit_price": "(1 l = 9.96)",
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "Purina Gourmet Perle mit Gold",
+        "price": 19.79,
+        "original_price": null,
+        "quantity": "48 x 85 g",
+        "unit_price": "(1 kg = 4.85)",
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "Axe Deo und Bodywash Verschiedene Sorten",
+        "price": null,
+        "original_price": null,
+        "quantity": null,
+        "unit_price": null,
+        "app_price": null,
+        "discount_pct": -20
+      }
+    ],
+    "1364390_p22": [
+      {
+        "name": "Jägermeister Kräuterlikör",
+        "price": 14.99,
+        "original_price": null,
+        "quantity": "0,7 l",
+        "unit_price": "(1 l = 21,41)",
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "Jagd-Schloss Kräuterlikör",
+        "price": 5.99,
+        "original_price": null,
+        "quantity": "0,7 l",
+        "unit_price": "(1 l = 8,56)",
+        "app_price": null,
+        "discount_pct": -60
+      },
+      {
+        "name": "Meißner Earl Grey",
+        "price": 2.35,
+        "original_price": null,
+        "quantity": "43,75 g",
+        "unit_price": "(1 kg = 53,71)",
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "MAYFAIR Earl Grey",
+        "price": 0.99,
+        "original_price": null,
+        "quantity": "70 g",
+        "unit_price": "(1 kg = 14,14)",
+        "app_price": null,
+        "discount_pct": -57
+      },
+      {
+        "name": "Danone Actimel Erdbeere",
+        "price": 3.99,
+        "original_price": null,
+        "quantity": "8 x 100 g",
+        "unit_price": "(1 kg = 4,99)",
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "MILPRIMA Activedrink Erdbeere",
+        "price": 1.99,
+        "original_price": null,
+        "quantity": "8 x 100 g",
+        "unit_price": "(1 kg = 2,49)",
+        "app_price": null,
+        "discount_pct": -50
+      },
+      {
+        "name": "PHILADELPHIA Frischkäse Doppeltrahmstufe",
+        "price": 2.29,
+        "original_price": null,
+        "quantity": "195 g",
+        "unit_price": "(1 kg = 11,74)",
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "LINDENHOF Frischkäse Doppeltrahmstufe",
+        "price": 1.59,
+        "original_price": null,
+        "quantity": "300 g",
+        "unit_price": "(1 kg = 5,30)",
+        "app_price": null,
+        "discount_pct": -30
+      },
+      {
+        "name": "FUNNY-FRISCH Chipsfrisch Ungarisch",
+        "price": 1.99,
+        "original_price": null,
+        "quantity": "150 g",
+        "unit_price": "(1 kg = 13,27)",
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "BRAVO Chips Paprika",
+        "price": 0.99,
+        "original_price": null,
+        "quantity": "200 g",
+        "unit_price": "(1 kg = 4,95)",
+        "app_price": null,
+        "discount_pct": -50
+      },
+      {
+        "name": "IGLO Rahm-Spinat Blubb",
+        "price": 3.49,
+        "original_price": null,
+        "quantity": "750 g",
+        "unit_price": "(1 kg = 4,65)",
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "GREENLAND Rahm-Spinat",
+        "price": 1.89,
+        "original_price": null,
+        "quantity": "800 g",
+        "unit_price": "(1 kg = 2,36)",
+        "app_price": null,
+        "discount_pct": -45
+      }
+    ],
+    "1364390_p23": [],
+    "1364390_p24": [
+      {
+        "name": "Oral-B PRO Clean Black Edition Elektrische Zahnbürste mit Reiseetui",
+        "price": 24.99,
+        "original_price": 29.99,
+        "quantity": null,
+        "unit_price": null,
+        "app_price": null,
+        "discount_pct": -16
+      },
+      {
+        "name": "Ariel Universal Pulver color flüssig",
+        "price": 18.99,
+        "original_price": null,
+        "quantity": "100 WL",
+        "unit_price": "(1 kg = 3.97)",
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "Ariel Universal Pulver color flüssig",
+        "price": 18.99,
+        "original_price": null,
+        "quantity": "111 WL",
+        "unit_price": "(1 kg = 4.00)",
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "Ariel Universal Schnell auflösend",
+        "price": 18.99,
+        "original_price": null,
+        "quantity": "1 WL",
+        "unit_price": "(1 kg = 3.78)",
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "Ariel Universal Schnell auflösend",
+        "price": 18.99,
+        "original_price": null,
+        "quantity": "1,1 WL",
+        "unit_price": "(1 kg = 3.78)",
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "Ariel Universal Schnell auflösend",
+        "price": 18.99,
+        "original_price": null,
+        "quantity": "1,499 l",
+        "unit_price": "(1 l = 3.80)",
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "Oral-B Zahncreme",
+        "price": 3.59,
+        "original_price": null,
+        "quantity": "75 ml",
+        "unit_price": "(1 l = 26.53)",
+        "app_price": 1.99,
+        "discount_pct": -10
+      },
+      {
+        "name": "Lenor Weichspüler Versch. Sorten",
+        "price": 3.99,
+        "original_price": null,
+        "quantity": "71 WL",
+        "unit_price": "(1 l = 2.68)",
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "Lenor Weichspüler Versch. Sorten",
+        "price": 3.99,
+        "original_price": null,
+        "quantity": "400 ml",
+        "unit_price": "(1 l = 1.49)",
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "Pampers sensitive",
+        "price": null,
+        "original_price": null,
+        "quantity": "6x12",
+        "unit_price": null,
+        "app_price": null,
+        "discount_pct": -20
+      },
+      {
+        "name": "Pampers baby-dry",
+        "price": null,
+        "original_price": null,
+        "quantity": null,
+        "unit_price": null,
+        "app_price": null,
+        "discount_pct": -20
+      },
+      {
+        "name": "Lenor Wäscheparfum",
+        "price": 3.49,
+        "original_price": null,
+        "quantity": "155 g",
+        "unit_price": "(1 kg = 22.52)",
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "Lenor Non-Stop Frische",
+        "price": 3.49,
+        "original_price": null,
+        "quantity": null,
+        "unit_price": null,
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "Lenor Wäscheparfum",
+        "price": 3.49,
+        "original_price": null,
+        "quantity": "199 ml",
+        "unit_price": null,
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "Always Daily Protect",
+        "price": 3.29,
+        "original_price": null,
+        "quantity": "329 St",
+        "unit_price": null,
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "Always Discreet Big Pack",
+        "price": 3.29,
+        "original_price": null,
+        "quantity": "7,99",
+        "unit_price": null,
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "Gillette Rasierschaum Sensitive",
+        "price": 2.99,
+        "original_price": null,
+        "quantity": "200 ml",
+        "unit_price": "(1 l = 7.48)",
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "Gillette Venus Simply Smooth Rasierer",
+        "price": 2.99,
+        "original_price": null,
+        "quantity": "6 St",
+        "unit_price": "(1 l = 5.99)",
+        "app_price": null,
+        "discount_pct": null
+      }
+    ],
+    "1364390_p26": [
+      {
+        "name": "GOURMETmaxx Tragbare, elektrische Lunchbox",
+        "price": 14.99,
+        "original_price": null,
+        "quantity": null,
+        "unit_price": null,
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "Filterkartuschen",
+        "price": 14.99,
+        "original_price": null,
+        "quantity": "6er-XXL-Packung",
+        "unit_price": null,
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "HOME IDEAS Cooking Filterkartuschen",
+        "price": 14.99,
+        "original_price": null,
+        "quantity": null,
+        "unit_price": null,
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "GOURMETmaxx Reiskocher und Dampfgarer",
+        "price": 14.99,
+        "original_price": 39.99,
+        "quantity": null,
+        "unit_price": null,
+        "app_price": null,
+        "discount_pct": -62
+      },
+      {
+        "name": "KRUPS Kapselkaffeemaschine PICCOLO XS KP1A3B",
+        "price": 29.99,
+        "original_price": 89.99,
+        "quantity": null,
+        "unit_price": null,
+        "app_price": null,
+        "discount_pct": -71
+      },
+      {
+        "name": "KOCHWERK Kaffeemaschine",
+        "price": 9.99,
+        "original_price": 19.99,
+        "quantity": null,
+        "unit_price": null,
+        "app_price": null,
+        "discount_pct": -50
+      },
+      {
+        "name": "Weitere Farben",
+        "price": 1.99,
+        "original_price": null,
+        "quantity": "3er-Packung",
+        "unit_price": null,
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "KESPER Zahnstocher",
+        "price": 1.99,
+        "original_price": null,
+        "quantity": "3 x 200er-Packung",
+        "unit_price": null,
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "KESPER Schneidebrett aus Bambus",
+        "price": 2.99,
+        "original_price": null,
+        "quantity": null,
+        "unit_price": null,
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "KESPER Aufbewahrungsbox",
+        "price": 7.99,
+        "original_price": null,
+        "quantity": null,
+        "unit_price": null,
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "KESPER Flaschenhalter",
+        "price": 12.99,
+        "original_price": null,
+        "quantity": null,
+        "unit_price": null,
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "KESPER Variabler Besteckkasten",
+        "price": 15.99,
+        "original_price": null,
+        "quantity": null,
+        "unit_price": null,
+        "app_price": null,
+        "discount_pct": null
+      }
+    ],
+    "1364390_p27": [
+      {
+        "name": "Tefal Edelstahl-Kochtopf-Set INTUITION",
+        "price": 79.99,
+        "original_price": 129.99,
+        "quantity": null,
+        "unit_price": null,
+        "app_price": null,
+        "discount_pct": -38
+      },
+      {
+        "name": "Tefal Edelstahl-Kochtopf-Set INTUITION",
+        "price": 64.99,
+        "original_price": null,
+        "quantity": null,
+        "unit_price": null,
+        "app_price": null,
+        "discount_pct": -50
+      },
+      {
+        "name": "Jamie Oliver Pfanne",
+        "price": 24.99,
+        "original_price": 39.99,
+        "quantity": "20 cm",
+        "unit_price": null,
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "Jamie Oliver Pfanne",
+        "price": 27.99,
+        "original_price": 51.99,
+        "quantity": "24 cm",
+        "unit_price": null,
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "Jamie Oliver Pfanne",
+        "price": 29.99,
+        "original_price": 59.99,
+        "quantity": "28 cm",
+        "unit_price": null,
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "Sieb",
+        "price": 5.99,
+        "original_price": null,
+        "quantity": "22 cm",
+        "unit_price": null,
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "3-teiliges Schüssel-Set",
+        "price": 6.99,
+        "original_price": null,
+        "quantity": null,
+        "unit_price": null,
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "Obst- und Brotkorb, Vorratsdose oder Tablett",
+        "price": 3.99,
+        "original_price": 4.99,
+        "quantity": null,
+        "unit_price": null,
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "Obst- und Brotkorb, Vorratsdose oder Tablett",
+        "price": 9.99,
+        "original_price": 12.99,
+        "quantity": null,
+        "unit_price": null,
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "HOME IDEAS Cooking Kochgeschirr",
+        "price": 14.99,
+        "original_price": null,
+        "quantity": "20 cm",
+        "unit_price": null,
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "HOME IDEAS Cooking Kochgeschirr",
+        "price": 17.99,
+        "original_price": null,
+        "quantity": "24 cm",
+        "unit_price": null,
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "HOME IDEAS Cooking Kochgeschirr",
+        "price": 24.99,
+        "original_price": null,
+        "quantity": "28 cm",
+        "unit_price": null,
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "HOME IDEAS Cooking Servierpfanne, inkl. Glasdeckel",
+        "price": 14.99,
+        "original_price": null,
+        "quantity": "24 cm",
+        "unit_price": null,
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "HOME IDEAS Cooking Servierpfanne, inkl. Glasdeckel",
+        "price": 19.99,
+        "original_price": null,
+        "quantity": "28 cm",
+        "unit_price": null,
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "HOME IDEAS Cooking Topf, inkl. Deckel",
+        "price": 14.99,
+        "original_price": null,
+        "quantity": "20 cm",
+        "unit_price": null,
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "HOME IDEAS Cooking Topf, inkl. Deckel",
+        "price": 19.99,
+        "original_price": null,
+        "quantity": "24 cm",
+        "unit_price": null,
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "HOME IDEAS Cooking Topf, inkl. Deckel",
+        "price": 24.99,
+        "original_price": null,
+        "quantity": "28 cm",
+        "unit_price": null,
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "ILAG Kochgeschirr mit Silikongriffen",
+        "price": 14.99,
+        "original_price": null,
+        "quantity": null,
+        "unit_price": null,
+        "app_price": null,
+        "discount_pct": null
+      }
+    ],
+    "1364390_p28": [
+      {
+        "name": "KETER Haushaltsschrank LINEAR",
+        "price": 24.99,
+        "original_price": 69.99,
+        "quantity": null,
+        "unit_price": null,
+        "app_price": null,
+        "discount_pct": -50
+      },
+      {
+        "name": "KETER Haushaltsschrank LINEAR",
+        "price": 34.99,
+        "original_price": 69.99,
+        "quantity": null,
+        "unit_price": null,
+        "app_price": null,
+        "discount_pct": -50
+      },
+      {
+        "name": "KETER Haushaltsschrank LINEAR niedrig",
+        "price": 34.99,
+        "original_price": 69.99,
+        "quantity": null,
+        "unit_price": null,
+        "app_price": 34.99,
+        "discount_pct": -42
+      },
+      {
+        "name": "Platzsparende Klappfunktion",
+        "price": 7.99,
+        "original_price": null,
+        "quantity": null,
+        "unit_price": null,
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "PURE WORK Modular-Transportkarre",
+        "price": 7.99,
+        "original_price": null,
+        "quantity": null,
+        "unit_price": null,
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "PURE WORK Modular-Transportkarre",
+        "price": 9.99,
+        "original_price": null,
+        "quantity": null,
+        "unit_price": null,
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "PURE WORK Universal-Transportkarre",
+        "price": 9.99,
+        "original_price": null,
+        "quantity": null,
+        "unit_price": null,
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "PURE WORK Mini-Transportkarre",
+        "price": 9.99,
+        "original_price": null,
+        "quantity": null,
+        "unit_price": null,
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "PURE WORK Multi-Roller",
+        "price": 9.99,
+        "original_price": null,
+        "quantity": null,
+        "unit_price": null,
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "Schraubenentferner-Set",
+        "price": 2.99,
+        "original_price": 7.99,
+        "quantity": "5-teilig",
+        "unit_price": null,
+        "app_price": null,
+        "discount_pct": -62
+      },
+      {
+        "name": "Einhell Sauger TC-VC 1812",
+        "price": 29.99,
+        "original_price": 49.95,
+        "quantity": "12 l",
+        "unit_price": null,
+        "app_price": null,
+        "discount_pct": -39
+      },
+      {
+        "name": "PURE WORK Herren-Arbeitsbundhose",
+        "price": 12.99,
+        "original_price": 16.99,
+        "quantity": null,
+        "unit_price": null,
+        "app_price": null,
+        "discount_pct": -23
+      },
+      {
+        "name": "CAT Premium-Arbeitssneaker oder -Arbeitssocken",
+        "price": 4.99,
+        "original_price": null,
+        "quantity": "jeweils 3 Paar",
+        "unit_price": null,
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "TRUE STYLE Sneakersocken",
+        "price": 4.99,
+        "original_price": null,
+        "quantity": "10 Paar",
+        "unit_price": null,
+        "app_price": null,
+        "discount_pct": null
+      }
+    ],
+    "1364390_p29": [
+      {
+        "name": "Einhell Akku-Bohrschrauber-Set TE-CD12/1Li+22+CL",
+        "price": 69.99,
+        "original_price": 119.95,
+        "quantity": null,
+        "unit_price": null,
+        "app_price": null,
+        "discount_pct": -41
+      },
+      {
+        "name": "Alpina Sanfte Farben",
+        "price": 12.99,
+        "original_price": null,
+        "quantity": "2,5 l",
+        "unit_price": null,
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "PURE WORK Mehrzweck-Klappisch",
+        "price": 14.99,
+        "original_price": null,
+        "quantity": null,
+        "unit_price": null,
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "HEDURA 2-stufiger Klapprit",
+        "price": 19.99,
+        "original_price": null,
+        "quantity": null,
+        "unit_price": null,
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "Elektrozubehör",
+        "price": 3.99,
+        "original_price": null,
+        "quantity": "5-fach-Fischsteckdosenleiste, mit Schalter",
+        "unit_price": null,
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "Elektrozubehör",
+        "price": 4.99,
+        "original_price": null,
+        "quantity": "5-fach, mit Schalter und Schalterleiste",
+        "unit_price": null,
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "Elektrozubehör",
+        "price": 4.99,
+        "original_price": null,
+        "quantity": "Verlängerungskabel, ca. 3 m lang",
+        "unit_price": null,
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "Schutzkontaktadapter, mit Schalter",
+        "price": 1.99,
+        "original_price": null,
+        "quantity": "2er-Packung",
+        "unit_price": null,
+        "app_price": null,
+        "discount_pct": null
+      }
+    ],
+    "1364390_p3": [
+      {
+        "name": "Deutsche Möhren",
+        "price": 1.39,
+        "original_price": null,
+        "quantity": "2 kg",
+        "unit_price": "(1 kg = 0.70)",
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "Deutsche Roma-Rispentomaten Aromatica",
+        "price": 1.69,
+        "original_price": 2.69,
+        "quantity": "250 g",
+        "unit_price": "(1 kg = 6.76)",
+        "app_price": null,
+        "discount_pct": -37
+      },
+      {
+        "name": "Deutsches Salat-Trio mit Wurzel",
+        "price": 0.99,
+        "original_price": null,
+        "quantity": null,
+        "unit_price": null,
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "BÄCKERKRÖNUNG Traditionelle Backkunst Lecker und günstig",
+        "price": null,
+        "original_price": null,
+        "quantity": null,
+        "unit_price": null,
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "BÄCKERKRÖNUNG Das knusprig-frische Weizenbrötchen",
+        "price": 0.76,
+        "original_price": null,
+        "quantity": "6 Stück",
+        "unit_price": null,
+        "app_price": null,
+        "discount_pct": -33
+      },
+      {
+        "name": "BÄCKERKRÖNUNG Das süße Nuss-Nugat-Creme-Croissant mit Nussstücken",
+        "price": 1.0,
+        "original_price": 1.38,
+        "quantity": "2 Stück",
+        "unit_price": null,
+        "app_price": null,
+        "discount_pct": -28
+      },
+      {
+        "name": "SIMPLY SUNNY Getrocknete Datteln",
+        "price": 1.19,
+        "original_price": 1.79,
+        "quantity": "250 g",
+        "unit_price": "(1 kg = 4.76)",
+        "app_price": null,
+        "discount_pct": -33
+      }
+    ],
+    "1364390_p30": [
+      {
+        "name": "Marktliebe Kiwibeeren",
+        "price": 1.49,
+        "original_price": null,
+        "quantity": "125 g",
+        "unit_price": "(1 kg = 11.92)",
+        "app_price": null,
+        "discount_pct": null
+      }
+    ],
+    "1364390_p31": [
+      {
+        "name": "Marktliebe Zwiebeln",
+        "price": 1.69,
+        "original_price": null,
+        "quantity": "2 kg",
+        "unit_price": "(1 kg = 0,85)",
+        "app_price": null,
+        "discount_pct": null
+      }
+    ],
+    "1364390_p32": [
+      {
+        "name": "Deutsche Zucchini",
+        "price": 0.99,
+        "original_price": null,
+        "quantity": "1 kg",
+        "unit_price": null,
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "Pflaumen",
+        "price": 1.11,
+        "original_price": 1.49,
+        "quantity": "500 g",
+        "unit_price": "(1 kg = 2.22)",
+        "app_price": null,
+        "discount_pct": -25
+      },
+      {
+        "name": "Chrysanthemen-Trio",
+        "price": 1.69,
+        "original_price": null,
+        "quantity": "3 Stück",
+        "unit_price": null,
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "Lavendel",
+        "price": 1.99,
+        "original_price": null,
+        "quantity": "15 cm Topf",
+        "unit_price": null,
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "Eukalyptus",
+        "price": 2.59,
+        "original_price": null,
+        "quantity": "15 cm Topf",
+        "unit_price": null,
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "Mühlenhof Frische Rinder-Rouladen",
+        "price": 6.99,
+        "original_price": null,
+        "quantity": "450 g",
+        "unit_price": "(1 kg = 15.53)",
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "Mühlenhof Frische Hähnchen-Innenbrustfilets",
+        "price": 6.99,
+        "original_price": 8.99,
+        "quantity": "800 g",
+        "unit_price": "(1 kg = 8.74)",
+        "app_price": null,
+        "discount_pct": -22
+      },
+      {
+        "name": "Rügenwalder Schinken Spicker",
+        "price": 1.29,
+        "original_price": null,
+        "quantity": "80 g",
+        "unit_price": "(1 kg = 16.13)",
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "Wiltmann Mini-Salami",
+        "price": 3.49,
+        "original_price": null,
+        "quantity": "200 g",
+        "unit_price": "(1 kg = 17.45)",
+        "app_price": null,
+        "discount_pct": null
+      }
+    ],
+    "1364390_p33": [
+      {
+        "name": "M Magnum La Pêche Signature",
+        "price": null,
+        "original_price": null,
+        "quantity": "3er",
+        "unit_price": null,
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "M Magnum La Pistache Signature",
+        "price": null,
+        "original_price": null,
+        "quantity": "3er",
+        "unit_price": null,
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "LANGNESE Magnum Versch. Sorten",
+        "price": 2.49,
+        "original_price": 4.49,
+        "quantity": "je 270 ml",
+        "unit_price": "(1 l = 9.22)",
+        "app_price": null,
+        "discount_pct": -44
+      },
+      {
+        "name": "DR.OETKER Marmorette-Splits Versch. Sorten",
+        "price": 1.49,
+        "original_price": null,
+        "quantity": "je 4 x 100 g",
+        "unit_price": "(1 kg = 3.73)",
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "Paula Pudding Versch. Sorten",
+        "price": 1.49,
+        "original_price": null,
+        "quantity": "je 4 x 125 g",
+        "unit_price": "(1 kg = 2.98)",
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "MÜLLER Milch Reis Original",
+        "price": 0.39,
+        "original_price": 0.99,
+        "quantity": "je 200 g",
+        "unit_price": "(1 kg = 1.95)",
+        "app_price": null,
+        "discount_pct": -60
+      },
+      {
+        "name": "MÖVENPICK Eis Maple Walnuts",
+        "price": 1.79,
+        "original_price": 3.99,
+        "quantity": "je 900 ml",
+        "unit_price": "(1 l = 1.99)",
+        "app_price": null,
+        "discount_pct": -55
+      },
+      {
+        "name": "MÖVENPICK Quark Mandarine",
+        "price": 1.79,
+        "original_price": 3.99,
+        "quantity": "je 850 ml",
+        "unit_price": "(1 l = 2.11)",
+        "app_price": null,
+        "discount_pct": -55
+      },
+      {
+        "name": "ZOTT Zottis Fruchtjoghurt",
+        "price": 0.89,
+        "original_price": null,
+        "quantity": "Versch. Sorten, je 200 g",
+        "unit_price": "(1 kg = 2.23)",
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "RAMA Mit Butter",
+        "price": 1.99,
+        "original_price": 3.19,
+        "quantity": "je 400 g",
+        "unit_price": "(1 kg = 4.98)",
+        "app_price": null,
+        "discount_pct": -37
+      },
+      {
+        "name": "CASTELLO Käsescheiben Cheddar",
+        "price": 1.79,
+        "original_price": 2.99,
+        "quantity": "je 140 g",
+        "unit_price": "(1 kg = 12.79)",
+        "app_price": null,
+        "discount_pct": -40
+      },
+      {
+        "name": "CASTELLO Höhlenkäse",
+        "price": 1.79,
+        "original_price": 2.99,
+        "quantity": "je 150 g",
+        "unit_price": "(1 kg = 11.93)",
+        "app_price": null,
+        "discount_pct": -40
+      },
+      {
+        "name": "RÜGENWALDER MÜHLE Veganer Aufschnitt",
+        "price": 1.11,
+        "original_price": 1.59,
+        "quantity": "je 80 g",
+        "unit_price": "(1 kg = 13.88)",
+        "app_price": null,
+        "discount_pct": -30
+      },
+      {
+        "name": "Veganer Schinken Spicker Mortadella",
+        "price": 1.11,
+        "original_price": 1.59,
+        "quantity": "je 200 g",
+        "unit_price": null,
+        "app_price": null,
+        "discount_pct": -30
+      },
+      {
+        "name": "PRÉSIDENT Käse-snack Versch. Sorten",
+        "price": 2.49,
+        "original_price": 2.99,
+        "quantity": "je 180 g",
+        "unit_price": "(1 kg = 13.83)",
+        "app_price": null,
+        "discount_pct": -16
+      },
+      {
+        "name": "SEAFOOD 4YOU Lachsforelle",
+        "price": 3.29,
+        "original_price": 3.79,
+        "quantity": "je 180 g",
+        "unit_price": "(1 kg = 18.28)",
+        "app_price": null,
+        "discount_pct": -13
+      }
+    ],
+    "1364390_p34": [
+      {
+        "name": "Mühlenhof XXL Delikatess Salami",
+        "price": 1.69,
+        "original_price": null,
+        "quantity": "250 g",
+        "unit_price": "(1 kg = 6.76)",
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "Mühlenhof XXL Delikatess Käse-Wiener",
+        "price": 3.99,
+        "original_price": null,
+        "quantity": "600 g",
+        "unit_price": "(1 kg = 6.65)",
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "Mühlenhof XXL Delikatess Hinterschinken",
+        "price": 1.99,
+        "original_price": null,
+        "quantity": "250 g",
+        "unit_price": "(1 kg = 5.69)",
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "Berida Norwegischer Räucherlachs",
+        "price": 4.19,
+        "original_price": null,
+        "quantity": "220 g",
+        "unit_price": "(1 kg = 19.05)",
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "Lindenhof XXL Gouda Jung, in Scheiben",
+        "price": 5.55,
+        "original_price": null,
+        "quantity": "1.000 g",
+        "unit_price": null,
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "Puda XXL Weizenmehl Type 405",
+        "price": 0.99,
+        "original_price": null,
+        "quantity": "2 kg",
+        "unit_price": "(1 kg = 0.50)",
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "Milprima XXL Kondensmilch 4% Fett",
+        "price": 0.79,
+        "original_price": null,
+        "quantity": "500 g",
+        "unit_price": "(1 kg = 1.58)",
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "Lindenhof XXL Gouda Jung, am Stück",
+        "price": 5.55,
+        "original_price": null,
+        "quantity": "700 g",
+        "unit_price": "(1 kg = 7.93)",
+        "app_price": null,
+        "discount_pct": null
+      }
+    ],
+    "1364390_p35": [
+      {
+        "name": "Landmark Hähnchen Nuggets",
+        "price": 4.19,
+        "original_price": null,
+        "quantity": "600 g",
+        "unit_price": "(1 kg = 6.98)",
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "Berida Fischstäbchen",
+        "price": 4.99,
+        "original_price": null,
+        "quantity": "900 g",
+        "unit_price": "(1 kg = 5.54)",
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "Rios Sandwich Classic",
+        "price": 2.19,
+        "original_price": null,
+        "quantity": "10 x 90 ml",
+        "unit_price": "(1 l = 2.43)",
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "Bravo Erdnüsse geröstet & gesalzen",
+        "price": 3.49,
+        "original_price": null,
+        "quantity": "1000 g",
+        "unit_price": null,
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "Bravo Kalifornische Pistazien geröstet & gesalzen",
+        "price": 3.59,
+        "original_price": null,
+        "quantity": "300 g",
+        "unit_price": "(1 kg = 11.97)",
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "San Fabio Spaghetti",
+        "price": 1.19,
+        "original_price": null,
+        "quantity": "1000 g",
+        "unit_price": null,
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "Happy End Küchentücher",
+        "price": 6.99,
+        "original_price": null,
+        "quantity": "12 x 128 Blatt",
+        "unit_price": null,
+        "app_price": null,
+        "discount_pct": -33
+      },
+      {
+        "name": "Happy End Toilettenpapier soft",
+        "price": 6.99,
+        "original_price": null,
+        "quantity": "20 x 200 Blatt",
+        "unit_price": null,
+        "app_price": null,
+        "discount_pct": null
+      }
+    ],
+    "1364390_p36": [
+      {
+        "name": "Dallmayr Kaffeepads Mild",
+        "price": null,
+        "original_price": null,
+        "quantity": "112 g",
+        "unit_price": "(1 kg = 19.82)",
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "Dallmayr Kaffeepads Classic",
+        "price": null,
+        "original_price": null,
+        "quantity": "124 g",
+        "unit_price": "(1 kg = 17.90)",
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "Dallmayr Crema d'Oro Mild + Fein",
+        "price": null,
+        "original_price": null,
+        "quantity": "500 g",
+        "unit_price": null,
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "Dallmayr Kaffeegenuss mit vollem Aroma Classic",
+        "price": 2.22,
+        "original_price": 3.29,
+        "quantity": "16 + 2 GRATIS",
+        "unit_price": null,
+        "app_price": null,
+        "discount_pct": -32
+      },
+      {
+        "name": "Jacobs Kaffeekapseln Espresso Ristretto",
+        "price": null,
+        "original_price": null,
+        "quantity": "104 g",
+        "unit_price": "(1 kg = 42.69)",
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "Jacobs Kaffeekapseln Lungo Intenso",
+        "price": 4.44,
+        "original_price": 5.99,
+        "quantity": "104 g",
+        "unit_price": null,
+        "app_price": null,
+        "discount_pct": -25
+      },
+      {
+        "name": "Milka Choc & Choc",
+        "price": null,
+        "original_price": null,
+        "quantity": "175 g",
+        "unit_price": "(1 kg = 11.37)",
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "Milka Tender mit Milchcreme-Füllung",
+        "price": 1.99,
+        "original_price": 2.99,
+        "quantity": "5 x 37 g",
+        "unit_price": "(1 kg = 10.76)",
+        "app_price": null,
+        "discount_pct": -33
+      },
+      {
+        "name": "Maggi Suppe mit Rind Rindfleischsuppe",
+        "price": null,
+        "original_price": null,
+        "quantity": "750 ml",
+        "unit_price": "(1 l = 0.79)",
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "Maggi Feuerwehr Suppe",
+        "price": 0.59,
+        "original_price": 0.99,
+        "quantity": "750 ml",
+        "unit_price": null,
+        "app_price": null,
+        "discount_pct": -40
+      },
+      {
+        "name": "Tabasco Würzsauce Smoked",
+        "price": 1.99,
+        "original_price": 3.49,
+        "quantity": "60 ml",
+        "unit_price": "(1 l = 33.17)",
+        "app_price": null,
+        "discount_pct": -42
+      },
+      {
+        "name": "Tabasco Würzsauce Pepper Sauce Brand",
+        "price": 1.99,
+        "original_price": 3.49,
+        "quantity": "60 ml",
+        "unit_price": "(1 l = 33.17)",
+        "app_price": null,
+        "discount_pct": -42
+      },
+      {
+        "name": "Reis-Fit Burrito-Bowl",
+        "price": 1.29,
+        "original_price": null,
+        "quantity": "250 g",
+        "unit_price": null,
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "Reis-Fit Mediterran",
+        "price": 1.29,
+        "original_price": null,
+        "quantity": "250 g",
+        "unit_price": null,
+        "app_price": null,
+        "discount_pct": null
+      }
+    ],
+    "1364390_p37": [
+      {
+        "name": "Pfanner Fruchtsaftgetränk Kirsche",
+        "price": 1.19,
+        "original_price": 1.99,
+        "quantity": "1 l",
+        "unit_price": null,
+        "app_price": null,
+        "discount_pct": -40
+      },
+      {
+        "name": "Pfanner Fruchtsaftgetränk Fruity Orange",
+        "price": 1.19,
+        "original_price": 1.99,
+        "quantity": "1 l",
+        "unit_price": null,
+        "app_price": null,
+        "discount_pct": -40
+      },
+      {
+        "name": "granini Die Limo Orange-Limonade",
+        "price": 1.29,
+        "original_price": 1.79,
+        "quantity": "1 l",
+        "unit_price": null,
+        "app_price": null,
+        "discount_pct": -27
+      },
+      {
+        "name": "granini Die Limo Limette-Zitrone",
+        "price": 1.29,
+        "original_price": 1.79,
+        "quantity": "1 l",
+        "unit_price": null,
+        "app_price": null,
+        "discount_pct": -27
+      },
+      {
+        "name": "Schöfferhofer Hefeweizen-Mix Grapefruit",
+        "price": 0.79,
+        "original_price": 0.99,
+        "quantity": "6 x 0.5 l",
+        "unit_price": "(1 l = 1.58)",
+        "app_price": null,
+        "discount_pct": -20
+      },
+      {
+        "name": "Schöfferhofer Hefeweizen-Mix Grapefruit",
+        "price": 0.79,
+        "original_price": 0.99,
+        "quantity": "1 l",
+        "unit_price": "(1 l = 1.58)",
+        "app_price": null,
+        "discount_pct": -20
+      },
+      {
+        "name": "Schwip Schwap Erfrischungsgetränk",
+        "price": 3.99,
+        "original_price": 7.14,
+        "quantity": "6 x 1.5 l",
+        "unit_price": "(1 l = 1.33)",
+        "app_price": null,
+        "discount_pct": -44
+      },
+      {
+        "name": "Pepsi Erfrischungsgetränk",
+        "price": 3.99,
+        "original_price": 7.14,
+        "quantity": "6 x 1.5 l",
+        "unit_price": "(1 l = 1.33)",
+        "app_price": null,
+        "discount_pct": -44
+      },
+      {
+        "name": "GÖRGY Energy Drink Cola Cherry",
+        "price": 0.99,
+        "original_price": 1.49,
+        "quantity": "0.25 l",
+        "unit_price": "(1 l = 1.98)",
+        "app_price": null,
+        "discount_pct": -33
+      },
+      {
+        "name": "GÖRGY Energy Drink Boot Berries",
+        "price": 0.99,
+        "original_price": 1.49,
+        "quantity": "0.25 l",
+        "unit_price": "(1 l = 1.98)",
+        "app_price": null,
+        "discount_pct": -33
+      },
+      {
+        "name": "Pick Up! Minis XXL Original",
+        "price": 3.49,
+        "original_price": null,
+        "quantity": "225 g",
+        "unit_price": "(1 kg = 14.98)",
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "STORCK Knoppers minis",
+        "price": 1.99,
+        "original_price": 2.59,
+        "quantity": "220 g",
+        "unit_price": null,
+        "app_price": null,
+        "discount_pct": -23
+      },
+      {
+        "name": "STORCK Knoppers BigPack",
+        "price": 2.99,
+        "original_price": 3.99,
+        "quantity": "15 x 25 g",
+        "unit_price": "(1 kg = 7.97)",
+        "app_price": null,
+        "discount_pct": -25
+      },
+      {
+        "name": "Balisto Schokoriegel",
+        "price": 1.99,
+        "original_price": 3.49,
+        "quantity": "8 x 18.5 g",
+        "unit_price": "(1 kg = 13.45)",
+        "app_price": null,
+        "discount_pct": -42
+      },
+      {
+        "name": "Balisto Schokoriegel",
+        "price": 1.99,
+        "original_price": 3.49,
+        "quantity": "8 x 18.5 g",
+        "unit_price": "(1 kg = 13.45)",
+        "app_price": null,
+        "discount_pct": -42
+      },
+      {
+        "name": "DE BEUKELAER Prinzen Rolle Schoko",
+        "price": 1.49,
+        "original_price": 2.49,
+        "quantity": "400 g",
+        "unit_price": "(1 kg = 3.73)",
+        "app_price": null,
+        "discount_pct": -40
+      },
+      {
+        "name": "DE BEUKELAER Prinzen Rolle Stories",
+        "price": 1.49,
+        "original_price": 2.49,
+        "quantity": "230 g",
+        "unit_price": "(1 kg = 4.52)",
+        "app_price": null,
+        "discount_pct": -40
+      },
+      {
+        "name": "TUC Bake Rolls",
+        "price": 1.49,
+        "original_price": 1.99,
+        "quantity": "150 g",
+        "unit_price": "(1 kg = 9.93)",
+        "app_price": null,
+        "discount_pct": -25
+      }
+    ],
+    "1364390_p38": [
+      {
+        "name": "Ballantine's Blended Scotch Whisky Finest",
+        "price": 10.99,
+        "original_price": 15.69,
+        "quantity": "0,7 l",
+        "unit_price": "(1 l = 15.70)",
+        "app_price": null,
+        "discount_pct": -29
+      },
+      {
+        "name": "Aperol Spritz Fertig gemischt",
+        "price": 6.99,
+        "original_price": 8.99,
+        "quantity": "3 x 0,2 l",
+        "unit_price": "(1 l = 11.65)",
+        "app_price": null,
+        "discount_pct": -22
+      },
+      {
+        "name": "Faber Light Live 0,0 % Alkoholfrei Sekt",
+        "price": 0.99,
+        "original_price": 1.49,
+        "quantity": "0,2 l",
+        "unit_price": "(1 l = 4.95)",
+        "app_price": null,
+        "discount_pct": -33
+      },
+      {
+        "name": "Osborne Veterano & Cola",
+        "price": 1.99,
+        "original_price": 2.79,
+        "quantity": "0,25 l",
+        "unit_price": "(1 l = 6.03)",
+        "app_price": null,
+        "discount_pct": -28
+      }
+    ],
+    "1364390_p40": [
+      {
+        "name": "San Fabio Pastasauce",
+        "price": 12.9,
+        "original_price": 17.4,
+        "quantity": "12 x 400 ml",
+        "unit_price": "(1 l = 2.69)",
+        "app_price": null,
+        "discount_pct": -25
+      },
+      {
+        "name": "Mühlenhof Nürnberger Rostbratwurst",
+        "price": 2.79,
+        "original_price": 3.29,
+        "quantity": "300 g",
+        "unit_price": "(1 kg = 9.30)",
+        "app_price": null,
+        "discount_pct": -15
+      },
+      {
+        "name": "Kinder Bueno",
+        "price": 3.99,
+        "original_price": 5.49,
+        "quantity": "495 g",
+        "unit_price": "(1 l = 8.77)",
+        "app_price": 3.49,
+        "discount_pct": -27
+      },
+      {
+        "name": "Nescafé Dolce Gusto Kapseln",
+        "price": 3.77,
+        "original_price": 6.79,
+        "quantity": "186 g",
+        "unit_price": "(1 kg = 20.27)",
+        "app_price": 3.49,
+        "discount_pct": -44
+      },
+      {
+        "name": "Nescafé Dolce Gusto Kapseln Grande",
+        "price": 3.77,
+        "original_price": 6.79,
+        "quantity": "136 g",
+        "unit_price": "(1 kg = 27.72)",
+        "app_price": 3.49,
+        "discount_pct": -44
+      },
+      {
+        "name": "Lorenz Saltletts Sesam",
+        "price": 1.11,
+        "original_price": 2.29,
+        "quantity": "175 g",
+        "unit_price": "(1 kg = 6.34)",
+        "app_price": 0.99,
+        "discount_pct": -51
+      },
+      {
+        "name": "Lorenz Saltletts Classic",
+        "price": 1.11,
+        "original_price": 2.29,
+        "quantity": "250 g",
+        "unit_price": "(1 kg = 4.44)",
+        "app_price": 0.99,
+        "discount_pct": -51
+      },
+      {
+        "name": "Felix So gut wie es aussieht in Gelee",
+        "price": 3.99,
+        "original_price": 4.59,
+        "quantity": "12 x 85 g",
+        "unit_price": "(1 kg = 3.91)",
+        "app_price": 3.79,
+        "discount_pct": -13
+      }
+    ],
+    "1364390_p5": [
+      {
+        "name": "Rote Paprika",
+        "price": 1.19,
+        "original_price": null,
+        "quantity": "500 g",
+        "unit_price": "(1 kg = 2,38)",
+        "app_price": null,
+        "discount_pct": null
+      }
+    ],
+    "1364390_p6": [
+      {
+        "name": "NaturGut Bio-Heidelbeeren",
+        "price": 1.99,
+        "original_price": null,
+        "quantity": "125 g",
+        "unit_price": "(1 kg = 15.92)",
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "NaturGut Kernlose Bio-Tafeltrauben",
+        "price": 1.99,
+        "original_price": null,
+        "quantity": "350 g",
+        "unit_price": "(1 kg = 5.69)",
+        "app_price": null,
+        "discount_pct": null
+      }
+    ],
+    "1364390_p7": [
+      {
+        "name": "NATURGUT Deutsche Bio-Kräuter",
+        "price": 1.49,
+        "original_price": null,
+        "quantity": null,
+        "unit_price": null,
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "NATURGUT Deutsche Bio-Kartoffeln",
+        "price": 1.99,
+        "original_price": null,
+        "quantity": "1,5-kg-Beutel",
+        "unit_price": "(1 kg = 1,33)",
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "NATURGUT Deutsche Bio-Möhren",
+        "price": 1.89,
+        "original_price": null,
+        "quantity": "1-kg-Beutel",
+        "unit_price": null,
+        "app_price": null,
+        "discount_pct": null
+      }
+    ],
+    "1364390_p8": [
+      {
+        "name": "Mühlenhof Regional Frische Hähnchen-Unterschenkel",
+        "price": 3.99,
+        "original_price": null,
+        "quantity": "1000 g",
+        "unit_price": "(1 kg = 3,99)",
+        "app_price": null,
+        "discount_pct": -28
+      },
+      {
+        "name": "Mühlenhof Frisches Hackfleisch, gemischt",
+        "price": 3.49,
+        "original_price": 4.79,
+        "quantity": "500 g",
+        "unit_price": "(1 kg = 6,98)",
+        "app_price": null,
+        "discount_pct": -27
+      },
+      {
+        "name": "Mühlenhof Frische Puten-Schnitzel",
+        "price": 4.59,
+        "original_price": 5.59,
+        "quantity": "500 g",
+        "unit_price": "(1 kg = 9,18)",
+        "app_price": null,
+        "discount_pct": -17
+      },
+      {
+        "name": "Mühlenhof Frischer Puten-Rollbraten",
+        "price": 4.99,
+        "original_price": null,
+        "quantity": "800 g",
+        "unit_price": "(1 kg = 6,24)",
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "Grillparty Frische Hähnchen-Medaillons",
+        "price": 3.33,
+        "original_price": null,
+        "quantity": "350 g",
+        "unit_price": "(1 kg = 9,51)",
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "Mühlenhof Schweine-Cordon-bleu Camembert",
+        "price": 2.99,
+        "original_price": null,
+        "quantity": "350 g",
+        "unit_price": "(1 kg = 9,06)",
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "Mühlenhof Frische Schweine-Fleischspieße",
+        "price": 4.44,
+        "original_price": null,
+        "quantity": "500 g",
+        "unit_price": "(1 kg = 8,88)",
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "Mühlenhof Frischer Kasseler-Hüftbraten",
+        "price": 5.49,
+        "original_price": null,
+        "quantity": "1 kg",
+        "unit_price": null,
+        "app_price": null,
+        "discount_pct": null
+      }
+    ],
+    "1364390_p9": [
+      {
+        "name": "Charly's Chicken Hähnchenbrustfilet Classic",
+        "price": 0.99,
+        "original_price": null,
+        "quantity": "75 g",
+        "unit_price": "(1 kg = 13.20)",
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "Charly's Chicken Hähnchenbrustfilet Honey BBQ Style",
+        "price": 0.99,
+        "original_price": null,
+        "quantity": "75 g",
+        "unit_price": "(1 kg = 13.20)",
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "Stockmeyer Salami Sweet Onion",
+        "price": 1.99,
+        "original_price": null,
+        "quantity": "150 g",
+        "unit_price": "(1 kg = 13.27)",
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "Stockmeyer Salami Formaggio Style",
+        "price": 1.99,
+        "original_price": null,
+        "quantity": "150 g",
+        "unit_price": "(1 kg = 13.27)",
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "Mühlenhof Delikatess Bayerischer Leberkäse Fein",
+        "price": 2.99,
+        "original_price": null,
+        "quantity": "500 g",
+        "unit_price": "(1 kg = 5.98)",
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "Aoste Edel-Salami",
+        "price": 2.99,
+        "original_price": null,
+        "quantity": "150 g",
+        "unit_price": "(1 kg = 19.93)",
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "Aoste Walnuss-Salami",
+        "price": 2.99,
+        "original_price": null,
+        "quantity": "150 g",
+        "unit_price": "(1 kg = 19.93)",
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "Bökunder Kochwurst",
+        "price": 1.49,
+        "original_price": null,
+        "quantity": "200 g",
+        "unit_price": "(1 kg = 7.45)",
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "Dreistern Rouladen 2 Schweine Rouladen in pikanter Sauce",
+        "price": 4.99,
+        "original_price": null,
+        "quantity": "500 g",
+        "unit_price": "(1 kg = 9.98)",
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "Dreistern Rouladen 2 Rinder-Rouladen in pikanter Sauce",
+        "price": 4.99,
+        "original_price": null,
+        "quantity": "500 g",
+        "unit_price": "(1 kg = 9.98)",
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "Gutfried Kleine Hähnchen-Wiener mit Sonnenblumenöl, geräuchert",
+        "price": 1.99,
+        "original_price": null,
+        "quantity": "380 g",
+        "unit_price": "(1 kg = 13.27)",
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "Bökunder Kleine Wiener mit Kalbfleisch, im Saft",
+        "price": 1.99,
+        "original_price": null,
+        "quantity": "380 g",
+        "unit_price": "(1 kg = 13.27)",
+        "app_price": null,
+        "discount_pct": null
+      }
+    ],
+    "1364393_p15": [
+      {
+        "name": "BÄCKERKRÖNUNG Rosen Brötchen Kernig",
+        "price": 1.39,
+        "original_price": 1.59,
+        "quantity": "6 Stück",
+        "unit_price": null,
+        "app_price": null,
+        "discount_pct": -12
+      },
+      {
+        "name": "BÄCKERKRÖNUNG Rosen Brötchen",
+        "price": 1.39,
+        "original_price": 1.59,
+        "quantity": "6 Stück",
+        "unit_price": null,
+        "app_price": null,
+        "discount_pct": -12
+      },
+      {
+        "name": "BÄCKERKRÖNUNG Vital & Fit",
+        "price": 1.19,
+        "original_price": null,
+        "quantity": "500 g",
+        "unit_price": "(1 kg = 2,38)",
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "BÄCKERKRÖNUNG Roggen Vollkornbrot",
+        "price": 1.19,
+        "original_price": null,
+        "quantity": "500 g",
+        "unit_price": "(1 kg = 2,38)",
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "BÄCKERKRÖNUNG Rosinen Stuten",
+        "price": 1.19,
+        "original_price": 1.39,
+        "quantity": "400 g",
+        "unit_price": "(1 kg = 2,98)",
+        "app_price": null,
+        "discount_pct": -14
+      },
+      {
+        "name": "BÄCKERKRÖNUNG Knäckebrot Sesam",
+        "price": 1.29,
+        "original_price": null,
+        "quantity": "250 g",
+        "unit_price": "(1 kg = 5,16)",
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "BÄCKERKRÖNUNG Knäckebrot Vollkorn",
+        "price": 1.29,
+        "original_price": null,
+        "quantity": "250 g",
+        "unit_price": "(1 kg = 5,16)",
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "BÄCKERKRÖNUNG Hörnchen Milchcreme",
+        "price": 1.29,
+        "original_price": 1.49,
+        "quantity": "240 g",
+        "unit_price": "(1 kg = 5,38)",
+        "app_price": null,
+        "discount_pct": -13
+      },
+      {
+        "name": "BÄCKERKRÖNUNG Hörnchen Nuss-Nougat",
+        "price": 1.29,
+        "original_price": 1.49,
+        "quantity": "240 g",
+        "unit_price": "(1 kg = 5,38)",
+        "app_price": null,
+        "discount_pct": -13
+      },
+      {
+        "name": "BÄCKERKRÖNUNG Reis Waffeln",
+        "price": 1.99,
+        "original_price": null,
+        "quantity": "250 g",
+        "unit_price": "(1 kg = 13,27)",
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "BÄCKERKRÖNUNG High Protein Wraps",
+        "price": 1.79,
+        "original_price": null,
+        "quantity": "372 g",
+        "unit_price": "(1 kg = 4,81)",
+        "app_price": null,
+        "discount_pct": null
+      }
+    ],
+    "1364411_p9": [
+      {
+        "name": "Stockmeyer Salami Formaggio Style",
+        "price": 1.99,
+        "original_price": null,
+        "quantity": "150 g",
+        "unit_price": "(1 kg = 13.27)",
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "Charly's Chicken Hähnchenbrustfilet Classic",
+        "price": 0.99,
+        "original_price": null,
+        "quantity": "150 g",
+        "unit_price": "(1 kg = 13.20)",
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "Charly's Chicken Hähnchenbrustfilet Honey BBQ Style",
+        "price": 0.99,
+        "original_price": null,
+        "quantity": "75 g",
+        "unit_price": "(1 kg = 13.20)",
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "Aoste Edel-Salami",
+        "price": 2.99,
+        "original_price": null,
+        "quantity": "150 g",
+        "unit_price": "(1 kg = 19.93)",
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "Aoste Walnuss-Salami",
+        "price": 2.99,
+        "original_price": null,
+        "quantity": "150 g",
+        "unit_price": "(1 kg = 19.93)",
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "Mühlenhof Delikates Bayerischer Leberkäse Fein",
+        "price": 2.99,
+        "original_price": null,
+        "quantity": "500 g",
+        "unit_price": "(1 kg = 5.98)",
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "Kochwurst",
+        "price": 1.49,
+        "original_price": null,
+        "quantity": "200 g",
+        "unit_price": "(1 kg = 7.45)",
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "Dreistern 2 Schweinerouladen",
+        "price": 4.99,
+        "original_price": null,
+        "quantity": "500 g",
+        "unit_price": "(1 kg = 9.98)",
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "Dreistern 2 Rinderrouladen",
+        "price": 4.99,
+        "original_price": null,
+        "quantity": "500 g",
+        "unit_price": "(1 kg = 9.98)",
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "Gutfried Kleine Hähnchen-Wiener",
+        "price": 1.99,
+        "original_price": null,
+        "quantity": "380 g",
+        "unit_price": "(1 kg = 13.27)",
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "Bökunder Kleine Wiener",
+        "price": 1.99,
+        "original_price": null,
+        "quantity": "150 g",
+        "unit_price": "(1 kg = 13.27)",
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "Wasner Käse-Krainer",
+        "price": 5.99,
+        "original_price": null,
+        "quantity": "560 g",
+        "unit_price": "(1 kg = 10.70)",
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "Wasner Münchner Weißwurst",
+        "price": 5.99,
+        "original_price": null,
+        "quantity": "840 g",
+        "unit_price": "(1 kg = 7.13)",
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "Wasner Käsekrainer oder Regensburger",
+        "price": 4.49,
+        "original_price": null,
+        "quantity": "400 g",
+        "unit_price": "(1 kg = 11.23)",
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "Wasner Wiener oder Debreziner",
+        "price": 3.79,
+        "original_price": 4.69,
+        "quantity": "400 g",
+        "unit_price": "(1 kg = 9.48)",
+        "app_price": null,
+        "discount_pct": -19
+      }
+    ],
+    "1364420_p8": [
+      {
+        "name": "Mühlenhof Frische Hähnchen-Unterschenkel",
+        "price": 3.99,
+        "original_price": null,
+        "quantity": "1000 g",
+        "unit_price": "(1 kg = 3,99)",
+        "app_price": null,
+        "discount_pct": -28
+      },
+      {
+        "name": "Mühlenhof Frisches Hackfleisch, gemischt",
+        "price": 3.49,
+        "original_price": 4.79,
+        "quantity": "500 g",
+        "unit_price": "(1 kg = 6,98)",
+        "app_price": null,
+        "discount_pct": -27
+      },
+      {
+        "name": "Mühlenhof Frische Puten-Schnitzel",
+        "price": 4.59,
+        "original_price": 5.59,
+        "quantity": "500 g",
+        "unit_price": "(1 kg = 9,18)",
+        "app_price": null,
+        "discount_pct": -17
+      },
+      {
+        "name": "Mühlenhof Frischer Puten-Rollbraten",
+        "price": 4.99,
+        "original_price": null,
+        "quantity": "800 g",
+        "unit_price": "(1 kg = 6,24)",
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "Mühlenhof Schweine-Cordon-bleu Camembert",
+        "price": 2.99,
+        "original_price": null,
+        "quantity": "350 g",
+        "unit_price": "(1 kg = 9,06)",
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "Mühlenhof Frische Schweine-Fleischspieße",
+        "price": 4.44,
+        "original_price": null,
+        "quantity": "500 g",
+        "unit_price": "(1 kg = 8,88)",
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "Mühlenhof Frischer Kasseler-Hüftbraten",
+        "price": 5.49,
+        "original_price": null,
+        "quantity": "1 kg",
+        "unit_price": null,
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "Grillparty Frische Hähnchen-Medaillons",
+        "price": 3.33,
+        "original_price": null,
+        "quantity": "500 g",
+        "unit_price": "(1 kg = 9,51)",
+        "app_price": null,
+        "discount_pct": null
+      },
+      {
+        "name": "Mühlenhof XXL Packung Hähnchen-Oberschenkel",
+        "price": 4.44,
+        "original_price": 5.59,
+        "quantity": null,
+        "unit_price": null,
+        "app_price": null,
+        "discount_pct": -20
+      }
+    ]
+  },
+  "errors": [
+    "1364390_p25: ValueError: JSON-Array nicht geschlossen (abgeschnitten?): [\n  {\"brand\": \"HOME IDEAS Living\", \"product\": \"Deko-Kissen für Kinder\", \"quantity\": null, \"price\": 5.99, \"old_price\": null, \"app_price\": null, \"discou",
+    "1364393_p25: ValueError: JSON-Array nicht geschlossen (abgeschnitten?): [\n  {\"brand\": \"HOME IDEAS Living\", \"product\": \"Deko-Kissen für Kinder\", \"quantity\": null, \"price\": 5.99, \"old_price\": null, \"app_price\": null, \"discou"
+  ]
+}

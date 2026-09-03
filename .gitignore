@@ -26,6 +26,12 @@ data/raw/**
 data/images/**
 !data/images/.gitkeep
 
+# Demo-Uploads: fremde PDFs plus Ergebnis-JSON/Seitenbilder unter einer
+# server-vergebenen ID (magda.uploads). Reproduzierbar aus dem Nutzer-Input,
+# nichts, was das Team teilen muesste - anders als data/words/ und data/labeled/.
+data/uploads/**
+!data/uploads/.gitkeep
+
 # persönliche Notizen, bleiben lokal
 EXPLANATION.md
 

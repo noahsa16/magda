@@ -1,12 +1,12 @@
 # Training auf einer fremden GPU (RunPod)
 
-Beide Modellvarianten laufen auch lokal. Auf einen Pod gehört das Training
+Alle vier Modellvarianten laufen auch lokal. Auf einen Pod gehört das Training
 aus einem einzigen Grund: **Arbeitsspeicher.** LayoutXLM bringt 368 Mio.
 Parameter plus den detectron2-Backbone mit, und auf einer 8-GB-Maschine
 landet das im Swap – die Kiste wird unbenutzbar, ohne dass das Training
 nennenswert schneller fertig wäre.
 
-Der Datensatz ist klein (rund 200 Seiten). Beide Varianten sind auf jeder
+Der Datensatz ist klein (550 Trainingsseiten). Alle vier Varianten sind auf jeder
 aktuellen GPU in Minuten durch. **Nimm die billigste Karte, die du bekommst**
 (RTX A4000/A5000). Eine H100 rechnet dasselbe in derselben Minute und kostet
 das Zehnfache.
@@ -55,7 +55,8 @@ bash bootstrap.sh
 ```
 
 Das Skript installiert die Abhängigkeiten, übersetzt detectron2 (dauert ein
-paar Minuten), trainiert beide Varianten, evaluiert auf dem Test-Split und
+paar Minuten), trainiert alle vier Varianten in der Reihenfolge
+gbert, xlmr, lilt, layoutxlm, evaluiert jede auf dem Test-Split und
 packt am Ende `ergebnisse.tgz`.
 
 Schlägt die detectron2-Installation fehl, läuft GBERT trotzdem durch und nur
@@ -69,7 +70,13 @@ runpodctl receive <code>                   # zu Hause
 tar xzf ergebnisse.tgz                     # legt data/eval und checkpoints/ ab
 ```
 
-Danach zeigt die Evaluationsseite im Frontend beide Varianten.
+Danach zeigt die Evaluationsseite im Frontend alle vier Varianten.
+
+Nur `layoutxlm` braucht detectron2. Scheitert dessen Übersetzung, fallen die
+anderen drei trotzdem an – deshalb stehen sie im Bootstrap davor. Die Kette,
+an der die Layout-Frage hängt, ist damit auch im Fehlerfall vollständig:
+
+    xlmr  ──+Layout──▶  lilt  ──+Vision──▶  layoutxlm
 
 ## Was schiefgehen kann
 

@@ -171,6 +171,79 @@ def page_output(page: dict, tags, scores, variant: str, labels_from: str) -> dic
     }
 
 
+def load_ner_model(variant: str, checkpoint: str | None = None):
+    """Laedt Tokenizer und Modell einer Variante aus checkpoints/<name>/best.
+
+    Eine Stelle fuer `magda predict` und `magda.pipeline.load_models` – beide
+    sollen bei einem fehlenden Checkpoint dieselbe Meldung sehen, nicht zwei
+    Formulierungen, die auseinanderlaufen. Importe bleiben in der Funktion:
+    ein blosses `import magda.predict` soll kein transformers ziehen.
+    """
+    from transformers import AutoModelForTokenClassification, AutoTokenizer
+
+    from magda.config import CHECKPOINTS_DIR, variant_spec
+
+    spec = variant_spec(variant)
+    model_dir = CHECKPOINTS_DIR / (checkpoint or variant) / "best"
+    if not model_dir.exists():
+        raise FileNotFoundError(
+            f"Kein trainiertes Modell unter {model_dir}. Erst `magda train` laufen lassen."
+        )
+    tokenizer = AutoTokenizer.from_pretrained(spec.model_name)
+    model = AutoModelForTokenClassification.from_pretrained(model_dir)
+    return model, tokenizer, spec
+
+
+def predict_pages(
+    pages: list[dict], model, tokenizer, spec, *, no_windows: bool = False, images_dir=None,
+    on_windows_built=None,
+) -> list[tuple[list[str | None], list[float | None]]]:
+    """Sagt BIO-Tags und Konfidenzen fuer eine Liste Seiten voraus.
+
+    Die Inferenzschleife von `magda predict` an einer Stelle, damit
+    `magda.pipeline.extract_offers` exakt dieselbe Vorhersage bekommt wie ein
+    Lauf über `data/predictions/` – dieselben Fenster, dieselbe Merge-Regel.
+    `images_dir` reicht nur für LayoutXLM (`spec.image`) an `WindowDataset`
+    durch; ohne Angabe bleibt es beim bisherigen `config.IMAGES_DIR`.
+    `on_windows_built(len(ds))` erlaubt `cli/predict.py` die frühere
+    Fortschrittszeile ("N Fenster über M Seiten") weiterzugeben, ohne das
+    Fenster-Dataset dafür ein zweites Mal zu bauen.
+    """
+    from transformers import Trainer
+
+    from magda.config import MAX_SEQ_LENGTH
+    from magda.dataset import dataset_for
+    from magda.windows import WindowDataset
+
+    if no_windows:
+        ds = dataset_for(spec, pages, tokenizer, MAX_SEQ_LENGTH)
+    else:
+        ds = WindowDataset(pages, tokenizer, MAX_SEQ_LENGTH, WINDOW_STRIDE, spec,
+                           images_dir=images_dir)
+        if on_windows_built is not None:
+            on_windows_built(len(ds))
+
+    logits = Trainer(model=model).predict(ds).predictions
+    if isinstance(logits, tuple):
+        logits = logits[0]
+    logits = np.asarray(logits)
+
+    results = []
+    for i, page in enumerate(pages):
+        if no_windows:
+            results.append(word_predictions(logits[i], ds.word_ids[i], len(page["words"])))
+        else:
+            windows = ds.windows_of(i)
+            results.append(
+                merge_windows(
+                    [logits[w] for w in windows],
+                    [ds.word_ids[w] for w in windows],
+                    len(page["words"]),
+                )
+            )
+    return results
+
+
 def write_pages(outputs: list[dict], target: Path) -> dict:
     """Schreibt je Seite eine Datei plus einen Index über den ganzen Lauf."""
     target.mkdir(parents=True, exist_ok=True)

@@ -15,6 +15,7 @@ import { api } from "@/lib/api"
 import { cn } from "@/lib/utils"
 import { PageList } from "@/features/inspector/page-list"
 import { LabelLegend } from "./label-legend"
+import { TaskBanner } from "./task-banner"
 import { applyLabel, removeRange, spanAt } from "./span-editor"
 import { useAnnotation } from "./use-annotation"
 
@@ -44,6 +45,7 @@ export function AnnotatePage() {
   const schema = useQuery({ queryKey: ["schema"], queryFn: api.schema })
   const pages = useQuery({ queryKey: ["pages"], queryFn: () => api.pages() })
   const gold = useQuery({ queryKey: ["gold"], queryFn: api.gold })
+  const task = useQuery({ queryKey: ["annotation-task"], queryFn: api.annotationTask })
   // Wer hat annotiert? Beim Durchsehen ist das die erste Frage: eigene
   // Seiten bestätigen heißt etwas anderes als Vorannotation prüfen.
   const annotatorFilter = searchParams.get("annotator") ?? undefined
@@ -83,6 +85,19 @@ export function AnnotatePage() {
     [visibleGold, catalog],
   )
   const idx = selected ? ids.indexOf(selected) : -1
+  const taskPages = useMemo(() => new Set(task.data?.pages ?? []), [task.data])
+  const taskCounts = useMemo(() => {
+    const counts = new Map<string, number>()
+    for (const id of taskPages) {
+      const c = id.split("_p")[0]
+      counts.set(c, (counts.get(c) ?? 0) + 1)
+    }
+    return counts
+  }, [taskPages])
+  const openTaskPage = (id: string) => {
+    setSel(null)
+    setSearchParams({ catalog: id.split("_p")[0], page: id })
+  }
 
   useEffect(() => {
     localStorage.setItem("magda.annotator", annotator)
@@ -149,6 +164,9 @@ export function AnnotatePage() {
             ]}
           />
         </div>
+        {task.data && (
+          <TaskBanner task={task.data} rows={gold.data ?? []} unit="Seiten mit Spans" onOpen={openTaskPage} />
+        )}
         <CatalogGrid
           tiles={tiles}
           unit="fertig"
@@ -158,6 +176,7 @@ export function AnnotatePage() {
             )
           }
           emptyHint={EMPTY_HINT}
+          taskCounts={taskCounts}
         />
       </div>
     )
@@ -239,12 +258,17 @@ export function AnnotatePage() {
         </div>
       </div>
 
+      {task.data && taskCounts.has(catalog) && (
+        <TaskBanner task={task.data} rows={gold.data ?? []} unit="Seiten mit Spans" onOpen={openTaskPage} />
+      )}
+
       <div className="grid min-w-0 gap-5 lg:grid-cols-[240px_minmax(0,1fr)_260px]">
         <PageList
           pages={catalogPages}
           selected={selected}
           onSelect={(id) => { setSel(null); setSearchParams({ catalog: catalog, page: id }) }}
           goldStatus={goldRows}
+          taskPages={taskPages}
         />
 
         <div className="min-w-0 space-y-3">

@@ -9,6 +9,9 @@ interface PageListProps {
   onSelect: (id: string) => void
   /** Wenn gesetzt, zeigt der Punkt den Gold-Status statt "gelabelt". */
   goldStatus?: GoldSummary[]
+  /** Seiten der Annotationsaufgabe – bekommen eine blaue Kante und stehen
+   * vor den übrigen Seiten des Katalogs, damit niemand sie suchen muss. */
+  taskPages?: Set<string>
 }
 
 /** Punktfarbe und Titel einer Seite im Gold-Modus. Ungültige Seiten (kaputte
@@ -22,7 +25,7 @@ function goldDot(gold: GoldSummary | undefined): { className: string; title: str
   return { className: "border border-muted-foreground", title: "unberührt" }
 }
 
-export function PageList({ pages, selected, onSelect, goldStatus }: PageListProps) {
+export function PageList({ pages, selected, onSelect, goldStatus, taskPages }: PageListProps) {
   const [query, setQuery] = useState("")
   const [filterOn, setFilterOn] = useState(false)
 
@@ -49,8 +52,17 @@ export function PageList({ pages, selected, onSelect, goldStatus }: PageListProp
     for (const p of filtered) {
       groups.set(p.catalog, [...(groups.get(p.catalog) ?? []), p])
     }
+    if (taskPages) {
+      // Stabil sortieren: Aufgabenseiten zuerst, innerhalb bleibt die Reihenfolge.
+      for (const [catalog, list] of groups) {
+        groups.set(catalog, [
+          ...list.filter((p) => taskPages.has(p.page_id)),
+          ...list.filter((p) => !taskPages.has(p.page_id)),
+        ])
+      }
+    }
     return [...groups.entries()]
-  }, [pages, query, filterOn, goldById, goldStatus])
+  }, [pages, query, filterOn, goldById, goldStatus, taskPages])
 
   const matchCount = pages.filter(matchesFilter).length
 
@@ -91,8 +103,10 @@ export function PageList({ pages, selected, onSelect, goldStatus }: PageListProp
                       selected === p.page_id
                         ? "border-foreground bg-accent font-semibold"
                         : "border-transparent hover:bg-accent",
+                      taskPages?.has(p.page_id) && "border-l-4 border-l-[var(--riso-blue)]",
                     )}
                     onClick={() => onSelect(p.page_id)}
+                    title={taskPages?.has(p.page_id) ? "Teil der Annotationsaufgabe" : undefined}
                   >
                     <span className="min-w-0 truncate font-mono text-[13px]">
                       {p.page_id.split("_")[1] ?? p.page_id}

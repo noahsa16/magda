@@ -1,0 +1,47 @@
+{
+  "encoder": "lilt",
+  "checkpoint": "/Users/noahsamel/PycharmProjects/magda/checkpoints/lilt/best",
+  "source": "sonnet-5",
+  "reference": "data/offer_groups/claude-sonnet-5",
+  "pages": 30,
+  "clusters": 210,
+  "holdout_pages": 10,
+  "pairs": 43872,
+  "positive": 4623,
+  "hidden": [
+    64,
+    32
+  ],
+  "variants": {
+    "geometrie (35)": {
+      "auc": 0.9647518744916914,
+      "pair_f1": 0.7786561264822134,
+      "threshold": 0.9,
+      "columns": 35
+    },
+    "+lexik (43)": {
+      "auc": 0.9561955665103107,
+      "pair_f1": 0.8013937282229966,
+      "threshold": 0.85,
+      "columns": 43
+    },
+    "lilt allein (1536)": {
+      "auc": 0.8519825694396196,
+      "pair_f1": 0.5028305028305028,
+      "threshold": 0.6,
+      "columns": 1536
+    },
+    "geometrie + lilt": {
+      "auc": 0.9622070680578709,
+      "pair_f1": 0.7729542835190164,
+      "threshold": 0.75,
+      "columns": 1571
+    },
+    "alles": {
+      "auc": 0.9605239727338474,
+      "pair_f1": 0.7642642642642644,
+      "threshold": 0.85,
+      "columns": 1579
+    }
+  }
+}

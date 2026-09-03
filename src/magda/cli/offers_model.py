@@ -97,13 +97,13 @@ def _cmd_train(args, parser):
     blocks = _blocks(args.features, parser)
     decoder = args.decoder or DEFAULT_TRAIN_DECODER
 
-    calibration = None
+    calibration, ilp_counters = None, None
     if args.folds > 1:
-        calibration = offer_model.calibrate(
+        calibration, ilp_counters = _count_capping(decoder, lambda: offer_model.calibrate(
             pages, reference.assignments, folds=args.folds,
             epochs=args.epochs, seed=args.seed, hidden=hidden,
             objective=args.objective, decoder=decoder, blocks=blocks,
-        )
+        ))
 
     model = offer_model.train(
         pages, reference.assignments, epochs=args.epochs, seed=args.seed,
@@ -142,10 +142,16 @@ def _cmd_train(args, parser):
         with open(curve_path, "w") as f:
             json.dump({"source": source, "splits": args.splits, "folds": args.folds,
                        "hidden": list(hidden), "epochs": args.epochs,
-                       **calibration}, f, indent=2, ensure_ascii=False)
+                       "ilp": ilp_counters, **calibration}, f, indent=2,
+                      ensure_ascii=False)
 
         print(f"Schwelle out-of-fold ueber {calibration['pages']} Seiten "
               f"(Kriterium {calibration['objective']}): {calibration['threshold']}")
+        if ilp_counters and ilp_counters["capped"]:
+            print(f"  Achtung: {ilp_counters['capped']} von "
+                  f"{ilp_counters['components']} Komponenten gekappt "
+                  f"(groesste {ilp_counters['largest_capped']} Entities). "
+                  f"Dort ist die Kurve Union-Find, kein ILP.")
         print()
         print(f"  {'Kriterium':<12} {'Schwelle':>9} {'Paar-F1':>9} {'Gruppen-F1':>11} {'Angebote':>9}")
         for name, row in (("Paar-F1", calibration["best_pair_f1"]),
@@ -165,6 +171,62 @@ def _cmd_train(args, parser):
     print(f"Checkpoint: {path}")
 
 
+def _entity_chain(args, pages, reference) -> dict | None:
+    """Wie viel der Gruppierungsaufgabe die erste Stufe ueberhaupt stehen laesst.
+
+    Nur auf Vorhersagen sinnvoll: misst man auf den Labels des Lehrers,
+    *sind* die Entities die der Referenz und jede Zahl hier waere 1.000 per
+    Konstruktion.
+
+    Zwei Zahlen, und die zweite ist die wichtigere. Entity-F1 sagt, wie
+    viele Entities der Schueler findet. Die Zahl der ueberlebenden
+    Referenzpaare sagt, wie viel *Aufgabe* danach noch da ist - und sie
+    faellt schneller, weil ein fehlendes Entity alle seine Paare mitnimmt.
+    Gemessen am 10.08.2026 auf Dev: 0.982 der Entities, aber nur 0.929 der
+    Referenzpaare. Ohne die zweite Zahl liest man einen kleineren Nenner
+    als Verbesserung - genau der Fehler, den `offers-gold` mit "die
+    Entity-Grundmenge kommt aus der Seite" sonst verhindert. Hier kann er
+    das nicht, denn die *Seite* ist in diesem Lauf die Vorhersagedatei.
+
+    Berichtet wird `strict` (Span und Typ exakt), die Primaerzahl aller
+    Entity-Messungen des Projekts - die drei nachsichtigeren Schemata
+    ergaeben hoehere Werte fuer dieselbe Ausgabe.
+    """
+    if not args.predictions:
+        return None
+
+    from magda import matching
+    from magda.labels import bio_to_spans
+
+    source = args.labels_from or config.CANONICAL_LABELS
+    if not config.labeled_dir(source).is_dir():
+        return None
+    wanted = {page["page_id"] for page in pages}
+    teacher = [page for page in _load_labeled_pages(source)
+               if page.get("page_id") in wanted
+               and page["page_id"] in reference.assignments]
+    if not teacher:
+        return None
+
+    predicted = {page["page_id"]: page for page in pages}
+    counts = matching.Counts()
+    for page in teacher:
+        page_counts = matching.count_page(
+            bio_to_spans(page["tags"]),
+            bio_to_spans(predicted[page["page_id"]]["tags"]),
+        )["strict"]
+        for field in ("correct", "incorrect", "partial", "missing", "spurious"):
+            setattr(counts, field, getattr(counts, field) + getattr(page_counts, field))
+
+    return {
+        "labels": source,
+        "entity": counts.scores(),
+        # Dieselbe Referenz, andere Entity-Quelle: die Differenz der
+        # Referenzpaare ist genau der Teil der Aufgabe, der verschwindet.
+        "ref_pairs_teacher": offers_gold.collect(teacher, reference).ref_pairs,
+    }
+
+
 def _cmd_eval(args, parser):
     from magda import offer_model, offers_verify
     from magda.offers import cluster_page
@@ -182,10 +244,18 @@ def _cmd_eval(args, parser):
     def grouping(page):
         return offers_gold.offers_from_reference(page, _assignment(model, page, threshold))
 
-    agreement = offers_gold.collect(pages, reference, grouping=grouping)
+    # Die Kappung des ILP gehoert in den Report, nicht nur in `offers-grid`:
+    # Wo sie greift, ist das Ergebnis Union-Find, und eine Zahl ohne diese
+    # Angabe sieht aus wie ein ILP-Ergebnis, ohne eines zu sein. Gezaehlt
+    # wird genau der eine Dekodierdurchlauf von `agreement` - `verdict`
+    # dekodiert dieselben Seiten noch einmal und wuerde sonst doppelt zaehlen.
+    capping = _count_capping(model.decoder, lambda: offers_gold.collect(
+        pages, reference, grouping=grouping))
+    agreement, ilp_counters = capping
     verdict = offers_verify.collect(
         pages, {p["page_id"]: _assignment(model, p, threshold) for p in pages}
     )
+    chain = _entity_chain(args, pages, reference)
     heuristic = offers_gold.collect(pages, reference)
     # Dieselbe Gegenprobe fuer die Heuristik, sonst stuende die Genauigkeit
     # des Modells ohne Massstab da. Achtung beim Lesen: `cluster_page` ordnet
@@ -208,6 +278,8 @@ def _cmd_eval(args, parser):
         "decoder": model.decoder,
         "checkpoint": str(args.checkpoint),
         "model_provenance": model.provenance,
+        "ilp": ilp_counters,
+        "chain": chain,
         "agreement": agreement.to_dict(),
         "heuristic": heuristic.to_dict(),
         "arithmetic": verdict.to_dict(),
@@ -215,6 +287,11 @@ def _cmd_eval(args, parser):
     }
     config.EVAL_DIR.mkdir(parents=True, exist_ok=True)
     suffix = "" if model.decoder == "union" else f"_{model.decoder}"
+    # Die Entity-Quelle gehoert in den Dateinamen. Ohne sie ueberschreibt
+    # ein Lauf auf Vorhersagen den auf Lehrer-Entities - zwei Zahlen zu
+    # verschiedenen Fragen unter einem Namen, und die aeltere ist weg.
+    if args.predictions:
+        suffix += f"_pred-{config.model_slug(args.predictions)}"
     out_path = config.EVAL_DIR / (
         f"offers_model_{args.splits.replace(',', '-')}{suffix}.json")
     with open(out_path, "w") as f:
@@ -225,7 +302,25 @@ def _cmd_eval(args, parser):
 
     print(f"Splits: {args.splits}   Seiten: {agreement.pages}   "
           f"Schwelle: {threshold}   Dekoder: {model.decoder}")
+    if ilp_counters:
+        print(f"ILP: {ilp_counters['optimised']} Komponenten optimiert, "
+              f"{ilp_counters['capped']} gekappt"
+              + (f" (groesste {ilp_counters['largest_capped']} Entities - dort"
+                 f" ist das Ergebnis Union-Find)" if ilp_counters["capped"] else ""))
     print(f"Lehrer: data/offer_groups/{config.model_slug(args.reference_from)}")
+    if chain:
+        survived = (agreement.ref_pairs / chain["ref_pairs_teacher"]
+                    if chain["ref_pairs_teacher"] else None)
+        print()
+        print(f"Kette Stufe 1 -> Stufe 2 (Entities aus {args.predictions}, "
+              f"Referenz {chain['labels']}):")
+        print(f"  Entity-F1 (strict)  {chain['entity']['f1']:.3f}   "
+              f"{chain['entity']['correct']} von {chain['entity']['possible']}")
+        print(f"  Referenzpaare       {_rate(survived)}   "
+              f"{agreement.ref_pairs} von {chain['ref_pairs_teacher']}")
+        print("  Was Stufe 1 nicht findet, kann Stufe 2 nicht gruppieren - die")
+        print("  Zahlen unten stehen deshalb auf dem kleineren Nenner. Eine")
+        print("  hoehere Quote darauf ist keine bessere Gruppierung.")
     print()
     print("Uebereinstimmung mit dem Lehrer (andere Seiten als im Training):")
     print(f"  {'':<12} {'Paar-F1':>10} {'Gruppen-F1':>12} {'Angebote':>10}")
@@ -384,6 +479,21 @@ def _cmd_variants(args, parser):
     print("    verschenkt der Dekoder sie: ein Variantenblock ist ein Stern um")
     print("    den Produktnamen, die Transitivitaet des ILP verlangt eine Clique.")
     print(f"\nReport: {out_path}")
+
+
+def _count_capping(decoder: str, run):
+    """Einen Dekodierdurchlauf ausfuehren und die ILP-Kappung dazu zaehlen.
+
+    Zuruecksetzen und Ablesen gehoeren zusammen: `LAST_RUN` ist Modulzustand
+    und akkumuliert sonst ueber mehrere Durchlaeufe derselben Seiten hinweg.
+    """
+    if decoder != "ilp":
+        return run(), None
+    from magda import offer_ilp
+
+    offer_ilp.reset_counters()
+    result = run()
+    return result, dict(offer_ilp.LAST_RUN)
 
 
 def _assignment(model, page: dict, threshold: float) -> dict[int, int]:

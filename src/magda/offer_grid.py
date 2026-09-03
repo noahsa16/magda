@@ -42,6 +42,8 @@ VARIANTS: dict[str, tuple[str, ...]] = {
     "farbe": ("types", "geometry_base", "color"),
     "beide": offer_pairs.ALL_BLOCKS,
     "anker": offer_pairs.ANCHOR_BLOCKS,
+    "lexik": offer_pairs.LEXICAL_BLOCKS,
+    "anker+lexik": offer_pairs.ANCHOR_LEXICAL_BLOCKS,
 }
 
 # Duplikat-Cluster, ueber die das Bootstrap resampelt - dieselbe Schwelle,

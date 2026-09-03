@@ -1,5 +1,6 @@
 import type { RouteObject } from "react-router-dom"
 import { ControlPage } from "@/features/control/control-page"
+import { DemoPage } from "@/features/demo/demo-page"
 import { EvaluationPage } from "@/features/evaluation/evaluation-page"
 import { BrowsePage } from "@/features/browse/browse-page"
 import { InspectorPage } from "@/features/inspector/inspector-page"
@@ -25,6 +26,9 @@ export const routes: RouteObject[] = [
       { path: "/group", element: <GroupPage /> },
       { path: "/audit", element: <AuditPage /> },
       { path: "/evaluation", element: <EvaluationPage /> },
+      // Ein fremdes PDF ohne den Umweg über data/ - magda.pipeline.extract_offers
+      // statt der versionierten Ernte-/Label-Pipeline.
+      { path: "/demo", element: <DemoPage /> },
     ],
   },
 ]

@@ -18,7 +18,9 @@ import { EvaluationEmptyState } from "./empty-state"
 import { ProtocolCard } from "./protocol-card"
 import { SchemeCard } from "./scheme-card"
 import {
-  type MetricKey, type Row, overallF1, perEntityRows, significanceFor, sortRows,
+  type MetricKey, type Row, overallF1, perEntityRows, reportsOfOneSplit,
+  restrictedArms, significanceFor, sortRows, variantLabel, variantPairs,
+  variantsOf,
 } from "./transform"
 
 const METRIC_LABELS: Record<MetricKey, string> = {
@@ -27,14 +29,51 @@ const METRIC_LABELS: Record<MetricKey, string> = {
   recall: "Recall",
 }
 
-const GBERT_TONE = "#8E97A8"
-const LAYOUT_TONE = "#2951E8"
+/**
+ * Kategoriale Palette, feste Zuordnung je Arm – nie nach Rang vergeben.
+ *
+ * Die Slots stehen in der Reihenfolge der Hausvorgabe (blau, orange, aqua,
+ * gelb) und sind mit dem Paletten-Validator geprüft: hell wie dunkel bestehen
+ * alle Checks, schlechteste benachbarte CVD-Trennung ΔE 9.1 (Ziel ≥ 8).
+ *
+ * Aqua und Gelb liegen auf hellem Grund unter 3:1 Kontrast. Das ist zulässig,
+ * solange die Zahlen auch als Text dastehen – die Tabelle direkt unter dem
+ * Diagramm ist genau diese Absicherung und darf deshalb nicht daraus
+ * verschwinden.
+ */
+const VARIANT_TONES: Record<string, string> = {
+  gbert: "#2a78d6",
+  xlmr: "#eb6834",
+  lilt: "#1baf7a",
+  layoutxlm: "#eda100",
+}
+const FALLBACK_TONE = "#8E97A8"
+const toneOf = (variant: string) => VARIANT_TONES[variant] ?? FALLBACK_TONE
+
+/** Was der Arm sieht – die Kachel ohne das ist nur eine Zahl. */
+const INGREDIENTS: Record<string, string> = {
+  gbert: "nur Text · deutscher Encoder",
+  xlmr: "nur Text · XLM-R",
+  lilt: "Text + Layout",
+  layoutxlm: "Text + Layout + Bild",
+}
+
+/**
+ * Wofür ein Kettenschritt steht. Nur benachbarte Schritte tragen eine Frage:
+ * zwischen ihnen liegt genau eine Zutat, und nur dann ist die Differenz einer
+ * Ursache zuschreibbar.
+ */
+const PAIR_QUESTIONS: Record<string, string> = {
+  "xlmr→lilt": "was bringt Layout?",
+  "lilt→layoutxlm": "was bringt das Bild?",
+}
 
 const fmt = (v: number | null | undefined) => (v == null ? "–" : v.toFixed(3))
 const signed = (v: number | undefined) =>
   v == null ? "–" : `${v >= 0 ? "+" : ""}${v.toFixed(3)}`
 
-type SortKey = "entity" | "gbert" | "layoutxlm" | "support" | "delta"
+/** `entity`, `support`, `delta` – oder der Name eines Arms. */
+type SortKey = string
 
 export function EvaluationPage() {
   const [metric, setMetric] = useState<MetricKey>("f1-score")
@@ -43,6 +82,10 @@ export function EvaluationPage() {
     key: "support",
     descending: true,
   })
+
+  // Welches Paar verglichen wird. Index statt Namen, damit die Auswahl nicht
+  // ins Leere zeigt, wenn ein Arm noch nicht ausgewertet ist.
+  const [pairIndex, setPairIndex] = useState(0)
 
   const { data, isPending } = useQuery({ queryKey: ["evaluation"], queryFn: api.evaluation })
   // Der Vergleich liegt in einer eigenen Datei und fällt in /api/evaluation
@@ -60,13 +103,24 @@ export function EvaluationPage() {
     )
   }
 
-  const gbert = overallF1(data, "gbert", protocol)
-  const layoutxlm = overallF1(data, "layoutxlm", protocol)
-  const missing = layoutxlm == null || gbert == null
-  const paired = significanceFor(significance.data, "gbert", "layoutxlm")
+  // Eingeschraenkte Reports (Flair misst nur BRAND) gehoeren in keine Spalte
+  // dieser Seite: ihr micro-F1 beantwortet eine andere Frage. Genannt werden
+  // sie trotzdem, sonst verschwinden sie stillschweigend aus dem Projekt.
+  const restricted = restrictedArms(data)
+  // Genau ein Split und je Variante genau ein Report: data/eval/ ist ein
+  // Archiv mehrerer Laeufe, und zwei Reports derselben Variante ueberschreiben
+  // einander sonst still in derselben Spalte.
+  const comparable = reportsOfOneSplit(data.filter((r) => !r.restricted_to?.length))
 
-  const rows = sortRows(perEntityRows(data, metric, protocol), sort.key, sort.descending)
-  const reference = data[0]
+  const variants = variantsOf(comparable)
+  const pairs = variantPairs(variants)
+  const pair = pairs[Math.min(pairIndex, pairs.length - 1)]
+  const alone = variants.length < 2
+  const paired = pair ? significanceFor(significance.data, pair[0], pair[1]) : null
+
+  const rows = sortRows(
+    perEntityRows(comparable, metric, protocol, pair), sort.key, sort.descending)
+  const reference = comparable[0] ?? data[0]
 
   const toggleSort = (key: SortKey) =>
     setSort((s) => ({ key, descending: s.key === key ? !s.descending : true }))
@@ -89,23 +143,45 @@ export function EvaluationPage() {
       </p>
 
       <ResultCard
-        gbert={gbert}
-        layoutxlm={layoutxlm}
+        variants={variants}
+    f1={Object.fromEntries(
+          variants.map((v) => [v, overallF1(comparable, v, protocol)]),
+        )}
+        pairs={pairs}
+        pairIndex={Math.min(pairIndex, Math.max(pairs.length - 1, 0))}
+        onPairChange={setPairIndex}
         paired={paired}
         pending={significance.isPending}
       />
 
-      {missing && (
+      {alone && (
         <p className="rounded-md border-2 border-dashed border-foreground/30 px-4 py-3 text-sm text-muted-foreground">
-          Erst ein Modell ausgewertet – der Vergleich braucht beide. Die fehlende Variante
-          startest du auf der{" "}
+          Erst ein Modell ausgewertet – der Vergleich braucht mindestens zwei. Die
+          fehlenden Varianten startest du auf der{" "}
           <Link to="/" className="font-medium underline underline-offset-2">Übersicht</Link>.
         </p>
       )}
 
-      <SchemeCard reports={data} />
+      {restricted.length > 0 && (
+        <p className="rounded-md border-l-4 border-foreground/40 bg-muted/40 px-4 py-3 text-sm text-muted-foreground">
+          Nicht in der Tabelle:{" "}
+          {restricted.map((r, i) => (
+            <span key={r.variant}>
+              {i > 0 && ", "}
+              <span className="font-mono text-xs">{r.variant}</span> (nur{" "}
+              {r.labels.join(", ")})
+            </span>
+          ))}
+          . Ein Arm, der nur einen Teil der Labels kennt, hat ein micro-F1 über
+          eine andere Grundmenge – nebeneinandergestellt läse es sich wie ein
+          schlechteres Modell statt wie eine andere Frage. Der Report liegt in{" "}
+          <span className="font-mono text-xs">data/eval/</span>.
+        </p>
+      )}
 
-      <ProtocolCard reports={data} protocol={protocol} onProtocolChange={setProtocol} />
+      <SchemeCard reports={comparable} />
+
+      <ProtocolCard reports={comparable} protocol={protocol} onProtocolChange={setProtocol} />
 
       <Card className="border-2 border-foreground">
         <CardHeader className="flex-row flex-wrap items-center justify-between gap-3">
@@ -136,13 +212,27 @@ export function EvaluationPage() {
                   }}
                 />
                 <Legend />
-                <Bar dataKey="gbert" name="GBERT" fill={GBERT_TONE} radius={[2, 2, 0, 0]} />
-                <Bar dataKey="layoutxlm" name="LayoutXLM" fill={LAYOUT_TONE} radius={[2, 2, 0, 0]} />
+                {variants.map((v) => (
+                  <Bar
+                    key={v}
+                    dataKey={`values.${v}`}
+                    name={variantLabel(v)}
+                    fill={toneOf(v)}
+                    radius={[2, 2, 0, 0]}
+                  />
+                ))}
               </BarChart>
             </ResponsiveContainer>
           </div>
 
-          <EntityTable rows={rows} metric={metric} sort={sort} onSort={toggleSort} />
+          <EntityTable
+            rows={rows}
+            variants={variants}
+            pair={pair}
+            metric={metric}
+            sort={sort}
+            onSort={toggleSort}
+          />
 
           <p className="text-xs text-muted-foreground">
             Support ist die Zahl der Referenz-Instanzen. Bei kleinem Support bewegt eine
@@ -155,55 +245,93 @@ export function EvaluationPage() {
   )
 }
 
-/** Das Ergebnis des Projekts: zwei Schätzer und die Frage, ob sie sich unterscheiden. */
+/**
+ * Das Ergebnis des Projekts: die Schätzer aller Arme und die Frage, ob sich
+ * zwei davon unterscheiden.
+ *
+ * Verglichen wird immer nur ein *Paar*. Vier Kacheln nebeneinander laden dazu
+ * ein, die höchste Zahl zum Sieger zu erklären; die Frage, die das Projekt
+ * beantworten will, ist aber jedes Mal eine Differenz mit Intervall – und die
+ * gibt es nur paarweise, gebootstrappt über dieselben Cluster.
+ */
 function ResultCard({
-  gbert, layoutxlm, paired, pending,
+  variants, f1, pairs, pairIndex, onPairChange, paired, pending,
 }: {
-  gbert: number | null
-  layoutxlm: number | null
+  variants: string[]
+  f1: Record<string, number | null>
+  pairs: [string, string][]
+  pairIndex: number
+  onPairChange: (index: number) => void
   paired: ReturnType<typeof significanceFor>
   pending: boolean
 }) {
+  const pair = pairs[pairIndex]
   return (
     <Card className="border-2 border-foreground">
       <CardHeader>
         <CardTitle className="font-bold">Bringt Layout etwas?</CardTitle>
       </CardHeader>
       <CardContent className="space-y-5">
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div className="plate rounded-lg border-2 border-foreground bg-card p-4">
-            <p className="font-mono text-[11px] uppercase tracking-widest text-muted-foreground">
-              GBERT · nur Text
-            </p>
-            <p className="mt-1 text-4xl font-extrabold tabular-nums">{fmt(gbert)}</p>
-          </div>
-          <div className="plate rounded-lg border-2 border-foreground bg-card p-4">
-            <p className="font-mono text-[11px] uppercase tracking-widest text-muted-foreground">
-              LayoutXLM · Text + Layout
-            </p>
-            <p className="mt-1 text-4xl font-extrabold tabular-nums">{fmt(layoutxlm)}</p>
-          </div>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {variants.map((v) => (
+            <div
+              key={v}
+              className="plate rounded-lg border-2 border-foreground bg-card p-4"
+            >
+              <p className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-widest text-muted-foreground">
+                <span
+                  aria-hidden
+                  className="inline-block h-2.5 w-2.5 shrink-0 rounded-[2px]"
+                  style={{ backgroundColor: toneOf(v) }}
+                />
+                {variantLabel(v)}
+              </p>
+              <p className="mt-0.5 text-[11px] text-muted-foreground">{INGREDIENTS[v] ?? ""}</p>
+              <p className="mt-1 text-4xl font-extrabold tabular-nums">{fmt(f1[v])}</p>
+            </div>
+          ))}
         </div>
+
+        {pairs.length > 1 && (
+          <div className="space-y-2">
+            <p className="font-mono text-[11px] uppercase tracking-widest text-muted-foreground">
+              Vergleich
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {pairs.map(([a, b], i) => (
+                <button
+                  key={`${a}-${b}`}
+                  type="button"
+                  onClick={() => onPairChange(i)}
+                  aria-pressed={i === pairIndex}
+                  className={`rounded-md border-2 px-3 py-1.5 text-xs font-medium transition-colors ${
+                    i === pairIndex
+                      ? "border-foreground bg-foreground text-background"
+                      : "border-foreground/30 hover:border-foreground"
+                  }`}
+                >
+                  {variantLabel(a)} → {variantLabel(b)}
+                  {PAIR_QUESTIONS[`${a}→${b}`] && (
+                    <span className="ml-2 font-normal opacity-70">
+                      {PAIR_QUESTIONS[`${a}→${b}`]}
+                    </span>
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {paired ? (
           <>
             <ModelIntervals
-              estimates={[
-                {
-                  name: "gbert",
-                  label: "GBERT",
-                  f1: paired.per_model.gbert.f1,
-                  ci95: paired.per_model.gbert.ci95,
-                  tone: "bg-slate-400",
-                },
-                {
-                  name: "layoutxlm",
-                  label: "LayoutXLM",
-                  f1: paired.per_model.layoutxlm.f1,
-                  ci95: paired.per_model.layoutxlm.ci95,
-                  tone: "bg-primary",
-                },
-              ]}
+              estimates={(pair ?? []).map((v) => ({
+                name: v,
+                label: variantLabel(v),
+                f1: paired.per_model[v].f1,
+                ci95: paired.per_model[v].ci95,
+                tone: toneOf(v),
+              }))}
             />
             <DifferencePlot
               difference={paired.paired.difference}
@@ -231,9 +359,9 @@ function ResultCard({
             {pending
               ? "Konfidenzintervall wird geladen …"
               : "Kein Konfidenzintervall vorhanden. Eine Differenz ohne Intervall behauptet mehr, als die Daten hergeben – "}
-            {!pending && (
+            {!pending && pair && (
               <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">
-                magda significance --labels-from sonnet-5
+                magda significance --compare {pair[0]} {pair[1]} --labels-from sonnet-5
               </code>
             )}
           </p>
@@ -244,9 +372,11 @@ function ResultCard({
 }
 
 function EntityTable({
-  rows, metric, sort, onSort,
+  rows, variants, pair, metric, sort, onSort,
 }: {
   rows: Row[]
+  variants: string[]
+  pair: [string, string] | undefined
   metric: MetricKey
   sort: { key: SortKey; descending: boolean }
   onSort: (key: SortKey) => void
@@ -268,9 +398,10 @@ function EntityTable({
         <TableHeader>
           <TableRow>
             {head("entity", "Entity", "text-left")}
-            {head("gbert", `GBERT ${METRIC_LABELS[metric]}`)}
-            {head("layoutxlm", `LayoutXLM ${METRIC_LABELS[metric]}`)}
-            {head("delta", "Δ")}
+            {variants.map((v) => head(v, `${variantLabel(v)} ${METRIC_LABELS[metric]}`))}
+            {/* Δ nennt sein Paar: mit vier Spalten ist sonst nicht ablesbar,
+                welche zwei voneinander abgezogen wurden. */}
+            {head("delta", pair ? `Δ ${variantLabel(pair[0])}→${variantLabel(pair[1])}` : "Δ")}
             {head("support", "Support")}
           </TableRow>
         </TableHeader>
@@ -287,8 +418,11 @@ function EntityTable({
                   </Badge>
                 )}
               </TableCell>
-              <TableCell className="text-right tabular-nums">{fmt(row.gbert)}</TableCell>
-              <TableCell className="text-right tabular-nums">{fmt(row.layoutxlm)}</TableCell>
+              {variants.map((v) => (
+                <TableCell key={v} className="text-right tabular-nums">
+                  {fmt(row.values[v])}
+                </TableCell>
+              ))}
               <TableCell
                 className={`text-right font-mono text-xs tabular-nums ${
                   row.delta == null ? "text-muted-foreground" : ""

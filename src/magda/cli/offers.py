@@ -5,6 +5,9 @@ Aufruf:
     magda offers --source layoutxlm-test
     magda offers --predictions gbert
     magda offers --db data/offers/offers.sqlite
+    magda offers --grouper heuristic
+    magda offers --grouper pair-model --checkpoint checkpoints/offer_pairs/model.pt
+    magda offers --grouper pair-model --limit 20   # Probelauf, ILP kostet Zeit je Seite
 
 Quelle ist standardmaessig ein Labelordner unter data/labeled/ (words[] mit
 bbox und tags[] als BIO-Folge). Mit --predictions wird stattdessen
@@ -12,6 +15,13 @@ data/predictions/<variante>/ gelesen, das Ausgabeformat von `magda predict`:
 Labels stehen dort direkt am Wort statt als BIO-Folge, dazu liegen die Spans
 schon als entities[] vor. _load_predicted_pages baut daraus tags[], damit
 cluster_page beide Quellen gleich behandelt.
+
+`--grouper` waehlt das Verfahren, das Entities zu Angeboten zusammenfasst.
+Default ist `pair-model`: das gelernte Paarmodell erreicht Gruppen-F1 0.821
+gegen 0.524 der Heuristik (Stand 30.08.2026, siehe CLAUDE.md). Fehlt der
+Checkpoint, bricht der Lauf mit einer klaren Meldung ab statt still auf die
+Heuristik zurueckzufallen - eine andere Gruppierung als die gewaehlte
+still auszuliefern waere schlimmer als ein Abbruch.
 """
 
 import argparse
@@ -23,6 +33,8 @@ from magda.labels import spans_to_bio
 
 
 DEFAULT_DB = config.DATA_DIR / "offers" / "offers.sqlite"
+DEFAULT_CHECKPOINT = config.PROJECT_ROOT / "checkpoints" / "offer_pairs" / "model.pt"
+GROUPERS = ("heuristic", "pair-model")
 
 
 def _load_labeled_pages(source: str) -> list[dict]:
@@ -52,6 +64,29 @@ def _load_predicted_pages(variant: str) -> list[dict]:
     return pages
 
 
+def _pair_model_grouping(checkpoint_path, parser):
+    """Laedt den Checkpoint und baut die Gruppierungsfunktion daraus.
+
+    Bricht sofort ab, wenn der Checkpoint fehlt - eine falsche Gruppierung
+    still als Ergebnis der Heuristik auszugeben waere schlimmer als ein
+    klarer Abbruch. `offer_model` importiert torch nur bei Bedarf, deshalb
+    erst hier und nicht am Modulkopf. Der eigentliche Aufbau der
+    Gruppierungsfunktion steht in `offers.pair_model_grouping` - dieselbe
+    Stelle, die auch `magda.pipeline.extract_offers` benutzt.
+    """
+    from magda import offer_model
+
+    checkpoint_path = Path(checkpoint_path)
+    if not checkpoint_path.is_file():
+        parser.exit(
+            1,
+            f"Checkpoint fehlt: {checkpoint_path}. Erst `magda offers-model train` "
+            "laufen lassen oder --checkpoint auf einen vorhandenen Pfad zeigen.\n",
+        )
+    model = offer_model.load(checkpoint_path)
+    return offers.pair_model_grouping(model)
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--source", default=None,
@@ -60,7 +95,21 @@ def main(argv=None):
                         help="Variante unter data/predictions/ statt data/labeled/ (z.B. gbert)")
     parser.add_argument("--db", default=str(DEFAULT_DB),
                         help="SQLite-Zieldatei")
+    parser.add_argument("--grouper", choices=GROUPERS, default="pair-model",
+                        help="Wie Entities zu Angeboten werden. Default pair-model "
+                             "(Gruppen-F1 0.821 gegen 0.524 der Heuristik)")
+    parser.add_argument("--checkpoint", default=str(DEFAULT_CHECKPOINT),
+                        help="Paarmodell-Checkpoint fuer --grouper pair-model")
+    parser.add_argument("--limit", type=int, default=None,
+                        help="Nur so viele Seiten (Probelauf). Das ILP kann je Seite "
+                             "Sekunden bis Minuten brauchen - ohne Limit laeuft ein "
+                             "Probelauf ueber die ganze Quelle mit.")
     args = parser.parse_args(argv)
+
+    grouping = (
+        offers.cluster_page if args.grouper == "heuristic"
+        else _pair_model_grouping(args.checkpoint, parser)
+    )
 
     if args.predictions:
         source = args.predictions
@@ -80,9 +129,14 @@ def main(argv=None):
         if not pages:
             parser.exit(1, f"Keine gelabelten Seiten in {config.labeled_dir(source)} gefunden.\n")
 
-    stats = offers.write_sqlite(pages, db_path=Path(args.db), source=source)
+    if args.limit is not None:
+        pages = pages[: args.limit]
+
+    stats = offers.write_sqlite(
+        pages, db_path=Path(args.db), source=source, grouping=grouping, grouper=args.grouper
+    )
     print(
         f"{stats['offers']} Angebote aus {stats['entities']} Entities "
-        f"auf {stats['pages']} Seiten geschrieben."
+        f"auf {stats['pages']} Seiten geschrieben (Gruppierung: {args.grouper})."
     )
     print(f"DB: {args.db}")

@@ -1,0 +1,692 @@
+{
+  "source": "sonnet-5",
+  "source_kind": "labels",
+  "train_source": "sonnet-5",
+  "reference": "data/offer_groups/claude-sonnet-5",
+  "provenance": [
+    "llm"
+  ],
+  "train_splits": "train",
+  "splits": "dev",
+  "cross_validated": false,
+  "decoders": [
+    "ilp"
+  ],
+  "objective": "group_f1",
+  "train_pages": 494,
+  "eval_pages": 56,
+  "eval_clusters": 25,
+  "variants": {
+    "basis": {
+      "blocks": [
+        "types",
+        "geometry_base"
+      ],
+      "decoder": "ilp",
+      "features": 30,
+      "threshold": 0.68,
+      "seconds": 6734.6,
+      "total": {
+        "ref_pairs": 7351,
+        "sys_pairs": 7393,
+        "shared_pairs": 6767,
+        "ref_groups": 422,
+        "sys_groups": 453,
+        "exact_groups": 307,
+        "pair_f1": 0.917932718393923,
+        "group_f1": 0.7017142857142857,
+        "pair_ci": {
+          "clusters": 25,
+          "low": 0.8819809625241297,
+          "high": 0.9462779339943762
+        },
+        "group_ci": {
+          "clusters": 25,
+          "low": 0.5829338446788112,
+          "high": 0.8237037037037037
+        }
+      },
+      "blind": {
+        "ref_pairs": 1440,
+        "sys_pairs": 1288,
+        "shared_pairs": 1127,
+        "ref_groups": 154,
+        "sys_groups": 181,
+        "exact_groups": 80,
+        "pair_f1": 0.8262463343108504,
+        "group_f1": 0.4776119402985074,
+        "pair_ci": {
+          "clusters": 25,
+          "low": 0.7829218106995884,
+          "high": 0.9170344218887909
+        },
+        "group_ci": {
+          "clusters": 25,
+          "low": 0.37333333333333335,
+          "high": 0.6875
+        }
+      },
+      "checkable": {
+        "ref_pairs": 5911,
+        "sys_pairs": 6105,
+        "shared_pairs": 5640,
+        "ref_groups": 268,
+        "sys_groups": 272,
+        "exact_groups": 227,
+        "pair_f1": 0.9387483355525965,
+        "group_f1": 0.8407407407407408,
+        "pair_ci": {
+          "clusters": 25,
+          "low": 0.9098232848232848,
+          "high": 0.9601409648803014
+        },
+        "group_ci": {
+          "clusters": 25,
+          "low": 0.7616822429906542,
+          "high": 0.9066213921901528
+        }
+      },
+      "ilp": {
+        "components": 72255,
+        "optimised": 50893,
+        "capped": 0,
+        "largest_capped": 0
+      }
+    },
+    "geometrie": {
+      "blocks": [
+        "types",
+        "geometry_base",
+        "geometry_plus"
+      ],
+      "decoder": "ilp",
+      "features": 35,
+      "threshold": 0.68,
+      "seconds": 2311.3,
+      "total": {
+        "ref_pairs": 7351,
+        "sys_pairs": 7553,
+        "shared_pairs": 6925,
+        "ref_groups": 422,
+        "sys_groups": 429,
+        "exact_groups": 331,
+        "pair_f1": 0.9292807300053678,
+        "group_f1": 0.7779083431257344,
+        "pair_ci": {
+          "clusters": 25,
+          "low": 0.9022215015404572,
+          "high": 0.9519326614242993
+        },
+        "group_ci": {
+          "clusters": 25,
+          "low": 0.6876310272536688,
+          "high": 0.8655569782330346
+        }
+      },
+      "blind": {
+        "ref_pairs": 1440,
+        "sys_pairs": 1468,
+        "shared_pairs": 1283,
+        "ref_groups": 154,
+        "sys_groups": 158,
+        "exact_groups": 102,
+        "pair_f1": 0.8823933975240715,
+        "group_f1": 0.6538461538461539,
+        "pair_ci": {
+          "clusters": 25,
+          "low": 0.8407891080855793,
+          "high": 0.9639097744360903
+        },
+        "group_ci": {
+          "clusters": 25,
+          "low": 0.5477031802120141,
+          "high": 0.8527131782945736
+        }
+      },
+      "checkable": {
+        "ref_pairs": 5911,
+        "sys_pairs": 6085,
+        "shared_pairs": 5642,
+        "ref_groups": 268,
+        "sys_groups": 271,
+        "exact_groups": 229,
+        "pair_f1": 0.9406468822940981,
+        "group_f1": 0.8497217068645639,
+        "pair_ci": {
+          "clusters": 25,
+          "low": 0.9163722025912838,
+          "high": 0.9611127729584207
+        },
+        "group_ci": {
+          "clusters": 25,
+          "low": 0.7791411042944786,
+          "high": 0.910941475826972
+        }
+      },
+      "ilp": {
+        "components": 64911,
+        "optimised": 47284,
+        "capped": 0,
+        "largest_capped": 0
+      }
+    },
+    "farbe": {
+      "blocks": [
+        "types",
+        "geometry_base",
+        "color"
+      ],
+      "decoder": "ilp",
+      "features": 34,
+      "threshold": 0.7,
+      "seconds": 3494.3,
+      "total": {
+        "ref_pairs": 7351,
+        "sys_pairs": 7221,
+        "shared_pairs": 6795,
+        "ref_groups": 422,
+        "sys_groups": 450,
+        "exact_groups": 325,
+        "pair_f1": 0.9326104858632995,
+        "group_f1": 0.7454128440366973,
+        "pair_ci": {
+          "clusters": 25,
+          "low": 0.8940172597692233,
+          "high": 0.9652820830750155
+        },
+        "group_ci": {
+          "clusters": 25,
+          "low": 0.6311475409836066,
+          "high": 0.862710363153233
+        }
+      },
+      "blind": {
+        "ref_pairs": 1440,
+        "sys_pairs": 1278,
+        "shared_pairs": 1143,
+        "ref_groups": 154,
+        "sys_groups": 177,
+        "exact_groups": 89,
+        "pair_f1": 0.8410596026490065,
+        "group_f1": 0.5377643504531723,
+        "pair_ci": {
+          "clusters": 25,
+          "low": 0.7992454863918081,
+          "high": 0.9442379182156134
+        },
+        "group_ci": {
+          "clusters": 25,
+          "low": 0.43323442136498513,
+          "high": 0.7466666666666666
+        }
+      },
+      "checkable": {
+        "ref_pairs": 5911,
+        "sys_pairs": 5943,
+        "shared_pairs": 5652,
+        "ref_groups": 268,
+        "sys_groups": 273,
+        "exact_groups": 236,
+        "pair_f1": 0.9536021596085709,
+        "group_f1": 0.8724584103512014,
+        "pair_ci": {
+          "clusters": 25,
+          "low": 0.9236954662104362,
+          "high": 0.9782748978274897
+        },
+        "group_ci": {
+          "clusters": 25,
+          "low": 0.7914110429447853,
+          "high": 0.9398907103825137
+        }
+      },
+      "ilp": {
+        "components": 69401,
+        "optimised": 50318,
+        "capped": 0,
+        "largest_capped": 0
+      }
+    },
+    "beide": {
+      "blocks": [
+        "types",
+        "geometry_base",
+        "geometry_plus",
+        "color"
+      ],
+      "decoder": "ilp",
+      "features": 39,
+      "threshold": 0.66,
+      "seconds": 2735.2,
+      "total": {
+        "ref_pairs": 7351,
+        "sys_pairs": 7447,
+        "shared_pairs": 6919,
+        "ref_groups": 422,
+        "sys_groups": 430,
+        "exact_groups": 340,
+        "pair_f1": 0.9351263684281659,
+        "group_f1": 0.7981220657276995,
+        "pair_ci": {
+          "clusters": 25,
+          "low": 0.9107448297309905,
+          "high": 0.9559582232288913
+        },
+        "group_ci": {
+          "clusters": 25,
+          "low": 0.7264150943396226,
+          "high": 0.8726899383983573
+        }
+      },
+      "blind": {
+        "ref_pairs": 1440,
+        "sys_pairs": 1386,
+        "shared_pairs": 1259,
+        "ref_groups": 154,
+        "sys_groups": 159,
+        "exact_groups": 109,
+        "pair_f1": 0.8910120311394196,
+        "group_f1": 0.6964856230031948,
+        "pair_ci": {
+          "clusters": 25,
+          "low": 0.8531717747683535,
+          "high": 0.9566929133858267
+        },
+        "group_ci": {
+          "clusters": 25,
+          "low": 0.6153846153846154,
+          "high": 0.8391608391608392
+        }
+      },
+      "checkable": {
+        "ref_pairs": 5911,
+        "sys_pairs": 6061,
+        "shared_pairs": 5660,
+        "ref_groups": 268,
+        "sys_groups": 271,
+        "exact_groups": 231,
+        "pair_f1": 0.9455395923822252,
+        "group_f1": 0.8571428571428571,
+        "pair_ci": {
+          "clusters": 25,
+          "low": 0.9225979602791198,
+          "high": 0.9635122719516998
+        },
+        "group_ci": {
+          "clusters": 25,
+          "low": 0.7855421686746988,
+          "high": 0.9176029962546817
+        }
+      },
+      "ilp": {
+        "components": 67755,
+        "optimised": 50322,
+        "capped": 0,
+        "largest_capped": 0
+      }
+    },
+    "anker": {
+      "blocks": [
+        "types",
+        "geometry_base",
+        "geometry_plus",
+        "anchor"
+      ],
+      "decoder": "ilp",
+      "features": 38,
+      "threshold": 0.68,
+      "seconds": 2197.8,
+      "total": {
+        "ref_pairs": 7351,
+        "sys_pairs": 7381,
+        "shared_pairs": 6944,
+        "ref_groups": 422,
+        "sys_groups": 423,
+        "exact_groups": 331,
+        "pair_f1": 0.9427097474884605,
+        "group_f1": 0.7834319526627219,
+        "pair_ci": {
+          "clusters": 25,
+          "low": 0.908654258512737,
+          "high": 0.9714144084600131
+        },
+        "group_ci": {
+          "clusters": 25,
+          "low": 0.6837416481069042,
+          "high": 0.8911764705882352
+        }
+      },
+      "blind": {
+        "ref_pairs": 1440,
+        "sys_pairs": 1511,
+        "shared_pairs": 1278,
+        "ref_groups": 154,
+        "sys_groups": 149,
+        "exact_groups": 98,
+        "pair_f1": 0.8661470687902405,
+        "group_f1": 0.6468646864686469,
+        "pair_ci": {
+          "clusters": 25,
+          "low": 0.836779107725789,
+          "high": 0.9690140845070423
+        },
+        "group_ci": {
+          "clusters": 25,
+          "low": 0.5466970387243736,
+          "high": 0.8695652173913043
+        }
+      },
+      "checkable": {
+        "ref_pairs": 5911,
+        "sys_pairs": 5870,
+        "shared_pairs": 5666,
+        "ref_groups": 268,
+        "sys_groups": 274,
+        "exact_groups": 233,
+        "pair_f1": 0.9618877854171972,
+        "group_f1": 0.8597785977859779,
+        "pair_ci": {
+          "clusters": 25,
+          "low": 0.9340153452685424,
+          "high": 0.984750581545619
+        },
+        "group_ci": {
+          "clusters": 25,
+          "low": 0.761904761904762,
+          "high": 0.9481216457960644
+        }
+      },
+      "ilp": {
+        "components": 58220,
+        "optimised": 46261,
+        "capped": 0,
+        "largest_capped": 0
+      }
+    },
+    "lexik": {
+      "blocks": [
+        "types",
+        "geometry_base",
+        "geometry_plus",
+        "lexical"
+      ],
+      "decoder": "ilp",
+      "features": 43,
+      "threshold": 0.68,
+      "seconds": 2529.1,
+      "total": {
+        "ref_pairs": 7351,
+        "sys_pairs": 7446,
+        "shared_pairs": 6961,
+        "ref_groups": 422,
+        "sys_groups": 431,
+        "exact_groups": 350,
+        "pair_f1": 0.940866391836183,
+        "group_f1": 0.8206330597889802,
+        "pair_ci": {
+          "clusters": 25,
+          "low": 0.913783635365184,
+          "high": 0.9668897920153
+        },
+        "group_ci": {
+          "clusters": 25,
+          "low": 0.7369614512471655,
+          "high": 0.906064209274673
+        }
+      },
+      "blind": {
+        "ref_pairs": 1440,
+        "sys_pairs": 1445,
+        "shared_pairs": 1296,
+        "ref_groups": 154,
+        "sys_groups": 159,
+        "exact_groups": 111,
+        "pair_f1": 0.8984402079722704,
+        "group_f1": 0.7092651757188498,
+        "pair_ci": {
+          "clusters": 25,
+          "low": 0.8579075425790753,
+          "high": 0.9720479178551056
+        },
+        "group_ci": {
+          "clusters": 25,
+          "low": 0.6243902439024389,
+          "high": 0.905982905982906
+        }
+      },
+      "checkable": {
+        "ref_pairs": 5911,
+        "sys_pairs": 6001,
+        "shared_pairs": 5665,
+        "ref_groups": 268,
+        "sys_groups": 272,
+        "exact_groups": 239,
+        "pair_f1": 0.9511417058428475,
+        "group_f1": 0.8851851851851852,
+        "pair_ci": {
+          "clusters": 25,
+          "low": 0.9243458475540387,
+          "high": 0.9759194093700407
+        },
+        "group_ci": {
+          "clusters": 25,
+          "low": 0.8144578313253011,
+          "high": 0.9413735343383585
+        }
+      },
+      "ilp": {
+        "components": 68144,
+        "optimised": 50463,
+        "capped": 0,
+        "largest_capped": 0
+      }
+    },
+    "anker+lexik": {
+      "blocks": [
+        "types",
+        "geometry_base",
+        "geometry_plus",
+        "anchor",
+        "lexical"
+      ],
+      "decoder": "ilp",
+      "features": 46,
+      "threshold": 0.66,
+      "seconds": 2738.0,
+      "total": {
+        "ref_pairs": 7351,
+        "sys_pairs": 7590,
+        "shared_pairs": 6941,
+        "ref_groups": 422,
+        "sys_groups": 424,
+        "exact_groups": 329,
+        "pair_f1": 0.9291212100930325,
+        "group_f1": 0.7777777777777777,
+        "pair_ci": {
+          "clusters": 25,
+          "low": 0.8986010789064642,
+          "high": 0.9548136322620949
+        },
+        "group_ci": {
+          "clusters": 25,
+          "low": 0.6849894291754756,
+          "high": 0.8740740740740741
+        }
+      },
+      "blind": {
+        "ref_pairs": 1440,
+        "sys_pairs": 1499,
+        "shared_pairs": 1280,
+        "ref_groups": 154,
+        "sys_groups": 154,
+        "exact_groups": 100,
+        "pair_f1": 0.8710445729840082,
+        "group_f1": 0.6493506493506493,
+        "pair_ci": {
+          "clusters": 25,
+          "low": 0.8333333333333334,
+          "high": 0.9745042492917847
+        },
+        "group_ci": {
+          "clusters": 25,
+          "low": 0.5499999999999999,
+          "high": 0.8709677419354839
+        }
+      },
+      "checkable": {
+        "ref_pairs": 5911,
+        "sys_pairs": 6091,
+        "shared_pairs": 5661,
+        "ref_groups": 268,
+        "sys_groups": 270,
+        "exact_groups": 229,
+        "pair_f1": 0.943342776203966,
+        "group_f1": 0.8513011152416355,
+        "pair_ci": {
+          "clusters": 25,
+          "low": 0.9135059201284367,
+          "high": 0.9650261780104712
+        },
+        "group_ci": {
+          "clusters": 25,
+          "low": 0.7616438356164383,
+          "high": 0.9212598425196851
+        }
+      },
+      "ilp": {
+        "components": 58265,
+        "optimised": 47710,
+        "capped": 0,
+        "largest_capped": 0
+      }
+    }
+  },
+  "paired_vs_baseline": {
+    "geometrie_vs_basis_total": {
+      "clusters": 25,
+      "difference": 0.07619405741144869,
+      "low": 0.027562446167097243,
+      "high": 0.14220426730277558,
+      "p_two_sided": 0.0
+    },
+    "farbe_vs_basis_total": {
+      "clusters": 25,
+      "difference": 0.04369855832241154,
+      "low": 0.01268417894526308,
+      "high": 0.07501490298636626,
+      "p_two_sided": 0.008
+    },
+    "beide_vs_basis_total": {
+      "clusters": 25,
+      "difference": 0.09640778001341377,
+      "low": 0.03564001629841229,
+      "high": 0.16706536184607934,
+      "p_two_sided": 0.0
+    },
+    "anker_vs_basis_total": {
+      "clusters": 25,
+      "difference": 0.08171766694843619,
+      "low": 0.016422691740435424,
+      "high": 0.1484138713415567,
+      "p_two_sided": 0.01
+    },
+    "lexik_vs_basis_total": {
+      "clusters": 25,
+      "difference": 0.11891877407469442,
+      "low": 0.0576566098834691,
+      "high": 0.18417928206489953,
+      "p_two_sided": 0.0
+    },
+    "anker+lexik_vs_basis_total": {
+      "clusters": 25,
+      "difference": 0.07606349206349194,
+      "low": 0.03266221043752371,
+      "high": 0.12803475594173275,
+      "p_two_sided": 0.0
+    },
+    "geometrie_vs_basis_blind": {
+      "clusters": 25,
+      "difference": 0.17623421354764646,
+      "low": 0.0755775182531675,
+      "high": 0.315802953407337,
+      "p_two_sided": 0.002
+    },
+    "farbe_vs_basis_blind": {
+      "clusters": 25,
+      "difference": 0.06015241015466488,
+      "low": 0.014048394850702639,
+      "high": 0.11339017110786093,
+      "p_two_sided": 0.012
+    },
+    "beide_vs_basis_blind": {
+      "clusters": 25,
+      "difference": 0.21887368270468743,
+      "low": 0.10971786833855812,
+      "high": 0.320516106981116,
+      "p_two_sided": 0.002
+    },
+    "anker_vs_basis_blind": {
+      "clusters": 25,
+      "difference": 0.16925274617013952,
+      "low": 0.10396927016645335,
+      "high": 0.2922156726768376,
+      "p_two_sided": 0.0
+    },
+    "lexik_vs_basis_blind": {
+      "clusters": 25,
+      "difference": 0.23165323542034244,
+      "low": 0.1361204920255379,
+      "high": 0.3746124546018247,
+      "p_two_sided": 0.0
+    },
+    "anker+lexik_vs_basis_blind": {
+      "clusters": 25,
+      "difference": 0.17173870905214195,
+      "low": 0.11908563744852507,
+      "high": 0.2768959435626102,
+      "p_two_sided": 0.0
+    },
+    "geometrie_vs_basis_checkable": {
+      "clusters": 25,
+      "difference": 0.008980966123823153,
+      "low": -0.008350730688935215,
+      "high": 0.02974559686888434,
+      "p_two_sided": 0.364
+    },
+    "farbe_vs_basis_checkable": {
+      "clusters": 25,
+      "difference": 0.03171766961046063,
+      "low": -0.01228337205265817,
+      "high": 0.07346111158541802,
+      "p_two_sided": 0.172
+    },
+    "beide_vs_basis_checkable": {
+      "clusters": 25,
+      "difference": 0.016402116402116307,
+      "low": 0.0,
+      "high": 0.04079649760524906,
+      "p_two_sided": 0.078
+    },
+    "anker_vs_basis_checkable": {
+      "clusters": 25,
+      "difference": 0.019037857045237083,
+      "low": -0.055070010880309384,
+      "high": 0.0885274555985126,
+      "p_two_sided": 0.574
+    },
+    "lexik_vs_basis_checkable": {
+      "clusters": 25,
+      "difference": 0.0444444444444444,
+      "low": 0.0,
+      "high": 0.09079248740265677,
+      "p_two_sided": 0.056
+    },
+    "anker+lexik_vs_basis_checkable": {
+      "clusters": 25,
+      "difference": 0.010560374500894754,
+      "low": -0.02641479693210058,
+      "high": 0.04862719026768447,
+      "p_two_sided": 0.556
+    }
+  }
+}

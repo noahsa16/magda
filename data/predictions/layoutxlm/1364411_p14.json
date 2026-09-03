@@ -1,0 +1,2349 @@
+{
+  "page_id": "1364411_p14",
+  "catalog_id": "1364411",
+  "page": 14,
+  "width": 476.22,
+  "height": 841.89,
+  "model": "layoutxlm",
+  "labels_from": "sonnet-5",
+  "created": "2026-09-02T18:26:30",
+  "num_words": 151,
+  "num_words_predicted": 151,
+  "truncated": false,
+  "words": [
+    {
+      "i": 0,
+      "text": "Mit",
+      "bbox": [
+        166.98,
+        668.77,
+        174.13,
+        677.33
+      ],
+      "label": "O",
+      "confidence": 0.9998
+    },
+    {
+      "i": 1,
+      "text": "Hilfe",
+      "bbox": [
+        166.98,
+        654.41,
+        174.13,
+        667.57
+      ],
+      "label": "O",
+      "confidence": 0.9996
+    },
+    {
+      "i": 2,
+      "text": "von",
+      "bbox": [
+        166.98,
+        643.06,
+        174.13,
+        653.21
+      ],
+      "label": "O",
+      "confidence": 0.9998
+    },
+    {
+      "i": 3,
+      "text": "KI",
+      "bbox": [
+        166.98,
+        636.68,
+        174.13,
+        641.86
+      ],
+      "label": "O",
+      "confidence": 0.9999
+    },
+    {
+      "i": 4,
+      "text": "erstellt",
+      "bbox": [
+        166.98,
+        615.26,
+        174.13,
+        635.48
+      ],
+      "label": "O",
+      "confidence": 0.9998
+    },
+    {
+      "i": 5,
+      "text": "Mit",
+      "bbox": [
+        166.98,
+        477.29,
+        174.13,
+        485.85
+      ],
+      "label": "O",
+      "confidence": 0.9998
+    },
+    {
+      "i": 6,
+      "text": "Hilfe",
+      "bbox": [
+        166.98,
+        462.93,
+        174.13,
+        476.09
+      ],
+      "label": "O",
+      "confidence": 0.9999
+    },
+    {
+      "i": 7,
+      "text": "von",
+      "bbox": [
+        166.98,
+        451.58,
+        174.13,
+        461.73
+      ],
+      "label": "O",
+      "confidence": 0.9998
+    },
+    {
+      "i": 8,
+      "text": "KI",
+      "bbox": [
+        166.98,
+        445.2,
+        174.13,
+        450.38
+      ],
+      "label": "O",
+      "confidence": 0.9999
+    },
+    {
+      "i": 9,
+      "text": "erstellt",
+      "bbox": [
+        166.98,
+        423.78,
+        174.13,
+        444.0
+      ],
+      "label": "O",
+      "confidence": 0.9998
+    },
+    {
+      "i": 10,
+      "text": "1.85",
+      "bbox": [
+        99.16,
+        757.45,
+        143.67,
+        784.34
+      ],
+      "label": "B-PRICE",
+      "confidence": 0.9986
+    },
+    {
+      "i": 11,
+      "text": "BÄCKERKRÖNUNG",
+      "bbox": [
+        17.01,
+        770.07,
+        75.02,
+        779.11
+      ],
+      "label": "B-BRAND",
+      "confidence": 0.9994
+    },
+    {
+      "i": 12,
+      "text": "Weizenmischbrot*",
+      "bbox": [
+        17.01,
+        777.57,
+        77.9,
+        786.61
+      ],
+      "label": "B-PRODUCT",
+      "confidence": 0.999
+    },
+    {
+      "i": 13,
+      "text": "je",
+      "bbox": [
+        17.01,
+        785.15,
+        23.17,
+        794.08
+      ],
+      "label": "O",
+      "confidence": 0.9998
+    },
+    {
+      "i": 14,
+      "text": "1.000",
+      "bbox": [
+        24.67,
+        785.15,
+        43.53,
+        794.08
+      ],
+      "label": "B-QUANTITY",
+      "confidence": 0.9988
+    },
+    {
+      "i": 15,
+      "text": "g",
+      "bbox": [
+        45.03,
+        785.15,
+        49.3,
+        794.08
+      ],
+      "label": "I-QUANTITY",
+      "confidence": 0.999
+    },
+    {
+      "i": 16,
+      "text": "1.59",
+      "bbox": [
+        99.19,
+        564.7,
+        143.7,
+        591.58
+      ],
+      "label": "B-PRICE",
+      "confidence": 0.9989
+    },
+    {
+      "i": 17,
+      "text": "BÄCKERKRÖNUNG",
+      "bbox": [
+        17.04,
+        562.32,
+        75.05,
+        571.35
+      ],
+      "label": "B-BRAND",
+      "confidence": 0.9994
+    },
+    {
+      "i": 18,
+      "text": "Kartoffel-",
+      "bbox": [
+        17.04,
+        569.82,
+        49.02,
+        578.85
+      ],
+      "label": "B-PRODUCT",
+      "confidence": 0.9991
+    },
+    {
+      "i": 19,
+      "text": "Zwiebel-Brot*",
+      "bbox": [
+        17.04,
+        577.32,
+        63.89,
+        586.35
+      ],
+      "label": "I-PRODUCT",
+      "confidence": 0.9993
+    },
+    {
+      "i": 20,
+      "text": "je",
+      "bbox": [
+        17.04,
+        584.89,
+        23.2,
+        593.82
+      ],
+      "label": "O",
+      "confidence": 0.9997
+    },
+    {
+      "i": 21,
+      "text": "350",
+      "bbox": [
+        24.7,
+        584.89,
+        37.3,
+        593.82
+      ],
+      "label": "B-QUANTITY",
+      "confidence": 0.999
+    },
+    {
+      "i": 22,
+      "text": "g",
+      "bbox": [
+        38.8,
+        584.89,
+        43.08,
+        593.82
+      ],
+      "label": "I-QUANTITY",
+      "confidence": 0.9993
+    },
+    {
+      "i": 23,
+      "text": "(1",
+      "bbox": [
+        17.04,
+        592.39,
+        23.94,
+        601.32
+      ],
+      "label": "B-UNIT_PRICE",
+      "confidence": 0.9992
+    },
+    {
+      "i": 24,
+      "text": "kg",
+      "bbox": [
+        25.44,
+        592.39,
+        33.49,
+        601.32
+      ],
+      "label": "I-UNIT_PRICE",
+      "confidence": 0.9995
+    },
+    {
+      "i": 25,
+      "text": "=",
+      "bbox": [
+        34.99,
+        592.39,
+        39.19,
+        601.32
+      ],
+      "label": "I-UNIT_PRICE",
+      "confidence": 0.9995
+    },
+    {
+      "i": 26,
+      "text": "4.54)",
+      "bbox": [
+        40.69,
+        592.39,
+        58.05,
+        601.32
+      ],
+      "label": "I-UNIT_PRICE",
+      "confidence": 0.9994
+    },
+    {
+      "i": 27,
+      "text": "1.39",
+      "bbox": [
+        250.35,
+        757.45,
+        294.85,
+        784.34
+      ],
+      "label": "B-PRICE",
+      "confidence": 0.9986
+    },
+    {
+      "i": 28,
+      "text": "BÄCKERKRÖNUNG",
+      "bbox": [
+        168.19,
+        755.07,
+        226.2,
+        764.11
+      ],
+      "label": "B-BRAND",
+      "confidence": 0.9994
+    },
+    {
+      "i": 29,
+      "text": "Wurzelbrot*",
+      "bbox": [
+        168.19,
+        762.57,
+        208.68,
+        771.61
+      ],
+      "label": "B-PRODUCT",
+      "confidence": 0.9991
+    },
+    {
+      "i": 30,
+      "text": "Dunkel,",
+      "bbox": [
+        168.19,
+        770.15,
+        193.7,
+        779.08
+      ],
+      "label": "I-PRODUCT",
+      "confidence": 0.987
+    },
+    {
+      "i": 31,
+      "text": "je",
+      "bbox": [
+        168.19,
+        777.65,
+        174.35,
+        786.58
+      ],
+      "label": "O",
+      "confidence": 0.9997
+    },
+    {
+      "i": 32,
+      "text": "300",
+      "bbox": [
+        175.85,
+        777.65,
+        188.45,
+        786.58
+      ],
+      "label": "B-QUANTITY",
+      "confidence": 0.9991
+    },
+    {
+      "i": 33,
+      "text": "g",
+      "bbox": [
+        189.95,
+        777.65,
+        194.23,
+        786.58
+      ],
+      "label": "I-QUANTITY",
+      "confidence": 0.9993
+    },
+    {
+      "i": 34,
+      "text": "(1",
+      "bbox": [
+        168.19,
+        785.15,
+        175.09,
+        794.08
+      ],
+      "label": "B-UNIT_PRICE",
+      "confidence": 0.9993
+    },
+    {
+      "i": 35,
+      "text": "kg",
+      "bbox": [
+        176.59,
+        785.15,
+        184.64,
+        794.08
+      ],
+      "label": "I-UNIT_PRICE",
+      "confidence": 0.9995
+    },
+    {
+      "i": 36,
+      "text": "=",
+      "bbox": [
+        186.14,
+        785.15,
+        190.34,
+        794.08
+      ],
+      "label": "I-UNIT_PRICE",
+      "confidence": 0.9995
+    },
+    {
+      "i": 37,
+      "text": "4.63)",
+      "bbox": [
+        191.84,
+        785.15,
+        209.2,
+        794.08
+      ],
+      "label": "I-UNIT_PRICE",
+      "confidence": 0.9995
+    },
+    {
+      "i": 38,
+      "text": "BÄCKER-",
+      "bbox": [
+        22.67,
+        354.56,
+        50.63,
+        363.6
+      ],
+      "label": "B-BRAND",
+      "confidence": 0.9994
+    },
+    {
+      "i": 39,
+      "text": "KRÖNUNG",
+      "bbox": [
+        22.67,
+        362.06,
+        55.38,
+        371.1
+      ],
+      "label": "I-BRAND",
+      "confidence": 0.9973
+    },
+    {
+      "i": 40,
+      "text": "Apfeldreieck*",
+      "bbox": [
+        22.67,
+        369.56,
+        68.18,
+        378.6
+      ],
+      "label": "B-PRODUCT",
+      "confidence": 0.999
+    },
+    {
+      "i": 41,
+      "text": "Blätterteig",
+      "bbox": [
+        22.67,
+        377.13,
+        57.92,
+        386.07
+      ],
+      "label": "I-PRODUCT",
+      "confidence": 0.9951
+    },
+    {
+      "i": 42,
+      "text": "mit",
+      "bbox": [
+        22.67,
+        384.63,
+        33.73,
+        393.57
+      ],
+      "label": "I-PRODUCT",
+      "confidence": 0.9736
+    },
+    {
+      "i": 43,
+      "text": "Apfel-",
+      "bbox": [
+        35.23,
+        384.63,
+        54.98,
+        393.57
+      ],
+      "label": "I-PRODUCT",
+      "confidence": 0.9753
+    },
+    {
+      "i": 44,
+      "text": "stücken,",
+      "bbox": [
+        22.67,
+        392.13,
+        49.85,
+        401.07
+      ],
+      "label": "I-PRODUCT",
+      "confidence": 0.7492
+    },
+    {
+      "i": 45,
+      "text": "je",
+      "bbox": [
+        22.67,
+        399.63,
+        28.84,
+        408.57
+      ],
+      "label": "O",
+      "confidence": 0.9998
+    },
+    {
+      "i": 46,
+      "text": "2",
+      "bbox": [
+        30.34,
+        399.63,
+        34.54,
+        408.57
+      ],
+      "label": "B-QUANTITY",
+      "confidence": 0.9759
+    },
+    {
+      "i": 47,
+      "text": "Stück",
+      "bbox": [
+        36.04,
+        399.63,
+        53.42,
+        408.57
+      ],
+      "label": "I-QUANTITY",
+      "confidence": 0.9768
+    },
+    {
+      "i": 48,
+      "text": "Einzelpreis",
+      "bbox": [
+        215.99,
+        183.72,
+        255.27,
+        192.75
+      ],
+      "label": "O",
+      "confidence": 0.9997
+    },
+    {
+      "i": 49,
+      "text": "je",
+      "bbox": [
+        215.99,
+        191.29,
+        222.29,
+        200.22
+      ],
+      "label": "O",
+      "confidence": 0.9998
+    },
+    {
+      "i": 50,
+      "text": "Stück",
+      "bbox": [
+        223.77,
+        191.29,
+        242.08,
+        200.22
+      ],
+      "label": "O",
+      "confidence": 0.9997
+    },
+    {
+      "i": 51,
+      "text": "0.69",
+      "bbox": [
+        243.56,
+        191.29,
+        258.56,
+        200.22
+      ],
+      "label": "B-OLD_PRICE",
+      "confidence": 0.4427
+    },
+    {
+      "i": 52,
+      "text": "2 KAUFEN",
+      "bbox": [
+        76.96,
+        375.28,
+        175.73,
+        402.81
+      ],
+      "label": "O",
+      "confidence": 0.9996
+    },
+    {
+      "i": 53,
+      "text": "ENTSPRICHT",
+      "bbox": [
+        77.14,
+        398.63,
+        122.19,
+        408.99
+      ],
+      "label": "O",
+      "confidence": 0.9998
+    },
+    {
+      "i": 54,
+      "text": "0.50",
+      "bbox": [
+        123.81,
+        398.63,
+        141.19,
+        408.99
+      ],
+      "label": "O",
+      "confidence": 0.999
+    },
+    {
+      "i": 55,
+      "text": "JE",
+      "bbox": [
+        142.91,
+        398.63,
+        150.27,
+        408.99
+      ],
+      "label": "O",
+      "confidence": 0.9998
+    },
+    {
+      "i": 56,
+      "text": "STÜCK",
+      "bbox": [
+        151.99,
+        398.63,
+        175.22,
+        408.99
+      ],
+      "label": "O",
+      "confidence": 0.9998
+    },
+    {
+      "i": 57,
+      "text": "1.38",
+      "bbox": [
+        204.47,
+        390.95,
+        226.82,
+        404.45
+      ],
+      "label": "B-OLD_PRICE",
+      "confidence": 0.8455
+    },
+    {
+      "i": 58,
+      "text": "1.00",
+      "bbox": [
+        188.32,
+        362.37,
+        242.97,
+        395.38
+      ],
+      "label": "B-APP_PRICE",
+      "confidence": 0.4885
+    },
+    {
+      "i": 59,
+      "text": "-28%",
+      "bbox": [
+        211.03,
+        328.27,
+        256.8,
+        352.27
+      ],
+      "label": "B-DISCOUNT",
+      "confidence": 0.9972
+    },
+    {
+      "i": 60,
+      "text": "BÄCKERKRÖNUNG",
+      "bbox": [
+        168.22,
+        577.32,
+        226.23,
+        586.35
+      ],
+      "label": "B-BRAND",
+      "confidence": 0.9994
+    },
+    {
+      "i": 61,
+      "text": "Pizza",
+      "bbox": [
+        168.22,
+        584.82,
+        185.49,
+        593.85
+      ],
+      "label": "B-PRODUCT",
+      "confidence": 0.999
+    },
+    {
+      "i": 62,
+      "text": "Margherita*",
+      "bbox": [
+        186.69,
+        584.82,
+        226.68,
+        593.85
+      ],
+      "label": "I-PRODUCT",
+      "confidence": 0.9993
+    },
+    {
+      "i": 63,
+      "text": "je",
+      "bbox": [
+        168.22,
+        592.39,
+        174.38,
+        601.32
+      ],
+      "label": "O",
+      "confidence": 0.9998
+    },
+    {
+      "i": 64,
+      "text": "Stück",
+      "bbox": [
+        175.88,
+        592.39,
+        193.27,
+        601.32
+      ],
+      "label": "O",
+      "confidence": 0.9997
+    },
+    {
+      "i": 65,
+      "text": "1.99",
+      "bbox": [
+        401.53,
+        757.45,
+        446.03,
+        784.34
+      ],
+      "label": "B-PRICE",
+      "confidence": 0.9988
+    },
+    {
+      "i": 66,
+      "text": "BÄCKERKRÖNUNG",
+      "bbox": [
+        319.37,
+        762.57,
+        377.38,
+        771.61
+      ],
+      "label": "B-BRAND",
+      "confidence": 0.9994
+    },
+    {
+      "i": 67,
+      "text": "Chia-Weltmeisterbrot*",
+      "bbox": [
+        319.37,
+        770.07,
+        393.77,
+        779.11
+      ],
+      "label": "B-PRODUCT",
+      "confidence": 0.999
+    },
+    {
+      "i": 68,
+      "text": "je",
+      "bbox": [
+        319.37,
+        777.65,
+        325.54,
+        786.58
+      ],
+      "label": "O",
+      "confidence": 0.9997
+    },
+    {
+      "i": 69,
+      "text": "750",
+      "bbox": [
+        327.04,
+        777.65,
+        339.64,
+        786.58
+      ],
+      "label": "B-QUANTITY",
+      "confidence": 0.9992
+    },
+    {
+      "i": 70,
+      "text": "g",
+      "bbox": [
+        341.14,
+        777.65,
+        345.41,
+        786.58
+      ],
+      "label": "I-QUANTITY",
+      "confidence": 0.9994
+    },
+    {
+      "i": 71,
+      "text": "(1",
+      "bbox": [
+        319.37,
+        785.15,
+        326.27,
+        794.08
+      ],
+      "label": "B-UNIT_PRICE",
+      "confidence": 0.9993
+    },
+    {
+      "i": 72,
+      "text": "kg",
+      "bbox": [
+        327.77,
+        785.15,
+        335.83,
+        794.08
+      ],
+      "label": "I-UNIT_PRICE",
+      "confidence": 0.9995
+    },
+    {
+      "i": 73,
+      "text": "=",
+      "bbox": [
+        337.33,
+        785.15,
+        341.53,
+        794.08
+      ],
+      "label": "I-UNIT_PRICE",
+      "confidence": 0.9995
+    },
+    {
+      "i": 74,
+      "text": "2.65)",
+      "bbox": [
+        343.03,
+        785.15,
+        360.38,
+        794.08
+      ],
+      "label": "I-UNIT_PRICE",
+      "confidence": 0.9995
+    },
+    {
+      "i": 75,
+      "text": "0.45",
+      "bbox": [
+        401.53,
+        564.7,
+        446.03,
+        591.58
+      ],
+      "label": "B-PRICE",
+      "confidence": 0.9983
+    },
+    {
+      "i": 76,
+      "text": "-25%",
+      "bbox": [
+        420.02,
+        344.17,
+        457.3,
+        363.72
+      ],
+      "label": "B-DISCOUNT",
+      "confidence": 0.9977
+    },
+    {
+      "i": 77,
+      "text": "0.29",
+      "bbox": [
+        401.53,
+        371.94,
+        446.03,
+        398.83
+      ],
+      "label": "B-PRICE",
+      "confidence": 0.9968
+    },
+    {
+      "i": 78,
+      "text": "0.39",
+      "bbox": [
+        414.68,
+        395.22,
+        432.88,
+        406.21
+      ],
+      "label": "B-OLD_PRICE",
+      "confidence": 0.9966
+    },
+    {
+      "i": 79,
+      "text": "BÄCKERKRÖNUNG",
+      "bbox": [
+        270.57,
+        377.06,
+        328.58,
+        386.1
+      ],
+      "label": "B-BRAND",
+      "confidence": 0.9994
+    },
+    {
+      "i": 80,
+      "text": "Rosenbrötchen*",
+      "bbox": [
+        270.57,
+        384.56,
+        323.89,
+        393.6
+      ],
+      "label": "B-PRODUCT",
+      "confidence": 0.999
+    },
+    {
+      "i": 81,
+      "text": "Dunkel,",
+      "bbox": [
+        270.57,
+        392.14,
+        296.07,
+        401.07
+      ],
+      "label": "I-PRODUCT",
+      "confidence": 0.9854
+    },
+    {
+      "i": 82,
+      "text": "je",
+      "bbox": [
+        270.57,
+        399.64,
+        276.73,
+        408.57
+      ],
+      "label": "O",
+      "confidence": 0.9998
+    },
+    {
+      "i": 83,
+      "text": "Stück",
+      "bbox": [
+        278.23,
+        399.64,
+        295.62,
+        408.57
+      ],
+      "label": "O",
+      "confidence": 0.9997
+    },
+    {
+      "i": 84,
+      "text": "Frisch",
+      "bbox": [
+        300.38,
+        152.77,
+        337.14,
+        174.46
+      ],
+      "label": "O",
+      "confidence": 0.9997
+    },
+    {
+      "i": 85,
+      "text": "aus",
+      "bbox": [
+        336.94,
+        148.64,
+        360.55,
+        168.01
+      ],
+      "label": "O",
+      "confidence": 0.9998
+    },
+    {
+      "i": 86,
+      "text": "unserer",
+      "bbox": [
+        309.9,
+        164.32,
+        356.13,
+        187.68
+      ],
+      "label": "O",
+      "confidence": 0.9998
+    },
+    {
+      "i": 87,
+      "text": "Backstation.",
+      "bbox": [
+        297.13,
+        176.02,
+        374.27,
+        204.83
+      ],
+      "label": "O",
+      "confidence": 0.9998
+    },
+    {
+      "i": 88,
+      "text": "BÄCKERKRÖNUNG",
+      "bbox": [
+        319.44,
+        569.82,
+        377.45,
+        578.85
+      ],
+      "label": "B-BRAND",
+      "confidence": 0.9993
+    },
+    {
+      "i": 89,
+      "text": "Der",
+      "bbox": [
+        319.44,
+        577.32,
+        330.91,
+        586.35
+      ],
+      "label": "B-PRODUCT",
+      "confidence": 0.9978
+    },
+    {
+      "i": 90,
+      "text": "fruchtig-süß",
+      "bbox": [
+        332.11,
+        577.32,
+        373.01,
+        586.35
+      ],
+      "label": "I-PRODUCT",
+      "confidence": 0.999
+    },
+    {
+      "i": 91,
+      "text": "gefüllte",
+      "bbox": [
+        319.44,
+        584.82,
+        345.65,
+        593.85
+      ],
+      "label": "I-PRODUCT",
+      "confidence": 0.9981
+    },
+    {
+      "i": 92,
+      "text": "Krapfen*",
+      "bbox": [
+        346.85,
+        584.82,
+        376.61,
+        593.85
+      ],
+      "label": "I-PRODUCT",
+      "confidence": 0.9992
+    },
+    {
+      "i": 93,
+      "text": "je",
+      "bbox": [
+        319.44,
+        592.39,
+        325.61,
+        601.32
+      ],
+      "label": "O",
+      "confidence": 0.9998
+    },
+    {
+      "i": 94,
+      "text": "Stück",
+      "bbox": [
+        327.11,
+        592.39,
+        344.49,
+        601.32
+      ],
+      "label": "O",
+      "confidence": 0.9997
+    },
+    {
+      "i": 95,
+      "text": "-20%",
+      "bbox": [
+        268.84,
+        536.92,
+        306.12,
+        556.47
+      ],
+      "label": "B-DISCOUNT",
+      "confidence": 0.9978
+    },
+    {
+      "i": 96,
+      "text": "0.79",
+      "bbox": [
+        250.35,
+        564.7,
+        294.85,
+        591.58
+      ],
+      "label": "B-PRICE",
+      "confidence": 0.998
+    },
+    {
+      "i": 97,
+      "text": "0.99",
+      "bbox": [
+        263.5,
+        587.97,
+        281.7,
+        598.97
+      ],
+      "label": "B-OLD_PRICE",
+      "confidence": 0.9972
+    },
+    {
+      "i": 98,
+      "text": "12_04-14_dHZ",
+      "bbox": [
+        5.05,
+        758.85,
+        12.19,
+        796.77
+      ],
+      "label": "O",
+      "confidence": 0.9998
+    },
+    {
+      "i": 99,
+      "text": "Mo,",
+      "bbox": [
+        176.85,
+        14.05,
+        200.49,
+        30.92
+      ],
+      "label": "B-VALID",
+      "confidence": 0.9983
+    },
+    {
+      "i": 100,
+      "text": "24.8. – Sa,",
+      "bbox": [
+        203.29,
+        13.98,
+        264.83,
+        31.09
+      ],
+      "label": "I-VALID",
+      "confidence": 0.9986
+    },
+    {
+      "i": 101,
+      "text": "29.8.",
+      "bbox": [
+        267.63,
+        14.05,
+        299.37,
+        30.92
+      ],
+      "label": "I-VALID",
+      "confidence": 0.9986
+    },
+    {
+      "i": 102,
+      "text": "BÄCKERKRÖNUNG",
+      "bbox": [
+        17.01,
+        118.51,
+        144.5,
+        138.24
+      ],
+      "label": "O",
+      "confidence": 0.8655
+    },
+    {
+      "i": 103,
+      "text": "–",
+      "bbox": [
+        147.8,
+        118.51,
+        155.72,
+        138.24
+      ],
+      "label": "O",
+      "confidence": 0.9993
+    },
+    {
+      "i": 104,
+      "text": "unsere",
+      "bbox": [
+        159.02,
+        118.51,
+        209.46,
+        138.24
+      ],
+      "label": "O",
+      "confidence": 0.9995
+    },
+    {
+      "i": 105,
+      "text": "Eigenmarke",
+      "bbox": [
+        212.76,
+        118.51,
+        301.0,
+        138.24
+      ],
+      "label": "O",
+      "confidence": 0.9995
+    },
+    {
+      "i": 106,
+      "text": "für",
+      "bbox": [
+        17.01,
+        138.31,
+        38.39,
+        158.04
+      ],
+      "label": "O",
+      "confidence": 0.9996
+    },
+    {
+      "i": 107,
+      "text": "köstliche",
+      "bbox": [
+        41.69,
+        138.31,
+        108.41,
+        158.04
+      ],
+      "label": "O",
+      "confidence": 0.9997
+    },
+    {
+      "i": 108,
+      "text": "Brot-",
+      "bbox": [
+        111.71,
+        138.31,
+        148.68,
+        158.04
+      ],
+      "label": "O",
+      "confidence": 0.9998
+    },
+    {
+      "i": 109,
+      "text": "und",
+      "bbox": [
+        151.98,
+        138.31,
+        180.64,
+        158.04
+      ],
+      "label": "O",
+      "confidence": 0.9997
+    },
+    {
+      "i": 110,
+      "text": "Backwaren.",
+      "bbox": [
+        183.94,
+        138.31,
+        271.67,
+        158.04
+      ],
+      "label": "O",
+      "confidence": 0.9997
+    },
+    {
+      "i": 111,
+      "text": "*",
+      "bbox": [
+        17.01,
+        818.73,
+        20.5,
+        827.07
+      ],
+      "label": "O",
+      "confidence": 0.9998
+    },
+    {
+      "i": 112,
+      "text": "Dieser",
+      "bbox": [
+        22.04,
+        818.73,
+        41.75,
+        827.07
+      ],
+      "label": "O",
+      "confidence": 0.9998
+    },
+    {
+      "i": 113,
+      "text": "Artikel",
+      "bbox": [
+        43.29,
+        818.73,
+        63.86,
+        827.07
+      ],
+      "label": "O",
+      "confidence": 0.9998
+    },
+    {
+      "i": 114,
+      "text": "ist",
+      "bbox": [
+        65.4,
+        818.73,
+        72.56,
+        827.07
+      ],
+      "label": "O",
+      "confidence": 0.9998
+    },
+    {
+      "i": 115,
+      "text": "ggf.",
+      "bbox": [
+        74.1,
+        818.73,
+        86.38,
+        827.07
+      ],
+      "label": "O",
+      "confidence": 0.9998
+    },
+    {
+      "i": 116,
+      "text": "nicht",
+      "bbox": [
+        87.77,
+        818.73,
+        103.13,
+        827.07
+      ],
+      "label": "O",
+      "confidence": 0.9998
+    },
+    {
+      "i": 117,
+      "text": "in",
+      "bbox": [
+        104.67,
+        818.73,
+        110.59,
+        827.07
+      ],
+      "label": "O",
+      "confidence": 0.9998
+    },
+    {
+      "i": 118,
+      "text": "allen",
+      "bbox": [
+        112.13,
+        818.73,
+        127.91,
+        827.07
+      ],
+      "label": "O",
+      "confidence": 0.9998
+    },
+    {
+      "i": 119,
+      "text": "Filialen",
+      "bbox": [
+        129.45,
+        818.73,
+        152.48,
+        827.07
+      ],
+      "label": "O",
+      "confidence": 0.9998
+    },
+    {
+      "i": 120,
+      "text": "erhältlich.",
+      "bbox": [
+        154.02,
+        818.73,
+        185.72,
+        827.07
+      ],
+      "label": "O",
+      "confidence": 0.9998
+    },
+    {
+      "i": 121,
+      "text": "Aufgrund",
+      "bbox": [
+        187.11,
+        818.73,
+        216.14,
+        827.07
+      ],
+      "label": "O",
+      "confidence": 0.9998
+    },
+    {
+      "i": 122,
+      "text": "begrenzter",
+      "bbox": [
+        217.68,
+        818.73,
+        252.17,
+        827.07
+      ],
+      "label": "O",
+      "confidence": 0.9998
+    },
+    {
+      "i": 123,
+      "text": "Vorratsmengen",
+      "bbox": [
+        253.52,
+        818.73,
+        301.49,
+        827.07
+      ],
+      "label": "O",
+      "confidence": 0.9998
+    },
+    {
+      "i": 124,
+      "text": "kann",
+      "bbox": [
+        303.03,
+        818.73,
+        318.43,
+        827.07
+      ],
+      "label": "O",
+      "confidence": 0.9998
+    },
+    {
+      "i": 125,
+      "text": "der",
+      "bbox": [
+        319.97,
+        818.73,
+        330.43,
+        827.07
+      ],
+      "label": "O",
+      "confidence": 0.9998
+    },
+    {
+      "i": 126,
+      "text": "Artikel",
+      "bbox": [
+        331.97,
+        818.73,
+        352.54,
+        827.07
+      ],
+      "label": "O",
+      "confidence": 0.9998
+    },
+    {
+      "i": 127,
+      "text": "bereits",
+      "bbox": [
+        354.08,
+        818.73,
+        375.63,
+        827.07
+      ],
+      "label": "O",
+      "confidence": 0.9998
+    },
+    {
+      "i": 128,
+      "text": "kurz",
+      "bbox": [
+        377.17,
+        818.73,
+        390.51,
+        827.07
+      ],
+      "label": "O",
+      "confidence": 0.9998
+    },
+    {
+      "i": 129,
+      "text": "nach",
+      "bbox": [
+        392.05,
+        818.73,
+        406.82,
+        827.07
+      ],
+      "label": "O",
+      "confidence": 0.9998
+    },
+    {
+      "i": 130,
+      "text": "Öffnung",
+      "bbox": [
+        408.36,
+        818.73,
+        433.75,
+        827.07
+      ],
+      "label": "O",
+      "confidence": 0.9998
+    },
+    {
+      "i": 131,
+      "text": "ausverkauft",
+      "bbox": [
+        22.04,
+        826.73,
+        58.83,
+        835.07
+      ],
+      "label": "O",
+      "confidence": 0.9998
+    },
+    {
+      "i": 132,
+      "text": "sein.",
+      "bbox": [
+        60.37,
+        826.73,
+        75.09,
+        835.07
+      ],
+      "label": "O",
+      "confidence": 0.9998
+    },
+    {
+      "i": 133,
+      "text": "Die",
+      "bbox": [
+        76.49,
+        826.73,
+        86.84,
+        835.07
+      ],
+      "label": "O",
+      "confidence": 0.9998
+    },
+    {
+      "i": 134,
+      "text": "Abgabe",
+      "bbox": [
+        88.38,
+        826.73,
+        112.16,
+        835.07
+      ],
+      "label": "O",
+      "confidence": 0.9998
+    },
+    {
+      "i": 135,
+      "text": "erfolgt",
+      "bbox": [
+        113.7,
+        826.73,
+        135.15,
+        835.07
+      ],
+      "label": "O",
+      "confidence": 0.9998
+    },
+    {
+      "i": 136,
+      "text": "nur",
+      "bbox": [
+        136.69,
+        826.73,
+        147.24,
+        835.07
+      ],
+      "label": "O",
+      "confidence": 0.9998
+    },
+    {
+      "i": 137,
+      "text": "in",
+      "bbox": [
+        148.78,
+        826.73,
+        154.7,
+        835.07
+      ],
+      "label": "O",
+      "confidence": 0.9998
+    },
+    {
+      "i": 138,
+      "text": "haushaltsüblichen",
+      "bbox": [
+        156.24,
+        826.73,
+        213.18,
+        835.07
+      ],
+      "label": "O",
+      "confidence": 0.9998
+    },
+    {
+      "i": 139,
+      "text": "Mengen.",
+      "bbox": [
+        214.72,
+        826.73,
+        242.02,
+        835.07
+      ],
+      "label": "O",
+      "confidence": 0.9998
+    },
+    {
+      "i": 140,
+      "text": "Alle",
+      "bbox": [
+        243.42,
+        826.73,
+        255.33,
+        835.07
+      ],
+      "label": "O",
+      "confidence": 0.9998
+    },
+    {
+      "i": 141,
+      "text": "Preise",
+      "bbox": [
+        256.87,
+        826.73,
+        275.74,
+        835.07
+      ],
+      "label": "O",
+      "confidence": 0.9998
+    },
+    {
+      "i": 142,
+      "text": "ohne",
+      "bbox": [
+        277.28,
+        826.73,
+        293.32,
+        835.07
+      ],
+      "label": "O",
+      "confidence": 0.9998
+    },
+    {
+      "i": 143,
+      "text": "Deko.",
+      "bbox": [
+        294.86,
+        826.73,
+        312.92,
+        835.07
+      ],
+      "label": "O",
+      "confidence": 0.9999
+    },
+    {
+      "i": 144,
+      "text": "Druckfehler",
+      "bbox": [
+        314.31,
+        826.73,
+        350.84,
+        835.07
+      ],
+      "label": "O",
+      "confidence": 0.9998
+    },
+    {
+      "i": 145,
+      "text": "vorbehalten.",
+      "bbox": [
+        352.38,
+        826.73,
+        392.63,
+        835.07
+      ],
+      "label": "O",
+      "confidence": 0.9998
+    },
+    {
+      "i": 146,
+      "text": "Traditionelle",
+      "bbox": [
+        17.01,
+        49.94,
+        177.06,
+        84.16
+      ],
+      "label": "O",
+      "confidence": 0.9997
+    },
+    {
+      "i": 147,
+      "text": "Backkunst.",
+      "bbox": [
+        181.54,
+        49.94,
+        320.86,
+        84.16
+      ],
+      "label": "O",
+      "confidence": 0.9997
+    },
+    {
+      "i": 148,
+      "text": "Lecker",
+      "bbox": [
+        17.01,
+        79.93,
+        99.52,
+        114.14
+      ],
+      "label": "O",
+      "confidence": 0.9997
+    },
+    {
+      "i": 149,
+      "text": "und",
+      "bbox": [
+        105.12,
+        79.93,
+        155.8,
+        114.14
+      ],
+      "label": "O",
+      "confidence": 0.9997
+    },
+    {
+      "i": 150,
+      "text": "günstig…",
+      "bbox": [
+        161.4,
+        79.93,
+        271.16,
+        114.14
+      ],
+      "label": "O",
+      "confidence": 0.9997
+    }
+  ],
+  "entities": [
+    {
+      "label": "PRICE",
+      "start": 10,
+      "end": 11,
+      "text": "1.85",
+      "bbox": [
+        99.16,
+        757.45,
+        143.67,
+        784.34
+      ],
+      "confidence": 0.9986
+    },
+    {
+      "label": "BRAND",
+      "start": 11,
+      "end": 12,
+      "text": "BÄCKERKRÖNUNG",
+      "bbox": [
+        17.01,
+        770.07,
+        75.02,
+        779.11
+      ],
+      "confidence": 0.9994
+    },
+    {
+      "label": "PRODUCT",
+      "start": 12,
+      "end": 13,
+      "text": "Weizenmischbrot*",
+      "bbox": [
+        17.01,
+        777.57,
+        77.9,
+        786.61
+      ],
+      "confidence": 0.999
+    },
+    {
+      "label": "QUANTITY",
+      "start": 14,
+      "end": 16,
+      "text": "1.000 g",
+      "bbox": [
+        24.67,
+        785.15,
+        49.3,
+        794.08
+      ],
+      "confidence": 0.9989
+    },
+    {
+      "label": "PRICE",
+      "start": 16,
+      "end": 17,
+      "text": "1.59",
+      "bbox": [
+        99.19,
+        564.7,
+        143.7,
+        591.58
+      ],
+      "confidence": 0.9989
+    },
+    {
+      "label": "BRAND",
+      "start": 17,
+      "end": 18,
+      "text": "BÄCKERKRÖNUNG",
+      "bbox": [
+        17.04,
+        562.32,
+        75.05,
+        571.35
+      ],
+      "confidence": 0.9994
+    },
+    {
+      "label": "PRODUCT",
+      "start": 18,
+      "end": 20,
+      "text": "Kartoffel- Zwiebel-Brot*",
+      "bbox": [
+        17.04,
+        569.82,
+        63.89,
+        586.35
+      ],
+      "confidence": 0.9992
+    },
+    {
+      "label": "QUANTITY",
+      "start": 21,
+      "end": 23,
+      "text": "350 g",
+      "bbox": [
+        24.7,
+        584.89,
+        43.08,
+        593.82
+      ],
+      "confidence": 0.9991
+    },
+    {
+      "label": "UNIT_PRICE",
+      "start": 23,
+      "end": 27,
+      "text": "(1 kg = 4.54)",
+      "bbox": [
+        17.04,
+        592.39,
+        58.05,
+        601.32
+      ],
+      "confidence": 0.9994
+    },
+    {
+      "label": "PRICE",
+      "start": 27,
+      "end": 28,
+      "text": "1.39",
+      "bbox": [
+        250.35,
+        757.45,
+        294.85,
+        784.34
+      ],
+      "confidence": 0.9986
+    },
+    {
+      "label": "BRAND",
+      "start": 28,
+      "end": 29,
+      "text": "BÄCKERKRÖNUNG",
+      "bbox": [
+        168.19,
+        755.07,
+        226.2,
+        764.11
+      ],
+      "confidence": 0.9994
+    },
+    {
+      "label": "PRODUCT",
+      "start": 29,
+      "end": 31,
+      "text": "Wurzelbrot* Dunkel,",
+      "bbox": [
+        168.19,
+        762.57,
+        208.68,
+        779.08
+      ],
+      "confidence": 0.993
+    },
+    {
+      "label": "QUANTITY",
+      "start": 32,
+      "end": 34,
+      "text": "300 g",
+      "bbox": [
+        175.85,
+        777.65,
+        194.23,
+        786.58
+      ],
+      "confidence": 0.9992
+    },
+    {
+      "label": "UNIT_PRICE",
+      "start": 34,
+      "end": 38,
+      "text": "(1 kg = 4.63)",
+      "bbox": [
+        168.19,
+        785.15,
+        209.2,
+        794.08
+      ],
+      "confidence": 0.9995
+    },
+    {
+      "label": "BRAND",
+      "start": 38,
+      "end": 40,
+      "text": "BÄCKER- KRÖNUNG",
+      "bbox": [
+        22.67,
+        354.56,
+        55.38,
+        371.1
+      ],
+      "confidence": 0.9983
+    },
+    {
+      "label": "PRODUCT",
+      "start": 40,
+      "end": 45,
+      "text": "Apfeldreieck* Blätterteig mit Apfel- stücken,",
+      "bbox": [
+        22.67,
+        369.56,
+        68.18,
+        401.07
+      ],
+      "confidence": 0.9384
+    },
+    {
+      "label": "QUANTITY",
+      "start": 46,
+      "end": 48,
+      "text": "2 Stück",
+      "bbox": [
+        30.34,
+        399.63,
+        53.42,
+        408.57
+      ],
+      "confidence": 0.9764
+    },
+    {
+      "label": "OLD_PRICE",
+      "start": 51,
+      "end": 52,
+      "text": "0.69",
+      "bbox": [
+        243.56,
+        191.29,
+        258.56,
+        200.22
+      ],
+      "confidence": 0.4427
+    },
+    {
+      "label": "OLD_PRICE",
+      "start": 57,
+      "end": 58,
+      "text": "1.38",
+      "bbox": [
+        204.47,
+        390.95,
+        226.82,
+        404.45
+      ],
+      "confidence": 0.8455
+    },
+    {
+      "label": "APP_PRICE",
+      "start": 58,
+      "end": 59,
+      "text": "1.00",
+      "bbox": [
+        188.32,
+        362.37,
+        242.97,
+        395.38
+      ],
+      "confidence": 0.4885
+    },
+    {
+      "label": "DISCOUNT",
+      "start": 59,
+      "end": 60,
+      "text": "-28%",
+      "bbox": [
+        211.03,
+        328.27,
+        256.8,
+        352.27
+      ],
+      "confidence": 0.9972
+    },
+    {
+      "label": "BRAND",
+      "start": 60,
+      "end": 61,
+      "text": "BÄCKERKRÖNUNG",
+      "bbox": [
+        168.22,
+        577.32,
+        226.23,
+        586.35
+      ],
+      "confidence": 0.9994
+    },
+    {
+      "label": "PRODUCT",
+      "start": 61,
+      "end": 63,
+      "text": "Pizza Margherita*",
+      "bbox": [
+        168.22,
+        584.82,
+        226.68,
+        593.85
+      ],
+      "confidence": 0.9991
+    },
+    {
+      "label": "PRICE",
+      "start": 65,
+      "end": 66,
+      "text": "1.99",
+      "bbox": [
+        401.53,
+        757.45,
+        446.03,
+        784.34
+      ],
+      "confidence": 0.9988
+    },
+    {
+      "label": "BRAND",
+      "start": 66,
+      "end": 67,
+      "text": "BÄCKERKRÖNUNG",
+      "bbox": [
+        319.37,
+        762.57,
+        377.38,
+        771.61
+      ],
+      "confidence": 0.9994
+    },
+    {
+      "label": "PRODUCT",
+      "start": 67,
+      "end": 68,
+      "text": "Chia-Weltmeisterbrot*",
+      "bbox": [
+        319.37,
+        770.07,
+        393.77,
+        779.11
+      ],
+      "confidence": 0.999
+    },
+    {
+      "label": "QUANTITY",
+      "start": 69,
+      "end": 71,
+      "text": "750 g",
+      "bbox": [
+        327.04,
+        777.65,
+        345.41,
+        786.58
+      ],
+      "confidence": 0.9993
+    },
+    {
+      "label": "UNIT_PRICE",
+      "start": 71,
+      "end": 75,
+      "text": "(1 kg = 2.65)",
+      "bbox": [
+        319.37,
+        785.15,
+        360.38,
+        794.08
+      ],
+      "confidence": 0.9995
+    },
+    {
+      "label": "PRICE",
+      "start": 75,
+      "end": 76,
+      "text": "0.45",
+      "bbox": [
+        401.53,
+        564.7,
+        446.03,
+        591.58
+      ],
+      "confidence": 0.9983
+    },
+    {
+      "label": "DISCOUNT",
+      "start": 76,
+      "end": 77,
+      "text": "-25%",
+      "bbox": [
+        420.02,
+        344.17,
+        457.3,
+        363.72
+      ],
+      "confidence": 0.9977
+    },
+    {
+      "label": "PRICE",
+      "start": 77,
+      "end": 78,
+      "text": "0.29",
+      "bbox": [
+        401.53,
+        371.94,
+        446.03,
+        398.83
+      ],
+      "confidence": 0.9968
+    },
+    {
+      "label": "OLD_PRICE",
+      "start": 78,
+      "end": 79,
+      "text": "0.39",
+      "bbox": [
+        414.68,
+        395.22,
+        432.88,
+        406.21
+      ],
+      "confidence": 0.9966
+    },
+    {
+      "label": "BRAND",
+      "start": 79,
+      "end": 80,
+      "text": "BÄCKERKRÖNUNG",
+      "bbox": [
+        270.57,
+        377.06,
+        328.58,
+        386.1
+      ],
+      "confidence": 0.9994
+    },
+    {
+      "label": "PRODUCT",
+      "start": 80,
+      "end": 82,
+      "text": "Rosenbrötchen* Dunkel,",
+      "bbox": [
+        270.57,
+        384.56,
+        323.89,
+        401.07
+      ],
+      "confidence": 0.9922
+    },
+    {
+      "label": "BRAND",
+      "start": 88,
+      "end": 89,
+      "text": "BÄCKERKRÖNUNG",
+      "bbox": [
+        319.44,
+        569.82,
+        377.45,
+        578.85
+      ],
+      "confidence": 0.9993
+    },
+    {
+      "label": "PRODUCT",
+      "start": 89,
+      "end": 93,
+      "text": "Der fruchtig-süß gefüllte Krapfen*",
+      "bbox": [
+        319.44,
+        577.32,
+        376.61,
+        593.85
+      ],
+      "confidence": 0.9985
+    },
+    {
+      "label": "DISCOUNT",
+      "start": 95,
+      "end": 96,
+      "text": "-20%",
+      "bbox": [
+        268.84,
+        536.92,
+        306.12,
+        556.47
+      ],
+      "confidence": 0.9978
+    },
+    {
+      "label": "PRICE",
+      "start": 96,
+      "end": 97,
+      "text": "0.79",
+      "bbox": [
+        250.35,
+        564.7,
+        294.85,
+        591.58
+      ],
+      "confidence": 0.998
+    },
+    {
+      "label": "OLD_PRICE",
+      "start": 97,
+      "end": 98,
+      "text": "0.99",
+      "bbox": [
+        263.5,
+        587.97,
+        281.7,
+        598.97
+      ],
+      "confidence": 0.9972
+    },
+    {
+      "label": "VALID",
+      "start": 99,
+      "end": 102,
+      "text": "Mo, 24.8. – Sa, 29.8.",
+      "bbox": [
+        176.85,
+        13.98,
+        299.37,
+        31.09
+      ],
+      "confidence": 0.9985
+    }
+  ]
+}

@@ -13,6 +13,7 @@ hat nie gerechnet - hier ist die Arithmetik von sich aus unbeteiligt.
 """
 
 from magda import offers_verify
+from magda.offers_gold import offers_from_reference
 
 WIDTH, HEIGHT = 1000.0, 1000.0
 
@@ -113,3 +114,70 @@ def test_seiten_ohne_referenz_werden_uebersprungen():
 
     assert report.pages == 0
     assert report.accuracy is None
+
+
+def test_judge_offers_verdichtet_je_angebot():
+    """0,205 kg x 3,37 EUR/kg = 0,69 EUR bestaetigt Angebot A; Angebot B
+    traegt denselben Preis 0.69, obwohl sein eigener Grundpreis (500 g zu
+    4.00/kg) 2.00 verlangt - die Rechnung zeigt auf Angebot A, also
+    widerlegt."""
+    page = {
+        "page_id": "p1",
+        "width": WIDTH,
+        "height": HEIGHT,
+        "words": [
+            _word("Produkt A", 100, 100),        # 0
+            _word("0,205 kg", 100, 120),          # 1
+            _word("(1 kg = 3.37)", 200, 120),     # 2
+            _word("0.69", 100, 140),              # 3
+            _word("Produkt B", 100, 500),         # 4
+            _word("500 g", 100, 520),             # 5
+            _word("(1 kg = 4.00)", 200, 520),     # 6
+            _word("0.69", 100, 540),              # 7 - falscher Preis fuer B
+        ],
+        "tags": [
+            "B-PRODUCT", "B-QUANTITY", "B-UNIT_PRICE", "B-PRICE",
+            "B-PRODUCT", "B-QUANTITY", "B-UNIT_PRICE", "B-PRICE",
+        ],
+    }
+    assignment = {0: 0, 1: 0, 2: 0, 3: 0, 4: 1, 5: 1, 6: 1, 7: 1}
+    offers = offers_from_reference(page, assignment)
+
+    assert offers_verify.judge_offers(page, offers) == ["confirmed", "contradicted"]
+
+
+def test_judge_offers_contradicted_schlaegt_confirmed_im_selben_angebot():
+    """Ein Angebot mit einem richtigen und einem falschen Preis gilt als
+    widerlegt, nicht als halb bestaetigt - `contradicted` hat Vorrang vor
+    `confirmed`, auch wenn beide Urteile im selben Angebot vorkommen."""
+    page = {
+        "page_id": "p1",
+        "width": WIDTH,
+        "height": HEIGHT,
+        "words": [
+            _word("Produkt A", 100, 100),        # 0
+            _word("0,205 kg", 100, 120),          # 1
+            _word("(1 kg = 3.37)", 200, 120),     # 2
+            _word("0.69", 100, 140),              # 3 - korrekter Preis von A
+            _word("2.00", 100, 160),              # 4 - gehoert eigentlich zu B
+            _word("Produkt B", 100, 500),         # 5
+            _word("500 g", 100, 520),             # 6
+            _word("(1 kg = 4.00)", 200, 520),     # 7
+        ],
+        "tags": [
+            "B-PRODUCT", "B-QUANTITY", "B-UNIT_PRICE", "B-PRICE", "B-APP_PRICE",
+            "B-PRODUCT", "B-QUANTITY", "B-UNIT_PRICE",
+        ],
+    }
+    assignment = {0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 1, 6: 1, 7: 1}
+    offers = offers_from_reference(page, assignment)
+
+    assert offers_verify.judge_offers(page, offers) == ["contradicted", "unverifiable"]
+
+
+def test_judge_offers_ohne_preis_ist_unverifiable():
+    page = dict(SEITE, tags=["B-PRODUCT", "B-QUANTITY", "O", "O",
+                             "B-PRODUCT", "B-QUANTITY", "O", "O"])
+    offers = offers_from_reference(page, RICHTIG)
+
+    assert offers_verify.judge_offers(page, offers) == ["unverifiable", "unverifiable"]

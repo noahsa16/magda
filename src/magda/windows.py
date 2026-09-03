@@ -11,12 +11,15 @@ das kaum auf – die Metrik zählt nur, was im Fenster liegt. Für die
 Angebots-Rekonstruktion schon: auf `1351605_p19` fehlten 27 Entities am Stück.
 """
 
+from pathlib import Path
+
 import torch
 from PIL import Image
 from torch.utils.data import Dataset
 from transformers import LayoutLMv2ImageProcessor
 
-from magda.config import IMAGES_DIR
+from magda.alignment import subword_boxes
+from magda.config import IMAGES_DIR, Variant
 from magda.ocr import normalize_bbox
 
 
@@ -29,13 +32,20 @@ class WindowDataset(Dataset):
     """
 
     def __init__(self, pages: list[dict], tokenizer, max_length: int, stride: int,
-                 layout: bool):
+                 variant: Variant, images_dir=None):
         self.encodings = []
         self.word_ids = []
         self.page_index = []
-        self.layout = layout
+        self.variant = variant
         self.page_ids = [page["page_id"] for page in pages]
-        self.image_processor = LayoutLMv2ImageProcessor(apply_ocr=False) if layout else None
+        # None statt eines Default-Arguments: `IMAGES_DIR` an dieser Stelle
+        # fest zu binden hätte den Wert beim Modulimport eingefroren und
+        # `magda.pipeline.extract_offers` gezwungen, entweder nach data/images/
+        # zu schreiben oder das globale `config.IMAGES_DIR` zu verbiegen.
+        self.images_dir = Path(images_dir) if images_dir is not None else IMAGES_DIR
+        self.image_processor = (
+            LayoutLMv2ImageProcessor(apply_ocr=False) if variant.image else None
+        )
 
         for page_nr, page in enumerate(pages):
             words = [w["text"] for w in page["words"]]
@@ -46,11 +56,11 @@ class WindowDataset(Dataset):
                 "stride": stride,
                 "return_overflowing_tokens": True,
             }
-            if layout:
-                boxes = [
-                    normalize_bbox(w["bbox"], page["width"], page["height"])
-                    for w in page["words"]
-                ]
+            boxes = [
+                normalize_bbox(w["bbox"], page["width"], page["height"])
+                for w in page["words"]
+            ]
+            if variant.boxes == "tokenizer":
                 encoded = tokenizer(words, boxes=boxes, **arguments)
             else:
                 encoded = tokenizer(words, is_split_into_words=True, **arguments)
@@ -58,13 +68,17 @@ class WindowDataset(Dataset):
             for window in range(len(encoded["input_ids"])):
                 # overflow_to_sample_mapping und die Bildkanäle gehören nicht
                 # in den Vorwärtsdurchlauf; sie sind Buchhaltung des Tokenizers.
-                self.encodings.append(
-                    {
-                        key: value[window]
-                        for key, value in encoded.items()
-                        if key != "overflow_to_sample_mapping"
-                    }
-                )
+                fenster = {
+                    key: value[window]
+                    for key, value in encoded.items()
+                    if key != "overflow_to_sample_mapping"
+                }
+                # Je Fenster eigene Wortindizes, also auch eigene Boxen: das
+                # zweite Fenster beginnt mitten auf der Seite, seine erste
+                # Position traegt nicht die Box von Wort 0.
+                if variant.boxes == "manual":
+                    fenster["bbox"] = subword_boxes(encoded.word_ids(window), boxes)
+                self.encodings.append(fenster)
                 self.word_ids.append(encoded.word_ids(window))
                 self.page_index.append(page_nr)
 
@@ -73,9 +87,9 @@ class WindowDataset(Dataset):
 
     def __getitem__(self, idx):
         item = {k: torch.tensor(v) for k, v in self.encodings[idx].items()}
-        if not self.layout:
+        if not self.variant.image:
             return item
-        image_file = IMAGES_DIR / f"{self.page_ids[self.page_index[idx]]}.png"
+        image_file = self.images_dir / f"{self.page_ids[self.page_index[idx]]}.png"
         with Image.open(image_file) as page_image:
             pixels = self.image_processor(
                 page_image.convert("RGB"), return_tensors="pt"

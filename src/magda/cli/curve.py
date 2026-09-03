@@ -53,7 +53,7 @@ def main(argv=None):
         description="Lernkurve über clusterweise gezogene Trainingsteilmengen.")
     parser.add_argument("--points", default="25,50,100,175",
                         help="Seitenzahlen der Kurvenpunkte, kommagetrennt")
-    parser.add_argument("--variant", default="gbert", choices=["gbert", "layoutxlm"])
+    parser.add_argument("--variant", default="gbert", choices=list(config.VARIANTS))
     parser.add_argument("--labels-from", default=config.CANONICAL_LABELS)
     args = parser.parse_args(argv)
 

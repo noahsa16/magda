@@ -663,3 +663,106 @@ def test_eine_entity_ohne_eigenen_namen_ankert_nicht_am_fremden():
 
     assert of_index[0] == 0 and gaps[0] == 0.0     # "Pfanne" ankert an sich
     assert of_index[3] == 3 and gaps[3] == 0.0     # "Topf" ebenso
+
+
+# ------------------------------------------------------- Lexikalischer Block
+
+LEXIK = offer_pairs.LEXICAL_BLOCKS
+
+
+def _lexik_page():
+    """Zwei Angebote, getrennt durch "oder", das zweite mit Aktionspreis.
+
+    Die drei Wortarten, um die es geht, tragen alle das Label `O`: "je",
+    "Stueck", "oder" und "Aktion" fallen durchs Labeling und liegen bis
+    hierher ungenutzt in der Wortliste.
+    """
+    texts = ["Landliebe", "Butter", "je", "Stück,", "1.29",
+             "oder", "Ja!", "Milch", "Aktion", "0.99"]
+    boxes = [[10, 10 + 12 * i, 60, 20 + 12 * i] for i in range(10)]
+    return {
+        "page_id": "lexik",
+        "width": 100,
+        "height": 200,
+        "words": [{"text": t, "bbox": b} for t, b in zip(texts, boxes)],
+        "tags": ["B-BRAND", "B-PRODUCT", "O", "O", "B-PRICE",
+                 "O", "B-BRAND", "B-PRODUCT", "O", "B-PRICE"],
+    }
+
+
+def _lexik(pairs, i, j, name):
+    """Ein einzelnes Lexikmerkmal des Paares (i, j)."""
+    column = pairs.feature_names.index(name)
+    return pairs.features[pairs.index_pairs.index((i, j))][column]
+
+
+def test_der_lexikblock_haengt_hinten_an():
+    """Dieselbe Zusicherung wie fuer den Ankerblock: ein Checkpoint, dessen
+    Spalten sich verschieben, rechnet still falsch weiter."""
+    mit = offer_pairs.feature_names(LEXIK)
+    ohne = offer_pairs.feature_names(offer_pairs.GEOMETRY_BLOCKS)
+
+    assert mit[:len(ohne)] == ohne
+    assert mit[len(ohne):] == offer_pairs.LEXICAL_NAMES
+    # Erst die gestapelte Variante prueft die *Stellung* im BLOCK_ORDER:
+    # allein gemessen bliebe der Lexikblock auch dann hinten, wenn er sich
+    # vor den Ankerblock schoebe - und genau das verschoebe die Spalten
+    # eines Checkpoints, ohne dass etwas abstuerzt.
+    gestapelt = offer_pairs.feature_names(offer_pairs.ANCHOR_LEXICAL_BLOCKS)
+    assert gestapelt == ohne + offer_pairs.ANCHOR_NAMES + offer_pairs.LEXICAL_NAMES
+
+
+def test_je_stueck_bindet_den_preis_an_die_beschreibung():
+    """Der Textlayer sagt, was die Geometrie nur vermuten kann.
+
+    Entities: 0 Landliebe, 1 Butter, 2 "1.29", 3 Ja!, 4 Milch, 5 "0.99".
+    Vor dem Preis stehen "je" und "Stueck," - beide als `O` gelabelt.
+    """
+    pairs = offer_pairs.page_pairs(_lexik_page(), blocks=LEXIK)
+
+    assert _lexik(pairs, 1, 2, "promo_before_j") == 1.0
+    assert _lexik(pairs, 1, 2, "unit_before_j") == 1.0
+    # Vor "Butter" steht nur die Marke - keine der beiden Wortarten.
+    assert _lexik(pairs, 1, 2, "promo_before_i") == 0.0
+    assert _lexik(pairs, 1, 2, "unit_before_i") == 0.0
+
+
+def test_satzzeichen_stehen_der_wortliste_nicht_im_weg():
+    """Der Textlayer haengt Kommas und Sternchen an: "Stueck," ist "Stueck"."""
+    assert offer_pairs._normalise_token("Stück,") == "stück"
+    assert offer_pairs._normalise_token("Filz*") == "filz"
+    assert offer_pairs._normalise_token(" JE ") == "je"
+
+
+def test_aktion_dazwischen_trennt():
+    """"Aktion" oeffnet einen Preisblock - steht es zwischen zwei Entities,
+    faengt dort ein neues Angebot an."""
+    pairs = offer_pairs.page_pairs(_lexik_page(), blocks=LEXIK)
+
+    assert _lexik(pairs, 4, 5, "action_between") == 1.0
+    assert _lexik(pairs, 4, 5, "action_before_j") == 1.0
+    assert _lexik(pairs, 1, 2, "action_between") == 0.0
+
+
+def test_oder_dazwischen_trennt():
+    """Dieselbe Grenze, die `labeling.trim_spans` schon beim Labeln zieht."""
+    pairs = offer_pairs.page_pairs(_lexik_page(), blocks=LEXIK)
+
+    assert _lexik(pairs, 2, 3, "separator_between") == 1.0
+    assert _lexik(pairs, 0, 1, "separator_between") == 0.0
+
+
+def test_ohne_lexikblock_wird_kein_wort_gelesen():
+    """Der Block ist abschaltbar, sonst kann die Ablation ihn nicht messen."""
+    ohne = offer_pairs.page_pairs(_lexik_page())
+
+    assert len(ohne.features[0]) == len(offer_pairs.FEATURE_NAMES)
+    assert not any(name in ohne.feature_names
+                   for name in offer_pairs.LEXICAL_NAMES)
+
+
+def test_kein_lexikmerkmal_heisst_nach_der_rechnung():
+    """Dieselbe Zusicherung wie fuer die anderen Bloecke."""
+    verboten = ("unit_price", "arithmetic", "quantity_times", "rechnung")
+    for name in offer_pairs.LEXICAL_NAMES:
+        assert not any(wort in name for wort in verboten), name

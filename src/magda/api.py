@@ -15,15 +15,16 @@ import json
 import os
 import tempfile
 from datetime import datetime
+from pathlib import Path
 from typing import Literal
 
-from fastapi import FastAPI, HTTPException
-from fastapi.responses import FileResponse
+from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi.responses import FileResponse, Response
 from pydantic import BaseModel
 
 from magda import (
     agreement, catalog_meta, catalogs, checkpoints, config, dedupe, jobs, runner,
-    runs, scraping,
+    runs, scraping, uploads,
 )
 from magda import label_audit, offer_teacher, offers_gold
 from magda.gold import count_by_status, words_hash
@@ -348,9 +349,9 @@ def _training_state(variant: str) -> dict:
 
 @app.get("/api/model")
 def get_model_status():
-    """Trainingsstand beider Varianten – die Demo zeigt daran, wie weit das
+    """Trainingsstand aller Arme – die Demo zeigt daran, wie weit das
     Modell ist, das dort gerade rechnet."""
-    return [_training_state(v) for v in ("layoutxlm", "gbert")]
+    return [_training_state(v) for v in config.VARIANTS]
 
 
 class RunRequest(BaseModel):
@@ -424,6 +425,24 @@ def _load_words(page_id: str) -> dict:
         raise HTTPException(404, f"Unbekannte Seite: {page_id}")
     with open(words_file) as f:
         return json.load(f)
+
+
+@app.get("/api/annotation-task")
+def annotation_task():
+    """Die abgesprochene Handannotations-Aufgabe (data/annotation_task.json).
+
+    Nur Seiten, die es unter data/words/ gibt: eine Aufgabe, die auf eine
+    inzwischen entdoppelte Seite zeigt, soll im Annotator nicht als
+    unerledigbar stehen bleiben.
+    """
+    try:
+        with open(config.ANNOTATION_TASK_FILE) as f:
+            task = json.load(f)
+    except FileNotFoundError:
+        return {"title": "", "created": None, "for": [], "why": "", "pages": []}
+    task["pages"] = [p for p in task.get("pages", [])
+                     if (config.WORDS_DIR / f"{p}.json").exists()]
+    return task
 
 
 @app.get("/api/gold")
@@ -953,3 +972,122 @@ def put_audit_verdict(label: str, key: str, payload: AuditVerdict):
 
     label_audit.save_audit(data)
     return {"key": key, "applied_to": len(affected), "summary": label_audit.summarize(data)}
+
+
+# ---------------------------------------------------------------------------
+# Demo (data/uploads/, sechste und letzte Schreibstelle der API)
+# ---------------------------------------------------------------------------
+# Ein fremdes PDF, hochgeladen oder aus einer Katalog-URL zusammengesetzt,
+# läuft über `magda.pipeline.extract_offers` - ohne data/raw, data/words oder
+# data/predictions zu berühren. Verarbeitet wird über den Runner (Job
+# "extract-pdf", siehe jobs.py), nicht inline im Request: Ein Prospekt mit
+# vierzig Seiten braucht Sekunden bis Minuten, und ein FastAPI-Handler ist
+# der falsche Ort für einen so langen synchronen Aufruf.
+
+
+class FromUrlRequest(BaseModel):
+    url: str
+    max_pages: int = 40
+
+
+def _valid_upload_id(upload_id: str) -> str:
+    if not uploads.is_valid_id(upload_id):
+        raise HTTPException(400, f"Ungültige Upload-ID: {upload_id!r}")
+    return upload_id
+
+
+@app.post("/api/demo/upload")
+async def demo_upload(file: UploadFile = File(...)):
+    if file.content_type != "application/pdf":
+        raise HTTPException(400, f"Nur PDF erlaubt, bekommen: {file.content_type}")
+    data = await file.read()
+    try:
+        return uploads.save_pdf(data)
+    except uploads.InvalidUpload as e:
+        raise HTTPException(400, str(e))
+
+
+@app.post("/api/demo/from-url")
+def demo_from_url(req: FromUrlRequest):
+    """Lädt einen Penny-Katalog und fügt ihn zu einem PDF zusammen - dieselbe
+    Ablage wie ein Upload, nur eine andere Quelle für die Bytes.
+
+    Netzfehler werden zu 400, wie bei `probe_catalog`: für den Nutzer ist ein
+    unerreichbarer Katalog eine fehlerhafte Eingabe, kein Serverfehler.
+    """
+    try:
+        return uploads.from_url(req.url, req.max_pages)
+    except uploads.InvalidUpload as e:
+        raise HTTPException(400, str(e))
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+    except Exception as e:
+        raise HTTPException(400, f"Katalog nicht erreichbar: {e}")
+
+
+@app.get("/api/demo/{upload_id}")
+def get_demo_result(upload_id: str):
+    upload_id = _valid_upload_id(upload_id)
+    result_file = uploads.result_path(upload_id)
+    if not result_file.exists():
+        raise HTTPException(
+            404, "Noch kein Ergebnis für diese ID - lief der Job `extract-pdf` schon durch?"
+        )
+    with open(result_file) as f:
+        return json.load(f)
+
+
+@app.get("/api/demo/{upload_id}/page/{page}.png")
+def get_demo_page_image(upload_id: str, page: int):
+    """Das gerenderte Seitenbild - separat von /api/demo/{id}, damit das
+    Frontend nicht die ganze (womöglich viele MB große) Ergebnis-JSON laden
+    muss, nur um ein <img> zu befüllen.
+
+    Dateiname trägt den doc_id-Präfix, den `cli/extract_pdf.py --images-dir`
+    vergibt (`<doc_id>_p<n>.png`, doc_id = Hash der PDF-Bytes, ungleich der
+    Upload-ID) - deshalb Glob statt eines festen Namens.
+    """
+    upload_id = _valid_upload_id(upload_id)
+    directory = uploads.images_dir(upload_id)
+    matches = sorted(directory.glob(f"*_p{page}.png")) if directory.is_dir() else []
+    if not matches:
+        raise HTTPException(404, f"Kein Bild für Seite {page}.")
+    return FileResponse(matches[0], media_type="image/png")
+
+
+@app.get("/api/demo/{upload_id}/export")
+def export_demo_result(upload_id: str, format: Literal["csv", "json", "sqlite"]):
+    """Export als Download. csv/sqlite werden aus dem gespeicherten JSON neu
+    gebaut (`pipeline.from_json`), statt Modell und Paarmodell ein zweites
+    Mal laufen zu lassen - das JSON trägt schon alles, was beide brauchen."""
+    upload_id = _valid_upload_id(upload_id)
+    result_file = uploads.result_path(upload_id)
+    if not result_file.exists():
+        raise HTTPException(404, "Noch kein Ergebnis für diese ID.")
+
+    if format == "json":
+        return FileResponse(
+            result_file, media_type="application/json", filename=f"magda-{upload_id}.json",
+        )
+
+    from magda import pipeline
+
+    result = pipeline.from_json(result_file.read_text())
+    if format == "csv":
+        return Response(
+            pipeline.to_csv(result),
+            media_type="text/csv",
+            headers={"Content-Disposition": f'attachment; filename="magda-{upload_id}.csv"'},
+        )
+
+    # sqlite: to_sqlite schreibt nach Pfad, nicht in den Speicher - eine
+    # Temp-Datei ist hier der kürzeste Weg zu einer Antwort mit Bytes.
+    with tempfile.TemporaryDirectory() as tmp:
+        db_path = Path(tmp) / "export.sqlite"
+        pipeline.to_sqlite(result, db_path)
+        data = db_path.read_bytes()
+    return Response(
+        data,
+        media_type="application/x-sqlite3",
+        headers={"Content-Disposition": f'attachment; filename="magda-{upload_id}.sqlite"'},
+    )

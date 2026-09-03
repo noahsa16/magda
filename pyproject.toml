@@ -55,7 +55,17 @@ flair = ["flair>=0.13"]
 # kommt ohne den ILP-Dekoder aus, die Prüfung nicht. Er trägt den
 # stärksten gemessenen Gruppierungsbefund (+0.100 Gruppen-F1,
 # p = 0.000) – ein Pfad, den CI nie ausführt, ist ungeprüft.
-dev = ["pytest", "httpx", "pulp"]
+#
+# `highspy` ist der Solver dahinter und kein Luxus: gemessen an einer
+# echten Gitter-Instanz (93 Entities, 4278 Variablen) löst HiGHS in 96 s,
+# wo PuLPs mitgeliefertes CBC nach 900 s noch nicht fertig war – bei
+# identischem Zielwert. Zwei Gründe, beide unabhängig von der Qualität
+# der Solver: das CBC-Binary ist x86_64 und läuft auf Apple Silicon unter
+# Rosetta, und `PULP_CBC_CMD` startet je Schnittebenen-Runde einen neuen
+# Prozess samt Schreiben und Lesen der Modelldatei. Fehlt highspy, fällt
+# `offer_ilp._solver()` auf CBC zurück: gleiches Ergebnis, längere Läufe.
+# (PuLP 3.3 verwarnt PULP_CBC_CMD ohnehin für 4.0.)
+dev = ["pytest", "httpx", "pulp", "highspy"]
 
 [tool.setuptools.packages.find]
 where = ["src"]

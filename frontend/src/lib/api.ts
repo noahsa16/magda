@@ -1,6 +1,7 @@
 import type {
-  Agreement, EvalReport, GoldAnnotation, GoldSummary,
+  Agreement, AnnotationTask, EvalReport, GoldAnnotation, GoldSummary,
   AuditReport, AuditSummary,
+  DemoResult, DemoUpload,
   JobDef, LabelDistribution, Labeler, LabelSource, LabelsVsGold, ModelStatus, PageDetail, PageSummary,
   OfferGrouping, OfferGroupingSummary,
   PipelineStatus,
@@ -57,6 +58,7 @@ export const api = {
     fetchJson<LabelDistribution>(
       `/api/labels/distribution${model ? `?model=${encodeURIComponent(model)}` : ""}`,
     ),
+  annotationTask: () => fetchJson<AnnotationTask>("/api/annotation-task"),
   gold: () => fetchJson<GoldSummary[]>("/api/gold"),
   goldPage: (id: string) => fetchJson<GoldAnnotation>(`/api/gold/${id}`),
   saveGold: (
@@ -104,4 +106,19 @@ export const api = {
         body: JSON.stringify(payload),
       },
     ),
+  demoUpload: (file: File) => {
+    const form = new FormData()
+    form.append("file", file)
+    return fetchJson<DemoUpload>("/api/demo/upload", { method: "POST", body: form })
+  },
+  demoFromUrl: (url: string, maxPages = 40) =>
+    fetchJson<DemoUpload>("/api/demo/from-url", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url, max_pages: maxPages }),
+    }),
+  demoResult: (id: string) => fetchJson<DemoResult>(`/api/demo/${id}`),
+  demoPageImageUrl: (id: string, page: number) => `/api/demo/${id}/page/${page}.png`,
+  demoExportUrl: (id: string, format: "csv" | "json" | "sqlite") =>
+    `/api/demo/${id}/export?format=${format}`,
 }
