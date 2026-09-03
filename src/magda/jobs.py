@@ -12,6 +12,7 @@ Pfade als config.X zur Laufzeit, damit Tests sie umbiegen können.
 """
 
 
+import re
 from dataclasses import dataclass, field
 
 from magda import config
@@ -26,6 +27,11 @@ class Param:
     choices: tuple[str, ...] = ()
     required: bool = False
     help: str = ""
+    # Nur für kind == "pattern": ein voller Regex-Match, den der Wert
+    # erfüllen muss. Für Werte, die serverseitig zu einem Pfad werden
+    # (upload_id) - eine Auswahlliste wie bei "choice" geht dort nicht,
+    # weil die gültigen Werte zur Laufzeit entstehen.
+    pattern: str = ""
 
     @property
     def key(self) -> str:
@@ -150,10 +156,34 @@ JOBS: dict[str, Job] = {
             Param("--top", "int", "Wie viele Seiten auflisten", default=20),
         ),
     ),
+    "extract-pdf": Job(
+        title="Demo: PDF verarbeiten",
+        what="Verarbeitet ein hochgeladenes oder aus einer Katalog-URL importiertes "
+             "PDF direkt zu Angeboten - für die Demo-Seite, ohne data/ zu berühren.",
+        params=(
+            # kind="pattern" statt "str": upload_id wird in build_command zu
+            # einem Pfad unter UPLOADS_DIR - ohne die Musterprüfung wäre eine
+            # beliebige Zeichenkette ein potenzieller Pfad.
+            Param(
+                "upload_id", "pattern", "Upload", required=True,
+                pattern=r"[0-9a-f]{32}",
+                help="Server-vergebene ID aus /api/demo/upload, kein Dateiname",
+            ),
+            Param(
+                "--variant", "choice", "Modell",
+                choices=("gbert", "layoutxlm"), default="gbert",
+            ),
+        ),
+    ),
 }
 
 
 def _coerce(param: Param, raw: object) -> object:
+    if param.kind == "pattern":
+        text = str(raw)
+        if not re.fullmatch(param.pattern, text):
+            raise ValueError(f"{param.label}: {text!r} hat nicht das erwartete Format.")
+        return text
     if param.kind == "choice":
         text = str(raw)
         if text not in param.choices:
@@ -208,10 +238,31 @@ def build_command(job: str, values: dict) -> list[str]:
                 raise ValueError(f"{spec.title}: {param.label} wird gebraucht.")
             continue
         value = str(_coerce(param, raw))
+
+        # upload_id ist keine Eingabe, die als Text im Kommando landet: erst
+        # hier, nach der Musterprüfung oben, wird aus der geprüften ID ein
+        # Pfad unter UPLOADS_DIR. Der Nutzer gibt so nie selbst einen Pfad
+        # ein, auch nicht mittelbar über die ID - genau das war die Vorgabe
+        # für den Job "extract-pdf".
+        if param.key == "upload_id":
+            value = str(config.UPLOADS_DIR / f"{value}.pdf")
+
         if param.positional:
             positional.append(value)
         else:
             options += [param.name, value]
+
+    if job == "extract-pdf":
+        # Ziel-JSON und Seitenbilder liegen fest unter derselben ID - anders
+        # als upload_id oben kommt keine dieser drei Angaben vom Nutzer, sie
+        # werden hier aus dem schon geprüften Wert abgeleitet.
+        upload_id = str(values["upload_id"])
+        options += [
+            "--out", str(config.UPLOADS_DIR / f"{upload_id}.json"),
+            "--images-dir", str(config.UPLOADS_DIR / upload_id),
+            "--render-images",
+            "--no-embed-images",
+        ]
 
     # `python -m magda` statt des Konsolenbefehls `magda`: config.PYTHON zeigt
     # explizit auf das Projekt-venv, während der PATH davon abhängt, aus welcher

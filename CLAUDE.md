@@ -265,11 +265,15 @@ eine Liste auszugeben.
 - **Der `words_hash` in Gold-Dateien** ist die Absicherung des
   Wortreihenfolge-Vertrags. Ändert sich Schritt 02, zeigen die Span-Indizes
   auf andere Wörter, ohne dass etwas kaputtgeht. Die API lehnt dann mit 409 ab.
-- **Die API ist nicht mehr read-only.** Geschrieben wird an fünf aufgezählten
+- **Die API ist nicht mehr read-only.** Geschrieben wird an sechs aufgezählten
   Stellen: `gold/` (handannotierte Spans), `gold/offers/`
   (Gruppierungsreferenz), `catalogs.json` (Katalog-Verzeichnis), `data/runs/`
-  (Lauf-Historie) und `data/audit/` (Urteile der Handprüfung – niemals
-  `data/labeled/` selbst). Eine Erlaubnisliste, kein freier Schreibzugriff –
+  (Lauf-Historie), `data/audit/` (Urteile der Handprüfung – niemals
+  `data/labeled/` selbst) und `data/uploads/` (Demo-PDFs samt Ergebnis-JSON
+  und Seitenbildern). Bei Letzterem vergibt der Server die ID
+  (`secrets.token_hex`, siehe `magda.uploads`), nie der Dateiname des
+  Nutzers – sonst wäre ein hochgeladener Dateiname ein potenzieller Pfad
+  (`../../etc/passwd.pdf`). Eine Erlaubnisliste, kein freier Schreibzugriff –
   dieselbe enge Beschränkung wie beim Runner.
 - **Spans und Gruppen liegen in getrennten Dateien**, obwohl beide von Hand
   entstehen: `gold/<seite>.json` sagt, *was* ein Wort ist,

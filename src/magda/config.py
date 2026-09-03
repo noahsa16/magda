@@ -81,6 +81,12 @@ CATALOGS_FILE = PROJECT_ROOT / "catalogs.json"
 # ungespeichert ist die Zuordnung nach sieben Tagen unwiederbringlich weg.
 CATALOG_META_FILE = PROJECT_ROOT / "catalog_meta.json"
 CHECKPOINTS_DIR = PROJECT_ROOT / "checkpoints"
+# Von der Demo hochgeladene oder aus einer Katalog-URL zusammengesetzte PDFs
+# samt ihrem Ergebnis-JSON und Seitenbildern. Anders als data/raw/ keine
+# Ernte, sondern beliebiger Nutzer-Input mit einer vom Server vergebenen ID
+# (siehe magda.uploads) statt eines Dateinamens - deshalb gitignored statt
+# versioniert.
+UPLOADS_DIR = DATA_DIR / "uploads"
 
 
 def model_slug(model: str) -> str:

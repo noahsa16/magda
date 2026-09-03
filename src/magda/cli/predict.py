@@ -19,9 +19,6 @@ import json
 import sys
 from pathlib import Path
 
-import numpy as np
-from transformers import AutoModelForTokenClassification, AutoTokenizer, Trainer
-
 from magda.config import (
     CHECKPOINTS_DIR,
     DATA_DIR,
@@ -29,22 +26,13 @@ from magda.config import (
     VARIANTS,
     WORDS_DIR,
     default_labeled_model,
-    variant_spec,
 )
 from magda.dataset import (
-    dataset_for,
     get_or_create_splits,
     load_labeled_pages,
     select_split,
 )
-from magda.predict import (
-    WINDOW_STRIDE,
-    merge_windows,
-    page_output,
-    word_predictions,
-    write_pages,
-)
-from magda.windows import WindowDataset
+from magda.predict import WINDOW_STRIDE, load_ner_model, page_output, predict_pages, write_pages
 
 
 def pages_from_words() -> list[dict]:
@@ -109,34 +97,20 @@ def main(argv=None):
     labels_from = args.labels_from or (None if args.all_words else default_labeled_model())
     print(f"Sage '{args.variant}' auf {len(pages)} Seiten voraus ({source}).")
 
-    spec = variant_spec(args.variant)
-    tokenizer = AutoTokenizer.from_pretrained(spec.model_name)
-
-    if args.no_windows:
-        ds = dataset_for(spec, pages, tokenizer, MAX_SEQ_LENGTH)
-    else:
-        ds = WindowDataset(pages, tokenizer, MAX_SEQ_LENGTH, WINDOW_STRIDE, spec)
-        print(f"{len(ds)} Fenster über {len(pages)} Seiten "
+    def _report_windows(count: int) -> None:
+        print(f"{count} Fenster über {len(pages)} Seiten "
               f"(Überlappung {WINDOW_STRIDE} Subwords).")
 
-    model = AutoModelForTokenClassification.from_pretrained(model_dir)
-    logits = Trainer(model=model).predict(ds).predictions
-    if isinstance(logits, tuple):
-        logits = logits[0]
-    logits = np.asarray(logits)
+    model, tokenizer, spec = load_ner_model(args.variant, args.checkpoint)
+    predictions = predict_pages(
+        pages, model, tokenizer, spec,
+        no_windows=args.no_windows, on_windows_built=_report_windows,
+    )
 
-    outputs = []
-    for i, page in enumerate(pages):
-        if args.no_windows:
-            tags, scores = word_predictions(logits[i], ds.word_ids[i], len(page["words"]))
-        else:
-            windows = ds.windows_of(i)
-            tags, scores = merge_windows(
-                [logits[w] for w in windows],
-                [ds.word_ids[w] for w in windows],
-                len(page["words"]),
-            )
-        outputs.append(page_output(page, tags, scores, args.variant, labels_from))
+    outputs = [
+        page_output(page, tags, scores, args.variant, labels_from)
+        for page, (tags, scores) in zip(pages, predictions)
+    ]
 
     target = Path(args.out) if args.out else DATA_DIR / "predictions" / args.variant
     index = write_pages(outputs, target)

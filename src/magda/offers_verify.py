@@ -91,12 +91,15 @@ class Report:
         return result
 
 
-def judge_page(page: dict, assignment: dict[int, int]) -> PageVerdict:
-    """Rechnet jede Preiszuordnung einer Seite nach."""
-    offers = offers_from_reference(page, assignment)
-    verdict = PageVerdict(page_id=page.get("page_id") or "unknown", offers=len(offers))
-    expected = {index: _expected_prices(offer, page) for index, offer in enumerate(offers)}
+def _judge_prices(page: dict, offers: list):
+    """Urteil je Preis-Entity - der gemeinsame Kern von `judge_page` (Summe
+    ueber die Seite) und `judge_offers` (ein Wort je Angebot).
 
+    Liefert (offer_index, verdict)-Paare, `verdict` eines von confirmed /
+    contradicted / unresolved / unjudgeable - dieselben vier Woerter, mit
+    denen `PageVerdict` seine Felder benennt.
+    """
+    expected = {index: _expected_prices(offer, page) for index, offer in enumerate(offers)}
     for index, offer in enumerate(offers):
         for entity in offer.entities:
             if entity.type not in PRICE_TYPES:
@@ -104,19 +107,56 @@ def judge_page(page: dict, assignment: dict[int, int]) -> PageVerdict:
             value = _price_value(entity.text)
             if value is None:
                 continue
-            verdict.prices += 1
-
             if expected[index] and _price_matches(value, expected[index]):
-                verdict.confirmed += 1
+                yield index, "confirmed"
             elif any(_price_matches(value, other)
                      for other_index, other in expected.items()
                      if other_index != index and other):
-                verdict.contradicted += 1
+                yield index, "contradicted"
             elif expected[index]:
-                verdict.unresolved += 1
+                yield index, "unresolved"
             else:
-                verdict.unjudgeable += 1
+                yield index, "unjudgeable"
+
+
+def judge_page(page: dict, assignment: dict[int, int]) -> PageVerdict:
+    """Rechnet jede Preiszuordnung einer Seite nach."""
+    offers = offers_from_reference(page, assignment)
+    verdict = PageVerdict(page_id=page.get("page_id") or "unknown", offers=len(offers))
+    for _, label in _judge_prices(page, offers):
+        verdict.prices += 1
+        setattr(verdict, label, getattr(verdict, label) + 1)
     return verdict
+
+
+def judge_offers(page: dict, offers: list) -> list[str]:
+    """Ein verdichtetes Urteil je Angebot statt eines Zaehlers je Seite.
+
+    Ein Angebot kann mehrere Preis-Entities tragen (Varianten, App-Preis
+    neben regulaerem Preis); die Prioritaet `contradicted` > `confirmed` >
+    `unresolved` > `unverifiable` faellt so aus, dass ein einziger
+    widerlegter Preis das ganze Angebot faerbt - ein Angebot mit einem
+    falschen und einem richtigen Preis ist kein halb bestaetigtes.
+    `unverifiable` fasst zwei Faelle zusammen, die fuer diese Spalte
+    gleichbedeutend sind: kein Grundpreis vorhanden (`unjudgeable`) oder gar
+    kein Preis im Angebot.
+    """
+    by_offer: dict[int, set[str]] = {index: set() for index in range(len(offers))}
+    for index, label in _judge_prices(page, offers):
+        by_offer[index].add(label)
+
+    result = []
+    for index in range(len(offers)):
+        labels = by_offer[index]
+        if "contradicted" in labels:
+            result.append("contradicted")
+        elif "confirmed" in labels:
+            result.append("confirmed")
+        elif "unresolved" in labels:
+            result.append("unresolved")
+        else:
+            result.append("unverifiable")
+    return result
 
 
 def collect(pages: list[dict], assignments: dict[str, dict[int, int]]) -> Report:

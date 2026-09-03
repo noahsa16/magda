@@ -24,6 +24,7 @@ import re
 import sqlite3
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Callable
 
 from magda.labels import ENTITY_TYPES, bio_to_spans
 
@@ -60,12 +61,40 @@ class Entity:
     context_after: str
 
 
+@dataclass(frozen=True)
+class Variant:
+    """Eine Groessenvariante eines Angebots, z.B. "Pfanne 24 cm" zu 14.99.
+
+    Belegt (CLAUDE.md, "Groessenvarianten paaren sich positionsweise"): von
+    43 Bloecken mit mehreren Mengen *und* mehreren Grundpreisen gehen 26
+    positionsweise auf, 0 nur in anderer Reihenfolge - die i-te Menge in
+    Lesereihenfolge gehoert zum i-ten Preis in Lesereihenfolge, kein
+    zusaetzliches Label und keine Geometrie noetig.
+    """
+
+    position: int
+    quantity: str | None
+    price: str | None
+    old_price: str | None
+    unit_price: str | None
+    app_price: str | None
+
+
+# Reihenfolge ist die Spaltenreihenfolge der SQLite-Tabelle `offer_variants`.
+_VARIANT_TYPES = ("QUANTITY", "UNIT_PRICE", "PRICE", "OLD_PRICE", "APP_PRICE")
+
+
 @dataclass
 class Offer:
     id: int
     page_id: str
     bbox: tuple[float, float, float, float]
     entities: list[Entity]
+    # Nur von `--grouper pair-model` gesetzt (Mittel der Paarwahrscheinlichkeiten
+    # ueber alle Entity-Paare der Gruppe). Die Heuristik kennt keine
+    # Wahrscheinlichkeit, dort bleibt es NULL - kein geschaetzter Wert, der
+    # Sicherheit vortaeuscht, wo keine gemessen wurde.
+    confidence: float | None = None
 
     def values(self) -> dict[str, str | None]:
         result: dict[str, str | None] = {entity_type.lower(): None for entity_type in ENTITY_TYPES}
@@ -73,6 +102,38 @@ class Offer:
             parts = [entity.text for entity in self.entities if entity.type == entity_type]
             result[entity_type.lower()] = " | ".join(parts) if parts else None
         return result
+
+    def variants(self) -> list[Variant]:
+        """Paart QUANTITY/UNIT_PRICE/PRICE/OLD_PRICE/APP_PRICE positionsweise.
+
+        Sortiert je Typ nach Wortindex (Lesereihenfolge), dann die i-te
+        Entity jedes Typs zu einer Variante zusammengefasst - fehlt ein Typ
+        an Position i, bleibt das Feld leer, es wird nicht mit einem anderen
+        Typ verrechnet. Ein Angebot mit hoechstens einer Entity je Typ
+        bekommt so genau eine Variante; eines ganz ohne diese fuenf Typen
+        (nur BRAND/VALID) keine.
+        """
+        columns = {
+            entity_type: [
+                entity.text for entity in sorted(
+                    (e for e in self.entities if e.type == entity_type),
+                    key=lambda e: e.start,
+                )
+            ]
+            for entity_type in _VARIANT_TYPES
+        }
+        count = max((len(texts) for texts in columns.values()), default=0)
+        return [
+            Variant(
+                position=i,
+                quantity=columns["QUANTITY"][i] if i < len(columns["QUANTITY"]) else None,
+                unit_price=columns["UNIT_PRICE"][i] if i < len(columns["UNIT_PRICE"]) else None,
+                price=columns["PRICE"][i] if i < len(columns["PRICE"]) else None,
+                old_price=columns["OLD_PRICE"][i] if i < len(columns["OLD_PRICE"]) else None,
+                app_price=columns["APP_PRICE"][i] if i < len(columns["APP_PRICE"]) else None,
+            )
+            for i in range(count)
+        ]
 
 
 def _union_bbox(boxes: list[tuple[float, float, float, float]]) -> tuple[float, float, float, float]:
@@ -464,7 +525,63 @@ def _make_offer(page_id: str, offer_id: int, members: list[Entity]) -> Offer:
     )
 
 
+def _group_confidence(group: list[int], scores: dict) -> float:
+    """Mittel der Paarwahrscheinlichkeiten aller Entity-Paare einer Gruppe.
+
+    Eine Einer-Gruppe hat kein Paar und damit kein Signal vom Modell - 1.0
+    ist hier keine gemessene Sicherheit, sondern die Konvention "nichts
+    widerspricht sich, weil es nichts zu vergleichen gibt" (dieselbe Regel,
+    mit der `magda offers-model eval` Ein-Entity-Gruppen behandelt)."""
+    if len(group) <= 1:
+        return 1.0
+    values = [
+        scores[(min(a, b), max(a, b))]
+        for i, a in enumerate(group)
+        for b in group[i + 1:]
+        if (min(a, b), max(a, b)) in scores
+    ]
+    return sum(values) / len(values) if values else 1.0
+
+
+def pair_model_grouping(model) -> Callable[[dict], list[Offer]]:
+    """Baut die Gruppierungsfunktion aus einem geladenen Paarmodell.
+
+    Eine Stelle fuer `magda offers --grouper pair-model` und
+    `magda.pipeline.extract_offers` - beide sollen aus denselben
+    Kantenwahrscheinlichkeiten dieselbe Konfidenz je Angebot ableiten, statt
+    zwei Implementierungen, die leise auseinanderlaufen. Der Checkpoint
+    selbst (samt Fehlermeldung bei fehlender Datei) bleibt Sache des
+    Aufrufers - hier steht nur, was ein bereits geladenes `PairClassifier`
+    aus einer Seite macht.
+    """
+
+    def grouping(page: dict) -> list[Offer]:
+        entities = [e for e in entities_from_page(page) if e.type in VALUE_TYPES]
+        page_id = page.get("page_id") or "unknown"
+        groups = model.group_page(page, model.threshold)
+        # Fuer die Konfidenz genuegen dieselben Kantenwahrscheinlichkeiten,
+        # die `group_page` intern schon berechnet hat - hier trotzdem neu
+        # angefragt statt sie aus `group_page` herauszureichen: die Methode
+        # ist der oeffentliche Vertrag von `PairClassifier`, ein zweiter
+        # interner Rueckgabewert nur fuer diesen Aufrufer waere Kopplung an
+        # ein Implementierungsdetail.
+        scores = model.score_page(page) if groups else {}
+        result = []
+        for index, group in enumerate(groups):
+            offer = _make_offer(page_id, index, [entities[i] for i in group])
+            offer.confidence = _group_confidence(group, scores)
+            result.append(offer)
+        return result
+
+    return grouping
+
+
 _QUANTITY_RE = re.compile(r"(\d+(?:[.,]\d+)?)\s*-?\s*(kg|g|ml|l)\b", re.IGNORECASE)
+# Mehrfachpackungen: "2 x 350 g", "6x1,5 l", "2 × 350 g" - der Multiplikator
+# steht immer VOR der Menge, nie dahinter (kein belegter Gegenfall im Korpus).
+_MULTIPLIER_QUANTITY_RE = re.compile(
+    r"(\d+(?:[.,]\d+)?)\s*[x×]\s*(\d+(?:[.,]\d+)?)\s*-?\s*(kg|g|ml|l)\b", re.IGNORECASE
+)
 _UNIT_PRICE_RE = re.compile(r"1\s*(kg|l)\s*=\s*(\d+(?:[.,]\d+)?)", re.IGNORECASE)
 _NUMBER_RE = re.compile(r"(\d+(?:[.,]\d+)?)")
 
@@ -481,15 +598,21 @@ def _price_value(text: str) -> float | None:
 def _quantity_in_unit(text: str, unit: str) -> float | None:
     """Menge in derselben Einheit wie ein Grundpreis, z.B. "800-g-Packung" -> 0.8 fuer unit="kg".
 
-    Mehrfachpackungen ("6 x 1,5 l") werden nicht erkannt - das Regex liest nur
-    das erste Zahl-Einheit-Paar, ohne den Multiplikator. Bewusst kein Fehler:
-    ein falscher Erwartungswert findet dann einfach keinen passenden Preis und
-    aendert nichts, statt eine falsche Zuordnung zu erzwingen.
+    Mehrfachpackungen ("2 x 350 g", "6x1,5 l") werden erkannt: der
+    Multiplikator wird auf die Menge multipliziert, bevor sie umgerechnet
+    wird - "2 x 350 g" liefert fuer unit="kg" 0.7, nicht 0.35. Ohne
+    Multiplikator im Text ("800-g-Packung") bleibt das Verhalten unveraendert.
     """
-    match = _QUANTITY_RE.search(text)
-    if not match:
-        return None
-    value, found_unit = _to_float(match.group(1)), match.group(2).lower()
+    multiplier_match = _MULTIPLIER_QUANTITY_RE.search(text)
+    if multiplier_match:
+        multiplier = _to_float(multiplier_match.group(1))
+        value = _to_float(multiplier_match.group(2)) * multiplier
+        found_unit = multiplier_match.group(3).lower()
+    else:
+        match = _QUANTITY_RE.search(text)
+        if not match:
+            return None
+        value, found_unit = _to_float(match.group(1)), match.group(2).lower()
     if unit == "kg" and found_unit == "g":
         return value / 1000
     if unit == "l" and found_unit == "ml":
@@ -735,72 +858,156 @@ def cluster_page(
     return offers
 
 
-def write_sqlite(pages: list[dict], db_path: Path, source: str) -> dict:
-    """Schreibt Angebotscluster in eine SQLite-Datenbank."""
+def _insert_offers(
+    conn: sqlite3.Connection,
+    source: str,
+    grouper: str,
+    page_offers: list[Offer],
+    arithmetic_verdicts: list[str],
+) -> tuple[int, int, int]:
+    """Schreibt die Angebote einer Seite samt Entities und Varianten.
+
+    Herausgezogen aus `write_sqlite`, damit `magda.pipeline.to_sqlite` genau
+    dasselbe Schema fuellt, ohne die Insert-Anweisungen ein zweites Mal zu
+    pflegen - zwei Kopien derselben SQL laufen frueher oder spaeter
+    auseinander. Rueckgabe: (offers, entities, variants) fuer die Buchfuehrung
+    des Aufrufers.
+    """
+    offer_count = entity_count = variant_count = 0
+    for offer, verdict in zip(page_offers, arithmetic_verdicts):
+        values = offer.values()
+        bbox_json = json.dumps(list(offer.bbox))
+        cursor = conn.execute(
+            """
+            insert into offers (
+                source, grouper, page_id, offer_index, bbox,
+                product, brand, price, old_price, quantity,
+                discount, valid, unit_price, app_price,
+                confidence, arithmetic
+            )
+            values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                source,
+                grouper,
+                offer.page_id,
+                offer.id,
+                bbox_json,
+                values["product"],
+                values["brand"],
+                values["price"],
+                values["old_price"],
+                values["quantity"],
+                values["discount"],
+                values["valid"],
+                values["unit_price"],
+                values["app_price"],
+                offer.confidence,
+                verdict,
+            ),
+        )
+        db_offer_id = int(cursor.lastrowid)
+        offer_count += 1
+        for entity in offer.entities:
+            conn.execute(
+                """
+                insert into offer_entities (
+                    source, offer_id, page_id, entity_type, text, bbox,
+                    word_start, word_end, context_before, context_after
+                )
+                values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    source,
+                    db_offer_id,
+                    offer.page_id,
+                    entity.type,
+                    entity.text,
+                    json.dumps(list(entity.bbox)),
+                    entity.start,
+                    entity.end,
+                    entity.context_before,
+                    entity.context_after,
+                ),
+            )
+            entity_count += 1
+        for variant in offer.variants():
+            conn.execute(
+                """
+                insert into offer_variants (
+                    offer_id, position, quantity, price,
+                    old_price, unit_price, app_price
+                )
+                values (?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    db_offer_id,
+                    variant.position,
+                    variant.quantity,
+                    variant.price,
+                    variant.old_price,
+                    variant.unit_price,
+                    variant.app_price,
+                ),
+            )
+            variant_count += 1
+    return offer_count, entity_count, variant_count
+
+
+def write_sqlite(
+    pages: list[dict],
+    db_path: Path,
+    source: str,
+    *,
+    grouping=cluster_page,
+    grouper: str = "heuristic",
+) -> dict:
+    """Schreibt Angebotscluster in eine SQLite-Datenbank.
+
+    `grouping` ist austauschbar (Callable Seite -> Liste von `Offer`) -
+    Default bleibt die Heuristik `cluster_page`. `magda offers --grouper
+    pair-model` reicht stattdessen `PairClassifier.group_page` durch. `grouper`
+    ist nur die Buchfuehrung dazu: welches Verfahren steckt hinter dieser
+    Zeile, neben `source` (welche Labelquelle).
+
+    `arithmetic` (Menge x Grundpreis, `offers_verify.judge_offers`) wird
+    unabhaengig vom Verfahren fuer jedes Angebot berechnet - die Rechnung ist
+    dieselbe unbeteiligte Kontrolle wie in `magda offers-model eval`, egal ob
+    die Gruppierung von der Heuristik oder vom Paarmodell stammt. `confidence`
+    dagegen ist Sache der Gruppierungsfunktion selbst: nur wer Wahrscheinlichkeiten
+    kennt (das Paarmodell), setzt sie auf dem `Offer`; sonst bleibt sie NULL.
+    """
+    from magda import offers_verify
+
     db_path.parent.mkdir(parents=True, exist_ok=True)
     with sqlite3.connect(db_path) as conn:
         _create_schema(conn)
+        _migrate_schema(conn)
         conn.execute("delete from offer_entities where source = ?", (source,))
+        conn.execute(
+            "delete from offer_variants where offer_id in "
+            "(select id from offers where source = ?)",
+            (source,),
+        )
         conn.execute("delete from offers where source = ?", (source,))
 
         offer_count = 0
         entity_count = 0
+        variant_count = 0
         for page in pages:
-            for offer in cluster_page(page):
-                values = offer.values()
-                bbox_json = json.dumps(list(offer.bbox))
-                cursor = conn.execute(
-                    """
-                    insert into offers (
-                        source, page_id, offer_index, bbox,
-                        product, brand, price, old_price, quantity,
-                        discount, valid, unit_price, app_price
-                    )
-                    values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                    """,
-                    (
-                        source,
-                        offer.page_id,
-                        offer.id,
-                        bbox_json,
-                        values["product"],
-                        values["brand"],
-                        values["price"],
-                        values["old_price"],
-                        values["quantity"],
-                        values["discount"],
-                        values["valid"],
-                        values["unit_price"],
-                        values["app_price"],
-                    ),
-                )
-                db_offer_id = int(cursor.lastrowid)
-                offer_count += 1
-                for entity in offer.entities:
-                    conn.execute(
-                        """
-                        insert into offer_entities (
-                            source, offer_id, page_id, entity_type, text, bbox,
-                            word_start, word_end, context_before, context_after
-                        )
-                        values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                        """,
-                        (
-                            source,
-                            db_offer_id,
-                            offer.page_id,
-                            entity.type,
-                            entity.text,
-                            json.dumps(list(entity.bbox)),
-                            entity.start,
-                            entity.end,
-                            entity.context_before,
-                            entity.context_after,
-                        ),
-                    )
-                    entity_count += 1
+            page_offers = grouping(page)
+            arithmetic = offers_verify.judge_offers(page, page_offers)
+            oc, ec, vc = _insert_offers(conn, source, grouper, page_offers, arithmetic)
+            offer_count += oc
+            entity_count += ec
+            variant_count += vc
         conn.commit()
-    return {"pages": len(pages), "offers": offer_count, "entities": entity_count}
+    return {
+        "pages": len(pages),
+        "offers": offer_count,
+        "entities": entity_count,
+        "variants": variant_count,
+    }
 
 
 def _create_schema(conn: sqlite3.Connection) -> None:
@@ -809,6 +1016,7 @@ def _create_schema(conn: sqlite3.Connection) -> None:
         create table if not exists offers (
             id integer primary key autoincrement,
             source text not null,
+            grouper text not null default 'heuristic',
             page_id text not null,
             offer_index integer not null,
             bbox text not null,
@@ -821,6 +1029,8 @@ def _create_schema(conn: sqlite3.Connection) -> None:
             valid text,
             unit_price text,
             app_price text,
+            confidence real,
+            arithmetic text,
             unique(source, page_id, offer_index)
         );
 
@@ -838,11 +1048,41 @@ def _create_schema(conn: sqlite3.Connection) -> None:
             context_after text not null
         );
 
+        create table if not exists offer_variants (
+            id integer primary key autoincrement,
+            offer_id integer not null references offers(id) on delete cascade,
+            position integer not null,
+            quantity text,
+            price text,
+            old_price text,
+            unit_price text,
+            app_price text
+        );
+
         create index if not exists idx_offers_source_page
             on offers(source, page_id);
         create index if not exists idx_offer_entities_offer
             on offer_entities(offer_id);
         create index if not exists idx_offer_entities_type
             on offer_entities(source, entity_type);
+        create index if not exists idx_offer_variants_offer
+            on offer_variants(offer_id);
         """
     )
+
+
+def _migrate_schema(conn: sqlite3.Connection) -> None:
+    """Spalten nachruesten, die es beim Anlegen der Datenbank noch nicht gab.
+
+    `create table if not exists` legt neue Spalten nicht nachtraeglich an -
+    die seit dem 02.08.2026 versionierte `data/offers/offers.sqlite` kennt
+    `grouper` noch nicht. Ohne diesen Schritt wuerde jeder Insert auf einer
+    aelteren Datenbank an der fehlenden Spalte scheitern.
+    """
+    existing = {row[1] for row in conn.execute("pragma table_info(offers)")}
+    if "grouper" not in existing:
+        conn.execute("alter table offers add column grouper text not null default 'heuristic'")
+    if "confidence" not in existing:
+        conn.execute("alter table offers add column confidence real")
+    if "arithmetic" not in existing:
+        conn.execute("alter table offers add column arithmetic text")

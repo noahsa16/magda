@@ -67,6 +67,8 @@ WERKZEUGE = (
     Befehl("serve", "serve", "API starten (--frontend startet auch die Oberfläche)"),
     Befehl("cluster", "cluster", "Prospektseiten explorativ nach Textinhalt clustern"),
     Befehl("offers", "offers", "Gelabelte Entities zu Angeboten clustern und als SQLite speichern"),
+    Befehl("extract-pdf", "extract_pdf",
+           "Fremdes PDF direkt zu Angeboten verarbeiten (ohne Umweg über data/)"),
     Befehl("offers-report", "offers_report",
            "Angebots-Clustering per Ablation messen (Default Train+Dev)"),
     Befehl("offers-teacher", "offers_teacher",

@@ -24,7 +24,7 @@ def test_build_command_kennt_alle_pipeline_schritte():
     assert set(jobs.JOBS) == {
         "harvest", "download", "extract", "label",
         "train", "eval", "dedupe", "flair",
-        "gold", "agreement",
+        "gold", "agreement", "extract-pdf",
     }
 
 
@@ -102,3 +102,54 @@ def test_flag_bleibt_ohne_zustimmung_weg():
 
     assert "--apply" not in cmd
     assert cmd[-2:] == ["--threshold", "0.9"]
+
+
+# ---------------------------------------------------------------------------
+# extract-pdf: upload_id wird nie zu einem freien Pfad
+# ---------------------------------------------------------------------------
+
+_UPLOAD_ID = "0123456789abcdef0123456789abcdef"[:32]
+
+
+def test_extract_pdf_loest_upload_id_zu_einem_pfad_unter_uploads_dir_auf():
+    cmd = jobs.build_command("extract-pdf", {"upload_id": _UPLOAD_ID})
+
+    pdf_arg = cmd[cmd.index("extract-pdf") + 1]
+    assert pdf_arg == str(config.UPLOADS_DIR / f"{_UPLOAD_ID}.pdf")
+    assert "--out" in cmd
+    assert cmd[cmd.index("--out") + 1] == str(config.UPLOADS_DIR / f"{_UPLOAD_ID}.json")
+    assert "--images-dir" in cmd
+    assert cmd[cmd.index("--images-dir") + 1] == str(config.UPLOADS_DIR / _UPLOAD_ID)
+    assert "--render-images" in cmd
+    assert "--no-embed-images" in cmd
+
+
+def test_extract_pdf_lehnt_pfadtrenner_in_der_upload_id_ab():
+    with pytest.raises(ValueError, match="Format"):
+        jobs.build_command("extract-pdf", {"upload_id": "abc/def"})
+
+
+def test_extract_pdf_lehnt_doppelpunkt_hoch_in_der_upload_id_ab():
+    with pytest.raises(ValueError, match="Format"):
+        jobs.build_command("extract-pdf", {"upload_id": "../../etc/passwd"})
+
+
+def test_extract_pdf_lehnt_zu_kurze_oder_zu_lange_id_ab():
+    with pytest.raises(ValueError, match="Format"):
+        jobs.build_command("extract-pdf", {"upload_id": "abc"})
+    with pytest.raises(ValueError, match="Format"):
+        jobs.build_command("extract-pdf", {"upload_id": _UPLOAD_ID + "ff"})
+
+
+def test_extract_pdf_lehnt_grossbuchstaben_ab():
+    """secrets.token_hex liefert immer Kleinbuchstaben - eine Grossschreibung
+    ist keine gueltige eigene Ausgabe und deshalb ebenso verdaechtig."""
+    with pytest.raises(ValueError, match="Format"):
+        jobs.build_command("extract-pdf", {"upload_id": _UPLOAD_ID.upper()})
+
+
+def test_extract_pdf_uebernimmt_die_variante():
+    cmd = jobs.build_command("extract-pdf", {"upload_id": _UPLOAD_ID, "variant": "layoutxlm"})
+
+    assert "--variant" in cmd
+    assert cmd[cmd.index("--variant") + 1] == "layoutxlm"
