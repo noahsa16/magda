@@ -39,10 +39,21 @@ Google-Drive-Ordner – zusammen 1,57 GB gegen ~32 MB für alles andere unter
 `data/`. Wer trainiert oder auswertet, braucht sie nicht: `data/words/` und
 `data/labeled/` bleiben versioniert.
 
+Eine Ausnahme liegt doch im Repo: die 43 Seitenbilder der Handannotation
+(`docs/annotation-task.md`). Wer nur annotiert, braucht das Archiv also gar
+nicht.
+
 ```bash
 shasum -a 256 -c docs/archive/data-raw.sha256   # heruntergeladenes Archiv prüfen
-magda extract                                   # Seitenbilder daraus neu rendern
+magda extract --render-missing                  # Seitenbilder daraus neu rendern
 ```
+
+**`--render-missing` ist hier Pflicht, nicht Geschmack.** Der normale Lauf
+überspringt eine Seite an ihrer vorhandenen Wortdatei – und `data/words/` ist
+versioniert. Ohne die Option rendert `magda extract` in einem frischen Klon
+kein einziges Bild und meldet trotzdem Erfolg („0 Seiten verarbeitet, 666 schon
+vorhanden"). Die Option lässt die Wortlisten unangetastet; ihre Reihenfolge ist
+der Vertrag, an dem alle Label-Indizes hängen.
 
 Details, Begründung und der Weg zum Ordner: [docs/archive/](docs/archive/README.md).
 
