@@ -36,3 +36,23 @@ def align_word_labels(word_ids: list[int | None], word_tags: list[str]) -> list[
             labels.append(IGNORE_INDEX)
         previous_word = word_id
     return labels
+
+
+NO_BOX = [0, 0, 0, 0]
+
+
+def subword_boxes(word_ids: list[int | None], boxes: list[list[int]]) -> list[list[int]]:
+    """Breitet die Wortboxen auf die Subwords aus – die Schwester von
+    `align_word_labels`, nur für die Position statt für das Label.
+
+    LayoutXLMs Tokenizer nimmt `boxes=` selbst entgegen und erledigt das
+    intern. LiLTs Tokenizer ist ein reiner XLM-R-Tokenizer und kennt das
+    Argument nicht; die `bbox`-Spalte muss hier entstehen. Wer sie wegläßt,
+    bekommt keinen Fehler, sondern ein LiLT ohne Positionsinformation – also
+    ein teureres GBERT.
+
+    Anders als beim Label bekommt jedes Subword die volle Box, nicht nur das
+    erste: `bbox` ist kein Ziel, das maskiert werden könnte, sondern Eingabe
+    für jede Position der Sequenz.
+    """
+    return [NO_BOX if word_id is None else boxes[word_id] for word_id in word_ids]

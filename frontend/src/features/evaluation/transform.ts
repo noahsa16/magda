@@ -6,10 +6,100 @@ export type MetricKey = "f1-score" | "precision" | "recall"
 
 export interface Row {
   entity: string
-  gbert?: number
-  layoutxlm?: number
+  /** Metrik je Variante – offen, weil die Zahl der Arme im Backend steht. */
+  values: Record<string, number | undefined>
   support?: number
+  /** Differenz des gewählten Vergleichspaars, `b - a`. */
   delta?: number
+}
+
+/**
+ * Anzeigereihenfolge der Arme: die Ablationskette, nicht das Alphabet.
+ *
+ *     xlmr  ──+Layout──▶  lilt  ──+Vision──▶  layoutxlm
+ *
+ * Jeder Schritt fügt genau eine Zutat hinzu, und die Tabelle liest sich nur
+ * so herum. Alphabetisch stünde `layoutxlm` vor `lilt` vor `xlmr`, also genau
+ * rückwärts. `gbert` steht vorn als text-only Baseline mit deutschem Encoder;
+ * es ist kein Glied der Kette, sondern die Projektreferenz.
+ *
+ * Bewusst keine vollständige Liste gültiger Arme – die steht in
+ * `config.VARIANTS` im Backend. Was hier fehlt, wird hinten angehängt statt
+ * verschluckt: ein neuer Arm soll sichtbar sein, bevor jemand diese Zeile
+ * nachträgt.
+ */
+export const VARIANT_ORDER = ["gbert", "xlmr", "lilt", "layoutxlm"]
+
+export const VARIANT_LABELS: Record<string, string> = {
+  gbert: "GBERT",
+  xlmr: "XLM-R",
+  lilt: "LiLT",
+  layoutxlm: "LayoutXLM",
+}
+
+export function variantLabel(variant: string): string {
+  return VARIANT_LABELS[variant] ?? variant
+}
+
+/**
+ * Reports, die nur einen Teil der Labels messen – nicht vergleichbar.
+ *
+ * `flair_llm_test.json` traegt `variant` und `report` und kommt deshalb durch
+ * die Formpruefung von `/api/evaluation`. Sein micro-F1 gilt aber nur fuer
+ * BRAND (0.281 ueber 24 Instanzen), weil `flair/ner-german-large` von unseren
+ * acht Labels nur dieses eine kennt. Als Spalte neben den vier Armen gelesen
+ * waere das ein katastrophal schlechtes Modell statt einer Antwort auf eine
+ * andere Frage.
+ *
+ * Die alte, fest zweispaltige Seite hat das aus Versehen verdeckt. Eine Seite,
+ * die alle gefundenen Arme zeigt, muss es ausdruecklich tun.
+ */
+export function restrictedArms(
+  reports: EvalReport[],
+): { variant: string; labels: string[] }[] {
+  return reports
+    .filter((r) => r.restricted_to?.length)
+    .map((r) => ({ variant: r.variant, labels: r.restricted_to as string[] }))
+}
+
+/**
+ * Reports genau eines Splits – der Testsplit, wenn es ihn gibt.
+ *
+ * `data/eval/` ist ein Archiv: dort liegen Reports mehrerer Splits und
+ * mehrerer Läufe nebeneinander. Belegter Fall (25.08.2026): drei Dateien mit
+ * `variant: "gbert"` – der Testlauf über 116 Seiten sowie zwei Dev-Reports
+ * über je 21 Seiten aus einem früheren Split. `perEntityRows` schreibt alle
+ * in dieselbe Spalte, und welcher gewinnt, entschied die Reihenfolge der
+ * Dateinamen.
+ *
+ * Der Testsplit hat Vorrang, weil er die berichtete Zahl trägt. Kommt eine
+ * Variante darin trotzdem doppelt vor (zwei Läufe, gleicher Split), gewinnt
+ * der jüngere – nachvollziehbar statt alphabetisch.
+ */
+export function reportsOfOneSplit(reports: EvalReport[]): EvalReport[] {
+  if (reports.length === 0) return []
+  const splits = new Map<string, number>()
+  for (const r of reports) splits.set(r.split, (splits.get(r.split) ?? 0) + 1)
+  const gewaehlt = splits.has("test")
+    ? "test"
+    : [...splits.entries()].sort((a, b) => b[1] - a[1])[0][0]
+
+  const neuester = new Map<string, EvalReport>()
+  for (const r of reports.filter((r) => r.split === gewaehlt)) {
+    const bisher = neuester.get(r.variant)
+    if (!bisher || r.created > bisher.created) neuester.set(r.variant, r)
+  }
+  return [...neuester.values()]
+}
+
+/** Welche Arme wirklich ausgewertet sind, in Kettenreihenfolge. */
+export function variantsOf(reports: EvalReport[]): string[] {
+  const found = [...new Set(
+    reports.filter((r) => !r.restricted_to?.length).map((r) => r.variant),
+  )]
+  const known = VARIANT_ORDER.filter((v) => found.includes(v))
+  const unknown = found.filter((v) => !VARIANT_ORDER.includes(v)).sort()
+  return [...known, ...unknown]
 }
 
 // seqeval mischt avg-Zeilen unter die Entity-Typen – die gehören nicht ins
@@ -37,6 +127,7 @@ export function perEntityRows(
   reports: EvalReport[],
   metric: MetricKey,
   protocol: ProtocolKey = "report",
+  pair?: [string, string],
 ): Row[] {
   const rows = new Map<string, Row>()
   for (const r of reports) {
@@ -45,17 +136,20 @@ export function perEntityRows(
     // hoher Preis dafür, dass sich nie jemand vertut.
     for (const [entity, m] of Object.entries(reportOf(r, protocol))) {
       if (AVG_KEYS.has(entity)) continue
-      const row = rows.get(entity) ?? { entity, gbert: undefined, layoutxlm: undefined }
-      row[r.variant] = m[metric]
-      // Support ist über beide Varianten gleich – sie messen gegen dieselbe
+      const row = rows.get(entity) ?? { entity, values: {} }
+      row.values[r.variant] = m[metric]
+      // Support ist über alle Varianten gleich – sie messen gegen dieselbe
       // Referenz. Wer zuerst kommt, setzt ihn.
       row.support ??= m.support
       rows.set(entity, row)
     }
   }
   for (const row of rows.values()) {
-    row.delta =
-      row.gbert != null && row.layoutxlm != null ? row.layoutxlm - row.gbert : undefined
+    const a = pair && row.values[pair[0]]
+    const b = pair && row.values[pair[1]]
+    // Nur wenn *beide* dastehen: sonst läse sich das fehlende als 0 und die
+    // Spalte zeigte einen Vorsprung, der nie gemessen wurde.
+    row.delta = a != null && b != null ? b - a : undefined
   }
   return [...rows.values()]
 }
@@ -70,11 +164,21 @@ export function overallF1(
   return reportOf(report, protocol)["micro avg"]?.["f1-score"] ?? null
 }
 
-/** Sortiert Zeilen nach einer Spalte; fehlende Werte fallen immer ans Ende. */
-export function sortRows(rows: Row[], key: keyof Row, descending: boolean): Row[] {
+/**
+ * Sortiert Zeilen nach einer Spalte; fehlende Werte fallen immer ans Ende.
+ *
+ * `key` ist entweder ein Feld der Zeile (`entity`, `support`, `delta`) oder der
+ * Name einer Variante – deren Werte liegen in `values` und sind nicht mehr als
+ * eigene Felder ansprechbar, seit die Zahl der Arme offen ist.
+ */
+export function sortRows(rows: Row[], key: string, descending: boolean): Row[] {
+  const valueOf = (row: Row) =>
+    key === "entity" || key === "support" || key === "delta"
+      ? row[key]
+      : row.values[key]
   return [...rows].sort((a, b) => {
-    const x = a[key]
-    const y = b[key]
+    const x = valueOf(a)
+    const y = valueOf(b)
     if (x == null && y == null) return 0
     if (x == null) return 1
     if (y == null) return -1
@@ -87,20 +191,20 @@ export function sortRows(rows: Row[], key: keyof Row, descending: boolean): Row[
 
 export interface SchemeRow {
   scheme: SchemeKey
-  gbert?: SchemeCounts
-  layoutxlm?: SchemeCounts
+  counts: Record<string, SchemeCounts | undefined>
 }
 
 export const SCHEMES: SchemeKey[] = ["strict", "exact", "partial", "type"]
 
 export function schemeRows(reports: EvalReport[]): SchemeRow[] {
-  const rows: SchemeRow[] = SCHEMES.map((scheme) => ({ scheme }))
+  const rows: SchemeRow[] = SCHEMES.map((scheme) => ({ scheme, counts: {} }))
   for (const r of reports) {
     for (const row of rows) {
-      row[r.variant] = r.matching_schemes?.[row.scheme]
+      const counts = r.matching_schemes?.[row.scheme]
+      if (counts) row.counts[r.variant] = counts
     }
   }
-  return rows.filter((row) => row.gbert || row.layoutxlm)
+  return rows.filter((row) => Object.keys(row.counts).length > 0)
 }
 
 /**
@@ -139,4 +243,25 @@ export function significanceFor(
       return models.includes(a) && models.includes(b)
     }) ?? null
   )
+}
+
+
+/**
+ * Die Vergleichspaare, die die Seite anbieten soll.
+ *
+ * Erst die Kettenschritte – benachbarte Arme, zwischen denen genau eine Zutat
+ * liegt. Das sind die beantwortbaren Fragen: `xlmr` gegen `lilt` ist "was
+ * bringt Layout", `lilt` gegen `layoutxlm` ist "was bringt der visuelle
+ * Backbone". Zuletzt der Gesamtvergleich vom ersten zum letzten Arm, weil das
+ * die im Bericht stehende Zahl ist – aber nur, wenn er nicht ohnehin schon
+ * ein Kettenschritt ist.
+ */
+export function variantPairs(variants: string[]): [string, string][] {
+  if (variants.length < 2) return []
+  const pairs: [string, string][] = variants
+    .slice(0, -1)
+    .map((v, i) => [v, variants[i + 1]] as [string, string])
+  const ends: [string, string] = [variants[0], variants[variants.length - 1]]
+  const schon = pairs.some(([a, b]) => a === ends[0] && b === ends[1])
+  return schon ? pairs : [...pairs, ends]
 }

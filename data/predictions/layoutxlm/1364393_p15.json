@@ -1,0 +1,1888 @@
+{
+  "page_id": "1364393_p15",
+  "catalog_id": "1364393",
+  "page": 15,
+  "width": 476.22,
+  "height": 841.89,
+  "model": "layoutxlm",
+  "labels_from": "sonnet-5",
+  "created": "2026-09-02T18:26:30",
+  "num_words": 105,
+  "num_words_predicted": 105,
+  "truncated": false,
+  "words": [
+    {
+      "i": 0,
+      "text": "-13%",
+      "bbox": [
+        117.14,
+        729.68,
+        154.42,
+        749.23
+      ],
+      "label": "B-DISCOUNT",
+      "confidence": 0.997
+    },
+    {
+      "i": 1,
+      "text": "1.29",
+      "bbox": [
+        98.64,
+        757.45,
+        143.15,
+        784.34
+      ],
+      "label": "B-PRICE",
+      "confidence": 0.9985
+    },
+    {
+      "i": 2,
+      "text": "1.49",
+      "bbox": [
+        111.79,
+        780.73,
+        130.0,
+        791.73
+      ],
+      "label": "B-OLD_PRICE",
+      "confidence": 0.9946
+    },
+    {
+      "i": 3,
+      "text": "BÄCKERKRÖNUNG",
+      "bbox": [
+        17.01,
+        755.07,
+        75.02,
+        764.11
+      ],
+      "label": "B-BRAND",
+      "confidence": 0.9994
+    },
+    {
+      "i": 4,
+      "text": "Hörnchen*",
+      "bbox": [
+        17.01,
+        762.57,
+        52.27,
+        771.61
+      ],
+      "label": "B-PRODUCT",
+      "confidence": 0.9991
+    },
+    {
+      "i": 5,
+      "text": "Versch.",
+      "bbox": [
+        17.01,
+        770.15,
+        40.15,
+        779.08
+      ],
+      "label": "I-PRODUCT",
+      "confidence": 0.9964
+    },
+    {
+      "i": 6,
+      "text": "Sorten,",
+      "bbox": [
+        41.49,
+        770.15,
+        65.26,
+        779.08
+      ],
+      "label": "I-PRODUCT",
+      "confidence": 0.999
+    },
+    {
+      "i": 7,
+      "text": "je",
+      "bbox": [
+        17.01,
+        777.65,
+        23.17,
+        786.58
+      ],
+      "label": "O",
+      "confidence": 0.9994
+    },
+    {
+      "i": 8,
+      "text": "240",
+      "bbox": [
+        24.67,
+        777.65,
+        37.27,
+        786.58
+      ],
+      "label": "B-QUANTITY",
+      "confidence": 0.9991
+    },
+    {
+      "i": 9,
+      "text": "g",
+      "bbox": [
+        38.77,
+        777.65,
+        43.05,
+        786.58
+      ],
+      "label": "I-QUANTITY",
+      "confidence": 0.9993
+    },
+    {
+      "i": 10,
+      "text": "(1",
+      "bbox": [
+        17.01,
+        785.15,
+        23.91,
+        794.08
+      ],
+      "label": "B-UNIT_PRICE",
+      "confidence": 0.9992
+    },
+    {
+      "i": 11,
+      "text": "kg",
+      "bbox": [
+        25.41,
+        785.15,
+        33.46,
+        794.08
+      ],
+      "label": "I-UNIT_PRICE",
+      "confidence": 0.9994
+    },
+    {
+      "i": 12,
+      "text": "=",
+      "bbox": [
+        34.96,
+        785.15,
+        39.16,
+        794.08
+      ],
+      "label": "I-UNIT_PRICE",
+      "confidence": 0.9994
+    },
+    {
+      "i": 13,
+      "text": "5.38)",
+      "bbox": [
+        40.66,
+        785.15,
+        58.02,
+        794.08
+      ],
+      "label": "I-UNIT_PRICE",
+      "confidence": 0.9992
+    },
+    {
+      "i": 14,
+      "text": "1.99",
+      "bbox": [
+        250.35,
+        757.45,
+        294.85,
+        784.34
+      ],
+      "label": "B-PRICE",
+      "confidence": 0.999
+    },
+    {
+      "i": 15,
+      "text": "BÄCKER­",
+      "bbox": [
+        262.44,
+        685.05,
+        290.4,
+        694.09
+      ],
+      "label": "B-BRAND",
+      "confidence": 0.9994
+    },
+    {
+      "i": 16,
+      "text": "KRÖNUNG",
+      "bbox": [
+        262.44,
+        692.55,
+        295.15,
+        701.59
+      ],
+      "label": "I-BRAND",
+      "confidence": 0.9981
+    },
+    {
+      "i": 17,
+      "text": "Reiswaffeln*",
+      "bbox": [
+        262.44,
+        700.05,
+        306.05,
+        709.09
+      ],
+      "label": "B-PRODUCT",
+      "confidence": 0.9991
+    },
+    {
+      "i": 18,
+      "text": "Versch.",
+      "bbox": [
+        262.44,
+        707.63,
+        285.58,
+        716.56
+      ],
+      "label": "I-PRODUCT",
+      "confidence": 0.9968
+    },
+    {
+      "i": 19,
+      "text": "Sorten,",
+      "bbox": [
+        262.44,
+        715.13,
+        286.21,
+        724.06
+      ],
+      "label": "I-PRODUCT",
+      "confidence": 0.9991
+    },
+    {
+      "i": 20,
+      "text": "je",
+      "bbox": [
+        262.44,
+        722.63,
+        268.61,
+        731.56
+      ],
+      "label": "O",
+      "confidence": 0.9993
+    },
+    {
+      "i": 21,
+      "text": "150",
+      "bbox": [
+        270.11,
+        722.63,
+        282.71,
+        731.56
+      ],
+      "label": "B-QUANTITY",
+      "confidence": 0.9991
+    },
+    {
+      "i": 22,
+      "text": "g",
+      "bbox": [
+        284.21,
+        722.63,
+        288.48,
+        731.56
+      ],
+      "label": "I-QUANTITY",
+      "confidence": 0.9993
+    },
+    {
+      "i": 23,
+      "text": "(1",
+      "bbox": [
+        262.44,
+        730.13,
+        269.34,
+        739.06
+      ],
+      "label": "B-UNIT_PRICE",
+      "confidence": 0.9994
+    },
+    {
+      "i": 24,
+      "text": "kg",
+      "bbox": [
+        270.84,
+        730.13,
+        278.9,
+        739.06
+      ],
+      "label": "I-UNIT_PRICE",
+      "confidence": 0.9995
+    },
+    {
+      "i": 25,
+      "text": "=",
+      "bbox": [
+        280.4,
+        730.13,
+        284.6,
+        739.06
+      ],
+      "label": "I-UNIT_PRICE",
+      "confidence": 0.9995
+    },
+    {
+      "i": 26,
+      "text": "13.27)",
+      "bbox": [
+        286.1,
+        730.13,
+        307.65,
+        739.06
+      ],
+      "label": "I-UNIT_PRICE",
+      "confidence": 0.9995
+    },
+    {
+      "i": 27,
+      "text": "-14%",
+      "bbox": [
+        192.21,
+        536.92,
+        229.49,
+        556.47
+      ],
+      "label": "B-DISCOUNT",
+      "confidence": 0.9972
+    },
+    {
+      "i": 28,
+      "text": "1.19",
+      "bbox": [
+        173.72,
+        564.7,
+        218.22,
+        591.58
+      ],
+      "label": "B-PRICE",
+      "confidence": 0.9982
+    },
+    {
+      "i": 29,
+      "text": "1.39",
+      "bbox": [
+        186.87,
+        587.97,
+        205.07,
+        598.97
+      ],
+      "label": "B-OLD_PRICE",
+      "confidence": 0.9925
+    },
+    {
+      "i": 30,
+      "text": "BÄCKER-",
+      "bbox": [
+        17.01,
+        554.82,
+        44.97,
+        563.85
+      ],
+      "label": "B-BRAND",
+      "confidence": 0.9994
+    },
+    {
+      "i": 31,
+      "text": "KRÖNUNG",
+      "bbox": [
+        17.01,
+        562.32,
+        49.72,
+        571.35
+      ],
+      "label": "I-BRAND",
+      "confidence": 0.9978
+    },
+    {
+      "i": 32,
+      "text": "Rosinen-",
+      "bbox": [
+        17.01,
+        569.82,
+        46.42,
+        578.85
+      ],
+      "label": "B-PRODUCT",
+      "confidence": 0.999
+    },
+    {
+      "i": 33,
+      "text": "stuten*",
+      "bbox": [
+        17.01,
+        577.32,
+        41.67,
+        586.35
+      ],
+      "label": "I-PRODUCT",
+      "confidence": 0.9993
+    },
+    {
+      "i": 34,
+      "text": "je",
+      "bbox": [
+        17.01,
+        584.89,
+        23.17,
+        593.82
+      ],
+      "label": "O",
+      "confidence": 0.9993
+    },
+    {
+      "i": 35,
+      "text": "400",
+      "bbox": [
+        24.67,
+        584.89,
+        37.27,
+        593.82
+      ],
+      "label": "B-QUANTITY",
+      "confidence": 0.9991
+    },
+    {
+      "i": 36,
+      "text": "g",
+      "bbox": [
+        38.77,
+        584.89,
+        43.05,
+        593.82
+      ],
+      "label": "I-QUANTITY",
+      "confidence": 0.9993
+    },
+    {
+      "i": 37,
+      "text": "(1",
+      "bbox": [
+        17.01,
+        592.39,
+        23.91,
+        601.32
+      ],
+      "label": "B-UNIT_PRICE",
+      "confidence": 0.9993
+    },
+    {
+      "i": 38,
+      "text": "kg",
+      "bbox": [
+        25.41,
+        592.39,
+        33.46,
+        601.32
+      ],
+      "label": "I-UNIT_PRICE",
+      "confidence": 0.9995
+    },
+    {
+      "i": 39,
+      "text": "=",
+      "bbox": [
+        34.96,
+        592.39,
+        39.16,
+        601.32
+      ],
+      "label": "I-UNIT_PRICE",
+      "confidence": 0.9995
+    },
+    {
+      "i": 40,
+      "text": "2.98)",
+      "bbox": [
+        40.66,
+        592.39,
+        58.02,
+        601.32
+      ],
+      "label": "I-UNIT_PRICE",
+      "confidence": 0.9994
+    },
+    {
+      "i": 41,
+      "text": "-12%",
+      "bbox": [
+        414.35,
+        151.41,
+        451.63,
+        170.96
+      ],
+      "label": "B-DISCOUNT",
+      "confidence": 0.9974
+    },
+    {
+      "i": 42,
+      "text": "1.39",
+      "bbox": [
+        395.86,
+        179.19,
+        440.36,
+        206.07
+      ],
+      "label": "B-PRICE",
+      "confidence": 0.9985
+    },
+    {
+      "i": 43,
+      "text": "1.59",
+      "bbox": [
+        409.01,
+        202.46,
+        427.21,
+        213.46
+      ],
+      "label": "B-OLD_PRICE",
+      "confidence": 0.9934
+    },
+    {
+      "i": 44,
+      "text": "BÄCKERKRÖNUNG",
+      "bbox": [
+        384.8,
+        97.28,
+        442.82,
+        106.31
+      ],
+      "label": "B-BRAND",
+      "confidence": 0.9994
+    },
+    {
+      "i": 45,
+      "text": "Rosenbrötchen*",
+      "bbox": [
+        384.8,
+        104.78,
+        438.13,
+        113.81
+      ],
+      "label": "B-PRODUCT",
+      "confidence": 0.9991
+    },
+    {
+      "i": 46,
+      "text": "Versch.",
+      "bbox": [
+        384.8,
+        112.35,
+        407.94,
+        121.28
+      ],
+      "label": "I-PRODUCT",
+      "confidence": 0.9985
+    },
+    {
+      "i": 47,
+      "text": "Sorten,",
+      "bbox": [
+        409.28,
+        112.35,
+        433.05,
+        121.28
+      ],
+      "label": "I-PRODUCT",
+      "confidence": 0.9992
+    },
+    {
+      "i": 48,
+      "text": "je",
+      "bbox": [
+        384.8,
+        119.85,
+        390.97,
+        128.78
+      ],
+      "label": "O",
+      "confidence": 0.9994
+    },
+    {
+      "i": 49,
+      "text": "510",
+      "bbox": [
+        392.47,
+        119.85,
+        405.07,
+        128.78
+      ],
+      "label": "B-QUANTITY",
+      "confidence": 0.9992
+    },
+    {
+      "i": 50,
+      "text": "g",
+      "bbox": [
+        406.57,
+        119.85,
+        410.84,
+        128.78
+      ],
+      "label": "I-QUANTITY",
+      "confidence": 0.9993
+    },
+    {
+      "i": 51,
+      "text": "(1",
+      "bbox": [
+        384.8,
+        127.35,
+        391.7,
+        136.28
+      ],
+      "label": "B-UNIT_PRICE",
+      "confidence": 0.9993
+    },
+    {
+      "i": 52,
+      "text": "kg",
+      "bbox": [
+        393.2,
+        127.35,
+        401.26,
+        136.28
+      ],
+      "label": "I-UNIT_PRICE",
+      "confidence": 0.9995
+    },
+    {
+      "i": 53,
+      "text": "=",
+      "bbox": [
+        402.76,
+        127.35,
+        406.96,
+        136.28
+      ],
+      "label": "I-UNIT_PRICE",
+      "confidence": 0.9995
+    },
+    {
+      "i": 54,
+      "text": "2.73)",
+      "bbox": [
+        408.46,
+        127.35,
+        425.81,
+        136.28
+      ],
+      "label": "I-UNIT_PRICE",
+      "confidence": 0.9995
+    },
+    {
+      "i": 55,
+      "text": "1.29",
+      "bbox": [
+        401.53,
+        564.7,
+        446.03,
+        591.58
+      ],
+      "label": "B-PRICE",
+      "confidence": 0.9986
+    },
+    {
+      "i": 56,
+      "text": "BÄCKERKRÖNUNG",
+      "bbox": [
+        242.83,
+        562.32,
+        300.85,
+        571.35
+      ],
+      "label": "B-BRAND",
+      "confidence": 0.9994
+    },
+    {
+      "i": 57,
+      "text": "Knäckebrot*",
+      "bbox": [
+        242.83,
+        569.82,
+        284.2,
+        578.85
+      ],
+      "label": "B-PRODUCT",
+      "confidence": 0.9991
+    },
+    {
+      "i": 58,
+      "text": "Versch.",
+      "bbox": [
+        242.83,
+        577.39,
+        265.97,
+        586.32
+      ],
+      "label": "I-PRODUCT",
+      "confidence": 0.9987
+    },
+    {
+      "i": 59,
+      "text": "Sorten,",
+      "bbox": [
+        267.31,
+        577.39,
+        291.08,
+        586.32
+      ],
+      "label": "I-PRODUCT",
+      "confidence": 0.9992
+    },
+    {
+      "i": 60,
+      "text": "je",
+      "bbox": [
+        242.83,
+        584.89,
+        249.0,
+        593.82
+      ],
+      "label": "O",
+      "confidence": 0.9994
+    },
+    {
+      "i": 61,
+      "text": "250",
+      "bbox": [
+        250.5,
+        584.89,
+        263.1,
+        593.82
+      ],
+      "label": "B-QUANTITY",
+      "confidence": 0.9992
+    },
+    {
+      "i": 62,
+      "text": "g",
+      "bbox": [
+        264.6,
+        584.89,
+        268.87,
+        593.82
+      ],
+      "label": "I-QUANTITY",
+      "confidence": 0.9993
+    },
+    {
+      "i": 63,
+      "text": "(1",
+      "bbox": [
+        242.83,
+        592.39,
+        249.73,
+        601.32
+      ],
+      "label": "B-UNIT_PRICE",
+      "confidence": 0.9993
+    },
+    {
+      "i": 64,
+      "text": "kg",
+      "bbox": [
+        251.23,
+        592.39,
+        259.29,
+        601.32
+      ],
+      "label": "I-UNIT_PRICE",
+      "confidence": 0.9996
+    },
+    {
+      "i": 65,
+      "text": "=",
+      "bbox": [
+        260.79,
+        592.39,
+        264.99,
+        601.32
+      ],
+      "label": "I-UNIT_PRICE",
+      "confidence": 0.9995
+    },
+    {
+      "i": 66,
+      "text": "5.16)",
+      "bbox": [
+        266.49,
+        592.39,
+        283.84,
+        601.32
+      ],
+      "label": "I-UNIT_PRICE",
+      "confidence": 0.9995
+    },
+    {
+      "i": 67,
+      "text": "1.79",
+      "bbox": [
+        403.42,
+        757.45,
+        447.92,
+        784.34
+      ],
+      "label": "B-PRICE",
+      "confidence": 0.9988
+    },
+    {
+      "i": 68,
+      "text": "BÄCKERKRÖNUNG",
+      "bbox": [
+        319.37,
+        762.57,
+        377.38,
+        771.61
+      ],
+      "label": "B-BRAND",
+      "confidence": 0.9994
+    },
+    {
+      "i": 69,
+      "text": "High",
+      "bbox": [
+        319.37,
+        770.07,
+        334.93,
+        779.11
+      ],
+      "label": "B-PRODUCT",
+      "confidence": 0.9988
+    },
+    {
+      "i": 70,
+      "text": "Protein",
+      "bbox": [
+        336.13,
+        770.07,
+        360.22,
+        779.11
+      ],
+      "label": "I-PRODUCT",
+      "confidence": 0.9992
+    },
+    {
+      "i": 71,
+      "text": "Wraps*",
+      "bbox": [
+        361.27,
+        770.07,
+        385.57,
+        779.11
+      ],
+      "label": "I-PRODUCT",
+      "confidence": 0.9993
+    },
+    {
+      "i": 72,
+      "text": "je",
+      "bbox": [
+        319.37,
+        777.65,
+        325.54,
+        786.58
+      ],
+      "label": "O",
+      "confidence": 0.9994
+    },
+    {
+      "i": 73,
+      "text": "372",
+      "bbox": [
+        327.04,
+        777.65,
+        339.64,
+        786.58
+      ],
+      "label": "B-QUANTITY",
+      "confidence": 0.9992
+    },
+    {
+      "i": 74,
+      "text": "g",
+      "bbox": [
+        341.14,
+        777.65,
+        345.41,
+        786.58
+      ],
+      "label": "I-QUANTITY",
+      "confidence": 0.9993
+    },
+    {
+      "i": 75,
+      "text": "(1",
+      "bbox": [
+        319.37,
+        785.15,
+        326.27,
+        794.08
+      ],
+      "label": "B-UNIT_PRICE",
+      "confidence": 0.9993
+    },
+    {
+      "i": 76,
+      "text": "kg",
+      "bbox": [
+        327.77,
+        785.15,
+        335.83,
+        794.08
+      ],
+      "label": "I-UNIT_PRICE",
+      "confidence": 0.9995
+    },
+    {
+      "i": 77,
+      "text": "=",
+      "bbox": [
+        337.33,
+        785.15,
+        341.53,
+        794.08
+      ],
+      "label": "I-UNIT_PRICE",
+      "confidence": 0.9995
+    },
+    {
+      "i": 78,
+      "text": "4.81)",
+      "bbox": [
+        343.03,
+        785.15,
+        360.38,
+        794.08
+      ],
+      "label": "I-UNIT_PRICE",
+      "confidence": 0.9995
+    },
+    {
+      "i": 79,
+      "text": "1.19",
+      "bbox": [
+        401.53,
+        371.94,
+        446.03,
+        398.83
+      ],
+      "label": "B-PRICE",
+      "confidence": 0.9986
+    },
+    {
+      "i": 80,
+      "text": "BÄCKERKRÖNUNG",
+      "bbox": [
+        243.78,
+        377.06,
+        301.79,
+        386.1
+      ],
+      "label": "B-BRAND",
+      "confidence": 0.9994
+    },
+    {
+      "i": 81,
+      "text": "Roggenvollkornbrot*",
+      "bbox": [
+        243.78,
+        384.56,
+        314.47,
+        393.6
+      ],
+      "label": "B-PRODUCT",
+      "confidence": 0.999
+    },
+    {
+      "i": 82,
+      "text": "je",
+      "bbox": [
+        243.78,
+        392.14,
+        249.94,
+        401.07
+      ],
+      "label": "O",
+      "confidence": 0.9994
+    },
+    {
+      "i": 83,
+      "text": "500",
+      "bbox": [
+        251.44,
+        392.14,
+        264.04,
+        401.07
+      ],
+      "label": "B-QUANTITY",
+      "confidence": 0.9991
+    },
+    {
+      "i": 84,
+      "text": "g",
+      "bbox": [
+        265.54,
+        392.14,
+        269.82,
+        401.07
+      ],
+      "label": "I-QUANTITY",
+      "confidence": 0.9993
+    },
+    {
+      "i": 85,
+      "text": "(1",
+      "bbox": [
+        243.78,
+        399.64,
+        250.68,
+        408.57
+      ],
+      "label": "B-UNIT_PRICE",
+      "confidence": 0.9992
+    },
+    {
+      "i": 86,
+      "text": "kg",
+      "bbox": [
+        252.18,
+        399.64,
+        260.23,
+        408.57
+      ],
+      "label": "I-UNIT_PRICE",
+      "confidence": 0.9995
+    },
+    {
+      "i": 87,
+      "text": "=",
+      "bbox": [
+        261.73,
+        399.64,
+        265.93,
+        408.57
+      ],
+      "label": "I-UNIT_PRICE",
+      "confidence": 0.9994
+    },
+    {
+      "i": 88,
+      "text": "2.38)",
+      "bbox": [
+        267.43,
+        399.64,
+        284.79,
+        408.57
+      ],
+      "label": "I-UNIT_PRICE",
+      "confidence": 0.9994
+    },
+    {
+      "i": 89,
+      "text": "1.19",
+      "bbox": [
+        174.76,
+        371.94,
+        219.26,
+        398.83
+      ],
+      "label": "B-PRICE",
+      "confidence": 0.9986
+    },
+    {
+      "i": 90,
+      "text": "BÄCKERKRÖNUNG",
+      "bbox": [
+        17.01,
+        377.06,
+        75.02,
+        386.1
+      ],
+      "label": "B-BRAND",
+      "confidence": 0.9994
+    },
+    {
+      "i": 91,
+      "text": "Vital",
+      "bbox": [
+        17.01,
+        384.56,
+        32.2,
+        393.6
+      ],
+      "label": "B-PRODUCT",
+      "confidence": 0.9989
+    },
+    {
+      "i": 92,
+      "text": "&",
+      "bbox": [
+        33.4,
+        384.56,
+        38.53,
+        393.6
+      ],
+      "label": "I-PRODUCT",
+      "confidence": 0.9976
+    },
+    {
+      "i": 93,
+      "text": "fit*",
+      "bbox": [
+        39.73,
+        384.56,
+        50.71,
+        393.6
+      ],
+      "label": "I-PRODUCT",
+      "confidence": 0.9987
+    },
+    {
+      "i": 94,
+      "text": "je",
+      "bbox": [
+        17.01,
+        392.14,
+        23.17,
+        401.07
+      ],
+      "label": "O",
+      "confidence": 0.9993
+    },
+    {
+      "i": 95,
+      "text": "500",
+      "bbox": [
+        24.67,
+        392.14,
+        37.27,
+        401.07
+      ],
+      "label": "B-QUANTITY",
+      "confidence": 0.9991
+    },
+    {
+      "i": 96,
+      "text": "g",
+      "bbox": [
+        38.77,
+        392.14,
+        43.05,
+        401.07
+      ],
+      "label": "I-QUANTITY",
+      "confidence": 0.9993
+    },
+    {
+      "i": 97,
+      "text": "(1",
+      "bbox": [
+        17.01,
+        399.64,
+        23.91,
+        408.57
+      ],
+      "label": "B-UNIT_PRICE",
+      "confidence": 0.9992
+    },
+    {
+      "i": 98,
+      "text": "kg",
+      "bbox": [
+        25.41,
+        399.64,
+        33.46,
+        408.57
+      ],
+      "label": "I-UNIT_PRICE",
+      "confidence": 0.9994
+    },
+    {
+      "i": 99,
+      "text": "=",
+      "bbox": [
+        34.96,
+        399.64,
+        39.16,
+        408.57
+      ],
+      "label": "I-UNIT_PRICE",
+      "confidence": 0.9994
+    },
+    {
+      "i": 100,
+      "text": "2.38)",
+      "bbox": [
+        40.66,
+        399.64,
+        58.02,
+        408.57
+      ],
+      "label": "I-UNIT_PRICE",
+      "confidence": 0.9993
+    },
+    {
+      "i": 101,
+      "text": "13_01-11-12-13_dHZ",
+      "bbox": [
+        464.12,
+        741.27,
+        471.26,
+        796.77
+      ],
+      "label": "O",
+      "confidence": 0.9992
+    },
+    {
+      "i": 102,
+      "text": "Mo,",
+      "bbox": [
+        176.85,
+        14.05,
+        200.49,
+        30.92
+      ],
+      "label": "B-VALID",
+      "confidence": 0.9984
+    },
+    {
+      "i": 103,
+      "text": "24.8. – Sa,",
+      "bbox": [
+        203.29,
+        13.98,
+        264.83,
+        31.09
+      ],
+      "label": "I-VALID",
+      "confidence": 0.9987
+    },
+    {
+      "i": 104,
+      "text": "29.8.",
+      "bbox": [
+        267.63,
+        14.05,
+        299.37,
+        30.92
+      ],
+      "label": "I-VALID",
+      "confidence": 0.9986
+    }
+  ],
+  "entities": [
+    {
+      "label": "DISCOUNT",
+      "start": 0,
+      "end": 1,
+      "text": "-13%",
+      "bbox": [
+        117.14,
+        729.68,
+        154.42,
+        749.23
+      ],
+      "confidence": 0.997
+    },
+    {
+      "label": "PRICE",
+      "start": 1,
+      "end": 2,
+      "text": "1.29",
+      "bbox": [
+        98.64,
+        757.45,
+        143.15,
+        784.34
+      ],
+      "confidence": 0.9985
+    },
+    {
+      "label": "OLD_PRICE",
+      "start": 2,
+      "end": 3,
+      "text": "1.49",
+      "bbox": [
+        111.79,
+        780.73,
+        130.0,
+        791.73
+      ],
+      "confidence": 0.9946
+    },
+    {
+      "label": "BRAND",
+      "start": 3,
+      "end": 4,
+      "text": "BÄCKERKRÖNUNG",
+      "bbox": [
+        17.01,
+        755.07,
+        75.02,
+        764.11
+      ],
+      "confidence": 0.9994
+    },
+    {
+      "label": "PRODUCT",
+      "start": 4,
+      "end": 7,
+      "text": "Hörnchen* Versch. Sorten,",
+      "bbox": [
+        17.01,
+        762.57,
+        65.26,
+        779.08
+      ],
+      "confidence": 0.9982
+    },
+    {
+      "label": "QUANTITY",
+      "start": 8,
+      "end": 10,
+      "text": "240 g",
+      "bbox": [
+        24.67,
+        777.65,
+        43.05,
+        786.58
+      ],
+      "confidence": 0.9992
+    },
+    {
+      "label": "UNIT_PRICE",
+      "start": 10,
+      "end": 14,
+      "text": "(1 kg = 5.38)",
+      "bbox": [
+        17.01,
+        785.15,
+        58.02,
+        794.08
+      ],
+      "confidence": 0.9993
+    },
+    {
+      "label": "PRICE",
+      "start": 14,
+      "end": 15,
+      "text": "1.99",
+      "bbox": [
+        250.35,
+        757.45,
+        294.85,
+        784.34
+      ],
+      "confidence": 0.999
+    },
+    {
+      "label": "BRAND",
+      "start": 15,
+      "end": 17,
+      "text": "BÄCKER­ KRÖNUNG",
+      "bbox": [
+        262.44,
+        685.05,
+        295.15,
+        701.59
+      ],
+      "confidence": 0.9988
+    },
+    {
+      "label": "PRODUCT",
+      "start": 17,
+      "end": 20,
+      "text": "Reiswaffeln* Versch. Sorten,",
+      "bbox": [
+        262.44,
+        700.05,
+        306.05,
+        724.06
+      ],
+      "confidence": 0.9983
+    },
+    {
+      "label": "QUANTITY",
+      "start": 21,
+      "end": 23,
+      "text": "150 g",
+      "bbox": [
+        270.11,
+        722.63,
+        288.48,
+        731.56
+      ],
+      "confidence": 0.9992
+    },
+    {
+      "label": "UNIT_PRICE",
+      "start": 23,
+      "end": 27,
+      "text": "(1 kg = 13.27)",
+      "bbox": [
+        262.44,
+        730.13,
+        307.65,
+        739.06
+      ],
+      "confidence": 0.9995
+    },
+    {
+      "label": "DISCOUNT",
+      "start": 27,
+      "end": 28,
+      "text": "-14%",
+      "bbox": [
+        192.21,
+        536.92,
+        229.49,
+        556.47
+      ],
+      "confidence": 0.9972
+    },
+    {
+      "label": "PRICE",
+      "start": 28,
+      "end": 29,
+      "text": "1.19",
+      "bbox": [
+        173.72,
+        564.7,
+        218.22,
+        591.58
+      ],
+      "confidence": 0.9982
+    },
+    {
+      "label": "OLD_PRICE",
+      "start": 29,
+      "end": 30,
+      "text": "1.39",
+      "bbox": [
+        186.87,
+        587.97,
+        205.07,
+        598.97
+      ],
+      "confidence": 0.9925
+    },
+    {
+      "label": "BRAND",
+      "start": 30,
+      "end": 32,
+      "text": "BÄCKER- KRÖNUNG",
+      "bbox": [
+        17.01,
+        554.82,
+        49.72,
+        571.35
+      ],
+      "confidence": 0.9986
+    },
+    {
+      "label": "PRODUCT",
+      "start": 32,
+      "end": 34,
+      "text": "Rosinen- stuten*",
+      "bbox": [
+        17.01,
+        569.82,
+        46.42,
+        586.35
+      ],
+      "confidence": 0.9991
+    },
+    {
+      "label": "QUANTITY",
+      "start": 35,
+      "end": 37,
+      "text": "400 g",
+      "bbox": [
+        24.67,
+        584.89,
+        43.05,
+        593.82
+      ],
+      "confidence": 0.9992
+    },
+    {
+      "label": "UNIT_PRICE",
+      "start": 37,
+      "end": 41,
+      "text": "(1 kg = 2.98)",
+      "bbox": [
+        17.01,
+        592.39,
+        58.02,
+        601.32
+      ],
+      "confidence": 0.9994
+    },
+    {
+      "label": "DISCOUNT",
+      "start": 41,
+      "end": 42,
+      "text": "-12%",
+      "bbox": [
+        414.35,
+        151.41,
+        451.63,
+        170.96
+      ],
+      "confidence": 0.9974
+    },
+    {
+      "label": "PRICE",
+      "start": 42,
+      "end": 43,
+      "text": "1.39",
+      "bbox": [
+        395.86,
+        179.19,
+        440.36,
+        206.07
+      ],
+      "confidence": 0.9985
+    },
+    {
+      "label": "OLD_PRICE",
+      "start": 43,
+      "end": 44,
+      "text": "1.59",
+      "bbox": [
+        409.01,
+        202.46,
+        427.21,
+        213.46
+      ],
+      "confidence": 0.9934
+    },
+    {
+      "label": "BRAND",
+      "start": 44,
+      "end": 45,
+      "text": "BÄCKERKRÖNUNG",
+      "bbox": [
+        384.8,
+        97.28,
+        442.82,
+        106.31
+      ],
+      "confidence": 0.9994
+    },
+    {
+      "label": "PRODUCT",
+      "start": 45,
+      "end": 48,
+      "text": "Rosenbrötchen* Versch. Sorten,",
+      "bbox": [
+        384.8,
+        104.78,
+        438.13,
+        121.28
+      ],
+      "confidence": 0.9989
+    },
+    {
+      "label": "QUANTITY",
+      "start": 49,
+      "end": 51,
+      "text": "510 g",
+      "bbox": [
+        392.47,
+        119.85,
+        410.84,
+        128.78
+      ],
+      "confidence": 0.9992
+    },
+    {
+      "label": "UNIT_PRICE",
+      "start": 51,
+      "end": 55,
+      "text": "(1 kg = 2.73)",
+      "bbox": [
+        384.8,
+        127.35,
+        425.81,
+        136.28
+      ],
+      "confidence": 0.9995
+    },
+    {
+      "label": "PRICE",
+      "start": 55,
+      "end": 56,
+      "text": "1.29",
+      "bbox": [
+        401.53,
+        564.7,
+        446.03,
+        591.58
+      ],
+      "confidence": 0.9986
+    },
+    {
+      "label": "BRAND",
+      "start": 56,
+      "end": 57,
+      "text": "BÄCKERKRÖNUNG",
+      "bbox": [
+        242.83,
+        562.32,
+        300.85,
+        571.35
+      ],
+      "confidence": 0.9994
+    },
+    {
+      "label": "PRODUCT",
+      "start": 57,
+      "end": 60,
+      "text": "Knäckebrot* Versch. Sorten,",
+      "bbox": [
+        242.83,
+        569.82,
+        291.08,
+        586.32
+      ],
+      "confidence": 0.999
+    },
+    {
+      "label": "QUANTITY",
+      "start": 61,
+      "end": 63,
+      "text": "250 g",
+      "bbox": [
+        250.5,
+        584.89,
+        268.87,
+        593.82
+      ],
+      "confidence": 0.9992
+    },
+    {
+      "label": "UNIT_PRICE",
+      "start": 63,
+      "end": 67,
+      "text": "(1 kg = 5.16)",
+      "bbox": [
+        242.83,
+        592.39,
+        283.84,
+        601.32
+      ],
+      "confidence": 0.9995
+    },
+    {
+      "label": "PRICE",
+      "start": 67,
+      "end": 68,
+      "text": "1.79",
+      "bbox": [
+        403.42,
+        757.45,
+        447.92,
+        784.34
+      ],
+      "confidence": 0.9988
+    },
+    {
+      "label": "BRAND",
+      "start": 68,
+      "end": 69,
+      "text": "BÄCKERKRÖNUNG",
+      "bbox": [
+        319.37,
+        762.57,
+        377.38,
+        771.61
+      ],
+      "confidence": 0.9994
+    },
+    {
+      "label": "PRODUCT",
+      "start": 69,
+      "end": 72,
+      "text": "High Protein Wraps*",
+      "bbox": [
+        319.37,
+        770.07,
+        385.57,
+        779.11
+      ],
+      "confidence": 0.9991
+    },
+    {
+      "label": "QUANTITY",
+      "start": 73,
+      "end": 75,
+      "text": "372 g",
+      "bbox": [
+        327.04,
+        777.65,
+        345.41,
+        786.58
+      ],
+      "confidence": 0.9992
+    },
+    {
+      "label": "UNIT_PRICE",
+      "start": 75,
+      "end": 79,
+      "text": "(1 kg = 4.81)",
+      "bbox": [
+        319.37,
+        785.15,
+        360.38,
+        794.08
+      ],
+      "confidence": 0.9995
+    },
+    {
+      "label": "PRICE",
+      "start": 79,
+      "end": 80,
+      "text": "1.19",
+      "bbox": [
+        401.53,
+        371.94,
+        446.03,
+        398.83
+      ],
+      "confidence": 0.9986
+    },
+    {
+      "label": "BRAND",
+      "start": 80,
+      "end": 81,
+      "text": "BÄCKERKRÖNUNG",
+      "bbox": [
+        243.78,
+        377.06,
+        301.79,
+        386.1
+      ],
+      "confidence": 0.9994
+    },
+    {
+      "label": "PRODUCT",
+      "start": 81,
+      "end": 82,
+      "text": "Roggenvollkornbrot*",
+      "bbox": [
+        243.78,
+        384.56,
+        314.47,
+        393.6
+      ],
+      "confidence": 0.999
+    },
+    {
+      "label": "QUANTITY",
+      "start": 83,
+      "end": 85,
+      "text": "500 g",
+      "bbox": [
+        251.44,
+        392.14,
+        269.82,
+        401.07
+      ],
+      "confidence": 0.9992
+    },
+    {
+      "label": "UNIT_PRICE",
+      "start": 85,
+      "end": 89,
+      "text": "(1 kg = 2.38)",
+      "bbox": [
+        243.78,
+        399.64,
+        284.79,
+        408.57
+      ],
+      "confidence": 0.9994
+    },
+    {
+      "label": "PRICE",
+      "start": 89,
+      "end": 90,
+      "text": "1.19",
+      "bbox": [
+        174.76,
+        371.94,
+        219.26,
+        398.83
+      ],
+      "confidence": 0.9986
+    },
+    {
+      "label": "BRAND",
+      "start": 90,
+      "end": 91,
+      "text": "BÄCKERKRÖNUNG",
+      "bbox": [
+        17.01,
+        377.06,
+        75.02,
+        386.1
+      ],
+      "confidence": 0.9994
+    },
+    {
+      "label": "PRODUCT",
+      "start": 91,
+      "end": 94,
+      "text": "Vital & fit*",
+      "bbox": [
+        17.01,
+        384.56,
+        50.71,
+        393.6
+      ],
+      "confidence": 0.9984
+    },
+    {
+      "label": "QUANTITY",
+      "start": 95,
+      "end": 97,
+      "text": "500 g",
+      "bbox": [
+        24.67,
+        392.14,
+        43.05,
+        401.07
+      ],
+      "confidence": 0.9992
+    },
+    {
+      "label": "UNIT_PRICE",
+      "start": 97,
+      "end": 101,
+      "text": "(1 kg = 2.38)",
+      "bbox": [
+        17.01,
+        399.64,
+        58.02,
+        408.57
+      ],
+      "confidence": 0.9993
+    },
+    {
+      "label": "VALID",
+      "start": 102,
+      "end": 105,
+      "text": "Mo, 24.8. – Sa, 29.8.",
+      "bbox": [
+        176.85,
+        13.98,
+        299.37,
+        31.09
+      ],
+      "confidence": 0.9986
+    }
+  ]
+}

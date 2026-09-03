@@ -4,6 +4,7 @@ API-Zugangsdaten liegen in einer lokalen .env (siehe .env.example), damit
 keine Keys im Repo landen. Alles andere (Pfade, Modellnamen) steht direkt hier.
 """
 
+from dataclasses import dataclass
 import os
 import re
 import sys
@@ -70,6 +71,9 @@ EXCLUDED_FILE = DATA_DIR / "excluded.json"
 # Handannotierte Referenz. Liegt bewusst außerhalb von data/ und wird
 # versioniert: generierte Artefakte sind reproduzierbar, Handarbeit nicht.
 GOLD_DIR = PROJECT_ROOT / "gold"
+# Welche Seiten als Nächstes von Hand annotiert werden sollen – die Liste,
+# die der Annotator hervorhebt. Versioniert, weil sie eine Teamabsprache ist.
+ANNOTATION_TASK_FILE = DATA_DIR / "annotation_task.json"
 # Katalog-Verzeichnis: gefundene Blätterkatalog-IDs. Versioniert wie gold/ –
 # eine ID lässt sich nicht reproduzieren, nur wiederfinden.
 CATALOGS_FILE = PROJECT_ROOT / "catalogs.json"
@@ -242,6 +246,48 @@ def default_labeled_model() -> str | None:
 # ---------------------------------------------------------------------------
 LAYOUT_MODEL = "microsoft/layoutxlm-base"  # layout-aware, multilingual
 TEXT_MODEL = "deepset/gbert-base"          # text-only Baseline ohne Positionsinfo
+LILT_MODEL = "nielsr/lilt-xlm-roberta-base"  # Layout ohne visuellen Backbone
+XLMR_MODEL = "xlm-roberta-base"            # derselbe Textencoder, ohne Layout
+
+
+@dataclass(frozen=True)
+class Variant:
+    """Ein Trainingsarm: welches Vormodell, welche Eingaben es braucht.
+
+    Vier Arme, deren Sinn in den *Unterschieden* liegt – jeder Schritt der
+    Kette fügt genau eine Sache hinzu:
+
+        xlmr  ──+Layout──▶  lilt  ──+Vision──▶  layoutxlm
+
+    Deshalb teilen sich `xlmr`, `lilt` und `layoutxlm` den Textencoder. Ohne
+    `xlmr` wäre "LayoutXLM gegen GBERT" eine Differenz mit zwei Ursachen
+    gleichzeitig, und keine davon zuschreibbar; `gbert` steht daneben als der
+    beste deutsche Textencoder, nicht als Glied dieser Kette.
+
+    `boxes` sagt, *wie* die Positionen ins Modell kommen, und das ist kein
+    Detail: LayoutXLMs Tokenizer breitet sie über `boxes=` selbst auf die
+    Subwords aus, LiLTs XLM-R-Tokenizer kennt das Argument nicht und braucht
+    `alignment.subword_boxes`. Ein Boolean reichte, solange es zwei Arme gab.
+    """
+
+    name: str
+    model_name: str
+    boxes: str  # "none" | "manual" | "tokenizer"
+    image: bool
+
+
+VARIANTS = {
+    "gbert": Variant("gbert", TEXT_MODEL, "none", False),
+    "xlmr": Variant("xlmr", XLMR_MODEL, "none", False),
+    "lilt": Variant("lilt", LILT_MODEL, "manual", False),
+    "layoutxlm": Variant("layoutxlm", LAYOUT_MODEL, "tokenizer", True),
+}
+
+
+def variant_spec(name: str) -> Variant:
+    """Wirft bei unbekanntem Namen, statt still auf einen Default zu fallen –
+    ein Tippfehler soll nicht einen anderen Arm trainieren als gemeint."""
+    return VARIANTS[name]
 
 MAX_SEQ_LENGTH = 512
 SEED = 13

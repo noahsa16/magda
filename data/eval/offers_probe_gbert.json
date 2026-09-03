@@ -1,0 +1,47 @@
+{
+  "encoder": "gbert",
+  "checkpoint": "/Users/noahsamel/PycharmProjects/magda/checkpoints/gbert/best",
+  "source": "sonnet-5",
+  "reference": "data/offer_groups/claude-sonnet-5",
+  "pages": 30,
+  "clusters": 210,
+  "holdout_pages": 10,
+  "pairs": 43872,
+  "positive": 4623,
+  "hidden": [
+    64,
+    32
+  ],
+  "variants": {
+    "geometrie (35)": {
+      "auc": 0.9647518744916914,
+      "pair_f1": 0.7786561264822134,
+      "threshold": 0.9,
+      "columns": 35
+    },
+    "+lexik (43)": {
+      "auc": 0.9561955665103107,
+      "pair_f1": 0.8013937282229966,
+      "threshold": 0.85,
+      "columns": 43
+    },
+    "gbert allein (1536)": {
+      "auc": 0.8126124263387757,
+      "pair_f1": 0.46945337620578775,
+      "threshold": 0.55,
+      "columns": 1536
+    },
+    "geometrie + gbert": {
+      "auc": 0.9587871221167625,
+      "pair_f1": 0.7456418383518225,
+      "threshold": 0.95,
+      "columns": 1571
+    },
+    "alles": {
+      "auc": 0.9577156027219446,
+      "pair_f1": 0.740940632228219,
+      "threshold": 0.95,
+      "columns": 1579
+    }
+  }
+}

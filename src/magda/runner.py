@@ -14,6 +14,7 @@ Der Ringpuffer hält die letzten Zeilen für die Live-Ansicht; vollständig steh
 jeder Lauf über runs.py auf der Platte.
 """
 
+import os
 import subprocess
 import threading
 import time
@@ -76,6 +77,12 @@ def start(job: str, args: dict | None = None) -> None:
 
         started = datetime.now()
         run_id = runs.new_run_id(job, started)
+        # `bufsize=1` gilt nur fuer das Lesen hier; das Kind sieht eine Pipe
+        # und puffert seine eigene Ausgabe blockweise. Ein Schritt, der wenig
+        # schreibt, fuellt die 8 KB nie - `magda train` und `magda offers-grid`
+        # standen im Frontend stundenlang scheinbar ohne Ausgabe da, und ein
+        # Lauf ueber Nacht in eine Datei umgeleitet hinterliess sie leer.
+        # Live ist die Ausgabe erst mit ungepuffertem Kind.
         process = subprocess.Popen(
             command,
             cwd=config.PROJECT_ROOT,
@@ -83,6 +90,7 @@ def start(job: str, args: dict | None = None) -> None:
             stderr=subprocess.STDOUT,
             text=True,
             bufsize=1,
+            env={**os.environ, "PYTHONUNBUFFERED": "1"},
         )
         _state.process = process
         _state.job = job

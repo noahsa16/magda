@@ -3,7 +3,7 @@
 
 import pytest
 
-from magda import jobs
+from magda import config, jobs
 
 
 def test_build_command_setzt_positional_und_option():
@@ -80,7 +80,10 @@ def test_describe_liefert_json_faehigen_katalog():
 
     assert entry["title"]
     variant = next(p for p in entry["params"] if p["key"] == "variant")
-    assert variant["choices"] == ["gbert", "layoutxlm"]
+    # Gegen die Registry, nicht gegen ein Literal: sonst muss dieser Test bei
+    # jedem neuen Arm nachgezogen werden und schuetzt dabei nichts - er wuerde
+    # nur festhalten, wie viele Arme es zufaellig gab, als er geschrieben wurde.
+    assert variant["choices"] == list(config.VARIANTS)
     assert variant["required"] is True
     epochs = next(p for p in entry["params"] if p["key"] == "epochs")
     assert epochs["default"] == 10

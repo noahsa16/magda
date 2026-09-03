@@ -70,6 +70,50 @@ ANCHOR_NAMES = [
     "anchor_gap_j",      # unsicherer ist die Zuordnung zu ihm
 ]
 
+LEXICAL_NAMES = [
+    "promo_before_i",     # "je", "statt", "nur" - Mengenaktion vor der Angabe
+    "promo_before_j",
+    "unit_before_i",      # "je Stueck", "je Set" - die Einheit vor dem Preis
+    "unit_before_j",
+    "action_before_i",    # "Aktion" - danach faengt ein Preisblock an
+    "action_before_j",
+    "action_between",     # dazwischen faengt einer an, also trennt es
+    "separator_between",  # "oder" und Kleingedrucktes trennen
+]
+
+# Ausgezaehlt ueber die 494 Trainingsseiten (`sonnet-5`, 29.08.2026): von
+# 7411 Preisen tragen 2033 eine Mengenaktion und 2029 eine Einheit in den
+# drei Woertern davor, 1117 ein "Aktion" in den zwei davor. Alle drei
+# Wortarten fallen als `O` durchs Labeling - die Information liegt brach,
+# und bis hierher liest kein einziges Merkmal den Text.
+PROMO_WORDS = frozenset({"je", "2für", "2fuer", "3er", "statt", "nur", "ab", "pro"})
+UNIT_WORDS = frozenset({"stück", "stueck", "set", "packung", "dose", "flasche",
+                        "glas", "beutel", "paar", "pack"})
+
+# "oder" trennt schon in `labeling.trim_spans` zwei Angebote voneinander;
+# das Kleingedruckte steht raeumlich zwischen den Kacheln und gehoert zu
+# keiner - 1733 Treffer auf den Trainingsseiten.
+SEPARATOR_WORDS = frozenset({"oder", "abgabe", "haushaltsüblichen",
+                             "haushaltsüblicher", "vorrat", "irrtümer"})
+ACTION_WORD = "aktion"
+
+# Wie weit vor der Entity gesucht wird. Drei Woerter decken "je Stueck 9.99"
+# ab, ohne in die Beschreibung des Nachbarangebots zu greifen; "Aktion"
+# steht direkt am Preis, dort reichen zwei.
+LOOKBEHIND = 3
+ACTION_LOOKBEHIND = 2
+
+# **Die Legendennummer ist kein Merkmal geworden, und das ist gemessen.**
+# Sie steht im Textlayer - auf `1347387_p31` liegen die Ziffern 1-5 als
+# eigene Textlaeufe, ihre Boxen sitzen an den Kacheln. Nur in zwei
+# Groessen: eine schmale Spalte am linken Rand (Legende, Hoehe 8,4) und
+# Badges auf den Produktfotos (Hoehe 13,3). Ueber den Mittelpunktsabstand
+# zugeordnet entscheidet ein Gleichstand: "Pflanztopf-Set" liegt 29,6 von
+# seiner "4" entfernt, sein Preis "8.99" liegt 29,0 von der "5" des
+# Nachbarangebots - das Merkmal bekaeme genau den belegten Fall falsch,
+# fuer den es gebaut war. Wer es wieder aufnimmt, braucht eine gerichtete
+# Zuordnung (die Nummer steht *vor* ihrem Eintrag), nicht den Abstand.
+
 # Anker eines Angebots. Ein Angebot ist ein Stern um genau einen Produktnamen;
 # Preis-Badges schweben dagegen frei, ein fremder PRICE dazwischen trennt
 # deshalb *nicht* zuverlaessig (deshalb kein `prices_between`).
@@ -105,12 +149,17 @@ FEATURE_BLOCKS: dict[str, list[str]] = {
     "geometry_plus": CONTEXT_NAMES,
     "color": COLOR_NAMES,
     "anchor": ANCHOR_NAMES,
+    "lexical": LEXICAL_NAMES,
 }
-BLOCK_ORDER = ("types", "geometry_base", "geometry_plus", "color", "anchor")
+BLOCK_ORDER = ("types", "geometry_base", "geometry_plus", "color", "anchor",
+               "lexical")
 
 DEFAULT_BLOCKS = ("types", "geometry_base")
 GEOMETRY_BLOCKS = ("types", "geometry_base", "geometry_plus")
 ANCHOR_BLOCKS = ("types", "geometry_base", "geometry_plus", "anchor")
+LEXICAL_BLOCKS = ("types", "geometry_base", "geometry_plus", "lexical")
+ANCHOR_LEXICAL_BLOCKS = ("types", "geometry_base", "geometry_plus", "anchor",
+                         "lexical")
 # Ausgeschrieben statt `= BLOCK_ORDER`: sonst waechst die Variante "beide"
 # mit jedem neuen Block mit, und ein Vergleich gegen eine aeltere Zahl
 # meint stillschweigend etwas anderes.
@@ -227,6 +276,9 @@ def _pair_features(entity_i, entity_j, index_i: int, index_j: int,
         parts["color"] = _color_features(index_i, index_j, context)
     if "anchor" in context["blocks"]:
         parts["anchor"] = _anchor_features(index_i, index_j, context)
+    if "lexical" in context["blocks"]:
+        parts["lexical"] = _lexical_features(
+            entity_i, entity_j, index_i, index_j, context)
 
     return [v for block in BLOCK_ORDER if block in parts for v in parts[block]]
 
@@ -288,6 +340,56 @@ def _anchor_features(index_i: int, index_j: int, context: dict) -> list[float]:
         shared,
         min(gaps[index_i] / scale, ANCHOR_GAP_CAP) / ANCHOR_GAP_CAP,
         min(gaps[index_j] / scale, ANCHOR_GAP_CAP) / ANCHOR_GAP_CAP,
+    ]
+
+
+def _normalise_token(text: str) -> str:
+    """Ein Wort so, wie die Wortlisten es kennen: klein, ohne Satzzeichen.
+
+    Der Textlayer haengt Sternchen und Aufzaehlungspunkte an ("Filz*",
+    "Stueck,"). Ungetrimmt faende keine Liste ihr eigenes Wort wieder.
+    """
+    return text.strip().strip("*\u2022,.:;()!?\"'").lower()
+
+
+def _lexical_features(entity_i, entity_j, index_i: int, index_j: int,
+                      context: dict) -> list[float]:
+    """Was vor den beiden und zwischen ihnen *steht* - der erste Textzugriff.
+
+    Bis hierher liest kein Merkmal ein einziges Wort; die Gruppierung
+    entscheidet allein nach Lage, Typ und Farbe. Dabei traegt der Text die
+    Struktur der Kachel offen: "je Stueck 9.99" bindet den Preis an die
+    Beschreibung davor, "Aktion" oeffnet einen neuen Preisblock, "oder"
+    trennt zwei Angebote - dieselbe Grenze, die `labeling.trim_spans`
+    schon beim Labeln zieht.
+
+    Die vier `_before`-Merkmale binden, die beiden `_between` trennen.
+    Beide Richtungen gehoeren dazu: ein Merkmal, das nur bindet, kann eine
+    Legendenspalte nicht aufhalten.
+
+    Alle acht Werte sind 0 oder 1. Feiner zu zaehlen brachte nichts, was
+    `word_gap` nicht schon sagt: gefragt ist, *ob* eine Marke dazwischen
+    steht, nicht wie oft.
+    """
+    tokens = context["tokens"]
+
+    def before(entity, count: int) -> list[str]:
+        return tokens[max(0, entity.start - count):entity.start]
+
+    between = tokens[min(entity_i.end, entity_j.start):max(entity_j.start, entity_i.end)]
+
+    def has(words_, group) -> float:
+        return float(any(word in group for word in words_))
+
+    return [
+        has(before(entity_i, LOOKBEHIND), PROMO_WORDS),
+        has(before(entity_j, LOOKBEHIND), PROMO_WORDS),
+        has(before(entity_i, LOOKBEHIND), UNIT_WORDS),
+        has(before(entity_j, LOOKBEHIND), UNIT_WORDS),
+        float(ACTION_WORD in before(entity_i, ACTION_LOOKBEHIND)),
+        float(ACTION_WORD in before(entity_j, ACTION_LOOKBEHIND)),
+        float(ACTION_WORD in between),
+        has(between, SEPARATOR_WORDS),
     ]
 
 
@@ -584,6 +686,12 @@ def page_pairs(page: dict, assignment: dict[int, int] | None = None, *,
         # Einmal je Seite, nicht je Paar - sonst kostet die Suche nach dem
         # naechsten Anker quadratisch mal die Zahl der Anker.
         context["anchors"] = _page_anchors(entities)
+    if "lexical" in blocks:
+        # Normalisiert wird einmal je Seite: je Paar gerechnet faellt
+        # dieselbe Zeichenkette quadratisch oft an.
+        tokens = [_normalise_token(w.get("text") or "")
+                  for w in (page.get("words") or [])]
+        context["tokens"] = tokens
     if "color" in blocks:
         # Die Hintergrundfarbe je Entity kommt aus dem Originalbild (einmal
         # je Entity, billig); der Pfad tastet das geglaettete ab (einmal je

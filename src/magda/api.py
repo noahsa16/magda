@@ -348,9 +348,9 @@ def _training_state(variant: str) -> dict:
 
 @app.get("/api/model")
 def get_model_status():
-    """Trainingsstand beider Varianten – die Demo zeigt daran, wie weit das
+    """Trainingsstand aller Arme – die Demo zeigt daran, wie weit das
     Modell ist, das dort gerade rechnet."""
-    return [_training_state(v) for v in ("layoutxlm", "gbert")]
+    return [_training_state(v) for v in config.VARIANTS]
 
 
 class RunRequest(BaseModel):
@@ -424,6 +424,24 @@ def _load_words(page_id: str) -> dict:
         raise HTTPException(404, f"Unbekannte Seite: {page_id}")
     with open(words_file) as f:
         return json.load(f)
+
+
+@app.get("/api/annotation-task")
+def annotation_task():
+    """Die abgesprochene Handannotations-Aufgabe (data/annotation_task.json).
+
+    Nur Seiten, die es unter data/words/ gibt: eine Aufgabe, die auf eine
+    inzwischen entdoppelte Seite zeigt, soll im Annotator nicht als
+    unerledigbar stehen bleiben.
+    """
+    try:
+        with open(config.ANNOTATION_TASK_FILE) as f:
+            task = json.load(f)
+    except FileNotFoundError:
+        return {"title": "", "created": None, "for": [], "why": "", "pages": []}
+    task["pages"] = [p for p in task.get("pages", [])
+                     if (config.WORDS_DIR / f"{p}.json").exists()]
+    return task
 
 
 @app.get("/api/gold")

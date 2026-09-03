@@ -44,7 +44,9 @@ class Job:
     params: tuple[Param, ...] = field(default_factory=tuple)
 
 
-VARIANTS = ("gbert", "layoutxlm")
+# Aus der Registry, nicht abgeschrieben: eine zweite Liste derselben Arme
+# driftet, und das Frontend böte dann einen an, den `magda train` nicht kennt.
+VARIANTS = tuple(config.VARIANTS)
 
 JOBS: dict[str, Job] = {
     "harvest": Job(

@@ -164,7 +164,10 @@ export type SchemeKey = "strict" | "exact" | "partial" | "type"
 export type ProtocolKey = "report" | "report_no_windows" | "report_truncated"
 
 export interface EvalReport {
-  variant: "gbert" | "layoutxlm"
+  // Offen, nicht als Union: die Arme stehen in `config.VARIANTS` im Backend,
+  // und eine zweite Liste hier driftet davon ab. Die Anzeigereihenfolge
+  // regelt `transform.variantsOf`, nicht der Typ.
+  variant: string
   split: string
   num_pages: number
   created: string
@@ -178,6 +181,12 @@ export interface EvalReport {
   report_truncated?: Record<string, EntityMetrics>
   matching_schemes?: Record<SchemeKey, SchemeCounts>
   matching_scheme_source?: string
+  /**
+   * Auf welche Labels dieser Report beschränkt ist (Flair-Arm: nur BRAND).
+   * Ein solcher Report beantwortet eine andere Frage als die vier Arme und
+   * darf nicht in dieselbe Tabelle.
+   */
+  restricted_to?: string[]
   matching_per_label_type?: Record<string, SchemeCounts>
 }
 
@@ -199,7 +208,7 @@ export interface SignificanceReport {
 }
 
 export interface ModelStatus {
-  variant: "layoutxlm" | "gbert"
+  variant: string
   trained: boolean
   epoch: number | null
   steps: number | null
@@ -343,6 +352,15 @@ export interface OfferGroupingSummary {
   annotator: string
   num_offers: number
   stale: boolean
+}
+
+/** Die abgesprochene Handannotations-Aufgabe – aus /api/annotation-task. */
+export interface AnnotationTask {
+  title: string
+  created: string | null
+  for: string[]
+  why: string
+  pages: string[]
 }
 
 /** Eine Kachel in der Prospekt-Übersicht. Gleiche Form für beide Werkzeuge. */

@@ -1,5 +1,5 @@
 import type {
-  Agreement, EvalReport, GoldAnnotation, GoldSummary,
+  Agreement, AnnotationTask, EvalReport, GoldAnnotation, GoldSummary,
   AuditReport, AuditSummary,
   JobDef, LabelDistribution, Labeler, LabelSource, LabelsVsGold, ModelStatus, PageDetail, PageSummary,
   OfferGrouping, OfferGroupingSummary,
@@ -57,6 +57,7 @@ export const api = {
     fetchJson<LabelDistribution>(
       `/api/labels/distribution${model ? `?model=${encodeURIComponent(model)}` : ""}`,
     ),
+  annotationTask: () => fetchJson<AnnotationTask>("/api/annotation-task"),
   gold: () => fetchJson<GoldSummary[]>("/api/gold"),
   goldPage: (id: string) => fetchJson<GoldAnnotation>(`/api/gold/${id}`),
   saveGold: (

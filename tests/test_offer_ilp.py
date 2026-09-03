@@ -266,3 +266,48 @@ def test_unterhalb_der_kappung_wird_optimiert(monkeypatch):
 
     assert offer_ilp.LAST_RUN["capped"] == 0
     assert offer_ilp.LAST_RUN["optimised"] == 1
+
+
+def test_beide_solver_finden_dasselbe_optimum(monkeypatch):
+    """Der Solverwechsel ist eine Laufzeitfrage, keine methodische.
+
+    Gemessen an einer echten Instanz aus dem Gitterlauf (93 Entities, 4278
+    Variablen): HiGHS 96 s, CBC nach 900 s noch nicht fertig, Zielwert
+    beide Male 990.238714. Der Wechsel darf am Ergebnis nichts aendern -
+    genau wie `LAZY_ABOVE` ist der Solver eine reine Laufzeitkonstante,
+    und wie dort kann ein Test ihn nicht "schuetzen", nur beide Wege
+    pruefen.
+
+    Uebersprungen, wenn highspy fehlt: dann laeuft ohnehin nur CBC, und
+    ein Vergleich mit sich selbst sichert nichts zu.
+    """
+    import pulp
+
+    try:
+        highs = pulp.HiGHS(msg=False)
+    except (AttributeError, pulp.PulpError):
+        pytest.skip("HiGHS nicht verfuegbar")
+    if not highs.available():
+        pytest.skip("HiGHS nicht verfuegbar")
+
+    threshold = 0.9
+    edges = _chain(10, threshold)
+
+    monkeypatch.setattr(offer_ilp, "_SOLVER", pulp.PULP_CBC_CMD(msg=0))
+    mit_cbc = [sorted(g) for g in offer_ilp.groups_from_edges_ilp(10, edges, threshold)]
+
+    monkeypatch.setattr(offer_ilp, "_SOLVER", highs)
+    mit_highs = [sorted(g) for g in offer_ilp.groups_from_edges_ilp(10, edges, threshold)]
+
+    assert mit_highs == mit_cbc
+    assert len(mit_cbc) > 1, "Vorbedingung: die Kette muss aufgespalten werden"
+
+
+def test_ohne_highspy_faellt_der_solver_auf_cbc_zurueck(monkeypatch):
+    """Ein fehlendes highspy macht den Lauf langsamer, nicht falsch."""
+    import pulp
+
+    monkeypatch.setattr(offer_ilp, "_SOLVER", None)
+    monkeypatch.delattr(pulp, "HiGHS", raising=False)
+
+    assert isinstance(offer_ilp._solver(), pulp.PULP_CBC_CMD)

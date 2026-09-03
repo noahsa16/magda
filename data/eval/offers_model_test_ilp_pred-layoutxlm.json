@@ -1,0 +1,96 @@
+{
+  "source": "layoutxlm",
+  "reference": "data/offer_groups/claude-sonnet-5",
+  "provenance": [
+    "llm"
+  ],
+  "splits": "test",
+  "threshold": 0.68,
+  "decoder": "ilp",
+  "checkpoint": "/Users/noahsamel/PycharmProjects/magda/checkpoints/offer_pairs/model.pt",
+  "model_provenance": {
+    "features": "lexik",
+    "reference": "claude-sonnet-5",
+    "kind": [
+      "llm"
+    ],
+    "labels": "sonnet-5",
+    "splits": "train",
+    "pages": 494,
+    "decoder": "ilp"
+  },
+  "ilp": {
+    "components": 547,
+    "optimised": 416,
+    "capped": 0,
+    "largest_capped": 0
+  },
+  "chain": {
+    "labels": "sonnet-5",
+    "entity": {
+      "precision": 0.9321,
+      "recall": 0.9153,
+      "f1": 0.9236,
+      "correct": 5467,
+      "incorrect": 203,
+      "partial": 0,
+      "missing": 303,
+      "spurious": 195,
+      "possible": 5973,
+      "actual": 5865
+    },
+    "ref_pairs_teacher": 18739
+  },
+  "agreement": {
+    "pages": 116,
+    "entities": 5865,
+    "unassignable": 292,
+    "ref_pairs": 16905,
+    "sys_pairs": 16416,
+    "shared_pairs": 15534,
+    "ref_groups": 939,
+    "sys_groups": 978,
+    "exact_groups": 746,
+    "ref_groups_without_entities": 0,
+    "pair_f1": 0.9323849824435041,
+    "group_f1": 0.77829942618675
+  },
+  "heuristic": {
+    "pages": 116,
+    "entities": 5865,
+    "unassignable": 292,
+    "ref_pairs": 16905,
+    "sys_pairs": 14890,
+    "shared_pairs": 12409,
+    "ref_groups": 939,
+    "sys_groups": 1133,
+    "exact_groups": 455,
+    "ref_groups_without_entities": 0,
+    "pair_f1": 0.7805629816008806,
+    "group_f1": 0.4391891891891892
+  },
+  "arithmetic": {
+    "pages": 116,
+    "prices": 1172,
+    "confirmed": 567,
+    "contradicted": 89,
+    "unresolved": 77,
+    "unjudgeable": 439,
+    "offers": 1131,
+    "judged": 656,
+    "accuracy": 0.864329268292683,
+    "coverage": 0.5597269624573379
+  },
+  "arithmetic_heuristic": {
+    "pages": 116,
+    "prices": 1172,
+    "confirmed": 532,
+    "contradicted": 108,
+    "unresolved": 81,
+    "unjudgeable": 451,
+    "offers": 1279,
+    "judged": 640,
+    "accuracy": 0.83125,
+    "coverage": 0.5460750853242321
+  }
+}

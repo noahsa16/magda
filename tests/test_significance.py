@@ -106,3 +106,34 @@ def test_bricht_ab_wenn_wortlisten_fehlen(tmp_path, monkeypatch):
     with pytest.raises(SystemExit) as abbruch:
         cli.test_clusters(["a_p1", "a_p2"])
     assert "Wortlisten fehlen" in str(abbruch.value)
+
+
+def test_vergleicht_nur_seiten_aus_dem_testsplit():
+    """Zwei Vorhersageordner koennen Seiten aus frueheren Splits enthalten.
+
+    Belegter Fall (25.08.2026): nach dem Wochen-Split auf KW35 lagen in
+    `data/predictions/gbert` noch 101 KW32-Seiten des Vorlaufs und in
+    `layoutxlm` 100. Die blosse Schnittmenge beider Ordner war damit 216
+    statt 116 Seiten - und 100 davon sind seit dem neuen Split
+    *Trainingsdaten*. Gemessen worden waere zur Haelfte Auswendiggelerntes,
+    ohne dass eine Zeile Ausgabe darauf hingewiesen haette.
+    """
+    from magda.cli.significance import shared_test_pages
+
+    a = {"kw35_p1": [], "kw35_p2": [], "kw32_alt": []}
+    b = {"kw35_p1": [], "kw35_p2": [], "kw32_alt": [], "nur_in_b": []}
+
+    genommen, verworfen = shared_test_pages(a, b, {"kw35_p1", "kw35_p2"})
+
+    assert genommen == ["kw35_p1", "kw35_p2"]
+    assert verworfen == 1
+
+
+def test_meldet_wenn_gar_keine_testseite_uebrig_bleibt():
+    """Sonst rechnet der Bootstrap ueber eine leere Liste weiter."""
+    from magda.cli.significance import shared_test_pages
+
+    genommen, verworfen = shared_test_pages({"alt": []}, {"alt": []}, {"neu"})
+
+    assert genommen == []
+    assert verworfen == 1

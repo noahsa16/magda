@@ -188,10 +188,20 @@ def test_evaluation_liefert_reports(client):
 # --- Modellstatus ----------------------------------------------------------
 
 
+def _variant_entry(client, variant: str) -> dict:
+    """Ueber den Namen statt ueber die Position: `[0]` war der layoutxlm-Eintrag,
+    solange es zwei Arme gab. Mit vier ist es gbert, und der Test misst dann
+    still den falschen."""
+    return next(e for e in client.get("/api/model").json() if e["variant"] == variant)
+
+
 def test_model_status_ohne_checkpoints(client):
     body = client.get("/api/model").json()
 
-    assert [e["variant"] for e in body] == ["layoutxlm", "gbert"]
+    # Gegen die Registry, nicht gegen ein Literal: die Liste waechst mit den
+    # Armen, und ein festgeschriebenes Paar haelt nur fest, wie viele es
+    # zufaellig gab, als der Test entstand.
+    assert [e["variant"] for e in body] == list(config.VARIANTS)
     assert all(e["trained"] is False for e in body)
 
 
@@ -213,7 +223,7 @@ def test_model_status_liest_trainingsverlauf(client):
     with open(ckpt / "trainer_state.json", "w") as f:
         json.dump(state, f)
 
-    entry = client.get("/api/model").json()[0]
+    entry = _variant_entry(client, "layoutxlm")
 
     assert entry["trained"] is True
     assert entry["steps"] == 120
@@ -232,7 +242,7 @@ def test_model_status_liest_den_gesicherten_verlauf_ohne_checkpoints(client):
     with open(variant / "trainer_state.json", "w") as f:
         json.dump(state, f)
 
-    entry = client.get("/api/model").json()[0]
+    entry = _variant_entry(client, "layoutxlm")
 
     assert entry["steps"] == 220
     assert entry["best_f1"] == 0.895
@@ -937,3 +947,27 @@ def test_sources_zeigt_gruppierungen_als_eigene_quelle(client):
 
     assert offers == [{"kind": "offer_groups", "id": "claude-sonnet-5",
                        "name": "claude-sonnet-5", "pages": 1, "done": 1}]
+
+
+def test_aufgabe_fehlt_ergibt_leere_liste(client, tmp_path, monkeypatch):
+    monkeypatch.setattr(config, "ANNOTATION_TASK_FILE", tmp_path / "task.json")
+
+    body = client.get("/api/annotation-task").json()
+
+    assert body["pages"] == []
+    assert body["title"] == ""
+
+
+def test_aufgabe_laesst_entdoppelte_seiten_weg(client, tmp_path, monkeypatch):
+    task_file = tmp_path / "task.json"
+    task_file.write_text(json.dumps({
+        "title": "Testkatalog", "created": "2026-09-03", "for": ["Kjell"],
+        "why": "Referenz", "pages": ["462828_p1", "462828_p99"],
+    }))
+    monkeypatch.setattr(config, "ANNOTATION_TASK_FILE", task_file)
+    _write_words("462828_p1")
+
+    body = client.get("/api/annotation-task").json()
+
+    assert body["pages"] == ["462828_p1"]
+    assert body["for"] == ["Kjell"]

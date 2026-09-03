@@ -1,0 +1,39 @@
+{
+  "created": "2026-08-25T11:31:15",
+  "labels_from": "sonnet-5",
+  "pages": 116,
+  "clusters": 42,
+  "cluster_threshold": 0.7,
+  "per_model": {
+    "lilt": {
+      "f1": 0.914,
+      "ci95": [
+        0.8755,
+        0.945
+      ],
+      "clusters": 42,
+      "pages": 116,
+      "resamples": 10000
+    },
+    "layoutxlm": {
+      "f1": 0.9236,
+      "ci95": [
+        0.8857,
+        0.9545
+      ],
+      "clusters": 42,
+      "pages": 116,
+      "resamples": 10000
+    }
+  },
+  "paired": {
+    "difference": -0.0096,
+    "ci95": [
+      -0.0182,
+      -0.0033
+    ],
+    "p_value": 0.0187,
+    "significant": true,
+    "clusters": 42
+  }
+}

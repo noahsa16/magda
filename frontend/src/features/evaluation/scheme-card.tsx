@@ -5,7 +5,7 @@ import {
 } from "@/components/ui/table"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import type { EvalReport, SchemeCounts, SchemeKey } from "@/lib/types"
-import { SCHEMES, errorComposition, schemeRows } from "./transform"
+import { SCHEMES, errorComposition, schemeRows, variantLabel, variantsOf } from "./transform"
 
 /**
  * Was das jeweilige Schema durchgehen lässt – und was das über unsere Daten sagt.
@@ -109,6 +109,11 @@ function ModelPanel({
 export function SchemeCard({ reports }: { reports: EvalReport[] }) {
   const [scheme, setScheme] = useState<SchemeKey>("strict")
   const rows = schemeRows(reports)
+  // Nur die Arme, die hier wirklich Zahlen haben: die Schemata stehen erst in
+  // Reports ab der Umstellung, und eine leere Spalte sieht aus wie eine 0.
+  const variants = variantsOf(
+    reports.filter((r) => r.matching_schemes),
+  )
   if (rows.length === 0) return null
 
   const active = rows.find((r) => r.scheme === scheme)
@@ -145,8 +150,9 @@ export function SchemeCard({ reports }: { reports: EvalReport[] }) {
         </div>
 
         <div className="grid gap-4 md:grid-cols-2">
-          <ModelPanel label="GBERT" counts={active?.gbert} />
-          <ModelPanel label="LayoutXLM" counts={active?.layoutxlm} />
+          {variants.map((v) => (
+            <ModelPanel key={v} label={variantLabel(v)} counts={active?.counts[v]} />
+          ))}
         </div>
 
         {/* Die Tabelle zeigt, was die Tabs nacheinander zeigen, auf einen Blick.
@@ -157,18 +163,28 @@ export function SchemeCard({ reports }: { reports: EvalReport[] }) {
             <TableHeader>
               <TableRow>
                 <TableHead>Schema</TableHead>
-                <TableHead className="text-right">GBERT F1</TableHead>
-                <TableHead className="text-right">LayoutXLM F1</TableHead>
-                <TableHead className="text-right">Δ</TableHead>
+                {variants.map((v) => (
+                  <TableHead key={v} className="text-right">{variantLabel(v)} F1</TableHead>
+                ))}
+                <TableHead className="text-right">
+                  {variants.length > 1
+                    ? `Δ ${variantLabel(variants[0])}→${variantLabel(variants[variants.length - 1])}`
+                    : "Δ"}
+                </TableHead>
                 <TableHead className="hidden text-right sm:table-cell">gegen strict</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {rows.map((row) => {
-                const base = rows.find((r) => r.scheme === "strict")?.gbert?.f1
-                const gain = base != null && row.gbert ? row.gbert.f1 - base : null
+                const first = variants[0]
+                const last = variants[variants.length - 1]
+                const base = rows.find((r) => r.scheme === "strict")?.counts[first]?.f1
+                const own = row.counts[first]
+                const gain = base != null && own ? own.f1 - base : null
                 const delta =
-                  row.gbert && row.layoutxlm ? row.layoutxlm.f1 - row.gbert.f1 : null
+                  row.counts[first] && row.counts[last]
+                    ? row.counts[last]!.f1 - row.counts[first]!.f1
+                    : null
                 return (
                   <TableRow
                     key={row.scheme}
@@ -176,8 +192,11 @@ export function SchemeCard({ reports }: { reports: EvalReport[] }) {
                     onClick={() => setScheme(row.scheme)}
                   >
                     <TableCell className="font-mono">{row.scheme}</TableCell>
-                    <TableCell className="text-right tabular-nums">{fmt(row.gbert?.f1)}</TableCell>
-                    <TableCell className="text-right tabular-nums">{fmt(row.layoutxlm?.f1)}</TableCell>
+                    {variants.map((v) => (
+                      <TableCell key={v} className="text-right tabular-nums">
+                        {fmt(row.counts[v]?.f1)}
+                      </TableCell>
+                    ))}
                     <TableCell className="text-right font-mono text-xs tabular-nums text-muted-foreground">
                       {delta == null ? "–" : `${delta >= 0 ? "+" : ""}${delta.toFixed(3)}`}
                     </TableCell>

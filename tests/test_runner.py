@@ -91,3 +91,27 @@ def test_args_stehen_im_status_und_in_der_historie():
     _wait_until_done()
 
     assert runs.list_runs()[0]["args"] == {}
+
+
+def test_der_lauf_puffert_seine_ausgabe_nicht(monkeypatch):
+    """Sonst zeigt das Frontend stundenlang nichts.
+
+    `bufsize=1` gilt nur fuer das Lesen im Elternprozess. Das Kind sieht
+    eine Pipe und puffert seine eigene Ausgabe blockweise; ein Schritt, der
+    wenig schreibt, fuellt die 8 KB nie. Belegt an `magda offers-grid`:
+    7,5 Stunden Lauf, Logdatei 0 Bytes.
+    """
+    import subprocess
+
+    gesehen = {}
+    echt = subprocess.Popen
+
+    def merken(command, **kwargs):
+        gesehen.update(kwargs.get("env") or {})
+        return echt(command, **kwargs)
+
+    monkeypatch.setattr(subprocess, "Popen", merken)
+    runner.start("dedupe", {})
+    _wait_until_done()
+
+    assert gesehen.get("PYTHONUNBUFFERED") == "1"

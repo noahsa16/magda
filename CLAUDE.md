@@ -88,11 +88,12 @@ magda label --model qwen3.6-27b     # anderes Vision-Modell
 magda label --only-gold             # Probelauf auf den Gold-Seiten
 magda label --model X --repair      # Span-Guard nachträglich anwenden
 magda split --strategy week         # Aufteilung neu festlegen (--force überschreibt)
-magda train layoutxlm               # bzw. gbert
+magda train layoutxlm               # bzw. gbert, xlmr, lilt
 magda eval gbert --split test
 magda predict gbert --split test --labels-from sonnet-5   # Wort, Box, Label je Seite
 magda predict gbert --all-words     # ganze Ernte, ohne Labels – der Einsatzfall
 magda significance --labels-from sonnet-5   # Konfidenzintervall, gepaarter Vergleich
+magda significance --labels-from sonnet-5 --compare xlmr lilt   # ein Kettenschritt
 magda flair --reference gold        # Flair-Vergleichsarm
 magda gold --per-label              # Labeling-Modelle gegen Gold messen
 magda agreement qwen3.5-397b-a17b mistral-medium-3.5-128b
@@ -102,12 +103,15 @@ magda offers                        # Entities zu Angeboten clustern, als SQLite
 magda offers-report                 # Clustering per Ablation messen (Train+Dev)
 magda offers-queue                  # welche Seiten die Referenz zuerst braucht
 magda offers-gold --labels-from sonnet-5    # Gruppierung gegen gold/offers/ messen
+magda offers-gold --groups-from claude-sonnet-5 --reference-from claude-opus-5  # Decke: Teacher gegen Teacher
 magda offers-teacher pages --limit 40       # Seiten fürs LLM-Gruppieren
 magda offers-teacher task 1342821_p10       # Aufgabe einer Seite (Entities + Bild)
 magda offers-verify --reference-from claude-sonnet-5   # Gruppierung nachrechnen
 magda offers-model train --labels-from sonnet-5        # Paarmodell lernen (mit Kalibrierung)
 magda offers-model eval --labels-from sonnet-5         # gegen Lehrer und Arithmetik messen
+magda offers-probe --encoder lilt   # bringt ein Span-Embedding dem Paarmodell etwas?
 magda offers-sequence               # fasst eine flache OFFER-Folge das Angebot?
+magda blackbox-eval --pages <liste> --dry-run   # LLM-Blackbox gegen die eigene Pipeline
 magda bundle --labels-from sonnet-5 # Trainingspaket für eine fremde GPU
 magda prune-checkpoints             # was checkpoint-N belegt (--apply löscht)
 magda serve --frontend              # API (8000) und Oberfläche (5173)
@@ -290,6 +294,15 @@ eine Liste auszugeben.
   Abbruch, den es nie gab. Maßgeblich ist der eingetragene Exit-Code. Tests, die
   einen Lauf starten, müssen auf den Pump-Thread warten, bevor sie `RUNS_DIR`
   zurückdrehen – sonst landet der Testlauf im echten `data/runs/`.
+- **Ein Python-Kind an einer Pipe puffert blockweise, und `bufsize=1` ändert
+  daran nichts.** Das Argument steuert nur das Lesen im Elternprozess.
+  Belegt am 30.08.2026: `magda offers-grid` lief 7,5 Stunden in eine
+  umgeleitete Datei und hinterließ sie **0 Bytes** groß – die fünf
+  Fortschrittszeilen füllten den 8-KB-Puffer nie. Im Frontend traf es
+  dieselben Schritte, also gerade die langen, bei denen man zusehen will.
+  `runner.py` setzt jetzt `PYTHONUNBUFFERED=1`; wer von Hand umleitet,
+  nimmt `python -u` oder dieselbe Variable. Ohne das ist ein Lauf ohne
+  Ausgabe nicht von einem hängenden zu unterscheiden.
 - **`data/runs/` ist die einzige Spur eines Laufs nach dem Backend-Neustart.**
   Der Ringpuffer in `runner.py` hält nur 400 Zeilen für die Live-Ansicht. Wer
   einen Fehlschlag untersucht, liest den Log auf der Platte. Aufgeräumt wird
@@ -346,7 +359,7 @@ eine Liste auszugeben.
 - **Abgeschlossene Arme liegen in `data/labeled_archive/`** (seit 24.08.2026).
   Acht gleich aussehende Ordner beantworteten die Frage „was ist aktuell?"
   nicht mehr, und sie wurde deshalb nach Ordnergröße beantwortet – also
-  falsch. Stand jetzt: **aktiv `sonnet-5` (422 Seiten)**, archiviert die
+  falsch. Stand jetzt: **aktiv `sonnet-5` (666 Seiten, Stand 25.08.2026)**, archiviert die
   beiden Mistral-Läufe und `qwen3.5-397b-a17b`. Drei abgebrochene Probeläufe
   (2, 3 und 3 Seiten) sind gelöscht; geprüft war vorher, dass keine davon
   eine Seite exklusiv hielt – die Gesamtmenge blieb bei 422.
@@ -452,7 +465,82 @@ eine Liste auszugeben.
   Zufall des Labeling-Fortschritts: wer bei 141 von 196 Seiten trainiert,
   friert einen Split ohne die restlichen 55 ein, und die landen später
   sämtlich im Training.
-- **Zum Layout-Vorteil ist kein Effekt nachweisbar – in keine Richtung.**
+- **Layout bringt nichts, das Seitenbild bringt etwas – seit 25.08.2026
+  getrennt gemessen.** Der Satz darunter („kein Effekt nachweisbar") galt für
+  175 Trainingsseiten und einen Vergleich mit *drei* Unterschieden auf einmal:
+  GBERT und LayoutXLM haben verschiedene Textencoder, verschiedene
+  Positionsinformation und verschiedene Bildinformation. Zwei Zwischenarme
+  zerlegen das, alle drei mit demselben Textencoder (XLM-R):
+
+      xlmr  ──+Layout──▶  lilt  ──+Bild──▶  layoutxlm
+
+  Test = KW35, 116 Seiten in **42 Clustern**, 5973 Entities, 494
+  Trainingsseiten, Referenz `sonnet-5`. Gepaart über Cluster gebootstrappt,
+  Differenz als *später minus früher*:
+
+  | Schritt | Zutat | Differenz | 95-%-KI | p |
+  |---|---|---:|---|---:|
+  | gbert → xlmr | anderer Encoder | +0.0059 | [−0.0015, +0.0156] | 0.165 |
+  | **xlmr → lilt** | **Layout** | **−0.0003** | [−0.0063, +0.0058] | **0.925** |
+  | **lilt → layoutxlm** | **Bild** | **+0.0096** | [+0.0033, +0.0182] | **0.019** |
+  | gbert → layoutxlm | alle drei | +0.0152 | [+0.0074, +0.0262] | 0.008 |
+
+  Punktschätzer: gbert 0.9084, xlmr 0.9143, lilt 0.9140, layoutxlm 0.9236.
+  Der Layout-Schritt ist mit ±0.006 die **präziseste Null des Projekts** –
+  keine schwache Wirkung, sondern keine. Der Bildgewinn sitzt fast
+  vollständig bei PRODUCT (+0.028) und BRAND (+0.026), also den Labels, für
+  die das Proposal Positionsinformation vermutet hatte: die Vermutung stimmt,
+  die Annahme „Wortkoordinaten liefern sie" nicht.
+  **Vier Vergleiche ohne Korrektur für multiples Testen, und sie sind nicht
+  unabhängig** (die Gesamtdifferenz ist die Summe der Schritte). Bei
+  Bonferroni hält nur die letzte Zeile. Belastbar ist: LayoutXLM schlägt
+  GBERT, und *innerhalb* dieser Differenz ist der Layout-Anteil null.
+  Ein Lauf je Arm, keine Seed-Streuung gemessen. Details:
+  `reports/woche-06.md`.
+- **Der Bildgewinn ist ein Zuordnungs-, kein Erkennungsgewinn** – ablesbar an
+  den Matching-Schemata, die `magda eval` ohnehin mitschreibt. Er schrumpft
+  mit jeder Lockerung des Schemas: strict +0.0096, exact +0.0079, partial
+  +0.0043, type +0.0021. In MUC-Zählungen von GBERT zu LayoutXLM: zehn
+  übersehene Entities weniger (313 → 303), aber **69 Zuordnungsfehler weniger**
+  (272 → 203). Der Typfehleranteil halbiert sich (0.0046 → 0.0022), der
+  Grenzfehleranteil sinkt um ein Fünftel (0.0207 → 0.0161).
+  Das erklärt beide Hälften des Befunds: PRODUCT leidet an Grenzfehlern
+  (Sortenzusätze – die offene Teamfrage), BRAND an Typfehlern (Marke oder
+  Produktname), und beides entscheidet die Stellung auf der Kachel. Und es
+  erklärt, warum Wortkoordinaten nichts beitragen: `bbox` sagt, *wo* ein Wort
+  steht, nicht *wie es gesetzt ist* – Schriftgröße und Fettung stehen im Bild,
+  und selbst 49 grobe Bildkacheln übertragen davon genug.
+  **Wer die vier Schemata berichtet, nennt dazu, welches die Primärzahl ist**:
+  `strict` (Span und Typ exakt) ist es, alle anderen sind nachsichtiger und
+  ergeben höhere Werte für dieselbe Ausgabe – GBERT steht bei `strict` auf
+  0.9084 und bei `type` auf 0.9477, ohne dass ein Wort anders vorhergesagt
+  wird.
+- **Die Nachsicht der lockeren Schemata schenkt fast nur PRODUCT.** Gemessen
+  über den KW35-Test (`type` minus `strict`, GBERT): PRODUCT +0.143, BRAND
+  +0.055, VALID +0.053, QUANTITY +0.019, UNIT_PRICE +0.008 – und **PRICE,
+  OLD_PRICE, DISCOUNT und APP_PRICE exakt ±0.000**. Bei Preisen gibt es keine
+  Grenzfehler: `1.99` ist ein Token, richtig oder falsch. Wer also `type`
+  berichtet, sagt der Sache nach „wir zählen die Sortenzusatz-Frage weg" –
+  genau die offene Teamentscheidung. Deshalb muss das Schema *vor* der Messung
+  feststehen; nachträglich das nachsichtigste zu wählen ist dieselbe Bewegung
+  wie eine Heuristik an ihrem eigenen Zuordnungskriterium zu messen, nur
+  unauffälliger, weil alle vier Zahlen aus demselben Lauf stammen und einzeln
+  korrekt sind. Umgekehrt gilt: Ein Teil der 0.143 ist kein Modellfehler,
+  sondern die Uneinheitlichkeit von Gold – die Konsequenz ist, die Konvention
+  zu entscheiden, nicht das Schema zu wechseln.
+- **Berichtet wird F1 über Entities, nie Accuracy über Tokens.** 54,5 % aller
+  Wörter tragen `O`; ein Modell, das alles als `O` rät, käme auf über 0.5
+  Token-Accuracy, ohne ein einziges Angebot zu finden.
+- **APP_PRICE wird vom Seitenbild nicht gelöst – gegenteilig belegt.** Der
+  rein visuelle Fall ist genau der, bei dem LayoutXLM *verliert*: 0.882 gegen
+  LiLTs 0.906, das ohne Bild arbeitet. Der Grund steht schon in der
+  Architektur (49 visuelle Token für die ganze Seite, siehe unten) und ist
+  damit gemessen statt vermutet. Der Backbone liefert grobe Seitenstruktur,
+  keine lokale Farbe. Weg B (Farbe je Wort als Merkmal) ist dadurch
+  gestärkt, nicht erledigt.
+- ~~**Zum Layout-Vorteil ist kein Effekt nachweisbar – in keine Richtung.**~~
+  *(Überholt am 25.08.2026, siehe oben. Der Befund war nicht falsch, sondern
+  unterbestimmt: gemessen an 175 Trainingsseiten und ohne Zwischenarme.)*
   Über drei Wochen (02.08.2026, Test = KW32, 100 Seiten, 5107 Entitäten):
   GBERT 0.891, LayoutXLM 0.878. Die Differenz von +0.013 hat ein
   95-%-Intervall von [−0.008, +0.043] bei p = 0.435 – sie überdeckt die Null.
@@ -540,7 +628,13 @@ eine Liste auszugeben.
   Seiten bei 0.949 überleben sie und landen dann auf verschiedenen Seiten des
   Splits. Gemessener Effekt: F1 0.944 auf Seiten mit nahem Zwilling gegen
   0.886 ohne. Behoben durch den **Wochen-Split**
-  (`magda split --strategy week`). Stand 02.08.2026 über drei Wochen:
+  (`magda split --strategy week`). **Stand 25.08.2026 über sechs Wochen:
+  KW30–KW34 lernen, KW35 testet, 494/56/116 Seiten in 210/25/42
+  Duplikat-Clustern, 24900/2584/5973 Entities.** Test-zu-Train Median-Jaccard
+  0.297, Max 0.778, keine Seite ≥ 0.9; Dev Median 0.360, keine über 0.7.
+  Der Absatz unten beschreibt den vorigen Stand (KW32 als Testwoche) und ist
+  als Begründung des Verfahrens weiter gültig – die Zahlen darin sind es
+  nicht. Stand 02.08.2026 über drei Wochen:
   KW30+KW31 lernen, KW32 testet, **175/21/100 Seiten**. Median-Ähnlichkeit von
   Test zu Train 0.285, keine der 100 Testseiten hat einen Zwilling ≥ 0.9. Ein
   Split über *Kataloge* hätte das nicht behoben – `1347375_p30` und
@@ -558,8 +652,10 @@ eine Liste auszugeben.
   Einsatz garantiert auf – sie zu entfernen machte den Testsatz unrealistisch
   schwer. Der schädliche Leak war ein anderer: dieselbe Seite in 44
   Regionalfassungen, künstlich vervielfacht.
-- **Der Testsatz hat 100 Seiten, aber nur 43 unabhängige Einheiten.**
-  Bei Jaccard 0.7 bilden die 100 Seiten 43 Cluster, der größte umfasst 11.
+- **Der Testsatz hat 116 Seiten, aber nur 42 unabhängige Einheiten**
+  (KW35, seit 25.08.2026; davor 100 Seiten in 43 Clustern – die Zahl der
+  unabhängigen Einheiten wächst also *nicht* mit der Seitenzahl).
+  Bei Jaccard 0.7 bilden die Seiten 42 Cluster.
   Jede Unsicherheitsrechnung muss über *Cluster* resampeln
   (`magda significance`), nicht über Seiten – sonst gelten elf Kopien einer
   Vorlage als elf Beobachtungen und das Intervall wird zu eng. Praktische
@@ -822,14 +918,26 @@ eine Liste auszugeben.
   Schwellwert repariert das nicht, er verschiebt nur die Stelle. Kein
   Regressionstest, weil hier ein Fehler festgeschrieben würde, keine
   Zusicherung – der Fall gehört in die Fehleranalyse, nicht in die Pins.
-- **Ein gelerntes Paarmodell schlägt die Heuristik – gemessen, aber knapp und
-  auf 21 Dev-Seiten.** `magda offers-model` klassifiziert jedes Entity-Paar
+- **Ein gelerntes Paarmodell schlägt die Heuristik deutlich** (Stand
+  29.08.2026: Gruppen-F1 0.778 gegen 0.524 auf 56 Dev-Seiten; die Tabelle
+  unten ist der historische Erstbefund vom 06.08. über 21 Seiten und
+  erklärt, warum die Zahl damals „knapp" hieß).
+  `magda offers-model` klassifiziert jedes Entity-Paar
   („gehören die zusammen?"), verschmilzt die Kanten oberhalb einer Schwelle
   zu Zusammenhangskomponenten und ist damit die zweite Standardlösung aus
-  DocILE. Gelernt aus `data/offer_groups/claude-sonnet-5/` (jetzt 51 Seiten:
-  30 Train, 21 Dev), 4097 Parameter, **16,8 s Training auf CPU** – eine GPU
-  lohnt hier nicht, der Grund für RunPod war LayoutXLMs RAM-Bedarf, nicht
-  Rechenzeit. Stand 06.08.2026 auf Dev, Schwelle 0.94:
+  DocILE. Gelernt aus `data/offer_groups/claude-sonnet-5/` (damals 51 Seiten:
+  30 Train, 21 Dev; **seit dem 25.08.2026 sind alle 666 Seiten gruppiert,
+  davon 494 Train**), 4097 Parameter. Eine GPU lohnt hier weiterhin nicht –
+  der Grund für RunPod war LayoutXLMs RAM-Bedarf, nicht Rechenzeit.
+  **Die oft zitierten „16,8 s Training auf CPU" gelten so nicht mehr**: Das
+  war ein Lauf ohne Kalibrierung über 54 Seiten. Mit den heutigen Defaults
+  (5 Folds, 25 Schwellen, ILP-Dekoder) sind es über 494 Seiten rund 21
+  Minuten bei `MAX_COMPONENT = 40` und **gemessen 76 bei 120** (29.08.2026,
+  MacBook Air M2, ein Kern) – die vorher geschätzten 45 waren zu
+  optimistisch. Die Zeit steckt
+  fast vollständig im ILP, nicht im Netz mit seinen 4097 Parametern – wer
+  die alte Zahl als Aufwandsschätzung benutzt, verrechnet sich um zwei
+  Größenordnungen. Stand 06.08.2026 auf Dev, Schwelle 0.94:
 
   | | Paar-F1 | Gruppen-F1 | Angebote |
   |---|---|---|---|
@@ -873,6 +981,316 @@ eine Liste auszugeben.
   hier unbefangen, weil die Rechnung bewusst kein Constraint des ILP ist –
   und die gleiche Abdeckung entkräftet den Einwand, gröbere Gruppen
   schmeichelten der Prüfung.
+  **`MAX_COMPONENT` steht seit dem 29.08.2026 auf 120 statt 40** – die
+  Zahlen dieses Absatzes stammen aus dem gekappten Lauf und sind damit
+  nicht mehr reproduzierbar, ohne die Konstante zurückzustellen.
+- **Die Komponentenkappung des ILP kann eine Metrik allein entscheiden –
+  belegt am 29.08.2026.** Nach dem Neutraining des Paarmodells auf 494
+  statt 54 Referenzseiten wählte die Kalibrierung out-of-fold die Schwelle
+  **0.82** statt 0.88. Tiefere Schwelle heißt größere Komponenten, und bei
+  `MAX_COMPONENT = 40` kappte der Dev-Lauf dadurch **5 von 297
+  Komponenten**, die größte mit 111 Entities. Das Ergebnis sah so aus:
+
+  | | Paar-F1 | Gruppen-F1 | Angebote |
+  |---|---:|---:|---:|
+  | Paarmodell (Cap 40) | **0.398** | 0.659 | 413 |
+  | Heuristik | 0.817 | 0.524 | 510 |
+  | Lehrer (Referenz) | – | – | 422 |
+
+  (56 Dev-Seiten, arithmetische Gegenprobe 0.908 gegen 0.833 der Heuristik
+  bei Abdeckung 0.548 / 0.529. Die Zeile „Paarmodell" ist mit dem
+  Neutraining bei Cap 120 hinfällig – sie steht hier als Beleg des Befunds,
+  nicht als Leistungsangabe.)
+
+  **Die Gegenprobe ist gelaufen, und sie fällt deutlicher aus als erwartet.**
+  Dasselbe Netz, dieselben 35 Merkmale, nur `MAX_COMPONENT = 120` und eine
+  neu kalibrierte Schwelle (0.68 statt 0.82), Dev vom 29.08.2026:
+
+  | | Paar-F1 | Gruppen-F1 | Angebote |
+  |---|---:|---:|---:|
+  | Paarmodell, Cap 120 | **0.929** | **0.778** | 429 |
+  | Paarmodell, Cap 40 | 0.398 | 0.659 | 413 |
+  | Heuristik | 0.817 | 0.524 | 510 |
+  | Lehrer (Referenz) | – | – | 422 |
+
+  Über alle 245 Dev-Komponenten wurde **keine einzige gekappt**. Paar-F1
+  steigt um 53 Punkte, Gruppen-F1 um 12 – ohne dass eine Zeile am Modell
+  geändert wurde. Die arithmetische Gegenprobe steigt mit: 0.912 gegen
+  0.833 der Heuristik bei Abdeckung 0.548 / 0.529, widerlegte Preise 23
+  statt 42. Und das Verfahren bildet 429 Angebote gegen 422 in der
+  Referenz, fragmentiert also praktisch nicht mehr, während die Heuristik
+  bei 510 liegt.
+
+  **Damit ist die Notbremse als Fehlerquelle beziffert, nicht nur benannt.**
+  Eine Konstante, die niemand als Modellparameter gelesen hätte, war über
+  ein Jahr Projektarbeit hinweg der größte einzelne Hebel auf die
+  Gruppierungsqualität – größer als jeder Merkmalsblock (+0.044) und größer
+  als der Dekoderwechsel selbst (+0.100).
+
+  **Die 0.398 sind kein Modellzusammenbruch, sondern fünf Seiten.** Paare
+  wachsen quadratisch mit der Gruppengröße: die 5 Blobs erzeugten **20903
+  der 26279 vorhergesagten Paare (80 %)**, bei 7351 Paaren in der Referenz.
+  Ohne diese Seiten stünde Paar-F1 bei 0.919 – das ist eine Diagnose, **keine
+  berichtbare Zahl**: nachträglich die Seiten zu entfernen, an denen ein
+  Verfahren scheitert, ist dieselbe Bewegung, gegen die `offers_report` die
+  Ablation braucht. Es sind auch eher zwei Vorlagen als fünf Fälle,
+  `1342821_p20`, `1342905_p20` und `1342920_p20` liegen untereinander bei
+  Jaccard 0.906 bis 0.934.
+  **Der Fehler war nicht das Modell, sondern die Erlaubnis.** Ohne Kappung
+  löst dieselbe 111er-Komponente in 6 bis 28 s und zerfällt in 15 Gruppen
+  mit höchstens 11 Entities. Über eine Stichprobe von 12 Train-Seiten und
+  das ganze Kalibrierungsraster kostet Cap 120 gegenüber 40 den Faktor 2.7
+  und kappt kein einziges Mal.
+  **Zwei Lehren, die über diesen Fall hinausgehen:** Erstens ist eine
+  Notbremse gegen Rechenzeit keine neutrale Optimierung – sie greift
+  bevorzugt dort, wo das Verfahren gebraucht wird, und *verbessert* dabei
+  scheinbar die Laufzeit. Zweitens war der Befund nur sichtbar, weil
+  `offer_ilp.LAST_RUN` mitzählt; im Report von `magda offers-model` stand
+  der Zähler bis zum 29.08.2026 nicht, obwohl der eigene Docstring ihn „in
+  jedem Report" verlangt. Er steht jetzt drin, in der Kalibrierung wie in
+  der Auswertung. Ein Zähler, den kein Report ausgibt, ist keiner.
+- **Checkpoint und Dekoder passen wieder zusammen** (Neutraining am
+  29.08.2026, 76 Minuten). `checkpoints/offer_pairs/model.pt` trägt jetzt
+  die Schwelle **0.68**, out-of-fold über 494 Seiten mit
+  `MAX_COMPONENT = 120` gewählt. Der Zwischenstand mit Schwelle 0.82 aus
+  der Cap-40-Kalibrierung liegt als `model.cap40.pt` – nicht als Reserve,
+  sondern weil die Kappungszahlen dieses Tages daran hängen.
+  Die Vorgängerstände der Testwoche KW32 sind
+  `checkpoints/offer_pairs/*.kw32-split.pt`; `checkpoints/` ist gitignored,
+  und an den 11.08-Zahlen hängen berichtete Ergebnisse.
+  **Die Regel dahinter gilt weiter:** eine Schwelle ist für ihren Dekoder
+  gewählt. Wer `MAX_COMPONENT` anfasst, hat den Checkpoint entwertet, auch
+  wenn nichts abstürzt und die Zahl korrekt gerechnet bleibt.
+- **Der Endvergleich gegen die LLM-Blackbox ist gebaut und bewusst nicht
+  gefahren.** `magda blackbox-eval` (Commit 58a6437) stellt drei Zeilen
+  gegenüber – Blackbox gegen Referenz, eigene Pipeline gegen Referenz,
+  Blackbox gegen eigene Pipeline – und matcht beide Seiten durch *dieselbe*
+  Funktion über die gemeinsame Feldmenge (`name`, `price`,
+  `original_price`). **Der Testlauf ist nicht wiederholbar**, deshalb fallen
+  die Entscheidungen vorher. Stand 29.08.2026 sind drei getroffen
+  (Entscheidung Noah) und das Design noch nicht ausgearbeitet:
+  - *Kein neutraler Richter.* Berichtet werden Übereinstimmung und Zeit,
+    keine handannotierte Angebotsreferenz. Qualität und Fehlerzahl kommen
+    über den arithmetischen Richter und die strukturellen Defekte
+    (Fragmente ohne Produkt-und-Preis) hinein.
+  - *Beste lokale Konfiguration tritt an*: LayoutXLM plus Paarmodell. Heute
+    ist der Arm fest auf `--predictions gbert` und `offers.cluster_page`
+    verdrahtet, also auf den schwächeren Labeler *und* die Heuristik.
+  - *Baseline ist `sonnet-5` als Subagent*, nicht ein GWDG-Modell. Bewusst
+    in Kauf genommen: die Sekunden je Seite sind damit nicht mit den 44,8 s
+    des API-Labelings vergleichbar.
+
+  Drei technische Lücken stehen dem noch im Weg: `data/eval/test_cluster_pages.txt`
+  existiert nicht (je eine Seite pro Test-Cluster, 42 Stück); das
+  Blackbox-Schema kennt weder `quantity` noch `unit_price` und ist damit
+  arithmetisch unprüfbar; und der Subagent-Aufruf folgt besser dem Muster
+  von `magda offers-teacher` (pages / task / save) als einem API-Client –
+  `blackbox.py` spricht nur den OpenAI-kompatiblen GWDG-Endpunkt an, und
+  die `sonnet-5`-Labels tragen `source: "annotation"`, sind also nie über
+  eine API entstanden.
+- **Die Decke ist gemessen, nicht geschätzt: Gruppen-F1 0.916** (29.08.2026).
+  Zwei unabhängige LLM-Annotatoren auf denselben 26 Dev-Seiten – je eine
+  pro Duplikat-Cluster – stimmen zu **Paar-F1 0.970 und Gruppen-F1 0.916**
+  überein. Gemessen mit `magda offers-gold --groups-from claude-sonnet-5
+  --reference-from claude-opus-5`. Zur Einordnung auf derselben
+  Seitenmenge: die Heuristik erreicht gegen den Zweit-Teacher 0.851 / 0.566.
+
+  | | Paar-F1 | Gruppen-F1 |
+  |---|---:|---:|
+  | Teacher gegen Teacher (Decke) | 0.970 | **0.916** |
+  | Paarmodell (56 Dev-Seiten) | 0.929 | 0.778 |
+  | Heuristik | 0.851 | 0.566 |
+
+  **Das widerlegt die naheliegende Rechnung.** Aus 5,97 Entities je Gruppe
+  und exakter Mengengleichheit folgt scheinbar eine Decke von 0.95^6 ≈ 0.74
+  – tatsächlich sind es 0.916, weil die Fehler zweier Annotatoren **nicht
+  unabhängig** sind: Beide sehen dasselbe Bild, und die meisten Kacheln sind
+  eindeutig. Wer die Decke über eine Fehlerpotenz schätzt, unterschätzt sie
+  systematisch. **Über 0.778 liegen also rund 14 Punkte Luft**, nicht 0 bis
+  8 – die Arbeit an der Gruppierung lohnt weiter.
+  **Einschränkungen:** 26 Seiten ohne Konfidenzintervall; die Decke ist auf
+  26, das Modell auf 56 Seiten gemessen (die Heuristik steht dort bei 0.566
+  gegen 0.524, die 26 sind also eher etwas leichter). Der Zweit-Annotator
+  hatte ein anderes Modell *und* einen anderen Prompt – beides senkt die
+  Übereinstimmung eher, die 0.916 ist damit konservativ. Er durfte die
+  erste Gruppierung nicht ansehen; ohne diese Sperre misst man das Ankern.
+- **`magda offers-gold --groups-from` misst zwei gespeicherte Gruppierungen
+  gegeneinander**, statt die Heuristik zu beurteilen. Gemessen wird nur, wo
+  *beide* Seiten gruppiert haben – eine dem System fehlende Seite als leere
+  Ausgabe zu werten hieße „alles falsch" statt „nicht gemessen", derselbe
+  Fehler, den `load_reference` für die Referenz schon vermeidet.
+  `test_offers_gold_groups_from.py` hält das fest, und der Test wurde durch
+  Ausbau der Filterzeile auf Wirksamkeit geprüft.
+- **`offer_teacher.PROMPT_VERSION` ist eine Nummer ohne Text.** Der Prompt,
+  mit dem `data/offer_groups/claude-sonnet-5/` entstand, ist nirgends
+  gespeichert – die Referenz ist damit nicht reproduzierbar. Ab Version 2
+  steht er in `docs/offer-teacher-prompt.md`. Zweite Lücke derselben Art:
+  die Konstante ist nicht pro Lauf setzbar, deshalb tragen auch die
+  `claude-opus-5`-Dateien `prompt_version: 1`, obwohl sie mit dem neuen
+  Prompt entstanden. Wer die Versionen auseinanderhalten will, geht über
+  `provenance.model`, nicht über `prompt_version`.
+- **Typ-Constraints im ILP sind von den Daten widerlegt – nicht probieren.**
+  Der naheliegende nächste Schritt nach dem Dekoder-Befund wäre „höchstens
+  ein PRODUCT je Gruppe" als hartes Constraint. Ausgezählt über die
+  Referenz (`data/offer_groups/claude-sonnet-5/`, 5491 Gruppen):
+  **982 davon (17,9 %) enthalten zwei oder mehr PRODUCT-Entities**, 952
+  (17,3 %) mehrere PRICE/APP_PRICE. Das Constraint wäre auf jeder fünften
+  bis sechsten Gruppe falsch und zementierte den Plättungsfehler – dieselbe
+  Begründung, die `offer_ilp.py` für PRICE schon führt, gilt für PRODUCT mit
+  fast identischer Quote. Als weiche Strafe wäre es redundant: genau diese
+  Information geben die Typ-One-Hots dem MLP bereits. Nachzählen:
+
+  ```python
+  import json, glob
+  from collections import Counter
+  from magda import config, offers
+  multi = total = 0
+  for path in sorted(glob.glob("data/offer_groups/claude-sonnet-5/*.json")):
+      ref = json.loads(open(path).read())
+      page = json.loads((config.labeled_dir("sonnet-5") / f"{ref['page_id']}.json").read_text())
+      page["page_id"] = ref["page_id"]
+      ents = offers.entities_from_page(page)
+      by_word = {w: k for k, e in enumerate(ents) for w in range(e.start, e.end)}
+      for group in ref["groups"]:
+          keys = {by_word[w] for w in group if w in by_word}
+          if not keys:
+              continue
+          total += 1
+          multi += Counter(ents[k].type for k in keys).get("PRODUCT", 0) >= 2
+  print(multi, total, multi / total)
+  ```
+- **Die mittlere Referenzgruppe hat 5,97 Entities, und Gruppen-F1 verlangt
+  sie alle.** Das ist die Einordnung, die zu jeder Nennung gehört: Bei einer
+  Entity-Trefferquote von 0.95 liegt exakte Gruppengleichheit rechnerisch
+  bei 0.95^6 ≈ 0.74. Wer Gruppen-F1 0.66 als „zwei Drittel richtig" liest,
+  hat die Metrik nicht verstanden – sie ist alles-oder-nichts über sechs
+  Zuordnungen. Deshalb steht Paar-F1 immer daneben.
+- **Literatureinordnung für die Gruppierung** (Recherche 29.08.2026, gegen
+  die Papers geprüft). Zwei Zahlenräume, die man nicht verwechseln darf:
+  *Relation Extraction auf FUNSD* – LiLT[InfoXLM] **0.6276**, LayoutXLM
+  0.5483; XFUND über acht Sprachen 0.6781 / 0.6432 (arXiv:2202.13669,
+  Table 6). Das ist Key-Value-Linking, also eine *einfachere* Relation als
+  unsere Angebote, gegen eine *handannotierte* Referenz. Der Sprung auf
+  0.8945 kam erst mit GeoLayoutLM und wird dort ausdrücklich dem
+  relationsspezifischen Pretraining zugeschrieben (arXiv:2304.10759) – eine
+  Zutat, die in einem Semester nicht nachgebaut wird.
+  *Line Item Recognition auf DocILE* – Baselines F1 **0.594–0.721**
+  (LayoutLMv3 0.721), und im ICDAR-2023-Wettbewerb blieb alles unter 0.80
+  (arXiv:2302.05658; CEUR Vol-3497 paper-049).
+  **Beim Vergleich die Metrik mitlesen:** DocILE-LIR ist micro-F1 über
+  *Felder* unter maximalem Line-Item-Matching, zählt teilrichtige Zeilen
+  also anteilig. Das ist deutlich nachsichtiger als unser `group_f1` mit
+  exakter Mengengleichheit und liegt näher an unserem Paar-F1. Wer 0.778
+  strikt neben 0.72 nachsichtig stellt, vergleicht zwei Protokolle – die
+  Schema-Falle aus dem NER-Teil, nur in die andere Richtung.
+- **Ein blanker Relationskopf auf LiLT ist deshalb nicht der nächste
+  Schritt.** Die Architektur, die dabei entstünde, ist genau die mit 0.6276
+  auf FUNSD. Was dem Paarmodell fehlt, ist trotzdem real: in den 35
+  Merkmalen (`offer_pairs.py`) steckt **keine einzige lexikalische
+  Information** – der belegte Legendenfall `1347387_p31` („④ Pflanztopf-Set
+  … je Set 8.99") hängt an einem Textmarker, den kein Merkmal sieht. Der
+  billige Weg dorthin sind eingefrorene LiLT-Span-Embeddings aus
+  `checkpoints/lilt/best` als zusätzlicher Merkmalsblock: einmal je Seite
+  vorrechnen und cachen, dann lernt nur der Kopf, der Messaufbau mit
+  5 Folds bleibt unverändert und alles bleibt lokal. End-to-end hieße
+  **fünf Fold-Finetunings je Gitterzelle** – die GPU bräuchte man dann für
+  die *Messung*, nicht fürs Training. Erst messen, dann mieten.
+  **Die Reihenfolge steht, die Erwartung ist gestiegen:** Diese Einordnung
+  entstand, als die Decke auf 0.70–0.75 geschätzt wurde – ein Encoder hätte
+  danach um wenige Punkte gekämpft. Mit der gemessenen Decke von 0.916 sind
+  es rund 14, und der Fehlermodus, auf den ein Textencoder zielt, ist
+  belegt. Verworfen ist damit nur der *direkte* Sprung zu end-to-end, nicht
+  der Weg.
+- **Der billige Weg dorthin ist gemessen und trägt nicht** (`magda
+  offers-probe`, 29.08.2026, 30 Train-Cluster, Sonden-Test über 10
+  Vorlagen, 43872 Paare). Eingefrorene, mittelgepoolte Span-Embeddings
+  kosten Punkte, statt welche zu bringen – bei **beiden** Encodern und in
+  jeder Kombination:
+
+  | Merkmale | AUC (lilt) | Paar-F1 | AUC (gbert) | Paar-F1 |
+  |---|---:|---:|---:|---:|
+  | geometrie (35) | **0.965** | 0.779 | **0.965** | 0.779 |
+  | +lexik (43) | 0.956 | **0.801** | 0.956 | **0.801** |
+  | Embedding allein (1536) | 0.852 | 0.503 | 0.813 | 0.469 |
+  | geometrie + Embedding | 0.962 | 0.773 | 0.959 | 0.746 |
+  | alles | 0.961 | 0.764 | 0.958 | 0.741 |
+
+  Dass **GBERT schlechter abschneidet als LiLT** widerlegt die naheliegende
+  Erklärung „LiLT ist layout-aware, also redundant zur Geometrie" – der
+  reine Textencoder ist noch schwächer. Eine Erklärung, die dazu passt und
+  **ungeprüft** ist: Beide Encoder sind auf Token-Klassifikation
+  feingetunt, ihr letzter Hidden State zeigt also Richtung Labelidentität –
+  und der Entity-Typ steckt als One-Hot längst im Merkmalsvektor.
+  **Was damit widerlegt ist und was nicht:** widerlegt ist der *billige*
+  Weg – einmal vorrechnen, cachen, als Block anhängen. Nicht widerlegt ist
+  end-to-end, wo die Repräsentation sich der Relationsaufgabe anpassen
+  könnte; das ist die Architektur mit 0.6276 auf FUNSD und kostet fünf
+  Fold-Finetunings je Gitterzelle. Der Spike stärkt also gerade das
+  Argument, dass die Abkürzung das Finetuning nicht ersetzt.
+  **Grenzen der Sonde:** kein Dekoder, gemessen wird Paar-F1 statt
+  Gruppen-F1; 20 Trainings- und 10 Holdout-Vorlagen; eine Poolingvariante
+  (Mittelwert) und eine Paarbildung (`[|Δ|, ⊙]`). Sie taugt für den
+  Vergleich zweier Merkmalsmengen, nicht als Ersatz für `magda
+  offers-grid`.
+- **Der Rechner ist größer, als CLAUDE.md an einer Stelle behauptet.** Der
+  Satz „auf einem 8-GB-Mac füllt LayoutXLM den Swap" begründet den
+  RunPod-Weg; Noahs Maschine ist ein MacBook Air M2 mit **16 GB**, und
+  `torch.backends.mps.is_available()` ist `True` (torch 2.13.0). `magda
+  train` wählt kein Device und überlässt das dem HF-Trainer, der MPS von
+  selbst nimmt. Entweder gilt der Satz für einen anderen Rechner im Team
+  oder er ist veraltet – vor der nächsten GPU-Miete nachprüfen, statt ihn
+  weiterzureichen.
+- **Der ILP-Dekoder lief unter Rosetta, und das hat einen Messlauf
+  gekostet.** Der Gitterlauf vom 29.08. wurde nach **14 h 55 ohne
+  Ergebnis** abgebrochen. Ursache war nicht die Komponentengröße, sondern
+  der Solver: PuLPs mitgeliefertes CBC ist ein **x86_64-Binary** und läuft
+  auf dem M2 unter Rosetta, und `PULP_CBC_CMD` startet **je
+  Schnittebenen-Runde einen neuen Prozess**, schreibt das Modell als MPS
+  und liest es wieder ein – bei der beobachteten Instanz 1,9 MB pro Runde.
+  Was wie „eine harte Instanz" aussah, waren vier *Runden* derselben
+  93er-Komponente zu je 1,5 bis 2 Stunden.
+  Gemessen an genau dieser Instanz (93 Entities, 4278 binäre Variablen,
+  6772 nachgereichte Dreiecke): **HiGHS 96 s, CBC nach 900 s noch nicht
+  fertig**, Zielwert beide Male 990.238714. Faktor also mindestens 9,4.
+  `offer_ilp._solver()` nimmt jetzt HiGHS und fällt ohne highspy auf CBC
+  zurück – gleiches Ergebnis, längerer Lauf. Der Wechsel ist methodisch
+  folgenlos, das hält `test_beide_solver_finden_dasselbe_optimum` fest.
+- **Komponenten dieser Größe sind der Normalfall, nicht der Ausreißer.**
+  Ausgezählt über 40 Trainingsseiten, ohne Solver (die Komponentenbildung
+  hängt nur an den Kantengewichten):
+
+  | Schwelle | größte | >40 Entities | >80 |
+  |---|---:|---:|---:|
+  | 0.52 | 119 | 18 | 2 |
+  | 0.68 (Arbeitsschwelle) | 118 | 12 | 1 |
+  | 0.92 | 46 | 1 | 0 |
+
+  Der Gitterlauf löst so etwas je Variante, Fold und Schwelle dutzendfach.
+  **Das hängt direkt an `MAX_COMPONENT` 40 → 120:** Der Sprung hat
+  Gruppen-F1 um 12 Punkte gehoben und zugleich genau diese 90- bis
+  118er-Brocken ans ILP gegeben statt an Union-Find – dreifache Knotenzahl,
+  neunfache Variablenzahl. Im Trainingslauf fiel das nicht auf, weil der
+  einmal dekodiert statt über das ganze Raster. Die Konsequenz ist nicht,
+  die Kappung zurückzudrehen, sondern das ILP für 120 Knoten tauglich zu
+  halten.
+- **Die Gruppierungsläufe sind single-threaded, und deshalb hilft RunPod
+  dort nicht.** Gemessen am 29.08.2026: `magda offers-grid` und `magda
+  offers-model train` belegen zusammen einen Kern von acht. Eine GPU ist
+  gegenstandslos – die Zeit steckt im LP-Solver, nicht im Netz mit seinen
+  4097 Parametern –, und mehr Kerne bringen ohne Parallelisierung nichts.
+  *Korrektur vom 29.08.2026, später am Tag:* Hier stand „ohne
+  CBC-Kindprozesse". Das ist falsch – PuLP ruft das CBC-Binary als eigenen
+  Prozess auf (`pulp/solverdir/cbc/osx/i64/cbc`), und der trägt die Last,
+  während der Python-Prozess bei 0 % wartet. Wer nur den Elternprozess
+  misst, hält den Lauf für hängend. An der Schlussfolgerung ändert das
+  nichts: ein Kern, ein Solver, keine Parallelität. Der Hebel wäre, die unabhängigen
+  Varianten als eigene Prozesse zu starten (aus 7 Stunden werden ~100
+  Minuten). **Was dem entgegensteht, ist kein technisches, sondern ein
+  methodisches Problem:** `offer_grid.paired_bootstrap` braucht die
+  seitenweisen Zählungen aller Varianten im selben Prozess, und getrennte
+  Einzelintervalle sind genau die Aussage, die das Projekt nicht machen
+  will. Lösbar, indem `per_page` mit in den Report geschrieben wird –
+  der Bootstrap selbst kostet keine Rechenzeit.
 - **Die Rechnung Menge × Grundpreis ist bewusst kein Merkmal des
   Paarmodells.** Sie ist das einzige Signal, das sich selbst beweist, und
   damit der einzige unbestechliche Richter. Als Eingabe gefüttert bewertete
@@ -887,16 +1305,65 @@ eine Liste auszugeben.
   Kalibriert wird über 5 Folds auf Train, und die Folds gehen über ganze
   Duplikat-Cluster – sonst bewertet ein Fold-Modell eine Vorlage, die es in
   einer anderen Regionalfassung im Training hatte.
-  **Die beiden Kriterien wählen verschiedene Schwellen**, und das ist die
-  interessantere Hälfte des Befunds: Paar-F1 ist bei 0.98 maximal (0.740
-  out-of-fold), aber Gruppen-F1 bricht dort auf 0.175 bei 463 Angeboten ein.
+  **Die beiden Kriterien wählen verschiedene Schwellen**, und das war lange
+  die interessantere Hälfte des Befunds: Paar-F1 war bei 0.98 maximal (0.740
+  out-of-fold), aber Gruppen-F1 brach dort auf 0.175 bei 463 Angeboten ein.
   Paar-F1 belohnt Vorsicht, weil kleine Gruppen wenige Paare zu verlieren
   haben. Default ist deshalb `--objective group_f1` – die Zahl, die „die
   Zeile in der Datenbank stimmt" entspricht. **Offenlegung:** Diese Wahl
   fiel, nachdem beide Schwellen auf Dev gemessen waren; die Dev-Zahl ist
   dadurch leicht optimistisch. Der Testsplit ist unangetastet.
+  **Mit `MAX_COMPONENT = 120` ist der Gegensatz weitgehend verschwunden**
+  (Kalibrierung vom 29.08.2026, 494 Seiten, out-of-fold):
+
+  | Schwelle | 0.52 | 0.60 | 0.68 | 0.76 | 0.84 | 0.92 | 0.96 |
+  |---|---:|---:|---:|---:|---:|---:|---:|
+  | Paar-F1 | 0.872 | 0.884 | 0.897 | 0.903 | 0.900 | 0.875 | 0.833 |
+  | Gruppen-F1 | 0.678 | 0.684 | **0.689** | 0.677 | 0.645 | 0.563 | 0.433 |
+
+  Beide Kriterien sind jetzt über eine breite Spanne gleichzeitig hoch, und
+  Gruppen-F1 bildet zwischen 0.52 und 0.76 ein Plateau statt einer Spitze –
+  die Schwellenwahl ist damit robust geworden, wo sie vorher 17 Punkte
+  entschied. Das gekappte Bild (Paar-F1-Optimum bei 0.96 mit Gruppen-F1
+  0.429 gegen Gruppen-Optimum bei 0.82 mit Paar-F1 0.518) war kein
+  Eigenschaft der Metriken, sondern ein Artefakt der Notbremse.
+- **Die Kette kostet fast nichts – gemessen am 29.08.2026 über 56 Dev-Seiten,
+  beide Entity-Quellen gegen dieselbe Referenz.** `magda offers-model eval
+  --predictions <modell>` berichtet die Kette jetzt in einem Stück
+  (Entity-F1 → überlebende Referenzpaare → Paar-F1 → Gruppen-F1), weil
+  jede Stufe den Nenner der nächsten verkleinert:
+
+  | Entity-Quelle | Entity-F1 | Referenzpaare | Paar-F1 | Gruppen-F1 | Angebote |
+  |---|---:|---:|---:|---:|---:|
+  | sonnet-5 (Lehrer) | – | 7351 (1.000) | 0.929 | 0.778 | 429 |
+  | layoutxlm | **0.932** | 7128 (0.970) | **0.932** | **0.782** | 427 |
+  | gbert | 0.927 | 7026 (0.956) | 0.926 | 0.781 | 426 |
+
+  **Der Befund ist die Flachheit der Spalte Gruppen-F1**: 0.778 auf
+  Lehrer-Entities, 0.782 und 0.781 auf Schüler-Entities. Fehler der ersten
+  Stufe pflanzen sich also *nicht* in die Qualität der zweiten fort – sie
+  nehmen nur Aufgabe weg (3,0 % bzw. 4,4 % der Referenzpaare). Damit hat
+  die „beste lokale Konfiguration" aus der Blackbox-Entscheidung erstmals
+  eine Zahl: **LayoutXLM + Paarmodell = 0.932 / 0.782 auf Dev.**
+  Zwei Nebenbefunde: LayoutXLMs Vorsprung bei den Entities (0.932 gegen
+  0.927, überlebende Paare 0.970 gegen 0.956) passt zum gemessenen
+  Bildgewinn und trägt bis in die Gruppierung durch. Und **die Heuristik
+  verträgt Schüler-Entities schlecht** – ihr Gruppen-F1 fällt von 0.524 auf
+  0.478 (layoutxlm) bzw. 0.457 (gbert), während das Paarmodell stabil
+  bleibt. Die arithmetische Gegenprobe stützt die Reihenfolge: 0.912
+  (Lehrer), 0.898 (layoutxlm), 0.878 (gbert) bei Abdeckung um 0.54.
+  **Einschränkungen:** Dev stammt aus den Trainingswochen, die
+  Entity-Qualität ist dort in-distribution-optimistisch; kein
+  Konfidenzintervall; Richter ist ein LLM-Lehrer, gemessen wird
+  Übereinstimmung. Und `data/eval/offers_model_dev_ilp.json` hieß bis
+  heute unabhängig von der Entity-Quelle gleich – ein Lauf auf
+  Vorhersagen überschrieb den auf Lehrer-Entities. Jetzt trägt der Name
+  ein `_pred-<modell>`.
 - **Die Kette ist erstmals ende-zu-ende gemessen – und die Zahl steigt, weil
-  das Problem schrumpft.** Bis zum 10.08.2026 war das unmöglich:
+  das Problem schrumpft.** *(Erstbefund vom 10.08.2026, überholt durch den
+  Absatz darüber: 21 Dev-Seiten, alter Split, 51 Referenzseiten. Die
+  Warnung vor dem Nenner gilt unverändert und ist der Grund, warum die
+  Kette heute mitberichtet wird.)* Bis zum 10.08.2026 war das unmöglich:
   `data/predictions/gbert` hatte 101 Seiten (alle Test),
   `data/offer_groups/claude-sonnet-5` 51 (alle Train/Dev), **Schnittmenge
   null**. Nach `magda predict gbert --split dev` treffen sich beide auf 21
@@ -1009,6 +1476,77 @@ eine Liste auszugeben.
   Hinweise. Richter bleibt ein LLM-Lehrer, gemessen wird Übereinstimmung.
   Ob die Farbmerkmale bleiben oder fallen, ist eine Teamentscheidung – nicht
   vertretbar wäre nur, sie mitzuführen und dabei die alte Dev-Zahl zu zitieren.
+  **Überholt am 30.08.2026** – siehe den nächsten Punkt. Der Lauf dort misst
+  über 494 statt 54 Trainingsseiten, mit `MAX_COMPONENT = 120` statt 40 und
+  auf Dev statt out-of-fold. Drei Änderungen auf einmal, die Zahlen sind
+  deshalb nicht direkt vergleichbar; die Farbmerkmale drehen darin ihr
+  Vorzeichen.
+- **Der Lexikblock ist der größte Merkmalsgewinn des Projekts – und er sitzt
+  ganz im blinden Fleck** (30.08.2026, 7 Varianten in einem Prozess, 6 h 19
+  Rechenzeit, Training auf 494 Seiten, Messung auf 56 Dev-Seiten in 25
+  Duplikat-Clustern, ILP, Schwelle je Variante out-of-fold auf `group_f1`
+  kalibriert; `data/eval/offers_grid_dev_ilp.json`):
+
+  | Variante | Merkmale | Paar-F1 | Gruppen-F1 | Angebote | Differenz gegen `basis` | p |
+  |---|---:|---:|---:|---:|---|---:|
+  | basis | 30 | 0.918 | 0.702 | 453 | – | – |
+  | geometrie | 35 | 0.929 | 0.778 | 429 | +0.076 [+0.028, +0.142] | 0.000 |
+  | farbe | 34 | 0.933 | 0.745 | 450 | +0.044 [+0.013, +0.075] | 0.008 |
+  | beide | 39 | 0.935 | 0.798 | 430 | +0.096 [+0.036, +0.167] | 0.000 |
+  | anker | 38 | 0.943 | 0.783 | 423 | +0.082 [+0.016, +0.148] | 0.010 |
+  | **lexik** | 43 | 0.941 | **0.821** | 431 | **+0.119 [+0.058, +0.184]** | 0.000 |
+  | anker+lexik | 46 | 0.929 | 0.778 | 424 | +0.076 [+0.033, +0.128] | 0.000 |
+
+  **Der ganze Effekt liegt dort, wo die Rechnung schweigt.** Im blinden Fleck
+  hebt `lexik` Gruppen-F1 von 0.478 auf **0.709** (+0.232 [+0.136, +0.375],
+  p = 0.000); im prüfbaren Bereich ist **kein einziger** der sechs
+  Vergleiche signifikant (p 0.056 bis 0.574). Das ist kein Widerspruch,
+  sondern die Bestätigung der Arbeitsteilung: wo ein Grundpreis steht,
+  reicht die Geometrie schon.
+  **Drei Nebenbefunde:** Der Anker bringt auf der Geometrie nichts (0.783
+  gegen 0.778) und **schadet auf dem Lexikblock obendrauf** (`anker+lexik`
+  0.778 gegen `lexik` 0.821) – beide Blöcke lesen „Aktion", der Anker ist
+  darin schon enthalten. Die Farbmerkmale drehen ihr Vorzeichen gegen den
+  11.08.-Lauf (+0.044 statt −0.008), was aber durch drei gleichzeitige
+  Änderungen konfundiert ist und unter Bonferroni nicht hält. Und **keine
+  einzige Komponente wurde gekappt** (`capped: 0` in allen sieben
+  Varianten) – die 120 halten.
+  **Einschränkungen:** 18 Vergleiche ohne Korrektur für multiples Testen,
+  und die drei Bereiche sind nicht unabhängig (alle Paare = blind +
+  prüfbar). Bei Bonferroni (0.05/18) fallen `farbe` (0.008 / 0.012) und
+  `anker` gesamt (0.010) heraus; belastbar sind `geometrie`, `beide`,
+  `lexik` und `anker+lexik`. **Differenzen zwischen zwei Varianten haben
+  kein Intervall** – der gepaarte Bootstrap läuft nur gegen `basis`, weil
+  `per_page` nicht im Report steht. 25 Cluster, ein Lauf, keine
+  Seed-Streuung; Dev stammt aus den Trainingswochen, ist also
+  in-distribution-optimistisch. Richter bleibt ein LLM-Lehrer, gemessen
+  wird Übereinstimmung. Gegen die gemessene Decke (0.916) bleiben von
+  0.821 noch **9,5 Punkte**.
+- **Bis zum 29.08.2026 las kein einziges Merkmal des Paarmodells den Text.**
+  Die 35 Merkmale in `offer_pairs.py` kennen Lage, Typ, Farbe und
+  Nachbarschaft – kein Wort. Dabei trägt der Textlayer die Struktur der
+  Kachel offen, und zwar in Wörtern, die als `O` durchs Labeling fallen:
+  ausgezählt über die 494 Trainingsseiten tragen von 7411 Preisen **2033
+  eine Mengenaktion** („je", „statt", „nur") und **2029 eine Einheit**
+  („Stück", „Set") in den drei Wörtern davor, **1117 ein „Aktion"** in den
+  zwei davor; dazu 1733 Treffer auf Wörtern des Kleingedruckten und 772
+  „oder". Der neue Block `lexical` (acht binäre Merkmale) macht daraus
+  Eingabe: vier `_before`-Merkmale binden, zwei `_between`-Merkmale
+  trennen. Messbar als Varianten `lexik` und `anker+lexik` in `magda
+  offers-grid`. **Gemessen am 30.08.2026: der größte Merkmalsgewinn des
+  Projekts** (+0.119 Gruppen-F1, siehe oben).
+- **Die Legendennummer steht im Textlayer und ist trotzdem kein Merkmal
+  geworden.** Auf `1347387_p31` liegen die Ziffern 1–5 als eigene
+  Textläufe am Seitenanfang und -ende, ihre Boxen sitzen aber an den
+  Kacheln – in Lesereihenfolge unerreichbar weit weg, über die Box genau
+  am Angebot. In zwei Größen: eine schmale Legendenspalte am linken Rand
+  (Höhe 8,4) und Badges auf den Produktfotos (Höhe 13,3). Über den
+  Mittelpunktsabstand zugeordnet entscheidet ein Gleichstand:
+  „Pflanztopf-Set" liegt 29,6 von seiner „4" entfernt, sein Preis „8.99"
+  liegt 29,0 von der „5" des Nachbarangebots – das Merkmal bekäme genau
+  den belegten Fall falsch, für den es gebaut war. Deshalb entfernt statt
+  mitgeführt. Wer es wieder aufnimmt, braucht eine **gerichtete**
+  Zuordnung (die Nummer steht *vor* ihrem Eintrag), nicht den Abstand.
 - **Clusterweise ziehen heißt nicht automatisch fair ziehen.**
   `dataset.subset_by_clusters` sortierte zuerst nach absteigender
   Clustergröße – naheliegend und genau falschherum: die Duplikate landen
@@ -1018,7 +1556,38 @@ eine Liste auszugeben.
   9/16/50/93 Cluster statt 3/9/25/93. Zu jedem Kurvenpunkt gehört die
   **Clusterzahl** – „p25" allein ist eine Seitenzahl ohne das, woran
   gemessen wurde.
-- **`checkpoints/gbert` ist der eingefrorene KW30/31-Stand, und bis zum
+- **`checkpoints/*.kw32-split` sind die eingefrorenen Stände der Testwoche
+  KW32** (umbenannt am 25.08.2026, als KW35 Testwoche wurde). Ein Checkpoint
+  ohne den Split, gegen den er gemessen wurde, ist eine Zahl ohne Fußnote –
+  und `checkpoint_name()` kennt den Split nicht als Dimension, hätte sie also
+  beim kanonischen Retrain überschrieben. Dasselbe gilt für
+  `data/predictions/*.kw32-split/`.
+- **`data/eval/` und `data/predictions/` sind Archive, keine Abbilder des
+  aktuellen Splits.** Beide Leser mussten das lernen, und beide Fehler waren
+  unsichtbar: `magda significance` nahm die Schnittmenge zweier
+  Vorhersageordner und verglich dadurch über 216 statt 116 Seiten, 100 davon
+  inzwischen Trainingsdaten (`shared_test_pages` schränkt jetzt auf den
+  Testsplit ein und meldet die Verworfenen). Die Evaluationsseite fand drei
+  Reports mit `variant: "gbert"` – einen Testlauf und zwei Dev-Läufe eines
+  früheren Splits – und ließ die Dateisortierung entscheiden, welcher die
+  Spalte füllt (`reportsOfOneSplit`). Wer einen neuen Leser über diese Ordner
+  baut, filtert zuerst.
+- **Ein Report kann `variant` und `report` tragen und trotzdem nicht
+  vergleichbar sein.** `flair_llm_test.json` kommt durch die Formprüfung von
+  `/api/evaluation`, misst aber nur BRAND (micro-F1 0.281 über 24 Instanzen).
+  Neben den vier Armen gelesen wäre das ein katastrophal schlechtes Modell
+  statt einer anderen Frage. Marker ist `restricted_to`; die Seite nennt
+  solche Arme, stellt sie aber nicht in die Tabelle.
+- **Das RunPod-Image bringt kein torchvision mehr mit** (geprüft 25.08.2026,
+  `pytorch:1.0.3-cu1281-torch291`). detectron2 übersetzt und importiert sich
+  trotzdem – erst `detectron2.layers` zieht torchvision, und das passiert im
+  Trainer. Der Ausfall kommt also nach dem Aufsetzen und mitten in der
+  Mietzeit. Beim Nachinstallieren die torch-Version pinnen: ein blankes
+  `pip install torchvision` zog torch von 2.9.1 auf 2.11.0 und brach die ABI,
+  gegen die detectron2 übersetzt war – wieder ohne Fehler beim Import.
+  `bundle.py` installiert es jetzt vorab und prüft mit
+  `import detectron2.modeling`.
+- **`checkpoints/gbert` war der eingefrorene KW30/31-Stand, und bis zum
   10.08.2026 hätte ihn jeder Nebenlauf überschrieben.** `magda train`
   schrieb nach `CHECKPOINTS_DIR / variant`, ohne Rücksicht auf
   `--labels-from`. Ein APP_PRICE-Nachtraining hätte damit genau das Modell
@@ -1188,11 +1757,11 @@ eine Liste auszugeben.
   +1,7 Punkte gegen die volle Referenz. Im Training wäre es Augmentierung, kein
   Messfehler – also eine Abwägung, keine Korrektur. Bisher bewusst nicht getan,
   damit Trainingssignal und Checkpoint-Auswahl unverändert bleiben.
-- **LiLT als dritter Arm?** LayoutXLM verliert konsistent, aber nicht
-  nachweisbar (Intervall überdeckt die Null). LiLT hat keinen visuellen
-  Backbone und ist bei 175 Trainingsseiten gutmütiger; ein Lauf würde den
-  Layout-Negativbefund gegen den Einwand „falsche Layout-Architektur"
-  absichern. Weicht vom Proposal ab → Teamentscheidung.
+- ~~**LiLT als dritter Arm?**~~ **Entschieden am 25.08.2026 (Noah): ja, und
+  dazu `xlmr` als vierter Arm.** Ohne den vierten wäre die Kette lückenhaft
+  geblieben – LiLT gegen GBERT hätte weiterhin zwei Unterschiede auf einmal
+  gemessen. Ergebnis oben unter „Layout bringt nichts, das Seitenbild bringt
+  etwas". Die Abweichung vom Proposal ist bewusst und gehört in den Bericht.
 - **Weitere Label – aufgekommen, weil das Zusammensetzen der Angebote hakt**
   (Frage von Bogdan und Kjell, 03.08.2026). Die Messung dazu steht oben; sie
   sagt vor allem, was ein neues Label **nicht** leistet: das Clustern löst es
@@ -1305,6 +1874,18 @@ eine Liste auszugeben.
               vor_preis += i + 1 < len(tags) and tags[i + 1] == "B-PRICE"
   print(total, vor_preis)
   ```
+- **Gerichtete Relationen statt „gehören zusammen"?** Vorschlag von außen
+  (29.08.2026), noch nicht gebaut. Heute lernt das Paarmodell eine
+  *symmetrische* Frage: gehören i und j zum selben Angebot? Gerichtet
+  gestellt – PRODUCT → PRICE, QUANTITY → PRICE, BRAND → PRODUCT – ist die
+  Aufgabe womöglich leichter, weil BRAND und VALID nicht direkt aufeinander
+  zeigen müssen, sondern beide auf dieselbe Mitte. Der Haken sitzt in der
+  Ableitung: um eine gerichtete Zielgröße aus `data/offer_groups/` zu
+  gewinnen, braucht jede Referenzgruppe einen Kopf – und **982 von 5491
+  Gruppen (17,9 %) haben zwei oder mehr PRODUCT**. Der Kopf ist damit selbst
+  eine Modellierungsentscheidung, kein Datum. Als *hartes* Constraint im ILP
+  ist dieselbe Zahl schon der Widerlegungsgrund (siehe oben); als weiche
+  gerichtete Relation ist die Frage offen. Entscheidung steht aus.
 - Label-Set ist ein Entwurf und wird nach Sichtung der ersten gelabelten Seiten
   finalisiert.
 

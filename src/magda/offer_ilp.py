@@ -73,23 +73,45 @@ MAX_ROUNDS = 40
 #       0.70             6               0.001 s    0.51 s
 #       0.90+            1               0.001 s    0.02 s
 #
-# Die Kosten haengen allein an der groessten Komponente. Bei den
-# kalibrierten Schwellen (0.94 bis 0.96) kostet das ILP nichts; teuer wird
-# nur der untere Rand des Kalibrierungsrasters, den am Ende ohnehin kein
-# Kriterium waehlt.
+# Die Kosten haengen allein an der groessten Komponente.
 #
 # **Die Kappung ist keine Kleinigkeit fuer die Auslegung der Kurve:** Wo sie
 # greift, *ist* das ILP Union-Find - und zwar an genau der Stelle, an der es
 # seinen Vorteil ausspielen sollte. Die Schwellenkurve ist deshalb nur
 # oberhalb der Kappung aussagekraeftig. Wie oft sie greift, zaehlt
 # `LAST_RUN` mit und gehoert in jeden Report.
-MAX_COMPONENT = 40
+#
+# **Von 40 auf 120 angehoben am 29.08.2026, und der Grund ist gemessen.**
+# Mit 40 kappte der Dev-Lauf des auf 494 Seiten neu trainierten Paarmodells
+# 5 von 297 Komponenten, die groesste mit 111 Entities. Diese 5 Blobs
+# erzeugten 20903 der 26279 vorhergesagten Paare - 80 % - und drueckten
+# Paar-F1 auf 0.398, waehrend Gruppen-F1 bei 0.659 stand. Die Kappung war
+# also nicht ein bisschen ungenau, sie entschied die Metrik.
+#
+# Ohne Kappung loest dieselbe 111er-Komponente in 6 bis 28 s und zerfaellt
+# in 15 Gruppen mit hoechstens 11 Entities - das ILP kann den Fall, es
+# durfte ihn nur nicht anfassen. Ueber eine Stichprobe von 12 Train-Seiten
+# und das ganze Kalibrierungsraster (0.50 bis 0.90) kostet 120 gegenueber
+# 40 den Faktor 2.7 und kappt dabei kein einziges Mal; die groesste
+# gebildete Gruppe faellt von 64 auf 17. Teurer wird dabei das *obere*
+# Ende, nicht das untere - unten spart die Kappung ja gerade die Arbeit,
+# die sie kaputtmacht.
+#
+# Der Wert deckt die groesste beobachtete Komponente mit Reserve, er ist
+# keine Garantie. Ob er reicht, sagt `LAST_RUN["capped"]` in jedem Report -
+# steht dort etwas anderes als 0, ist die Kurve wieder nur teilweise ein
+# ILP-Ergebnis.
+MAX_COMPONENT = 120
 
 # Zaehlwerk des letzten Laufs. Ein Modul-Zustand ist unschoen, aber die
 # Alternative waere ein Rueckgabewert an jedem Aufrufer entlang bis in den
 # Report - fuer eine Zahl, die niemand zum Rechnen braucht und die trotzdem
 # niemals fehlen darf.
 LAST_RUN = {"components": 0, "optimised": 0, "capped": 0, "largest_capped": 0}
+
+# Einmal ermittelt, dann wiederverwendet - `available()` von HiGHS
+# kostet sonst je Komponente einen Anlauf.
+_SOLVER = None
 
 
 def reset_counters() -> None:
@@ -162,6 +184,40 @@ def _components(count: int, positive: list[tuple[int, int]]) -> list[list[int]]:
     return list(members.values())
 
 
+def _solver():
+    """Der schnellste verfuegbare exakte Solver - HiGHS, sonst CBC.
+
+    Gemessen am 30.08.2026 an einer echten Instanz aus dem Gitterlauf (eine
+    Komponente mit 93 Entities, 4278 binaere Variablen, 6772 nachgereichte
+    Dreiecke): **HiGHS 96 s, CBC nach 900 s noch nicht fertig**, bei
+    identischem Zielwert 990.238714. Der Faktor ist also mindestens 9,4 und
+    in Wahrheit groesser.
+
+    Zwei Gruende, beide unabhaengig von der Qualitaet der Solver: Das von
+    PuLP mitgelieferte CBC ist ein x86_64-Binary und laeuft auf Apple
+    Silicon unter Rosetta. Und `PULP_CBC_CMD` startet **je
+    Schnittebenen-Runde einen neuen Prozess**, schreibt das Modell als MPS
+    und liest es wieder ein - bei dieser Instanz 1,9 MB pro Runde. `HiGHS`
+    spricht ueber highspy direkt in den Prozess.
+
+    **Der Wechsel ist methodisch folgenlos.** Gesucht ist das Optimum, und
+    beide Solver finden dasselbe; verschieden waere hoechstens die Wahl
+    unter gleichwertigen Optima. `test_beide_solver_finden_dasselbe_optimum`
+    haelt das fest. Fehlt highspy, faellt der Aufruf auf CBC zurueck - dann
+    ist das Ergebnis dasselbe und der Lauf dauert laenger.
+    """
+    pulp = _require_pulp()
+
+    global _SOLVER
+    if _SOLVER is None:
+        try:
+            candidate = pulp.HiGHS(msg=False)
+            _SOLVER = candidate if candidate.available() else pulp.PULP_CBC_CMD(msg=0)
+        except (AttributeError, pulp.PulpError):
+            _SOLVER = pulp.PULP_CBC_CMD(msg=0)
+    return _SOLVER
+
+
 def _violations(nodes: list[int], value) -> list[tuple[tuple, tuple, tuple]]:
     """Verletzte Dreiecke der aktuellen Loesung, als (a, b, gegen)-Tripel."""
     found = []
@@ -207,13 +263,13 @@ def _solve_component(nodes: list[int], weights: dict[tuple[int, int], float],
                     problem += x + y - z <= 1
                     problem += x + z - y <= 1
                     problem += y + z - x <= 1
-        problem.solve(pulp.PULP_CBC_CMD(msg=0))
+        problem.solve(_solver())
     else:
         # Schnittebenen: loesen, verletzte Dreiecke nachreichen, wiederholen.
         # Die Loesung ist am Ende exakt - abgebrochen wird erst, wenn keine
         # Verletzung mehr auftritt.
         for _ in range(MAX_ROUNDS):
-            problem.solve(pulp.PULP_CBC_CMD(msg=0))
+            problem.solve(_solver())
             violated = _violations(nodes, value)
             if not violated:
                 break
