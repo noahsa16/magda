@@ -222,7 +222,10 @@ def main(argv=None):
         "errors": errors,
     }
     config.EVAL_DIR.mkdir(parents=True, exist_ok=True)
-    out_path = config.EVAL_DIR / "blackbox_test.json"
+    # Das Modell gehoert in den Dateinamen wie ueberall sonst im Projekt
+    # (offers_model_*, offers_variants_*, ...): ohne das ueberschreibt ein
+    # zweiter Blackbox-Lauf mit anderem --model den vorigen Report still.
+    out_path = config.EVAL_DIR / f"blackbox_test_{config.model_slug(args.model)}.json"
     with open(out_path, "w") as f:
         json.dump(payload, f, indent=2, ensure_ascii=False)
     print(f"\nReport: {out_path}")

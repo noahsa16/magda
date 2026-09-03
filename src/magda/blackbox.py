@@ -129,9 +129,14 @@ def extract_deals_from_page(pdf_bytes: bytes, client: OpenAI, model: str) -> lis
     messages = [
         {
             "role": "user",
+            # Bild vor dem Text: gemma-4-31b-it antwortet bei Text-zuerst mit
+            # "du hast mir noch kein Bild geschickt" und sieht das Bild
+            # schlicht nicht - reproduziert mit und ohne enable_thinking,
+            # verschwindet mit dieser Reihenfolge. Mistral und Qwen
+            # verarbeiten beide Reihenfolgen gleich, insofern kostenlos.
             "content": [
-                {"type": "text", "text": _EXTRACT_PROMPT},
                 {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{b64}"}},
+                {"type": "text", "text": _EXTRACT_PROMPT},
             ],
         }
     ]
@@ -141,9 +146,12 @@ def extract_deals_from_page(pdf_bytes: bytes, client: OpenAI, model: str) -> lis
             model=model,
             messages=messages,
             temperature=0.2,
-            # Eine Seite hat selten mehr als 20 Angebote; 4096 Token JSON
-            # geben reichlich Puffer (~200 Token je Angebot).
-            max_tokens=4096,
+            # Seiten mit vielen kleinen Angeboten (Deko/Non-Food, teils mit
+            # langen Feldwerten) haben 4096 gerissen - gemessen an
+            # mistral-medium-3.5-128b, 7 von 42 Seiten abgeschnitten trotz
+            # nur 8-14 Angeboten. 8192 wie labeling.py: lieber Puffer als
+            # eine Seite verlieren.
+            max_tokens=8192,
             extra_body=extra_body,
         )
 
@@ -185,6 +193,17 @@ def extract_deals_from_page_with_retry(
     Rate-Limit-Fahrplan mit Fuenf-Minuten-Wartezeit): eine einzelne Seite
     kostet hier keinen Batch von hunderten Woertern, ein Fehlschlag ist
     billig genug fuer einen einfachen exponentiellen Backoff.
+
+    Anders als labeling.label_page_with_retry wird auch ein ValueError
+    (abgeschnittene Antwort, kaputtes JSON) wiederholt, nicht nur
+    is_retryable-Fehler. labeling.py begruendet den Verzicht damit, dass
+    das Modell "nur geantwortet, die Antwort war nur unbrauchbar" hat -
+    bei temperature=0 waere ein zweiter Versuch also deterministisch
+    derselbe Fehler. Hier steht temperature=0.2 (siehe extract_deals_
+    from_page): gemessen an mistral-medium-3.5-128b liefert derselbe
+    Aufruf beim naechsten Versuch reproduzierbar vollstaendiges JSON -
+    das Abschneiden ist eine gelegentliche Wiederholungsschleife, kein
+    stabiler Fehler.
     """
     last: Exception | None = None
     for attempt in range(max_retries):
@@ -192,9 +211,11 @@ def extract_deals_from_page_with_retry(
             return extract_deals_from_page(pdf_bytes, client, model)
         except Exception as exc:
             last = exc
-            if not is_retryable(exc) or attempt == max_retries - 1:
+            if attempt == max_retries - 1:
                 raise
-            time.sleep(min(60.0, 5.0 * (2**attempt)))
+            if not (is_retryable(exc) or isinstance(exc, ValueError)):
+                raise
+            time.sleep(min(60.0, 5.0 * (2**attempt)) if is_retryable(exc) else 1.0)
     raise last  # unerreichbar, aber macht den Rueckgabetyp eindeutig
 
 
