@@ -18,7 +18,7 @@ BIO-Tagging.
 Neu gegenüber Version 0 (dem Prototyp-Schema): die Felder `quantity` und
 `unit_price`. Ihr Fehlen war der dokumentierte Grund, warum die
 arithmetische Gegenprobe (Menge × Grundpreis) für die Blackbox-Spalte
-bisher unmöglich war - siehe `[[endvergleich-blackbox]]`. Die Gegenprobe
+bisher unmöglich war. Die Gegenprobe
 selbst ist mit Version 1 noch nicht verdrahtet (`blackbox_eval.
 compare_pages` kennt weiterhin nur `COMMON_FIELDS = (name, price,
 original_price)`); die Felder werden nur miterfasst und im Report

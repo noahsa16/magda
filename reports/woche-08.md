@@ -179,6 +179,22 @@ Reports: `data/eval/blackbox_test_qwen3.6-35b-a3b.json`,
 `data/eval/blackbox_test_gemma-4-31b-it.json`. Fehlerhafte Seiten fließen
 mit 0 Angeboten in `system` ein (Recall-Verlust, kein Absturz des Laufs).
 
+**Wichtig für die Einordnung: "eigene Pipeline" ist hier nicht unser
+bestes System.** `blackbox_eval._deals_by_page` ruft `offers.cluster_page`
+auf - die geometrische Heuristik (Gruppen-F1 0.439 auf dem vollen
+Testsplit, siehe Testmessung oben) - **nicht** das trainierte Paarmodell
+mit Lexikblock (Gruppen-F1 0.778, derselbe Checkpoint, der oben neu
+trainiert wurde). Das CLI hat dafür keinen Schalter; die Anbindung ans
+Paarmodell existiert nur auf dem unmerged Branch `feat/offers-demo`
+(Worktree `../magda-demo`, `--grouper pair-model`, Stand 02.09.2026). Die
+0.839 der "eigenen Pipeline" gegen die Referenz sind
+also die **schwächere** unserer beiden Gruppierungsmethoden, nicht die
+0.932 (Paar-F1) des Paarmodells. Der reale Abstand zwischen unserem besten
+System und jeder Blackbox dürfte entsprechend **größer** sein, als diese
+Tabelle zeigt - eine Wiederholung mit dem Paarmodell als Grouper ist die
+naheliegende nächste Messung, sobald der Demo-Branch gemergt ist oder die
+Anbindung separat nachgezogen wird.
+
 **Reihenfolge unter den drei Blackbox-Modellen:** Gemma vor Qwen vor
 Mistral — aber knapp (0.554/0.541/0.474), und alle drei liegen deutlich
 hinter der eigenen Pipeline (0.839). Mistral erzeugt mit Abstand die
@@ -219,16 +235,28 @@ Modelle gleichermaßen:**
   suggerieren.
 
 **Ergebnis:** die eigene Pipeline liegt vor allen drei Blackbox-Modellen,
-über die ganze getestete Bandbreite (Qwen, Gemma, Mistral) konsistent.
-Aber der Abstand ist kleiner, als die rohen F1-Werte zeigen - ein
-spürbarer Teil davon ist Messartefakt (gemeinsamer Flaschenhals
-`cluster_page`, strikte Preisgleichheit, eine Handvoll Duplikate), kein
-reiner Qualitätsunterschied. Für den Kostenvergleich bleibt die Aussage
+über die ganze getestete Bandbreite (Qwen, Gemma, Mistral) konsistent -
+und das mit der schwächeren unserer beiden Gruppierungsmethoden
+(Heuristik statt Paarmodell, siehe oben). Der gemessene Abstand ist damit
+eher eine Untergrenze als eine genaue Zahl: ein spürbarer Teil der
+Blackbox-F1-Werte ist Messartefakt (gemeinsamer Flaschenhals
+`cluster_page`, strikte Preisgleichheit, eine Handvoll Duplikate) und
+zieht sie künstlich nach oben Richtung der eigenen Pipeline - gleichzeitig
+zieht das Fehlen des Paarmodells die eigene Pipeline künstlich nach unten.
+Beide Korrekturen zeigen in dieselbe Richtung: der wahre Abstand
+"bestes eigenes System vs. Blackbox" ist größer als 0.839 gegen
+0.474–0.554. Für den Kostenvergleich bleibt die Aussage unabhängig davon
 robust: 0,1 s gegen mehrere Sekunden je Seite bei niedrigerer Trefferquote
 UND geringerer Zuverlässigkeit (0 bis 3 von 42 Seiten scheitern ganz).
 
 ## Offen
 
+- **`blackbox_eval.py` an das Paarmodell statt an `offers.cluster_page`
+  anbinden.** Der Blackbox-Vergleich lief gegen unsere schwächere
+  Gruppierungsmethode; die Anbindung ans Paarmodell existiert bereits auf
+  `feat/offers-demo` (`--grouper pair-model`), ist aber nicht gemergt.
+  Ohne diese Wiederholung ist "eigene Pipeline" in diesem Report kein
+  belastbarer Bestwert.
 - **Konfidenzintervall für die Testmessung.** `per_page` fehlt weiterhin im
   Report (offener Punkt aus Woche 7) — ohne die seitenweisen Zählungen ist
   0.778 eine Punktschätzung, kein Intervall. Dasselbe gilt für die drei
