@@ -13,7 +13,10 @@ gegen `claude-sonnet-5` als Subagent, aus Budgetgründen. Die eigene
 Pipeline (F1 0.839) liegt vor allen drei Blackbox-Modellen (F1 0.474 bis
 0.554), aber der Abstand ist kleiner als die rohen Zahlen zeigen — ein
 gemeinsamer Messfehler in Referenz und eigener Spalte drückt beide
-Blackbox-Zeilen künstlich. Details unten.
+Blackbox-Zeilen künstlich. **Wichtigste Einschränkung, die für den ganzen
+Blackbox-Vergleich gilt: die Referenz ist selbst LLM-erzeugt
+(`claude-sonnet-5`), gemessen wird also Übereinstimmung, nicht Richtigkeit
+— eine Handprüfung steht noch aus.** Details unten.
 
 | | Paar-F1 | Gruppen-F1 | Angebote |
 |---|---:|---:|---:|
@@ -117,6 +120,31 @@ Rücksprache repariert, weil das Design des Blackbox-Vergleichs laut
 Woche 7 bewusst vertagt ist.
 
 ## Der Blackbox-Vergleich ist gelaufen — gegen drei Modelle
+
+**Vorab die Einschränkung, die für die ganze Tabelle unten gilt und nicht
+verloren gehen darf: "Referenz" ist `data/labeled/sonnet-5/`, selbst von
+einem LLM erzeugt — sowohl die Entitäten (Schritt 03, `claude-sonnet-5`
+als Labeling-Modell) als auch die Gruppierung zu Angeboten
+(`data/offer_groups/claude-sonnet-5/`, Vision-Modell statt Handannotation,
+Teamentscheidung vom 06.08.2026, siehe CLAUDE.md).** Jede Zahl in diesem
+Abschnitt — eigene Pipeline *und* alle drei Blackbox-Modelle — misst also
+**Übereinstimmung mit `claude-sonnet-5`, nicht Richtigkeit gegen eine von
+Menschen geprüfte Referenz**. Dieselbe Einschränkung wie bei `magda
+agreement` und `magda offers-gold`, hier nur besonders folgenreich: Ein
+Modell, das denselben Fehler macht wie `claude-sonnet-5`, wird dafür
+belohnt; ein Modell, das es *richtiger* macht als die Referenz, wird dafür
+bestraft (belegter Fall an anderer Stelle im Projekt: die APP_PRICE-Messung
+vom 02.08.2026 — `magda eval` fand F1 0.234 bei Precision 1.000 und null
+echten Falsch-Negativen, weil das Modell jeden App-Preis fand, ihn aber
+teils "PRICE" statt "APP_PRICE" nannte wie die Referenz selbst uneinheitlich
+gelabelt hatte). Für eine echte Genauigkeitszahl bräuchte
+es eine Handprüfung — `gold/offers/` existiert als Format, ist aber für den
+Testsplit leer (dieselbe Teamentscheidung vom 06.08.: 30–50 Seiten von Hand
+zu gruppieren sprengt den Projektrahmen). Eine kleine Stichprobe der 42
+Testcluster-Seiten von Hand nachzuprüfen — z. B. durch Kjell oder Bogdan,
+damit nicht dieselbe Person prüft, die den Vergleich gebaut hat — wäre der
+naheliegende nächste Schritt, um diese Zahlen gegen echte Richtigkeit statt
+nur gegen ein weiteres LLM abzusichern. Nicht Teil dieses Laufs.
 
 Noch am selben Tag entschieden (Budgetgründe: ein Claude-Subagent als
 Blackbox hätte Sitzungskontingent statt GWDG-Kontingent gekostet) und
@@ -251,6 +279,12 @@ UND geringerer Zuverlässigkeit (0 bis 3 von 42 Seiten scheitern ganz).
 
 ## Offen
 
+- **Handprüfung der Blackbox-Referenz.** Alle Zahlen im Blackbox-Vergleich
+  messen Übereinstimmung mit `claude-sonnet-5`, nicht Richtigkeit (siehe
+  Einschränkung oben). Eine Stichprobe der 42 Testcluster-Seiten von Hand
+  gegen die Blackbox-Ausgaben zu prüfen — durch jemanden, der den Vergleich
+  nicht selbst gebaut hat — ist die einzige Möglichkeit, "Übereinstimmung"
+  in "Genauigkeit" zu übersetzen.
 - **`blackbox_eval.py` an das Paarmodell statt an `offers.cluster_page`
   anbinden.** Der Blackbox-Vergleich lief gegen unsere schwächere
   Gruppierungsmethode; die Anbindung ans Paarmodell existiert bereits auf
