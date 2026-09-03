@@ -28,32 +28,41 @@ cd frontend && npm install && cd ..
 magda serve --frontend                  # API 8000, Oberfläche 5173
 ```
 
-Dann http://localhost:5173/annotate öffnen. Oben steht ein blauer Kasten
+Dann http://localhost:5173/group öffnen. Oben steht ein blauer Kasten
 „Aufgabe für Kjell und Bogdan" mit Fortschritt und dem Knopf **Nächste
 offene Seite**. Die Katalogkachel 1364390 ist blau umrandet, in der
-Seitenliste stehen die Aufgabenseiten mit blauer Kante ganz oben.
+Seitenliste stehen die Aufgabenseiten mit blauer Kante ganz oben. Bei der Abgabe zählen zuerst
+die Dateien unter `gold/offers/`.
 
-## Zwei Durchgänge je Seite
+## Reihenfolge: erst Angebote, dann Spans
 
-Erst alle Seiten unter `/annotate`, dann alle unter `/group`. Beide lesen
-dieselbe Aufgabe und zeigen ihren eigenen Fortschritt.
+**Die Gruppierung ist das, worauf es ankommt.** Der Blackbox-Vergleich
+misst Angebote (Name plus Preis), und die Frage ist, was zusammengehört.
+Deshalb zuerst alle 43 Seiten unter `/group`; die Spans unter `/annotate`
+sind der zweite Durchgang, falls Zeit bleibt. `/group` braucht keine
+handannotierten Spans: gruppiert werden Wortindizes, der Klick nimmt nur
+zur Bequemlichkeit die Sonnet-Entity mit. Stimmt ein Span nicht, mit
+Shift-Klick wortweise korrigieren.
 
-**1. Spans (`/annotate`)** – was ein Wort ist.
+**1. Angebote (`/group`)** – wozu ein Wort gehört.
 
 - Namen oben rechts eintragen, er landet in jeder gespeicherten Datei.
-- Wort anklicken, Shift-Klick erweitert die Auswahl, Ziffer 1–8 vergibt
-  das Label aus der Legende rechts, 0 oder Backspace löscht.
-- `f` markiert die Seite als fertig, Pfeiltasten wechseln die Seite.
-- Gespeichert wird bei jeder Änderung nach `gold/<seite>.json`.
-
-**2. Angebote (`/group`)** – wozu ein Wort gehört.
-
-- Ein Klick nimmt die ganze Entity ins aktive Angebot, `n` beginnt ein
-  neues, Backspace löscht das aktive.
+- Ein Klick nimmt die ganze Entity ins aktive Angebot, Shift-Klick einen
+  Wortbereich, `n` beginnt ein neues Angebot, Backspace löscht das aktive.
 - Kleingedrucktes, Seitenkopf und Druckkennung gehören zu keinem Angebot
   und bleiben ungruppiert.
+- `f` markiert die Seite als fertig, Pfeiltasten wechseln die Seite,
+  gespeichert wird nach `gold/offers/<seite>.json`.
+
+**2. Spans (`/annotate`)** – was ein Wort ist.
+
+- Wort anklicken, Shift-Klick erweitert die Auswahl, Ziffer 1–8 vergibt
+  das Label aus der Legende rechts, 0 oder Backspace löscht.
 - `f` markiert die Seite als fertig, gespeichert wird nach
-  `gold/offers/<seite>.json`.
+  `gold/<seite>.json`.
+
+Beide Werkzeuge lesen dieselbe Aufgabe und zeigen ihren eigenen
+Fortschritt.
 
 ## Regeln, die zählen
 
