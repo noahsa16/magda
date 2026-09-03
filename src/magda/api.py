@@ -426,6 +426,24 @@ def _load_words(page_id: str) -> dict:
         return json.load(f)
 
 
+@app.get("/api/annotation-task")
+def annotation_task():
+    """Die abgesprochene Handannotations-Aufgabe (data/annotation_task.json).
+
+    Nur Seiten, die es unter data/words/ gibt: eine Aufgabe, die auf eine
+    inzwischen entdoppelte Seite zeigt, soll im Annotator nicht als
+    unerledigbar stehen bleiben.
+    """
+    try:
+        with open(config.ANNOTATION_TASK_FILE) as f:
+            task = json.load(f)
+    except FileNotFoundError:
+        return {"title": "", "created": None, "for": [], "why": "", "pages": []}
+    task["pages"] = [p for p in task.get("pages", [])
+                     if (config.WORDS_DIR / f"{p}.json").exists()]
+    return task
+
+
 @app.get("/api/gold")
 def list_gold():
     rows = []

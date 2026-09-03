@@ -354,6 +354,15 @@ export interface OfferGroupingSummary {
   stale: boolean
 }
 
+/** Die abgesprochene Handannotations-Aufgabe – aus /api/annotation-task. */
+export interface AnnotationTask {
+  title: string
+  created: string | null
+  for: string[]
+  why: string
+  pages: string[]
+}
+
 /** Eine Kachel in der Prospekt-Übersicht. Gleiche Form für beide Werkzeuge. */
 export interface CatalogTile {
   id: string

@@ -282,3 +282,43 @@ describe("AnnotatePage — Ebenen", () => {
     expect(screen.getByRole("button", { name: /Nächste Seite/ })).toBeDisabled()
   })
 })
+
+describe("Annotationsaufgabe", () => {
+  const TASK = {
+    title: "Testkatalog 462828 von Hand annotieren",
+    created: "2026-09-03",
+    for: ["Kjell", "Bogdan"],
+    why: "Referenz für den Blackbox-Vergleich.",
+    pages: ["462828_p1"],
+  }
+
+  it("zeigt die Aufgabe mit Fortschritt und öffnet die nächste offene Seite", async () => {
+    setup({ "/api/annotation-task": TASK, route: "/annotate" })
+    expect(await screen.findByText("Testkatalog 462828 von Hand annotieren")).toBeInTheDocument()
+    expect(screen.getByText("Aufgabe für Kjell und Bogdan")).toBeInTheDocument()
+    expect(screen.getByText("0/1 Seiten mit Spans fertig")).toBeInTheDocument()
+    expect(screen.getByText("Aufgabe · 1 Seite")).toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole("button", { name: /Nächste offene Seite/ }))
+    expect(await screen.findByText("1 / 1")).toBeInTheDocument()
+  })
+
+  it("zählt eine fertige Aufgabenseite und bietet dann keine nächste an", async () => {
+    setup({
+      "/api/annotation-task": TASK,
+      "/api/gold": [{
+        page_id: "462828_p1", catalog: "462828", status: "done",
+        annotator: "kjell", num_spans: 3, stale: false,
+      }],
+      route: "/annotate",
+    })
+    expect(await screen.findByText("1/1 Seiten mit Spans fertig")).toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: /Nächste offene Seite/ })).not.toBeInTheDocument()
+  })
+
+  it("verschweigt die Aufgabe ohne Seiten", async () => {
+    setup({ "/api/annotation-task": { ...TASK, pages: [] }, route: "/annotate" })
+    expect(await screen.findByText("Annotieren")).toBeInTheDocument()
+    expect(screen.queryByLabelText("Annotationsaufgabe")).not.toBeInTheDocument()
+  })
+})

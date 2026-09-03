@@ -11,7 +11,8 @@ export default defineConfig({
   },
   server: {
     // Backend: uvicorn magda.api:app --reload (Port 8000)
-    proxy: { "/api": "http://localhost:8000" },
+    // MAGDA_API erlaubt eine zweite Instanz neben einem fremden Server auf 8000.
+    proxy: { "/api": process.env.MAGDA_API ?? "http://localhost:8000" },
   },
   test: {
     environment: "jsdom",

@@ -947,3 +947,27 @@ def test_sources_zeigt_gruppierungen_als_eigene_quelle(client):
 
     assert offers == [{"kind": "offer_groups", "id": "claude-sonnet-5",
                        "name": "claude-sonnet-5", "pages": 1, "done": 1}]
+
+
+def test_aufgabe_fehlt_ergibt_leere_liste(client, tmp_path, monkeypatch):
+    monkeypatch.setattr(config, "ANNOTATION_TASK_FILE", tmp_path / "task.json")
+
+    body = client.get("/api/annotation-task").json()
+
+    assert body["pages"] == []
+    assert body["title"] == ""
+
+
+def test_aufgabe_laesst_entdoppelte_seiten_weg(client, tmp_path, monkeypatch):
+    task_file = tmp_path / "task.json"
+    task_file.write_text(json.dumps({
+        "title": "Testkatalog", "created": "2026-09-03", "for": ["Kjell"],
+        "why": "Referenz", "pages": ["462828_p1", "462828_p99"],
+    }))
+    monkeypatch.setattr(config, "ANNOTATION_TASK_FILE", task_file)
+    _write_words("462828_p1")
+
+    body = client.get("/api/annotation-task").json()
+
+    assert body["pages"] == ["462828_p1"]
+    assert body["for"] == ["Kjell"]

@@ -14,6 +14,7 @@ import { groupGoldByCatalog } from "@/lib/catalogs"
 import { api } from "@/lib/api"
 import { cn } from "@/lib/utils"
 import { PageList } from "@/features/inspector/page-list"
+import { TaskBanner } from "@/features/annotate/task-banner"
 import { groupOf, removeGroup, startGroup, toggleRange } from "./grouping-editor"
 import { useOfferGrouping } from "./use-offer-grouping"
 
@@ -50,6 +51,7 @@ export function GroupPage() {
   const pages = useQuery({ queryKey: ["pages"], queryFn: () => api.pages() })
   const summaries = useQuery({ queryKey: ["offer-gold"], queryFn: api.offerGold })
   const status = useQuery({ queryKey: ["status"], queryFn: api.status })
+  const task = useQuery({ queryKey: ["annotation-task"], queryFn: api.annotationTask })
   const page = useQuery({
     queryKey: ["page", selected],
     queryFn: () => api.page(selected!),
@@ -64,6 +66,20 @@ export function GroupPage() {
   )
   const ids = useMemo(() => catalogPages.map((p) => p.page_id), [catalogPages])
   const idx = selected ? ids.indexOf(selected) : -1
+  const taskPages = useMemo(() => new Set(task.data?.pages ?? []), [task.data])
+  const taskCounts = useMemo(() => {
+    const counts = new Map<string, number>()
+    for (const id of taskPages) {
+      const c = id.split("_p")[0]
+      counts.set(c, (counts.get(c) ?? 0) + 1)
+    }
+    return counts
+  }, [taskPages])
+  const openTaskPage = (id: string) => {
+    setActive(-1)
+    setAnchor(null)
+    setSearchParams({ catalog: id.split("_p")[0], page: id })
+  }
 
   // PageList und die Kachelübersicht erwarten die Form von /api/gold.
   // num_offers statt num_spans ist der einzige Unterschied - umbenennen statt
@@ -157,11 +173,15 @@ export function GroupPage() {
             Clustering gemessen wird.
           </p>
         </div>
+        {task.data && (
+          <TaskBanner task={task.data} rows={summaries.data ?? []} unit="Seiten mit Angeboten" onOpen={openTaskPage} />
+        )}
         <CatalogGrid
           tiles={tiles}
           unit="fertig"
           onSelect={(id) => setSearchParams({ catalog: id })}
           emptyHint={EMPTY_HINT}
+          taskCounts={taskCounts}
         />
       </div>
     )
@@ -225,6 +245,10 @@ export function GroupPage() {
         </div>
       </div>
 
+      {task.data && taskCounts.has(catalog) && (
+        <TaskBanner task={task.data} rows={summaries.data ?? []} unit="Seiten mit Angeboten" onOpen={openTaskPage} />
+      )}
+
       <div className="grid min-w-0 gap-5 lg:grid-cols-[240px_minmax(0,1fr)_260px]">
         <PageList
           pages={catalogPages}
@@ -235,6 +259,7 @@ export function GroupPage() {
             setSearchParams({ catalog, page: id })
           }}
           goldStatus={goldRows}
+          taskPages={taskPages}
         />
 
         <div className="min-w-0 space-y-3">

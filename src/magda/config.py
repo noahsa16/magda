@@ -71,6 +71,9 @@ EXCLUDED_FILE = DATA_DIR / "excluded.json"
 # Handannotierte Referenz. Liegt bewusst außerhalb von data/ und wird
 # versioniert: generierte Artefakte sind reproduzierbar, Handarbeit nicht.
 GOLD_DIR = PROJECT_ROOT / "gold"
+# Welche Seiten als Nächstes von Hand annotiert werden sollen – die Liste,
+# die der Annotator hervorhebt. Versioniert, weil sie eine Teamabsprache ist.
+ANNOTATION_TASK_FILE = DATA_DIR / "annotation_task.json"
 # Katalog-Verzeichnis: gefundene Blätterkatalog-IDs. Versioniert wie gold/ –
 # eine ID lässt sich nicht reproduzieren, nur wiederfinden.
 CATALOGS_FILE = PROJECT_ROOT / "catalogs.json"
