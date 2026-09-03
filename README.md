@@ -12,11 +12,17 @@ Zwei Fragen stehen dahinter. Erstens: **Wie viel von dem, was ein LLM kann,
 passt in ein Modell, das man selbst betreibt?** Gemessen erreicht GBERT F1
 0.908 gegen die LLM-Labels, bei 0,264 statt 44,8 Sekunden je Seite — 109 Mio.
 Parameter, lokal auf CPU, ohne Netz und API-Kontingent. Zweitens: **Wie viel
-bringt Layout-Information?** LayoutXLM kennt die Position jedes Wortes, GBERT
-nur den Text; bisher liegt LayoutXLM 1,3 Punkte zurück.
+bringt Layout-Information?** Mit vier Armen getrennt gemessen (KW35): der
+Layout-Schritt `xlmr → lilt` bringt −0.0003 [−0.0063, +0.0058] — nichts, und
+das ist die präziseste Null des Projekts. Das *Seitenbild* bringt dagegen
++0.0096 [+0.0033, +0.0182]. Wortkoordinaten sagen, wo ein Wort steht, nicht wie
+es gesetzt ist.
 
 Grundlage ist das [Proposal](docs/proposal/IE_ProjectProposal_Magda.pdf), der
 Stand steht in [reports/](reports/).
+
+**Neu im Team?** [docs/onboarding.md](docs/onboarding.md) ist die kurze
+Einführung, gedacht zum Vorlegen an Claude Code.
 
 ## Setup
 
@@ -87,7 +93,7 @@ src/magda/     Kern-Package: die gesamte Logik, inklusive api.py
 frontend/      React-SPA (Vite, Tailwind, shadcn), liest data/ über die API
 tests/         pytest
 gold/          handannotierte Referenz – versioniert, weil nicht reproduzierbar
-data/          Arbeitsstände, gitignored
+data/          versioniert, außer data/raw und data/images (siehe Rohdaten)
 checkpoints/   trainierte Modelle, gitignored
 docs/          Proposal, RunPod-Anleitung, Ursprungs-Prototyp
 reports/       Wochenberichte
