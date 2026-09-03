@@ -90,11 +90,17 @@ GWDG-Vision-Modelle ab (Team-Entscheidung 02.09.2026, Budgetgründe statt
 `claude-sonnet-5` als Subagent, dazu weniger Zirkelschluss: Referenz und
 Blackbox laufen so nicht in derselben Modellfamilie):
 
-| Modell | F1 gegen Referenz | Fehler | s/Seite |
+| Modell | F1 gegen Teacher-Referenz | Fehler | s/Seite |
 |---|---:|---:|---:|
-| `gemma-4-31b-it` | 0.554 | 3/42 | 37.3 |
-| `qwen3.6-35b-a3b` | 0.541 | 0/42 | 6.8 |
-| `mistral-medium-3.5-128b` | 0.474 | 2/42 | 33.7 |
+| `gemma-4-31b-it` | 0.695 | 5/42 | 73.8 |
+| `qwen3.6-35b-a3b` | 0.666 | 0/42 | 8.0 |
+| `mistral-medium-3.5-128b` | 0.592 | 3/42 | 31.4 |
+
+(Eigene Pipeline, LayoutXLM + Paarmodell, gegen dieselbe Referenz: 0.811.
+Ein erster Lauf gegen eine `cluster_page`-Referenz ergab 0.554 / 0.541 /
+0.474 - die Aufschlüsselung, warum die Zahlen so weit auseinanderliegen,
+steht in `reports/woche-08.md`, nachrechenbar mit
+`scripts/blackbox_decompose.py`.)
 
 Qwen-Modelle denken vor der Antwort und verbrauchen dabei `max_tokens`
 (dieselbe Falle wie beim Labeling, siehe `labeling.py`); `blackbox.

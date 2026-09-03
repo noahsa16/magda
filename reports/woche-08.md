@@ -10,13 +10,16 @@ Paarmodell) ist zum ersten Mal auf dem vollen, eingefrorenen Testsplit
 gemessen, und der Endvergleich gegen die LLM-Blackbox ist gelaufen — gegen
 drei GWDG-Vision-Modelle (Qwen 3.6, Mistral medium 3.5, Gemma 4) statt
 gegen `claude-sonnet-5` als Subagent, aus Budgetgründen. Die eigene
-Pipeline (F1 0.839) liegt vor allen drei Blackbox-Modellen (F1 0.474 bis
-0.554), aber der Abstand ist kleiner als die rohen Zahlen zeigen — ein
-gemeinsamer Messfehler in Referenz und eigener Spalte drückt beide
-Blackbox-Zeilen künstlich. **Wichtigste Einschränkung, die für den ganzen
+Pipeline (LayoutXLM + Paarmodell, F1 0.811 gegen die Teacher-Gruppierung)
+liegt vor allen drei Blackbox-Modellen (F1 0.592 bis 0.695). Ein erster
+Durchlauf hatte 0.839 gegen 0.474–0.554 ergeben; die Differenz zwischen
+beiden Tabellen ist vollständig ein Messaufbau-Effekt und unten als
+2×2-Aufschlüsselung belegt. **Wichtigste Einschränkung, die für den ganzen
 Blackbox-Vergleich gilt: die Referenz ist selbst LLM-erzeugt
-(`claude-sonnet-5`), gemessen wird also Übereinstimmung, nicht Richtigkeit
-— eine Handprüfung steht noch aus.** Details unten.
+(`claude-sonnet-5`, Entities *und* Gruppierung), gemessen wird also
+Übereinstimmung, nicht Richtigkeit. Der Vorschlag am Ende dieses Berichts
+ist, den Testkatalog 1364390 einmal von Hand zu annotieren – ohne das ist
+keine der Zahlen hier eine Genauigkeit.** Details unten.
 
 | | Paar-F1 | Gruppen-F1 | Angebote |
 |---|---:|---:|---:|
@@ -114,37 +117,30 @@ Testseiten statt über eine 43er-Auswahl.
 Betroffen bleibt `magda blackbox-eval --pages
 data/eval/test_cluster_pages.txt`: Wer diesen Vergleich fährt, ohne die
 Datei vorher neu zu ziehen, misst auf Seiten, die nicht mehr Test sind.
-Neu ziehen heißt: `dataset.duplicate_clusters()` über `split.json["test"]`,
-ein Vertreter je Cluster (aktuell 42 statt 43 Cluster). Nicht ohne
-Rücksprache repariert, weil das Design des Blackbox-Vergleichs laut
-Woche 7 bewusst vertagt ist.
+Neu gezogen am 02.09.2026: `dataset.duplicate_clusters()` über
+`split.json["test"]`, ein Vertreter je Cluster, 42 statt 43 Zeilen — 38
+davon aus Katalog 1364390. Der Blackbox-Vergleich unten läuft über diese
+Datei.
 
 ## Der Blackbox-Vergleich ist gelaufen — gegen drei Modelle
 
 **Vorab die Einschränkung, die für die ganze Tabelle unten gilt und nicht
-verloren gehen darf: "Referenz" ist `data/labeled/sonnet-5/`, selbst von
-einem LLM erzeugt — sowohl die Entitäten (Schritt 03, `claude-sonnet-5`
-als Labeling-Modell) als auch die Gruppierung zu Angeboten
-(`data/offer_groups/claude-sonnet-5/`, Vision-Modell statt Handannotation,
-Teamentscheidung vom 06.08.2026, siehe CLAUDE.md).** Jede Zahl in diesem
-Abschnitt — eigene Pipeline *und* alle drei Blackbox-Modelle — misst also
-**Übereinstimmung mit `claude-sonnet-5`, nicht Richtigkeit gegen eine von
-Menschen geprüfte Referenz**. Dieselbe Einschränkung wie bei `magda
-agreement` und `magda offers-gold`, hier nur besonders folgenreich: Ein
-Modell, das denselben Fehler macht wie `claude-sonnet-5`, wird dafür
-belohnt; ein Modell, das es *richtiger* macht als die Referenz, wird dafür
-bestraft (belegter Fall an anderer Stelle im Projekt: die APP_PRICE-Messung
-vom 02.08.2026 — `magda eval` fand F1 0.234 bei Precision 1.000 und null
-echten Falsch-Negativen, weil das Modell jeden App-Preis fand, ihn aber
-teils "PRICE" statt "APP_PRICE" nannte wie die Referenz selbst uneinheitlich
-gelabelt hatte). Für eine echte Genauigkeitszahl bräuchte
-es eine Handprüfung — `gold/offers/` existiert als Format, ist aber für den
-Testsplit leer (dieselbe Teamentscheidung vom 06.08.: 30–50 Seiten von Hand
-zu gruppieren sprengt den Projektrahmen). Eine kleine Stichprobe der 42
-Testcluster-Seiten von Hand nachzuprüfen — z. B. durch Kjell oder Bogdan,
-damit nicht dieselbe Person prüft, die den Vergleich gebaut hat — wäre der
-naheliegende nächste Schritt, um diese Zahlen gegen echte Richtigkeit statt
-nur gegen ein weiteres LLM abzusichern. Nicht Teil dieses Laufs.
+verloren gehen darf: "Referenz" ist in beiden Stufen von `claude-sonnet-5`
+erzeugt — die Entitäten (`data/labeled/sonnet-5/`, Schritt 03) und die
+Gruppierung zu Angeboten (`data/offer_groups/claude-sonnet-5/`,
+Vision-Modell statt Handannotation, Teamentscheidung vom 06.08.2026).**
+Jede Zahl in diesem Abschnitt — eigene Pipeline *und* alle drei
+Blackbox-Modelle — misst also **Übereinstimmung mit `claude-sonnet-5`,
+nicht Richtigkeit gegen eine von Menschen geprüfte Referenz**. Dieselbe
+Einschränkung wie bei `magda agreement` und `magda offers-gold`, hier nur
+besonders folgenreich: Ein Modell, das denselben Fehler macht wie
+`claude-sonnet-5`, wird dafür belohnt; ein Modell, das es *richtiger* macht
+als die Referenz, wird dafür bestraft (belegter Fall an anderer Stelle im
+Projekt: die APP_PRICE-Messung vom 02.08.2026 — `magda eval` fand F1 0.234
+bei Precision 1.000 und null echten Falsch-Negativen, weil das Modell jeden
+App-Preis fand, ihn aber teils "PRICE" statt "APP_PRICE" nannte, wie die
+Referenz selbst uneinheitlich gelabelt hatte). Was daraus folgt, steht im
+Abschnitt *Handannotation des Testkatalogs* unten.
 
 Noch am selben Tag entschieden (Budgetgründe: ein Claude-Subagent als
 Blackbox hätte Sitzungskontingent statt GWDG-Kontingent gekostet) und
@@ -185,130 +181,160 @@ Mistral und Gemma reihenweise HTTP-429-Fehler aus (gemeinsames
 GWDG-Kontingent) — 13 bzw. 20 von 42 Seiten verworfen. Verworfen und
 sequenziell wiederholt.
 
-Lauf über die (neu gezogenen) 42 Testcluster-Vertreter, `--predictions
-layoutxlm`, jedes Modell einzeln, alle Zahlen aus den JSON-Reports
-nachgerechnet, nicht aus der Konsolenausgabe übernommen:
+### Ergebnis
+
+Lauf über die 42 Testcluster-Vertreter (38 davon aus Katalog 1364390),
+`--predictions layoutxlm --grouper pair-model --reference-groups teacher`,
+jedes Modell einzeln:
+
+```
+magda blackbox-eval --pages data/eval/test_cluster_pages.txt \
+    --predictions layoutxlm --grouper pair-model \
+    --reference-groups teacher --model <modell>
+```
 
 | | Treffer | System | Referenz | Präzision | Recall | **F1** | Fehler | s/Seite |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|
-| eigene Pipeline gegen Referenz | 222 | 264 | 265 | 0.841 | 0.838 | **0.839** | – | ~0,1¹ |
-| Qwen 3.6 (35B) gegen Referenz | 162 | 334 | 265 | 0.485 | 0.611 | **0.541** | 0/42 | 6.8 |
-| Gemma 4 (31B) gegen Referenz | 154 | 291 | 265 | 0.529 | 0.581 | **0.554** | 3/42 | 37.3² |
-| Mistral medium 3.5 gegen Referenz | 151 | 372 | 265 | 0.406 | 0.570 | **0.474** | 2/42 | 33.7² |
+| eigene Pipeline gegen Referenz | 219 | 253 | 287 | 0.866 | 0.763 | **0.811** | – | ~0,3¹ |
+| Gemma 4 (31B) gegen Referenz | 195 | 274 | 287 | 0.712 | 0.679 | **0.695** | 5/42 | 73.8² |
+| Qwen 3.6 (35B) gegen Referenz | 205 | 329 | 287 | 0.623 | 0.714 | **0.666** | 0/42 | 8.0 |
+| Mistral medium 3.5 gegen Referenz | 189 | 352 | 287 | 0.537 | 0.659 | **0.592** | 3/42 | 31.4² |
 
-¹ LayoutXLM-Inferenz (~0,1 s/Seite, siehe Testmessung oben) plus
-Gruppierung (0,002–0,003 s); die im Report stehende „eigene Pipeline"-Zeit
-zählt nur Letzteres und ist ohne diesen Zusatz nicht fair vergleichbar.
-² Inklusive Retry-Overhead auf den paar gescheiterten Seiten — die reine
-Inferenzzeit liegt darunter.
+¹ LayoutXLM-Inferenz (~0,1 s/Seite) plus Paarmodell mit ILP-Dekoder
+(0,2 s/Seite über die 42 Seiten). ² Inklusive Retry-Overhead auf den
+gescheiterten Seiten; die reine Inferenzzeit liegt darunter. Fehlerhafte
+Seiten fließen mit 0 Angeboten in `system` ein.
 
-Reports: `data/eval/blackbox_test_qwen3.6-35b-a3b.json`,
-`data/eval/blackbox_test_mistral-medium-3.5-128b.json`,
-`data/eval/blackbox_test_gemma-4-31b-it.json`. Fehlerhafte Seiten fließen
-mit 0 Angeboten in `system` ein (Recall-Verlust, kein Absturz des Laufs).
-
-**Wichtig für die Einordnung: "eigene Pipeline" ist hier nicht unser
-bestes System.** `blackbox_eval._deals_by_page` ruft `offers.cluster_page`
-auf - die geometrische Heuristik (Gruppen-F1 0.439 auf dem vollen
-Testsplit, siehe Testmessung oben) - **nicht** das trainierte Paarmodell
-mit Lexikblock (Gruppen-F1 0.778, derselbe Checkpoint, der oben neu
-trainiert wurde). Das CLI hat dafür keinen Schalter; die Anbindung ans
-Paarmodell existiert nur auf dem unmerged Branch `feat/offers-demo`
-(Worktree `../magda-demo`, `--grouper pair-model`, Stand 02.09.2026). Die
-0.839 der "eigenen Pipeline" gegen die Referenz sind
-also die **schwächere** unserer beiden Gruppierungsmethoden, nicht die
-0.932 (Paar-F1) des Paarmodells. Der reale Abstand zwischen unserem besten
-System und jeder Blackbox dürfte entsprechend **größer** sein, als diese
-Tabelle zeigt - eine Wiederholung mit dem Paarmodell als Grouper ist die
-naheliegende nächste Messung, sobald der Demo-Branch gemergt ist oder die
-Anbindung separat nachgezogen wird.
+Reports: `data/eval/blackbox_test_<modell>_pair-model_ref-teacher.json`.
+Die Blackbox-Antworten je Seite sind darin gespeichert (`blackbox_deals`);
+jede Zahl dieses Abschnitts lässt sich daraus ohne API-Aufruf nachrechnen.
 
 **Reihenfolge unter den drei Blackbox-Modellen:** Gemma vor Qwen vor
-Mistral — aber knapp (0.554/0.541/0.474), und alle drei liegen deutlich
-hinter der eigenen Pipeline (0.839). Mistral erzeugt mit Abstand die
-meisten Angebote (372 gegen 265 Referenz) und hat dadurch die schwächste
-Präzision; Gemma bleibt am nächsten an der Referenzmenge (291) und liefert
-keine einzige exakte Duplikat-Angebotszeile, dafür die meisten
-JSON-Syntaxfehler (3, alle nach drei Versuchen noch kaputt — ein
-Zuverlässigkeitsproblem, unabhängig von der Extraktionsqualität).
+Mistral, alle drei hinter der eigenen Pipeline. Mistral erzeugt mit
+Abstand die meisten Angebote (352 gegen 287 Referenz) und hat dadurch die
+schwächste Präzision; Gemma bleibt am nächsten an der Referenzmenge, hat
+aber die meisten JSON-Syntaxfehler (5 Seiten auch nach drei Versuchen
+kaputt — ein Zuverlässigkeitsproblem, unabhängig von der
+Extraktionsqualität). Qwen ist mit 8 s je Seite und null Fehlern das
+einzige Modell, das betrieblich unauffällig lief.
 
-**Der Vergleich ist insgesamt optimistischer zu lesen, als die Zahlen
-nahelegen — Stichprobe auf `1364390_p21` gezogen, Befund gilt für alle drei
-Modelle gleichermaßen:**
+### Warum die erste Tabelle nicht trägt: 2×2-Aufschlüsselung
 
-- Alle drei Blackboxen erzeugen systematisch mehr Angebote als die
-  Referenz und drücken damit ihre eigene Präzision. Ein Teil davon sind
-  aber keine Halluzinationen: Auf der Stichprobenseite fand die Blackbox
-  "Storck Nimm2 Soft/Sommer Hit" und "Axe Deo/Body wash" — beide Marken
-  sind in `data/labeled/sonnet-5/1364390_p21.json` korrekt als
-  `B-BRAND`/`B-PRODUCT` gelabelt, tauchen aber **weder in der Referenz
-  noch in der eigenen Pipeline** als Angebot auf. Grund: beide Spalten
-  bauen ihre Angebote über `offers.cluster_page` - dieselbe Heuristik, die
-  hier den Preis nicht zum Produkt gruppiert. Das ist exakt die
-  Einschränkung, vor der `blackbox_eval.py`s eigener Docstring warnt ("die
-  Zeile 'eigene gegen Referenz' vergleicht die Heuristik weitgehend mit
-  sich selbst") - hier wird sichtbar, dass sie auch jede Blackbox-Zeile
-  trifft, weil dieselbe Heuristik die Referenz *und* die eigene Spalte
-  bildet.
-- Vereinzelt falsch gelesene Preise (z. B. Sagrotan No Touch: 2.59 statt
-  2.49 bei Qwen) verfehlen bei `price_tolerance=0.0` einen sonst korrekten
-  Treffer vollständig.
-- Echte Qualitätsprobleme gibt es trotzdem, modellabhängig unterschiedlich
-  stark: Duplikat-Angebote (identischer Name und Preis auf derselben
-  Seite) bei Qwen 1,5 % (5/334), Mistral 2,7 % (10/372), Gemma 0 % — ein
-  Generierungsfehler, keine Referenzlücke.
-- Die Zeitangabe ist nicht direkt vergleichbar, siehe Fußnote ¹ oben: die
-  faire Zahl ist eher **Faktor ~70 (Qwen) bis ~370 (Mistral/Gemma inkl.
-  Retries)**, nicht der Faktor 3500+, den die rohen Sekundenwerte allein
-  suggerieren.
+Der erste Durchlauf (03.09. vormittags, Reports
+`data/eval/blackbox_test_<modell>.json`) lief mit zwei anderen
+Einstellungen: "eigene Pipeline" gruppierte mit der Heuristik
+`offers.cluster_page` statt mit dem Paarmodell, und "Referenz" waren
+ebenfalls `cluster_page`-Angebote, nur auf den Lehrer-Labels statt auf den
+LayoutXLM-Vorhersagen. Ergebnis damals: eigene Pipeline 0.839, Gemma
+0.554, Qwen 0.541, Mistral 0.474.
 
-**Ergebnis:** die eigene Pipeline liegt vor allen drei Blackbox-Modellen,
-über die ganze getestete Bandbreite (Qwen, Gemma, Mistral) konsistent -
-und das mit der schwächeren unserer beiden Gruppierungsmethoden
-(Heuristik statt Paarmodell, siehe oben). Der gemessene Abstand ist damit
-eher eine Untergrenze als eine genaue Zahl: ein spürbarer Teil der
-Blackbox-F1-Werte ist Messartefakt (gemeinsamer Flaschenhals
-`cluster_page`, strikte Preisgleichheit, eine Handvoll Duplikate) und
-zieht sie künstlich nach oben Richtung der eigenen Pipeline - gleichzeitig
-zieht das Fehlen des Paarmodells die eigene Pipeline künstlich nach unten.
-Beide Korrekturen zeigen in dieselbe Richtung: der wahre Abstand
-"bestes eigenes System vs. Blackbox" ist größer als 0.839 gegen
-0.474–0.554. Für den Kostenvergleich bleibt die Aussage unabhängig davon
-robust: 0,1 s gegen mehrere Sekunden je Seite bei niedrigerer Trefferquote
-UND geringerer Zuverlässigkeit (0 bis 3 von 42 Seiten scheitern ganz).
+Beide Einstellungen wurden für den zweiten Lauf gewechselt, und die
+Wirkung ist getrennt nachgerechnet — offline aus den gespeicherten
+Antworten, Skript im Repo (`scripts/blackbox_decompose.py`):
+
+| eigene Pipeline gegen Referenz | Heuristik-Referenz | Teacher-Referenz |
+|---|---:|---:|
+| Heuristik als Grouper | **0.839** (264/265) | 0.708 (264/287) |
+| Paarmodell als Grouper | 0.695 (253/265) | **0.811** (253/287) |
+
+*(F1, dahinter Angebote System/Referenz.)* Die 0.839 waren die Heuristik
+im Vergleich mit sich selbst: dieselbe Funktion bildete beide Seiten, nur
+aus leicht verschiedenen Entities. Nur den Grouper zu wechseln hätte das
+Paarmodell auf 0.695 fallen lassen, also *schlechter* als die Heuristik
+aussehen lassen — obwohl es auf dem vollen Testsplit Gruppen-F1 0.778
+gegen 0.439 erreicht (Testmessung oben). Gegen die tatsächliche
+Teacher-Gruppierung dreht sich das Bild: Paarmodell 0.811, Heuristik 0.708.
+Das ist genau die Warnung aus dem Docstring von `blackbox_eval.py`, und
+sie galt auch für jede Blackbox-Zeile, weil die Heuristik-Referenz 22
+Angebote weniger enthielt als der Teacher (265 gegen 287) — darunter
+Fälle wie "Storck Nimm2" und "Axe" auf `1364390_p21`, die alle drei
+Blackboxen fanden und die als Fehler zählten.
+
+| Blackbox gegen Referenz | Heuristik-Ref, Lauf 1 | Heuristik-Ref, Lauf 2 | Teacher-Ref, Lauf 1 | Teacher-Ref, Lauf 2 |
+|---|---:|---:|---:|---:|
+| Qwen 3.6 | 0.541 | 0.532 | 0.673 | 0.666 |
+| Mistral medium 3.5 | 0.474 | 0.483 | 0.592 | 0.592 |
+| Gemma 4 | 0.554 | 0.553 | 0.692 | 0.695 |
+
+Zwei Dinge lassen sich daran ablesen. Der Referenzwechsel hebt alle drei
+Blackboxen um 12 bis 14 Punkte, gleichmäßig. Und der zweite API-Lauf hat
+gegenüber dem ersten praktisch nichts geändert (±0.01) — die Antworten
+sind bei `temperature=0.2` stabil, und **der zweite Lauf war unnötig**:
+für den Referenzwechsel hätten die gespeicherten Antworten gereicht. Das
+gehört hierher, weil es Kontingent gekostet hat und weil der Wechsel der
+Referenz nicht vorher abgestimmt war; die Aufschlüsselung ist der
+Nachweis, dass er nötig war.
+
+**Was die Tabelle trotzdem nicht sagt:** Vereinzelt falsch gelesene
+Preise (Sagrotan No Touch: 2.59 statt 2.49 bei Qwen) verfehlen bei
+`price_tolerance=0.0` einen sonst korrekten Treffer vollständig. Duplikate
+(identischer Name und Preis auf derselben Seite) liegen bei Qwen 1,5 %,
+Mistral 2,7 %, Gemma 0 % — ein Generierungsfehler, keine Referenzlücke.
+Und 42 Seiten in 42 Clustern, kein Bootstrap: die Abstände zwischen den
+drei Blackboxen (0.592 bis 0.695) sind ohne Intervall, der Abstand zur
+eigenen Pipeline (0.811) ist der einzige, der auch bei grober Unsicherheit
+stehen bleibt.
+
+**Ergebnis:** die eigene Pipeline liegt mit ihrer besten Konfiguration
+(LayoutXLM + Paarmodell mit Lexikblock) vor allen drei Blackbox-Modellen,
+0.811 gegen 0.592–0.695, bei 0,3 s gegen 8 bis 74 s je Seite und ohne
+Ausfälle (Blackbox: 0 bis 5 von 42 Seiten). Die Aussage gilt unter der
+Einschränkung oben: Richter ist ein LLM, das dieselbe Prospektvorlage
+gesehen hat wie die Blackboxen.
+
+## Handannotation des Testkatalogs
+
+Alle Zahlen dieses Berichts messen Nähe zu `claude-sonnet-5`. Ob die
+eigene Pipeline *richtiger* ist als Gemma oder nur *ähnlicher zu Sonnet*,
+lässt sich aus ihnen nicht ablesen — und die Blackboxen sind gerade dort
+im Nachteil, wo sie von Sonnet abweichen, egal in welche Richtung. Die
+einzige Abhilfe ist eine handannotierte Referenz auf dem Testsplit, für
+Entities und Gruppierung.
+
+**Vorschlag: Katalog 1364390 komplett.** Er stellt 39 der 116 Testseiten
+und **38 der 42 Cluster-Vertreter**, über die der Blackbox-Vergleich läuft.
+Ein Prospekt von Hand deckt damit fast den ganzen Vergleich ab; die
+übrigen vier Vertreter (`1364393` ×2, `1364411`, `1364420`) sind
+Regionalvarianten, die sich bei Bedarf nachziehen lassen. Von den 39
+Seiten liegt heute keine in `gold/`.
+
+Die Werkzeuge existieren: `/annotate` im Frontend schreibt Spans nach
+`gold/<seite>.json`, `/group` schreibt Gruppen nach `gold/offers/`, beide
+mit `words_hash` gegen den Wortreihenfolge-Vertrag abgesichert. Gemessen
+wird danach ohne Codeänderung mit `magda gold` (Labels) und `magda
+offers-gold` (Gruppierung, Default-Referenz ist `gold/offers/`). Für den
+Blackbox-Vergleich fehlt ein `--reference-groups gold` in
+`blackbox_eval.py` — eine kleine Ergänzung, die erst lohnt, wenn die
+Referenz da ist.
+
+Zwei Regeln aus CLAUDE.md gelten dabei: annotiert wird aus dem Seitenbild,
+nicht durch Korrigieren der Sonnet-Ausgabe (sonst misst man das Ankern
+mit), und die Person sollte nicht dieselbe sein, die Pipeline und
+Vergleich gebaut hat — also Kjell oder Bogdan. Aufwand nach den drei
+Gold-Seiten von Noah geschätzt: 15 bis 25 Minuten je Seite für Spans und
+Gruppen zusammen, also ein bis zwei Arbeitstage für den Katalog. Das ist
+die Teamentscheidung vom 06.08. („30–50 Seiten von Hand sprengen den
+Rahmen") noch einmal aufgemacht, diesmal mit dem Argument, dass ohne sie
+der Endvergleich keine Genauigkeit berichten kann.
 
 ## Offen
 
-- **Handprüfung der Blackbox-Referenz.** Alle Zahlen im Blackbox-Vergleich
-  messen Übereinstimmung mit `claude-sonnet-5`, nicht Richtigkeit (siehe
-  Einschränkung oben). Eine Stichprobe der 42 Testcluster-Seiten von Hand
-  gegen die Blackbox-Ausgaben zu prüfen — durch jemanden, der den Vergleich
-  nicht selbst gebaut hat — ist die einzige Möglichkeit, "Übereinstimmung"
-  in "Genauigkeit" zu übersetzen.
-- **`blackbox_eval.py` an das Paarmodell statt an `offers.cluster_page`
-  anbinden.** Der Blackbox-Vergleich lief gegen unsere schwächere
-  Gruppierungsmethode; die Anbindung ans Paarmodell existiert bereits auf
-  `feat/offers-demo` (`--grouper pair-model`), ist aber nicht gemergt.
-  Ohne diese Wiederholung ist "eigene Pipeline" in diesem Report kein
-  belastbarer Bestwert.
+- **Handannotation von Katalog 1364390** (Vorschlag oben) — Entities und
+  Gruppierung, durch Kjell oder Bogdan. Danach `--reference-groups gold`
+  in `blackbox_eval.py` ergänzen und den Vergleich ohne API-Aufruf aus
+  den gespeicherten Antworten nachrechnen.
 - **Konfidenzintervall für die Testmessung.** `per_page` fehlt weiterhin im
   Report (offener Punkt aus Woche 7) — ohne die seitenweisen Zählungen ist
   0.778 eine Punktschätzung, kein Intervall. Dasselbe gilt für die drei
-  Blackbox-F1-Werte oben — 42 Seiten in 42 Clustern, kein Bootstrap
-  gerechnet.
+  Blackbox-F1-Werte — 42 Seiten in 42 Clustern, kein Bootstrap gerechnet.
 - **Die arithmetische Gegenprobe für die Blackbox-Spalte** ist mit
   `quantity`/`unit_price` im Schema vorbereitet, aber nicht verdrahtet -
   `blackbox_eval.compare_pages` kennt weiterhin nur `name`/`price`/
   `original_price`.
-- **`offers.cluster_page` als gemeinsamer Flaschenhals** von "Referenz" und
-  "eigene Pipeline" im Blackbox-Vergleich. Der Docstring von
-  `blackbox_eval.py` nennt `data/offer_groups/claude-sonnet-5/` (die
-  tatsächliche Teacher-Gruppierung statt der Heuristik) als Alternative -
-  das wäre ein zweiter Testlauf und damit eine bewusste Abweichung vom
-  „Testsplit einmal anfassen"-Grundsatz. Nicht ohne Rücksprache wiederholt.
-- **Gemmas JSON-Zuverlässigkeit** (3 von 42 Seiten auch nach drei Versuchen
-  syntaktisch kaputt) ist nicht weiter untersucht — offen, ob ein anderes
-  Response-Format (z. B. `response_format: json_object`, falls die GWDG-
-  Bereitstellung das unterstützt) das behebt.
+- **Gemmas JSON-Zuverlässigkeit** (5 von 42 Seiten auch nach drei Versuchen
+  syntaktisch kaputt, alle in Katalog 1364390/1364393) ist nicht weiter
+  untersucht — offen, ob ein anderes Response-Format (z. B.
+  `response_format: json_object`, falls die GWDG-Bereitstellung das
+  unterstützt) das behebt.
 - **Über den Anker entscheiden** (ersetzt durch den Lexikblock, schadet in
   Kombination) — unverändert offen aus Woche 7.
