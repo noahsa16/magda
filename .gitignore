@@ -26,6 +26,18 @@ data/raw/**
 data/images/**
 !data/images/.gitkeep
 
+# Eine Ausnahme, bewusst und eng: die 43 Seiten der Handannotation
+# (docs/annotation-task.md, data/annotation_task.json). Ohne sie zeigt der
+# Annotator leere Seiten, und das Drive-Archiv laedt niemand fuer 43 von 668
+# Bildern herunter. 89 MB gegen den Preis, dass die Aufgabe ohne Nachfrage
+# laeuft. Unveraendert abgelegt, nicht verkleinert: offer_pairs.load_pixels
+# liest dieselben Dateien, verkleinerte ergaeben andere Farbmerkmale.
+!data/images/1364390_p*.png
+!data/images/1364393_p15.png
+!data/images/1364393_p25.png
+!data/images/1364411_p9.png
+!data/images/1364420_p8.png
+
 # Demo-Uploads: fremde PDFs plus Ergebnis-JSON/Seitenbilder unter einer
 # server-vergebenen ID (magda.uploads). Reproduzierbar aus dem Nutzer-Input,
 # nichts, was das Team teilen muesste - anders als data/words/ und data/labeled/.
