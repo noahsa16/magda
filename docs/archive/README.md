@@ -62,11 +62,38 @@ neue Woche als fehlend.
 Gar nicht herunterladen: neu rendern.
 
 ```bash
-magda extract
+magda extract --render-missing
 ```
 
-Der Schritt überspringt, was schon in `data/words/` steht, und schreibt die
-fehlenden PNGs nach `data/images/`. Er braucht dafür `data/raw/`, also das
-Archiv. Wer nur GBERT trainiert oder auswertet, braucht die Bilder überhaupt
-nicht – nur LayoutXLM (visueller Backbone) und der Annotator im Frontend
-greifen darauf zu.
+Der Schritt schreibt die fehlenden PNGs nach `data/images/` und lässt
+`data/words/` unangetastet. Er braucht dafür `data/raw/`, also das Archiv. Wer
+nur GBERT trainiert oder auswertet, braucht die Bilder überhaupt nicht – nur
+LayoutXLM (visueller Backbone) und der Annotator im Frontend greifen darauf zu.
+
+**Hier stand bis zum 03.09.2026 `magda extract` ohne Option, und das war
+falsch.** Der normale Lauf überspringt eine Seite an ihrer vorhandenen
+Wortdatei, *bevor* er das Bild rendert (`cli/extract.py`) – und `data/words/`
+ist versioniert. In einem frischen Klon entstand damit kein einziges Bild, bei
+der Erfolgsmeldung „0 Seiten verarbeitet, 666 schon vorhanden". Der Fehler war
+still: die Anleitung lief durch, der Annotator zeigte danach leere Seiten. Das
+ist die Kehrseite von „`data/images` ist eine Ableitung" – die Ableitung stimmt
+nur, solange der ableitende Schritt sie auch wirklich herstellt.
+
+## Die eine Ausnahme im Repo
+
+43 Seitenbilder liegen doch in git: die Seiten der Handannotation
+(`docs/annotation-task.md`), also der Testkatalog 1364390 plus die vier
+übrigen Cluster-Vertreter. 89 MB, und sie widersprechen der Tabelle oben mit
+Absicht. Der Grund ist der Adressat: Wer nur annotiert, sollte nicht erst ein
+1,1-GB-Archiv aus Drive holen, ein Manifest prüfen und einen Renderschritt
+laufen lassen, um 43 von 668 Bildern zu bekommen. `git clone` und `magda serve
+--frontend` reichen jetzt.
+
+Abgelegt sind sie **byte-identisch zum lokalen Stand, nicht verkleinert**.
+`offer_pairs.load_pixels` liest dieselben Dateien für die Farbmerkmale;
+verkleinerte Bilder ergäben auf einem anderen Rechner andere Merkmalswerte und
+damit stillschweigend andere Zahlen.
+
+Die Ausnahme steht als Positivliste in `.gitignore` und gilt nur für diese
+Seiten. Sie ist kein Präzedenzfall für die nächste Erntewoche: bei ~440 MB je
+Woche wäre das genau der Weg, den die Auslagerung beenden sollte.
