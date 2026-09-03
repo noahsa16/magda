@@ -84,17 +84,45 @@ Der Prompt in `magda.blackbox._EXTRACT_PROMPT`:
 ## Modellwahl
 
 Läuft standardmäßig gegen `config.CHAT_AI_VISION_MODEL`
-(`mistral-medium-3.5-128b`), per `--model` überschreibbar. Der erste
-Vergleichslauf (siehe `reports/woche-08.md`) verwendet stattdessen
-`qwen3.6-35b-a3b` (Team-Entscheidung 02.09.2026) - Budgetgründe, dazu
-weniger Zirkelschluss: die Referenz (`claude-sonnet-5`) und die Blackbox
-laufen dann nicht in derselben Modellfamilie.
+(`mistral-medium-3.5-128b`), per `--model` überschreibbar. Der
+Vergleichslauf vom 02.–03.09.2026 (siehe `reports/woche-08.md`) deckt drei
+GWDG-Vision-Modelle ab (Team-Entscheidung 02.09.2026, Budgetgründe statt
+`claude-sonnet-5` als Subagent, dazu weniger Zirkelschluss: Referenz und
+Blackbox laufen so nicht in derselben Modellfamilie):
+
+| Modell | F1 gegen Referenz | Fehler | s/Seite |
+|---|---:|---:|---:|
+| `gemma-4-31b-it` | 0.554 | 3/42 | 37.3 |
+| `qwen3.6-35b-a3b` | 0.541 | 0/42 | 6.8 |
+| `mistral-medium-3.5-128b` | 0.474 | 2/42 | 33.7 |
 
 Qwen-Modelle denken vor der Antwort und verbrauchen dabei `max_tokens`
 (dieselbe Falle wie beim Labeling, siehe `labeling.py`); `blackbox.
 extract_deals_from_page` schaltet das serverseitig ab
 (`chat_template_kwargs.enable_thinking=False`) und fällt bei Modellen, die
 den Schalter ablehnen (Mistral: HTTP 400), automatisch zurück.
+
+**Zwei modellspezifische Fallen, gefunden beim ersten Durchlauf:**
+
+- `gemma-4-31b-it` sieht das Bild nicht, wenn der Text vor dem Bild in der
+  Nachricht steht ("du hast mir noch kein Bild geschickt", reproduzierbar
+  mit und ohne `enable_thinking`). Der Prompt-Aufbau in `extract_deals_
+  from_page` schickt das Bild deshalb zuerst, den Text danach - für
+  Mistral und Qwen folgenlos.
+- `max_tokens=4096` reichte bei Seiten mit vielen kleinen Angeboten nicht
+  (Mistral: 7 von 42 Seiten abgeschnitten). Auf 8192 angehoben, dazu
+  wiederholt `extract_deals_from_page_with_retry` jetzt auch bei
+  abgeschnittener/kaputter JSON-Antwort (nicht nur bei Netzwerkfehlern) -
+  bei `temperature=0.2` ist das Abschneiden eine gelegentliche
+  Wiederholungsschleife, kein stabiler Fehler; ein zweiter Versuch liefert
+  reproduzierbar vollständiges JSON.
+
+**Drittens, betrieblich statt inhaltlich:** die drei Modelle nicht
+parallel laufen lassen. Gleichzeitig ausgeführt teilen sie sich
+offenbar ein GWDG-Kontingent - ein Testlauf mit allen dreien im selben
+Moment löste bei Mistral und Gemma reihenweise HTTP-429-Fehler aus (13
+bzw. 20 von 42 Seiten). Sequenziell gefahren treten praktisch keine
+Rate-Limits mehr auf.
 
 ## Offen
 

@@ -1,15 +1,19 @@
 # Woche 8 — Erste Testmessung der Gruppierungskette
 
-Stand: 02.09.2026
+Stand: 02.–03.09.2026
 
 ## Kurzfassung
 
 Drei offene Punkte aus Woche 7 sind erledigt: der Lexikblock ist jetzt der
 produktive Checkpoint, die Gruppierungskette (LayoutXLM-Entities plus
 Paarmodell) ist zum ersten Mal auf dem vollen, eingefrorenen Testsplit
-gemessen, und der Endvergleich gegen die LLM-Blackbox ist gelaufen (gegen
-`qwen3.6-35b-a3b` statt gegen `claude-sonnet-5` als Subagent, aus
-Budgetgründen).
+gemessen, und der Endvergleich gegen die LLM-Blackbox ist gelaufen — gegen
+drei GWDG-Vision-Modelle (Qwen 3.6, Mistral medium 3.5, Gemma 4) statt
+gegen `claude-sonnet-5` als Subagent, aus Budgetgründen. Die eigene
+Pipeline (F1 0.839) liegt vor allen drei Blackbox-Modellen (F1 0.474 bis
+0.554), aber der Abstand ist kleiner als die rohen Zahlen zeigen — ein
+gemeinsamer Messfehler in Referenz und eigener Spalte drückt beide
+Blackbox-Zeilen künstlich. Details unten.
 
 | | Paar-F1 | Gruppen-F1 | Angebote |
 |---|---:|---:|---:|
@@ -112,14 +116,15 @@ ein Vertreter je Cluster (aktuell 42 statt 43 Cluster). Nicht ohne
 Rücksprache repariert, weil das Design des Blackbox-Vergleichs laut
 Woche 7 bewusst vertagt ist.
 
-## Der Blackbox-Vergleich ist gelaufen
+## Der Blackbox-Vergleich ist gelaufen — gegen drei Modelle
 
 Noch am selben Tag entschieden (Budgetgründe: ein Claude-Subagent als
 Blackbox hätte Sitzungskontingent statt GWDG-Kontingent gekostet) und
-ausgeführt: `magda blackbox-eval` gegen `qwen3.6-35b-a3b`, nicht gegen
-`claude-sonnet-5` als Subagent wie am 29.08. geplant. Nebeneffekt: Referenz
-(`claude-sonnet-5`) und Blackbox laufen dadurch nicht mehr in derselben
-Modellfamilie — weniger Zirkelschluss als ursprünglich vorgesehen.
+ausgeführt: `magda blackbox-eval` gegen drei GWDG-Vision-Modelle statt
+gegen `claude-sonnet-5` als Subagent wie am 29.08. geplant. Nebeneffekt:
+Referenz (`claude-sonnet-5`) und Blackbox laufen dadurch nicht mehr in
+derselben Modellfamilie — weniger Zirkelschluss als ursprünglich
+vorgesehen.
 
 Der alte Extraktions-Prompt (`name`/`price`/`original_price`/`discount_pct`/
 `period`, aus dem Vorgängerprojekt) kannte weder `quantity` noch
@@ -129,57 +134,106 @@ Gruppierungs-Teacher angelehnt, Version 1 in
 `docs/blackbox-extraction-prompt.md`. Die Gegenprobe selbst ist damit
 vorbereitet, aber nicht verdrahtet — offen, siehe unten.
 
+**Zwei Fehler sind beim ersten Durchlauf aufgefallen und behoben, bevor die
+hier berichteten Zahlen entstanden:**
+
+1. `gemma-4-31b-it` antwortete bei Text-vor-Bild mit "du hast mir noch kein
+   Bild geschickt" — das Modell verarbeitete das Bild schlicht nicht, mit
+   und ohne `enable_thinking`-Schalter reproduzierbar. Behoben durch
+   Bild-vor-Text in der Nachricht; Mistral und Qwen verarbeiten beide
+   Reihenfolgen gleich, die Änderung ist für sie folgenlos.
+2. `max_tokens=4096` war für Seiten mit vielen kleinen Angeboten (v. a.
+   Non-Food/Deko) zu knapp — 7 von 42 Seiten brachen bei Mistral
+   mittendrin ab. Auf 8192 angehoben; zusätzlich wiederholt
+   `extract_deals_from_page_with_retry` jetzt auch abgeschnittene/kaputte
+   JSON-Antworten (nicht nur Netzwerkfehler wie beim Labeling), weil bei
+   `temperature=0.2` derselbe Aufruf beim zweiten Versuch reproduzierbar
+   vollständiges JSON lieferte — das Abschneiden ist eine gelegentliche
+   Wiederholungsschleife, kein stabiler Fehler.
+
+Dazu eine dritte, betriebliche Lehre: **die drei Modelle nicht parallel
+laufen lassen.** Ein erster Versuch mit allen drei gleichzeitig löste bei
+Mistral und Gemma reihenweise HTTP-429-Fehler aus (gemeinsames
+GWDG-Kontingent) — 13 bzw. 20 von 42 Seiten verworfen. Verworfen und
+sequenziell wiederholt.
+
 Lauf über die (neu gezogenen) 42 Testcluster-Vertreter, `--predictions
-layoutxlm`:
+layoutxlm`, jedes Modell einzeln, alle Zahlen aus den JSON-Reports
+nachgerechnet, nicht aus der Konsolenausgabe übernommen:
 
-| Vergleich | Treffer | System | Referenz | Präzision | Recall | F1 |
-|---|---:|---:|---:|---:|---:|---:|
-| eigene Pipeline gegen Referenz | 222 | 264 | 265 | 0.841 | 0.838 | **0.839** |
-| Blackbox gegen Referenz | 165 | 338 | 265 | 0.488 | 0.623 | **0.547** |
-| Blackbox gegen eigene Pipeline | 183 | 338 | 264 | 0.541 | 0.693 | 0.608 |
+| | Treffer | System | Referenz | Präzision | Recall | **F1** | Fehler | s/Seite |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| eigene Pipeline gegen Referenz | 222 | 264 | 265 | 0.841 | 0.838 | **0.839** | – | ~0,1¹ |
+| Qwen 3.6 (35B) gegen Referenz | 162 | 334 | 265 | 0.485 | 0.611 | **0.541** | 0/42 | 6.8 |
+| Gemma 4 (31B) gegen Referenz | 154 | 291 | 265 | 0.529 | 0.581 | **0.554** | 3/42 | 37.3² |
+| Mistral medium 3.5 gegen Referenz | 151 | 372 | 265 | 0.406 | 0.570 | **0.474** | 2/42 | 33.7² |
 
-Report: `data/eval/blackbox_test.json`. Keine Fehler über die 42 Seiten
-(zwei Seiten mit 0 Angeboten sind korrekt — eine Titelseite, eine reine
-App-Werbeseite, Referenz stimmt dort ebenfalls auf 0).
+¹ LayoutXLM-Inferenz (~0,1 s/Seite, siehe Testmessung oben) plus
+Gruppierung (0,002–0,003 s); die im Report stehende „eigene Pipeline"-Zeit
+zählt nur Letzteres und ist ohne diesen Zusatz nicht fair vergleichbar.
+² Inklusive Retry-Overhead auf den paar gescheiterten Seiten — die reine
+Inferenzzeit liegt darunter.
 
-**Der Vergleich ist optimistischer zu lesen, als die 0.547 nahelegen —
-Stichprobe auf `1364390_p21` gezogen:**
+Reports: `data/eval/blackbox_test_qwen3.6-35b-a3b.json`,
+`data/eval/blackbox_test_mistral-medium-3.5-128b.json`,
+`data/eval/blackbox_test_gemma-4-31b-it.json`. Fehlerhafte Seiten fließen
+mit 0 Angeboten in `system` ein (Recall-Verlust, kein Absturz des Laufs).
 
-- Die Blackbox erzeugt systematisch mehr Angebote (338 gegen 265) und
-  drückt damit ihre eigene Präzision. Ein Teil davon sind aber keine
-  Hallucinationen: Auf der Stichprobenseite fand sie "Storck Nimm2 Soft/
-  Sommer Hit" und "Axe Deo/Body wash" — beide Marken sind in
-  `data/labeled/sonnet-5/1364390_p21.json` korrekt als `B-BRAND`/
-  `B-PRODUCT` gelabelt, tauchen aber **weder in der Referenz noch in der
-  eigenen Pipeline** als Angebot auf. Grund: beide Spalten bauen ihre
-  Angebote über `offers.cluster_page` - dieselbe Heuristik, die hier den
-  Preis nicht zum Produkt gruppiert. Das ist exakt die Einschränkung, vor
-  der `blackbox_eval.py`s eigener Docstring warnt ("die Zeile 'eigene gegen
-  Referenz' vergleicht die Heuristik weitgehend mit sich selbst") - hier
-  wird sichtbar, dass sie auch die Blackbox-Zeile trifft, weil dieselbe
-  Heuristik die Referenz *und* die eigene Spalte bildet.
-- Ein Preis wurde falsch gelesen (Sagrotan No Touch: 2.59 statt 2.49) -
-  bei `price_tolerance=0.0` reicht das, um einen sonst korrekten Treffer
-  zu verfehlen.
-- Echte Qualitätsprobleme gibt es trotzdem: 8 von 338 Angeboten (2,4 %,
-  6 von 42 Seiten) sind exakte Duplikate derselben Seite - ein
+**Reihenfolge unter den drei Blackbox-Modellen:** Gemma vor Qwen vor
+Mistral — aber knapp (0.554/0.541/0.474), und alle drei liegen deutlich
+hinter der eigenen Pipeline (0.839). Mistral erzeugt mit Abstand die
+meisten Angebote (372 gegen 265 Referenz) und hat dadurch die schwächste
+Präzision; Gemma bleibt am nächsten an der Referenzmenge (291) und liefert
+keine einzige exakte Duplikat-Angebotszeile, dafür die meisten
+JSON-Syntaxfehler (3, alle nach drei Versuchen noch kaputt — ein
+Zuverlässigkeitsproblem, unabhängig von der Extraktionsqualität).
+
+**Der Vergleich ist insgesamt optimistischer zu lesen, als die Zahlen
+nahelegen — Stichprobe auf `1364390_p21` gezogen, Befund gilt für alle drei
+Modelle gleichermaßen:**
+
+- Alle drei Blackboxen erzeugen systematisch mehr Angebote als die
+  Referenz und drücken damit ihre eigene Präzision. Ein Teil davon sind
+  aber keine Halluzinationen: Auf der Stichprobenseite fand die Blackbox
+  "Storck Nimm2 Soft/Sommer Hit" und "Axe Deo/Body wash" — beide Marken
+  sind in `data/labeled/sonnet-5/1364390_p21.json` korrekt als
+  `B-BRAND`/`B-PRODUCT` gelabelt, tauchen aber **weder in der Referenz
+  noch in der eigenen Pipeline** als Angebot auf. Grund: beide Spalten
+  bauen ihre Angebote über `offers.cluster_page` - dieselbe Heuristik, die
+  hier den Preis nicht zum Produkt gruppiert. Das ist exakt die
+  Einschränkung, vor der `blackbox_eval.py`s eigener Docstring warnt ("die
+  Zeile 'eigene gegen Referenz' vergleicht die Heuristik weitgehend mit
+  sich selbst") - hier wird sichtbar, dass sie auch jede Blackbox-Zeile
+  trifft, weil dieselbe Heuristik die Referenz *und* die eigene Spalte
+  bildet.
+- Vereinzelt falsch gelesene Preise (z. B. Sagrotan No Touch: 2.59 statt
+  2.49 bei Qwen) verfehlen bei `price_tolerance=0.0` einen sonst korrekten
+  Treffer vollständig.
+- Echte Qualitätsprobleme gibt es trotzdem, modellabhängig unterschiedlich
+  stark: Duplikat-Angebote (identischer Name und Preis auf derselben
+  Seite) bei Qwen 1,5 % (5/334), Mistral 2,7 % (10/372), Gemma 0 % — ein
   Generierungsfehler, keine Referenzlücke.
-- Die Zeitangabe ist nicht direkt vergleichbar: "eigene Pipeline 0,002 s"
-  zählt nur die Gruppierung, nicht LayoutXLMs Modellinferenz (die liegt
-  bei rund 0,1 s/Seite, siehe Testmessung oben). Die faire Zahl ist eher
-  **0,1 s gegen 7,0 s je Seite (Faktor ~70)**, nicht der Faktor 3500, den
-  die rohen Zahlen im Report suggerieren.
+- Die Zeitangabe ist nicht direkt vergleichbar, siehe Fußnote ¹ oben: die
+  faire Zahl ist eher **Faktor ~70 (Qwen) bis ~370 (Mistral/Gemma inkl.
+  Retries)**, nicht der Faktor 3500+, den die rohen Sekundenwerte allein
+  suggerieren.
 
-**Ergebnis unverändert:** die eigene Pipeline liegt vor der Blackbox. Aber
-der Abstand ist kleiner, als F1 0.839 gegen 0.547 zeigt - ein spürbarer Teil
-der 0.547 ist Messartefakt (gemeinsamer Flaschenhals `cluster_page`, strikte
-Preisgleichheit, eine Handvoll Duplikate), kein Qualitätsunterschied.
+**Ergebnis:** die eigene Pipeline liegt vor allen drei Blackbox-Modellen,
+über die ganze getestete Bandbreite (Qwen, Gemma, Mistral) konsistent.
+Aber der Abstand ist kleiner, als die rohen F1-Werte zeigen - ein
+spürbarer Teil davon ist Messartefakt (gemeinsamer Flaschenhals
+`cluster_page`, strikte Preisgleichheit, eine Handvoll Duplikate), kein
+reiner Qualitätsunterschied. Für den Kostenvergleich bleibt die Aussage
+robust: 0,1 s gegen mehrere Sekunden je Seite bei niedrigerer Trefferquote
+UND geringerer Zuverlässigkeit (0 bis 3 von 42 Seiten scheitern ganz).
 
 ## Offen
 
 - **Konfidenzintervall für die Testmessung.** `per_page` fehlt weiterhin im
   Report (offener Punkt aus Woche 7) — ohne die seitenweisen Zählungen ist
-  0.778 eine Punktschätzung, kein Intervall.
+  0.778 eine Punktschätzung, kein Intervall. Dasselbe gilt für die drei
+  Blackbox-F1-Werte oben — 42 Seiten in 42 Clustern, kein Bootstrap
+  gerechnet.
 - **Die arithmetische Gegenprobe für die Blackbox-Spalte** ist mit
   `quantity`/`unit_price` im Schema vorbereitet, aber nicht verdrahtet -
   `blackbox_eval.compare_pages` kennt weiterhin nur `name`/`price`/
@@ -190,5 +244,9 @@ Preisgleichheit, eine Handvoll Duplikate), kein Qualitätsunterschied.
   tatsächliche Teacher-Gruppierung statt der Heuristik) als Alternative -
   das wäre ein zweiter Testlauf und damit eine bewusste Abweichung vom
   „Testsplit einmal anfassen"-Grundsatz. Nicht ohne Rücksprache wiederholt.
+- **Gemmas JSON-Zuverlässigkeit** (3 von 42 Seiten auch nach drei Versuchen
+  syntaktisch kaputt) ist nicht weiter untersucht — offen, ob ein anderes
+  Response-Format (z. B. `response_format: json_object`, falls die GWDG-
+  Bereitstellung das unterstützt) das behebt.
 - **Über den Anker entscheiden** (ersetzt durch den Lexikblock, schadet in
   Kombination) — unverändert offen aus Woche 7.
