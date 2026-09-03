@@ -86,12 +86,18 @@ Fortschritt.
 
 ## Abgeben
 
-`gold/` ist versioniert. Am Ende:
+`gold/` ist versioniert. Am Ende – auf einem eigenen Branch, nie direkt auf
+`development` oder `main`:
 
 ```bash
+git switch -c data/gold-1364390
 git add gold/ && git commit -m "data(gold): annotate catalog 1364390 by hand"
-git push
+git push -u origin data/gold-1364390
 ```
+
+Danach auf GitHub einen Pull Request nach `development` aufmachen. Zwischendrin
+committen ist ausdrücklich erwünscht: 43 Seiten sind mehrere Sitzungen, und ein
+Zwischenstand im Branch ist sicherer als 43 ungespeicherte Seiten.
 
 Oder die Dateien unter `gold/1364390_*.json` und `gold/offers/1364390_*.json`
 schicken. Gemessen wird danach mit `magda gold` (Labels) und `magda
