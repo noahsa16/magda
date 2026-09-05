@@ -302,10 +302,36 @@ Die Werkzeuge existieren: `/annotate` im Frontend schreibt Spans nach
 `gold/<seite>.json`, `/group` schreibt Gruppen nach `gold/offers/`, beide
 mit `words_hash` gegen den Wortreihenfolge-Vertrag abgesichert. Gemessen
 wird danach ohne Codeänderung mit `magda gold` (Labels) und `magda
-offers-gold` (Gruppierung, Default-Referenz ist `gold/offers/`). Für den
-Blackbox-Vergleich fehlt ein `--reference-groups gold` in
-`blackbox_eval.py` — eine kleine Ergänzung, die erst lohnt, wenn die
-Referenz da ist.
+offers-gold` (Gruppierung, Default-Referenz ist `gold/offers/`).
+
+**Für den Blackbox-Vergleich ist die Verdrahtung seit dem 05.09.2026 da**
+(`magda blackbox-eval --reference-groups gold`, Commit 96810f6). Zwei
+Entscheidungen darin, die man leicht anders und falsch gebaut hätte:
+
+- Die Entities der Referenz kommen aus den Gold-*Spans*, nicht aus den
+  Sonnet-Labels. Handgruppen über LLM-Entities wären ein Zwitter, und die
+  Zeile „gegen Referenz" misst dann wieder teilweise den Lehrer.
+- Eine Seite zählt nur, wenn Spans *und* Gruppen `status: done` tragen.
+  Fehlt eine Hälfte, fällt die Seite aus der Messung und steht im Report
+  unter `gold_missing`. Als leere Referenz mitgezählt hieße sie „alles
+  falsch" statt „nicht gemessen".
+
+Dazu `--blackbox-from <report.json>`: die gespeicherten `blackbox_deals`
+werden wiederverwendet statt die API zu rufen. Der zweite Lauf vom 03.09.
+hat gezeigt, dass die Antworten bei Temperatur 0.2 auf ±0.01 stabil sind;
+ein dritter Lauf für den Referenzwechsel wäre Kontingent ohne Erkenntnis.
+Der Aufruf, sobald die Annotation steht:
+
+```bash
+magda blackbox-eval --pages data/eval/test_cluster_pages.txt --reference-groups gold \
+    --predictions layoutxlm --grouper pair-model \
+    --blackbox-from data/eval/blackbox_test_gemma-4-31b-it_pair-model_ref-teacher.json
+```
+
+Der Report landet unter `data/eval/blackbox_test_<modell>_pair-model_ref-gold.json`
+mit `reference_is_llm: false`, die erste Blackbox-Zahl des Projekts, die
+Richtigkeit misst. Stand 05.09.2026: null Seiten von 1364390 in `gold/`,
+der Befehl bricht mit „Nichts zu messen" ab.
 
 Zwei Regeln aus CLAUDE.md gelten dabei: annotiert wird aus dem Seitenbild,
 nicht durch Korrigieren der Sonnet-Ausgabe (sonst misst man das Ankern
@@ -320,9 +346,9 @@ der Endvergleich keine Genauigkeit berichten kann.
 ## Offen
 
 - **Handannotation von Katalog 1364390** (Vorschlag oben) — Entities und
-  Gruppierung, durch Kjell oder Bogdan. Danach `--reference-groups gold`
-  in `blackbox_eval.py` ergänzen und den Vergleich ohne API-Aufruf aus
-  den gespeicherten Antworten nachrechnen.
+  Gruppierung, durch Kjell oder Bogdan. Die Messung danach ist verdrahtet
+  (`--reference-groups gold --blackbox-from …`, siehe oben) und braucht
+  keinen API-Aufruf mehr; offen ist allein die Annotation.
 - **Konfidenzintervall für die Testmessung.** `per_page` fehlt weiterhin im
   Report (offener Punkt aus Woche 7) — ohne die seitenweisen Zählungen ist
   0.778 eine Punktschätzung, kein Intervall. Dasselbe gilt für die drei
