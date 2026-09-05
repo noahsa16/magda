@@ -112,6 +112,10 @@ magda offers-model eval --labels-from sonnet-5         # gegen Lehrer und Arithm
 magda offers-probe --encoder lilt   # bringt ein Span-Embedding dem Paarmodell etwas?
 magda offers-sequence               # fasst eine flache OFFER-Folge das Angebot?
 magda blackbox-eval --pages <liste> --dry-run   # LLM-Blackbox gegen die eigene Pipeline
+magda blackbox-eval --pages data/eval/test_cluster_pages.txt --reference-groups gold \
+    --predictions layoutxlm --grouper pair-model \
+    --blackbox-from data/eval/blackbox_test_gemma-4-31b-it_pair-model_ref-teacher.json
+                                    # dieselben Blackbox-Antworten gegen die Handannotation, ohne API
 magda bundle --labels-from sonnet-5 # Trainingspaket für eine fremde GPU
 magda prune-checkpoints             # was checkpoint-N belegt (--apply löscht)
 magda serve --frontend              # API (8000) und Oberfläche (5173)
