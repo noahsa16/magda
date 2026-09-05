@@ -40,7 +40,16 @@ erreicht. Gegen die Teacher-Gruppierung (`--reference-groups teacher`)
 dreht sich das Bild: 0.811 gegen 0.708. Wer den Grouper wechselt, muss die
 Referenz mitwechseln, sonst misst er die Selbstaehnlichkeit der Heuristik.
 Die Blackbox-Antworten liegen als `blackbox_deals` im Report; ein Wechsel
-von Grouper oder Referenz braucht deshalb keinen neuen API-Lauf.
+von Grouper oder Referenz braucht deshalb keinen neuen API-Lauf -
+`--blackbox-from <report.json>` liest sie wieder ein, statt die API zu rufen.
+
+`--reference-groups gold` ist die einzige Einstellung, bei der die ersten
+beiden Zeilen **Richtigkeit** messen statt Naehe zum Lehrer: Entities aus
+den handannotierten Spans in `gold/`, Angebote aus `gold/offers/`. Beides
+muss fuer eine Seite `status: done` tragen, sonst wird sie nicht gemessen -
+eine halb annotierte Seite als leere Referenz zu werten hiesse "alles
+falsch" statt "nicht gemessen". Die Seitenliste schrumpft dabei auf die
+fertig annotierten Seiten, und der Report nennt, welche fehlen.
 """
 
 from __future__ import annotations
@@ -130,6 +139,40 @@ def _teacher_deals_by_page(pages: list[dict], reference_from: str) -> dict[str, 
     return result
 
 
+def _gold_deals_by_page(page_ids: list[str]) -> tuple[dict[str, list[dict]], list[str]]:
+    """Angebote aus der Handannotation: Spans aus gold/, Gruppen aus gold/offers/.
+
+    Die Entities kommen bewusst aus den Gold-Spans und nicht aus den
+    Lehrer-Labels. Sonst waere die Referenz ein Zwitter - richtige Gruppen
+    ueber LLM-Entities - und die Zeile "gegen Referenz" misst wieder
+    teilweise den Lehrer. Zurueck kommen die Angebote und die Seiten, fuer
+    die eine der beiden Haelften fehlt oder nicht fertig ist.
+    """
+    from magda import gold, offers_gold
+
+    spans_by_page = {p["page_id"]: p for p in gold.load_gold_pages().pages}
+    groups = offers_gold.load_reference()
+    result: dict[str, list[dict]] = {}
+    fragments = 0
+    missing: list[str] = []
+    for page_id in page_ids:
+        page = spans_by_page.get(page_id)
+        assignment = groups.assignments.get(page_id)
+        if page is None or assignment is None:
+            missing.append(page_id)
+            continue
+        deals = []
+        for offer in offers_gold.offers_from_reference(page, assignment):
+            deal = blackbox_eval.deal_from_offer(offer)
+            if deal is None:
+                fragments += 1
+            else:
+                deals.append(deal)
+        result[page_id] = deals
+    result["__fragments__"] = fragments  # type: ignore[assignment]
+    return result, missing
+
+
 def _row(title: str, counts: dict) -> str:
     def rate(value):
         return "  -  " if value is None else f"{value:.3f}"
@@ -157,14 +200,17 @@ def main(argv=None):
                         help="Checkpoint fuer --grouper pair-model "
                              "(Default: checkpoints/offer_pairs/model.pt)")
     parser.add_argument("--reference-groups", default="heuristic",
-                        choices=("heuristic", "teacher"),
+                        choices=("heuristic", "teacher", "gold"),
                         help="Wie die Referenzangebote gebildet werden.\n"
                              "heuristic = offers.cluster_page auf den Lehrer-Labels\n"
                              "  (Default - Achtung, das ist dieselbe Heuristik wie\n"
                              "  --grouper heuristic und vergleicht sich teilweise\n"
                              "  selbst, siehe Moduldocstring).\n"
                              "teacher = data/offer_groups/<--reference-from>, die\n"
-                             "  tatsaechlich vom Teacher gebildete Gruppierung")
+                             "  tatsaechlich vom Teacher gebildete Gruppierung.\n"
+                             "gold = Handannotation (Spans aus gold/, Gruppen aus\n"
+                             "  gold/offers/) - die einzige Referenz, die\n"
+                             "  Richtigkeit misst; nur fertige Seiten zaehlen")
     parser.add_argument("--reference-from", default="claude-sonnet-5",
                         help="Gruppierung unter data/offer_groups/ fuer "
                              "--reference-groups teacher")
@@ -172,6 +218,11 @@ def main(argv=None):
                         help="Vision-Modell fuer die Blackbox")
     parser.add_argument("--dry-run", action="store_true",
                         help="alles ausser dem LLM-Aufruf")
+    parser.add_argument("--blackbox-from", default=None,
+                        help="Blackbox-Antworten (`blackbox_deals`) aus einem frueheren\n"
+                             "Report unter data/eval/ wiederverwenden statt die API zu\n"
+                             "rufen - fuer einen Referenz- oder Grouper-Wechsel ohne\n"
+                             "neuen Lauf. --model wird aus dem Report uebernommen.")
     parser.add_argument("--limit", type=int,
                         help="nur die ersten N Seiten (Probelauf)")
     args = parser.parse_args(argv)
@@ -182,6 +233,20 @@ def main(argv=None):
     page_ids = read_page_ids(args.pages)
     if args.limit:
         page_ids = page_ids[:args.limit]
+
+    replay = None
+    if args.blackbox_from:
+        replay = json.loads(open(args.blackbox_from).read())
+        args.model = replay["model"]
+
+    gold_missing: list[str] = []
+    gold_reference = None
+    if args.reference_groups == "gold":
+        gold_reference, gold_missing = _gold_deals_by_page(page_ids)
+        page_ids = [p for p in page_ids if p not in set(gold_missing)]
+        if not page_ids:
+            parser.exit(1, "Keine der Seiten ist in gold/ und gold/offers/ fertig "
+                           "annotiert (status: done in beiden). Nichts zu messen.\n")
 
     wanted = set(page_ids)
     reference_pages = [p for p in _load_labeled_pages(args.labels_from)
@@ -202,7 +267,9 @@ def main(argv=None):
         grouper_model = offer_model.load(args.checkpoint or DEFAULT_CHECKPOINT)
 
     started = time.perf_counter()
-    if args.reference_groups == "teacher":
+    if args.reference_groups == "gold":
+        reference = gold_reference
+    elif args.reference_groups == "teacher":
         reference = _teacher_deals_by_page(reference_pages, args.reference_from)
     else:
         reference = _deals_by_page(reference_pages)
@@ -211,13 +278,20 @@ def main(argv=None):
     reference.pop("__fragments__")
     own_seconds = time.perf_counter() - started
 
-    ref_source = (f"data/offer_groups/{config.model_slug(args.reference_from)}"
-                  if args.reference_groups == "teacher"
-                  else f"data/labeled/{config.model_slug(args.labels_from)} "
-                       f"(cluster_page auf Lehrer-Labels)")
-    print(f"Seiten:     {len(page_ids)}")
-    print(f"Referenz:   Angebote aus {ref_source} "
-          f"(LLM-erzeugt - die Zahlen messen Naehe, nicht Richtigkeit)")
+    reference_is_llm = args.reference_groups != "gold"
+    if args.reference_groups == "gold":
+        ref_source = "gold/ + gold/offers/ (Handannotation - die Zahlen messen Richtigkeit)"
+    elif args.reference_groups == "teacher":
+        ref_source = (f"data/offer_groups/{config.model_slug(args.reference_from)} "
+                      f"(LLM-erzeugt - die Zahlen messen Naehe, nicht Richtigkeit)")
+    else:
+        ref_source = (f"data/labeled/{config.model_slug(args.labels_from)} "
+                      f"(cluster_page auf Lehrer-Labels; LLM-erzeugt - die Zahlen "
+                      f"messen Naehe, nicht Richtigkeit)")
+    print(f"Seiten:     {len(page_ids)}"
+          + (f" ({len(gold_missing)} ohne fertige Handannotation ausgelassen)"
+             if gold_missing else ""))
+    print(f"Referenz:   Angebote aus {ref_source}")
     print(f"Eigene:     data/predictions/{config.model_slug(args.predictions)} "
           f"+ --grouper {args.grouper}, "
           f"{own_fragments} Fragmente ohne Produkt-und-Preis verworfen")
@@ -228,6 +302,16 @@ def main(argv=None):
     errors: list[str] = []
     if args.dry_run:
         print("Probelauf: die Blackbox wird nicht aufgerufen.\n")
+    elif replay is not None:
+        blackbox_deals = {p: replay["blackbox_deals"][p] for p in page_ids
+                          if p in replay["blackbox_deals"]}
+        not_replayed = [p for p in page_ids if p not in blackbox_deals]
+        if not_replayed:
+            errors.append(f"{len(not_replayed)} Seite(n) ohne Blackbox-Antwort im "
+                          f"Report, z. B. {not_replayed[0]}")
+        blackbox_seconds = replay.get("seconds", {}).get("blackbox", 0.0)
+        print(f"Blackbox-Antworten aus {args.blackbox_from} wiederverwendet "
+              f"({len(blackbox_deals)} Seiten, kein API-Aufruf).\n")
     else:
         from magda import blackbox
 
@@ -292,22 +376,27 @@ def main(argv=None):
     print()
     print(f"  eigene Pipeline: {own_seconds / max(len(page_ids), 1):.3f} s je Seite "
           f"(Gruppierung, ohne Modellinferenz)")
-    if blackbox_deals:
+    if blackbox_deals and replay is None:
         print(f"  Blackbox:        {blackbox_seconds / max(len(page_ids), 1):.1f} s je Seite")
+    elif blackbox_deals:
+        print("  Blackbox:        Zeit aus dem wiederverwendeten Report, nicht neu gemessen")
     for line in errors:
         print(f"  ! {line}")
 
     payload = {
         "pages": page_ids,
         "model": args.model,
-        "prompt_version": None if args.dry_run else blackbox.PROMPT_VERSION,
+        "prompt_version": (replay.get("prompt_version") if replay is not None
+                           else None if args.dry_run else blackbox.PROMPT_VERSION),
+        "blackbox_from": args.blackbox_from,
         "labels_from": config.model_slug(args.labels_from),
         "predictions": config.model_slug(args.predictions),
         "grouper": args.grouper,
         "reference_groups": args.reference_groups,
         "reference_from": config.model_slug(args.reference_from)
                           if args.reference_groups == "teacher" else None,
-        "reference_is_llm": True,
+        "reference_is_llm": reference_is_llm,
+        "gold_missing": gold_missing,
         "own_fragments": own_fragments,
         "seconds": {"own_grouping": round(own_seconds, 3),
                     "blackbox": round(blackbox_seconds, 1)},
