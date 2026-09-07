@@ -1,5 +1,6 @@
 import { screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
+import { useLocation } from "react-router-dom"
 import { afterEach, describe, expect, it, vi } from "vitest"
 import { mockFetch, renderWithProviders } from "@/test/utils"
 import { AnnotatePage } from "./annotate-page"
@@ -38,6 +39,11 @@ function setup({ route, ...overrides }: Record<string, unknown> & { route?: stri
   return renderWithProviders(<AnnotatePage />, {
     route: (route as string | undefined) ?? "/annotate?catalog=462828&page=462828_p1",
   })
+}
+
+/** Macht die URL im DOM sichtbar: renderWithProviders gibt keinen Router zurück. */
+function LocationProbe() {
+  return <span data-testid="location">{useLocation().search}</span>
 }
 
 afterEach(() => vi.unstubAllGlobals())
@@ -107,6 +113,42 @@ describe("AnnotatePage", () => {
     await user.keyboard("f")
 
     expect(await screen.findByRole("button", { name: /^Fertig/ })).toBeInTheDocument()
+  })
+
+  it("löscht alle Spans der Seite erst nach Rückfrage", async () => {
+    const user = userEvent.setup()
+    setup({
+      "/api/gold/462828_p1": {
+        page_id: "462828_p1", words_hash: "abc", status: "in_progress",
+        annotator: "", updated: null, stale: false,
+        spans: [{ start: 0, end: 1, label: "BRAND" }, { start: 1, end: 2, label: "PRODUCT" }],
+      },
+    })
+    await screen.findByText(/2 Spans/)
+
+    const confirm = vi.spyOn(window, "confirm").mockReturnValue(false)
+    await user.click(screen.getByRole("button", { name: /Alle Spans löschen/ }))
+    expect(screen.getByText(/2 Spans/)).toBeInTheDocument()
+
+    confirm.mockReturnValue(true)
+    await user.click(screen.getByRole("button", { name: /Alle Spans löschen/ }))
+    expect(await screen.findByText(/0 Spans/)).toBeInTheDocument()
+    confirm.mockRestore()
+  })
+
+  it("führt von der fertigen Seite zum Gruppierer", async () => {
+    // Der Gruppierer nimmt nur fertige Spans an und ist ein eigenes
+    // Werkzeug unter /group. Ohne den Link stand man nach dem Labeln vor
+    // der Frage "und wo gruppiere ich jetzt?".
+    const user = userEvent.setup()
+    setup()
+    await screen.findByText(/2 Wörter/)
+    expect(screen.queryByRole("link", { name: /Angebote gruppieren/ })).not.toBeInTheDocument()
+
+    await user.keyboard("f")
+
+    const link = await screen.findByRole("link", { name: /Angebote gruppieren/ })
+    expect(link).toHaveAttribute("href", "/group?catalog=462828&page=462828_p1")
   })
 
   it("ignoriert Tastenkürzel mit gedrücktem Modifier", async () => {
@@ -188,6 +230,41 @@ describe("AnnotatePage — Ebenen", () => {
     setup({ route: "/annotate" })
     await user.click(await screen.findByRole("button", { name: /462828/ }))
     expect(await screen.findByLabelText("Annotator")).toBeInTheDocument()
+  })
+
+  it("behält den Annotator-Ordner beim Öffnen einer Seite in der URL", async () => {
+    // Belegter Fall (07.09.2026): Aus dem Ordner "Noah" einen Katalog und
+    // dann eine Seite anklicken warf ?annotator= aus der URL – und BrowsePage
+    // schickte einen damit auf die Quellenübersicht zurück.
+    const user = userEvent.setup()
+    mockFetch({
+      "/api/schema": { entity_types: ["PRODUCT", "BRAND"] },
+      "/api/status": STATUS,
+      "/api/pages/462828_p1": PAGE,
+      "/api/pages": [{ page_id: "462828_p1", catalog: "462828", labeled: false }],
+      "/api/gold/462828_p1": {
+        page_id: "462828_p1", words_hash: "abc", status: "untouched",
+        annotator: "", updated: null, spans: [], stale: false,
+      },
+      "/api/gold": [{
+        page_id: "462828_p1", catalog: "462828", status: "untouched",
+        annotator: "", num_spans: 0, stale: false,
+      }],
+    })
+    renderWithProviders(
+      <>
+        <AnnotatePage />
+        <LocationProbe />
+      </>,
+      { route: "/annotate?annotator=Noah" },
+    )
+    await user.click(await screen.findByRole("button", { name: /462828/ }))
+    expect(screen.getByTestId("location").textContent).toContain("annotator=Noah")
+    await user.click(await screen.findByRole("button", { name: /^p1/ }))
+    await waitFor(() =>
+      expect(screen.getByTestId("location").textContent).toContain("page=462828_p1"),
+    )
+    expect(screen.getByTestId("location").textContent).toContain("annotator=Noah")
   })
 
   it("führt über den Brotkrumen zurück zur Übersicht", async () => {
