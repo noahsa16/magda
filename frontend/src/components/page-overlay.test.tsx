@@ -1,6 +1,6 @@
-import { render } from "@testing-library/react"
-import { describe, expect, it } from "vitest"
-import { PageOverlay } from "./page-overlay"
+import { fireEvent, render } from "@testing-library/react"
+import { describe, expect, it, vi } from "vitest"
+import { PageOverlay, wordsInBox } from "./page-overlay"
 
 const TYPES = ["PRODUCT", "BRAND", "PRICE"]
 const words = [
@@ -50,5 +50,60 @@ describe("PageOverlay", () => {
         words={words} entityTypes={TYPES} />,
     )
     expect(container.querySelectorAll("rect")).toHaveLength(2)
+  })
+})
+
+describe("wordsInBox", () => {
+  it("trifft jede Box, die das Rechteck schneidet, auch in Gegenrichtung gezogen", () => {
+    // Von rechts unten nach links oben gezogen; die Preisbox ragt nur mit
+    // ihrem linken Rand hinein und zählt trotzdem.
+    expect(wordsInBox(words, { x0: 215, y0: 330, x1: 60, y1: 300 })).toEqual([0, 1])
+    expect(wordsInBox(words, { x0: 60, y0: 300, x1: 100, y1: 330 })).toEqual([0])
+    expect(wordsInBox(words, { x0: 0, y0: 0, x1: 50, y1: 50 })).toEqual([])
+  })
+})
+
+describe("PageOverlay — Rechteck aufziehen", () => {
+  function setup() {
+    const onBoxSelect = vi.fn()
+    const onWordClick = vi.fn()
+    const { container } = render(
+      <PageOverlay imageUrl="/img.png" width={100} height={100}
+        words={words} entityTypes={TYPES} onBoxSelect={onBoxSelect} onWordClick={onWordClick} />,
+    )
+    const svg = container.querySelector("svg")!
+    // jsdom misst nichts: das SVG wird als 200×200 px angenommen, also
+    // 2 px je PDF-Punkt.
+    svg.getBoundingClientRect = () =>
+      ({ left: 0, top: 0, width: 200, height: 200, right: 200, bottom: 200, x: 0, y: 0, toJSON() {} })
+    svg.setPointerCapture = () => {}
+    return { svg, onBoxSelect, onWordClick, container }
+  }
+
+  it("meldet die Wörter im aufgezogenen Rechteck und verschluckt den Klick danach", () => {
+    // Das Wort 0 liegt bei x 72–199, y 310–325 PDF-Punkten – weit ausserhalb
+    // eines 100er-viewBox, deshalb eigene Wörter im sichtbaren Bereich.
+    const { svg, onBoxSelect, onWordClick, container } = setup()
+    fireEvent.pointerDown(svg, { button: 0, clientX: 20, clientY: 20 })
+    fireEvent.pointerMove(svg, { clientX: 180, clientY: 180 })
+    fireEvent.pointerUp(svg, { clientX: 180, clientY: 180 })
+
+    expect(onBoxSelect).toHaveBeenCalledWith([])
+    // Der click, mit dem der Browser das Loslassen quittiert, darf nicht
+    // als Einzelklick durchgehen – er nähme das Wort gleich wieder heraus.
+    fireEvent.click(container.querySelectorAll("rect")[0])
+    expect(onWordClick).not.toHaveBeenCalled()
+    fireEvent.click(container.querySelectorAll("rect")[0])
+    expect(onWordClick).toHaveBeenCalledTimes(1)
+  })
+
+  it("wertet eine Bewegung unter der Schwelle als Klick", () => {
+    const { svg, onBoxSelect, onWordClick, container } = setup()
+    fireEvent.pointerDown(svg, { button: 0, clientX: 20, clientY: 20 })
+    fireEvent.pointerUp(svg, { clientX: 22, clientY: 21 })
+    fireEvent.click(container.querySelectorAll("rect")[0])
+
+    expect(onBoxSelect).not.toHaveBeenCalled()
+    expect(onWordClick).toHaveBeenCalledTimes(1)
   })
 })

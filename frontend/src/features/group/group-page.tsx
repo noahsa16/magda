@@ -15,7 +15,7 @@ import { api } from "@/lib/api"
 import { cn } from "@/lib/utils"
 import { PageList } from "@/features/inspector/page-list"
 import { TaskBanner } from "@/features/annotate/task-banner"
-import { groupOf, removeGroup, startGroup, toggleRange } from "./grouping-editor"
+import { assignWords, groupOf, removeGroup, startGroup, toggleRange } from "./grouping-editor"
 import { useOfferGrouping } from "./use-offer-grouping"
 
 const SAVE_LABEL = {
@@ -45,8 +45,6 @@ export function GroupPage() {
   // Welches Angebot nimmt den nächsten Klick auf? -1 = das nächste Wort
   // eröffnet ein neues.
   const [active, setActive] = useState(-1)
-  // Erster Klick einer Shift-Auswahl.
-  const [anchor, setAnchor] = useState<number | null>(null)
 
   const pages = useQuery({ queryKey: ["pages"], queryFn: () => api.pages() })
   const summaries = useQuery({ queryKey: ["offer-gold"], queryFn: api.offerGold })
@@ -77,7 +75,6 @@ export function GroupPage() {
   }, [taskPages])
   const openTaskPage = (id: string) => {
     setActive(-1)
-    setAnchor(null)
     setSearchParams({ catalog: id.split("_p")[0], page: id })
   }
 
@@ -110,7 +107,6 @@ export function GroupPage() {
   function goto(i: number) {
     if (i < 0 || i >= ids.length) return
     setActive(-1)
-    setAnchor(null)
     setSearchParams({ catalog: catalog!, page: ids[i] })
   }
 
@@ -125,16 +121,30 @@ export function GroupPage() {
    * Wortweise wäre die Referenz genauso ausdrucksstark, aber ein Angebot hat
    * schnell zwölf Wörter - bei 40 Seiten ist das der Unterschied zwischen
    * einem Nachmittag und einer Woche.
+   *
+   * Shift+Klick "bis hierhin" gab es hier einmal und ist bewusst weg: der
+   * Bereich lief über Wortindizes, also in Leserichtung, und der Anker
+   * überlebte `n`. Beim vierten Angebot nahm er so alle drei vorherigen mit.
    */
-  function onWordClick(i: number, shift: boolean) {
-    if (shift && anchor !== null) {
-      apply(Math.min(anchor, i), Math.max(anchor, i) + 1)
-      setAnchor(null)
-      return
-    }
-    setAnchor(i)
+  function onWordClick(i: number) {
     const entity = entities.find((e) => i >= e.start && i < e.end)
     apply(entity ? entity.start : i, entity ? entity.end : i + 1)
+  }
+
+  /** Rechteck aufziehen: jede Entity, die es berührt, ganz ins aktive Angebot.
+   *
+   * Nur Entities – ungelabelte Wörter im Rahmen bleiben draussen, sonst
+   * landete das Kleingedruckte zwischen zwei Kacheln im Angebot. Was nicht
+   * dazugehört, klickt man danach einzeln wieder heraus.
+   */
+  function onBoxSelect(indices: number[]) {
+    const hit = new Set(indices)
+    const words = entities
+      .filter((e) => Array.from({ length: e.end - e.start }, (_, k) => e.start + k).some((w) => hit.has(w)))
+      .flatMap((e) => Array.from({ length: e.end - e.start }, (_, k) => e.start + k))
+    const next = assignWords(grouping.groups, active, words)
+    grouping.setGroups(next.groups)
+    setActive(next.active)
   }
 
   useEffect(() => {
@@ -255,7 +265,6 @@ export function GroupPage() {
           selected={selected}
           onSelect={(id) => {
             setActive(-1)
-            setAnchor(null)
             setSearchParams({ catalog, page: id })
           }}
           goldStatus={goldRows}
@@ -326,7 +335,8 @@ export function GroupPage() {
                 words={data.words}
                 tags={tags}
                 entityTypes={names}
-                onWordClick={(i, e) => onWordClick(i, e.shiftKey)}
+                onWordClick={(i) => onWordClick(i)}
+                onBoxSelect={onBoxSelect}
               />
             </>
           )}
@@ -338,7 +348,7 @@ export function GroupPage() {
           </h2>
           <ul className="space-y-1.5 text-sm">
             <li><kbd className="font-mono">Klick</kbd> Entity dem aktiven Angebot zuschlagen</li>
-            <li><kbd className="font-mono">Shift+Klick</kbd> bis hierhin</li>
+            <li><kbd className="font-mono">Aufziehen</kbd> alle Entities im Rahmen dazu</li>
             <li><kbd className="font-mono">n</kbd> neues Angebot beginnen</li>
             <li><kbd className="font-mono">⌫</kbd> aktives Angebot auflösen</li>
             <li><kbd className="font-mono">f</kbd> Seite als fertig markieren</li>

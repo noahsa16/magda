@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react"
+import { useMemo, useRef, useState } from "react"
 import { entityColor } from "@/lib/entities"
 import type { Word } from "@/lib/types"
 
@@ -17,8 +17,34 @@ interface PageOverlayProps {
   showPlainWords?: boolean
   /** Klick auf eine Box, z. B. um sie in der Liste auszuwählen. */
   onWordClick?: (index: number, event: React.MouseEvent) => void
+  /** Rechteck aufziehen: bekommt die Indizes aller Wörter, deren Box das
+   * Rechteck schneidet. Ein blosser Klick (unter DRAG_THRESHOLD) löst es
+   * nicht aus, der geht weiter an onWordClick. */
+  onBoxSelect?: (indices: number[]) => void
   /** Scan-Reveal: Scanlinie + gestaffeltes Einblenden der Boxen (Demo). */
   animate?: boolean
+}
+
+/** Ab wie vielen Bildschirmpixeln eine Bewegung ein Aufziehen ist und kein
+ * verwackelter Klick. */
+const DRAG_THRESHOLD = 4
+
+interface Box {
+  x0: number
+  y0: number
+  x1: number
+  y1: number
+}
+
+/** Welche Wörter schneidet das Rechteck? Für die Gruppierung reicht
+ * Schneiden statt Einschliessen: wer ein Angebot einrahmt, trifft den Rand
+ * einer Box selten exakt. */
+export function wordsInBox(words: Word[], box: Box): number[] {
+  const x0 = Math.min(box.x0, box.x1), x1 = Math.max(box.x0, box.x1)
+  const y0 = Math.min(box.y0, box.y1), y1 = Math.max(box.y0, box.y1)
+  return words
+    .map((w, i) => (w.bbox[0] < x1 && w.bbox[2] > x0 && w.bbox[1] < y1 && w.bbox[3] > y0 ? i : -1))
+    .filter((i) => i >= 0)
 }
 
 interface Hover {
@@ -30,9 +56,66 @@ interface Hover {
 
 export function PageOverlay({
   imageUrl, width, height, words, tags, entityTypes, visibleTypes, highlight,
-  showBoxes = true, showPlainWords = true, onWordClick, animate = false,
+  showBoxes = true, showPlainWords = true, onWordClick, onBoxSelect, animate = false,
 }: PageOverlayProps) {
   const [hover, setHover] = useState<Hover | null>(null)
+  const svgRef = useRef<SVGSVGElement>(null)
+  // Aufziehen läuft in PDF-Koordinaten, damit das Rechteck wie die Boxen
+  // über das viewBox skaliert. Der Startpunkt in Bildschirmpixeln bleibt für
+  // die Klick/Zieh-Unterscheidung daneben liegen.
+  const dragStart = useRef<{ clientX: number; clientY: number } | null>(null)
+  const [drag, setDrag] = useState<Box | null>(null)
+  // Ein abgeschlossenes Aufziehen endet als click-Ereignis auf der Box, auf
+  // der die Maus losgelassen wurde. Ohne diese Sperre nähme der Klick das
+  // eben gewählte Wort gleich wieder heraus. Die Sperre gilt nur für den
+  // laufenden Ereigniszyklus: landet der click woanders (Loslassen über
+  // dem Bild statt einer Box), bliebe sie sonst hängen und frässe den
+  // nächsten echten Klick.
+  const swallowClick = useRef(false)
+
+  function toPage(e: React.PointerEvent): { x: number; y: number } {
+    const rect = svgRef.current!.getBoundingClientRect()
+    return {
+      x: ((e.clientX - rect.left) / rect.width) * width,
+      y: ((e.clientY - rect.top) / rect.height) * height,
+    }
+  }
+
+  function onPointerDown(e: React.PointerEvent) {
+    if (!onBoxSelect || e.button !== 0) return
+    dragStart.current = { clientX: e.clientX, clientY: e.clientY }
+    const { x, y } = toPage(e)
+    setDrag({ x0: x, y0: y, x1: x, y1: y })
+    // Capture hält das Ziehen auch über den Bildrand hinaus; jsdom kennt
+    // die Methode nicht.
+    e.currentTarget.setPointerCapture?.(e.pointerId)
+  }
+
+  function onPointerMove(e: React.PointerEvent) {
+    if (!dragStart.current) return
+    const { x, y } = toPage(e)
+    setDrag((d) => (d ? { ...d, x1: x, y1: y } : d))
+  }
+
+  function onPointerUp(e: React.PointerEvent) {
+    const start = dragStart.current
+    dragStart.current = null
+    if (!start || !drag) return
+    const moved = Math.hypot(e.clientX - start.clientX, e.clientY - start.clientY)
+    setDrag(null)
+    if (moved < DRAG_THRESHOLD) return
+    swallowClick.current = true
+    setTimeout(() => { swallowClick.current = false }, 0)
+    onBoxSelect?.(wordsInBox(words, drag))
+  }
+
+  function onClick(i: number, e: React.MouseEvent) {
+    if (swallowClick.current) {
+      swallowClick.current = false
+      return
+    }
+    onWordClick?.(i, e)
+  }
 
   // Reveal-Reihenfolge folgt der Leserichtung: Boxen nach y-Position sortiert,
   // damit die Staffelung mit der Scanlinie von oben nach unten läuft.
@@ -49,13 +132,19 @@ export function PageOverlay({
 
   return (
     <div className="relative overflow-hidden rounded-lg border-2 border-foreground bg-card">
-      <img src={imageUrl} alt="Prospektseite" className="block w-full" />
+      <img src={imageUrl} alt="Prospektseite" className="block w-full select-none" draggable={false} />
       {/* viewBox im PDF-Koordinatenraum: der Browser skaliert die Boxen aufs
           Bild, egal mit welcher DPI das PNG gerendert wurde. */}
       <svg
+        ref={svgRef}
         className="absolute inset-0 h-full w-full"
         viewBox={`0 0 ${width} ${height}`}
         preserveAspectRatio="none"
+        style={onBoxSelect ? { touchAction: "none", cursor: drag ? "crosshair" : undefined } : undefined}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
+        onPointerCancel={() => { dragStart.current = null; setDrag(null) }}
       >
         {showBoxes && words.map((word, i) => {
           const tag = tags?.[i] ?? "O"
@@ -89,7 +178,7 @@ export function PageOverlay({
               stroke={type ? entityColor(entityTypes, type) : "#14203C"}
               strokeOpacity={type ? 1 : 0.25}
               strokeWidth={highlighted ? 2.5 : 0.8}
-              onClick={(e) => onWordClick?.(i, e)}
+              onClick={(e) => onClick(i, e)}
               onMouseEnter={() =>
                 setHover({ text: word.text, tag, xPct: (x0 / width) * 100, yPct: (y1 / height) * 100 })
               }
@@ -97,6 +186,15 @@ export function PageOverlay({
             />
           )
         })}
+        {drag && (
+          <rect
+            data-testid="rubber-band"
+            x={Math.min(drag.x0, drag.x1)} y={Math.min(drag.y0, drag.y1)}
+            width={Math.abs(drag.x1 - drag.x0)} height={Math.abs(drag.y1 - drag.y0)}
+            fill="#2951E8" fillOpacity={0.12} stroke="#2951E8" strokeWidth={1}
+            strokeDasharray="3 2" pointerEvents="none"
+          />
+        )}
       </svg>
       {animate && (
         <div

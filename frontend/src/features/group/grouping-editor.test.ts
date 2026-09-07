@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { groupOf, removeGroup, startGroup, toggleRange } from "./grouping-editor"
+import { assignWords, groupOf, removeGroup, startGroup, toggleRange } from "./grouping-editor"
 
 /** Ein Wort in ein Angebot legen ist ein Klick; die Regeln dahinter sind
  * dieselben wie in der API: höchstens ein Angebot je Wort, keine leeren
@@ -103,5 +103,28 @@ describe("removeGroup", () => {
 
   it("lässt einen Index ausserhalb der Liste unberührt", () => {
     expect(removeGroup([[0]], 7).groups).toEqual([[0]])
+  })
+})
+
+describe("assignWords", () => {
+  it("nimmt schon zugeordnete Wörter nicht wieder heraus", () => {
+    // Der Unterschied zu toggleRange: ein zweites, grösseres Rechteck über
+    // dasselbe Angebot darf nichts zurücknehmen.
+    const { groups, active } = assignWords([[3, 4]], 0, [3, 4, 7])
+
+    expect(groups).toEqual([[3, 4, 7]])
+    expect(active).toBe(0)
+  })
+
+  it("legt ohne aktives Angebot ein neues an", () => {
+    expect(assignWords([[0]], -1, [5, 6]).groups).toEqual([[0], [5, 6]])
+  })
+
+  it("holt Wörter aus einem fremden Angebot herüber", () => {
+    expect(assignWords([[0, 1], [5]], 1, [1]).groups).toEqual([[0], [1, 5]])
+  })
+
+  it("ändert bei leerer Auswahl nichts", () => {
+    expect(assignWords([[0]], -1, [])).toEqual({ groups: [[0]], active: -1 })
   })
 })

@@ -1,4 +1,4 @@
-import { screen, waitFor } from "@testing-library/react"
+import { fireEvent, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { afterEach, describe, expect, it, vi } from "vitest"
 import { mockFetch, renderWithProviders } from "@/test/utils"
@@ -84,6 +84,40 @@ describe("GroupPage", () => {
     await waitFor(() => expect(screen.getByText(/2 Angebote/)).toBeInTheDocument())
     const boxes = document.querySelectorAll("svg rect")
     expect(boxes[0].getAttribute("fill")).not.toBe(boxes[2].getAttribute("fill"))
+  })
+
+  it("nimmt beim Aufziehen ganze Entities und lässt Klick-Abwahl zu", async () => {
+    // Belegter Fall (07.09.2026): Shift+Klick "bis hierhin" lief in
+    // Leserichtung und nahm beim vierten Angebot die drei vorherigen mit.
+    // Ersatz ist der Rahmen: alles darunter ins aktive Angebot, Einzelklick
+    // nimmt zurück.
+    const user = userEvent.setup()
+    setup()
+    await screen.findByText(/0 Angebote/)
+    // Nicht das erste SVG der Seite – das ist ein Lucide-Icon.
+    const svg = document.querySelector("svg rect")!.closest("svg")!
+    svg.getBoundingClientRect = () =>
+      ({ left: 0, top: 0, width: 100, height: 100, right: 100, bottom: 100, x: 0, y: 0, toJSON() {} })
+    svg.setPointerCapture = () => {}
+
+    // Rahmen über "Butter" (12–22) und "2.49" (40–50): die Entity
+    // "Landliebe Butter" kommt ganz hinein, obwohl nur ihr zweites Wort
+    // im Rahmen liegt.
+    fireEvent.pointerDown(svg, { button: 0, clientX: 15, clientY: 2 })
+    fireEvent.pointerMove(svg, { clientX: 45, clientY: 8 })
+    fireEvent.pointerUp(svg, { clientX: 45, clientY: 8 })
+
+    await waitFor(() => expect(screen.getByText(/1 Angebote/)).toBeInTheDocument())
+    let boxes = document.querySelectorAll("svg rect")
+    expect(boxes[0].getAttribute("fill")).toBe(boxes[1].getAttribute("fill"))
+    expect(boxes[2].getAttribute("fill")).toBe(boxes[0].getAttribute("fill"))
+
+    await user.click(boxes[2])
+    await waitFor(() => {
+      boxes = document.querySelectorAll("svg rect")
+      expect(boxes[2].getAttribute("fill")).toBe("none")
+    })
+    expect(boxes[0].getAttribute("fill")).not.toBe("none")
   })
 
   it("sperrt die Seite bei veralteter Wortliste", async () => {

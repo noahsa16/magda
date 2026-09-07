@@ -57,6 +57,23 @@ export function toggleRange(
   return compact(stripped, target)
 }
 
+/**
+ * Wörter dem aktiven Angebot zuschlagen, ohne etwas zurückzunehmen.
+ *
+ * Für die Rechteckauswahl: sie trifft auch Wörter, die schon im aktiven
+ * Angebot liegen, und die dürfen dabei nicht herausfallen – sonst nähme ein
+ * zweites, grösseres Rechteck die Hälfte des ersten wieder weg. Was in
+ * einem fremden Angebot lag, wechselt wie beim Klick.
+ */
+export function assignWords(groups: Groups, active: number, words: number[]): ToggleResult {
+  if (words.length === 0) return { groups, active }
+  const stripped = groups.map((group) => group.filter((w) => !words.includes(w)))
+  const target = active >= 0 ? active : stripped.length
+  while (stripped.length <= target) stripped.push([])
+  stripped[target] = [...new Set([...stripped[target], ...words])].sort((a, b) => a - b)
+  return compact(stripped, target)
+}
+
 /** Ein ganzes Angebot auflösen. Seine Wörter gehören danach zu keinem. */
 export function removeGroup(groups: Groups, index: number): ToggleResult {
   if (index < 0 || index >= groups.length) return { groups, active: -1 }
