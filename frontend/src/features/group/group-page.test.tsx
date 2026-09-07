@@ -32,7 +32,7 @@ function setup(overrides: Record<string, unknown> = {}) {
   mockFetch({
     "/api/schema": { entity_types: ["PRODUCT", "PRICE"] },
     "/api/status": STATUS,
-    "/api/pages/462828_p1": PAGE,
+    "/api/annotation-page/462828_p1": PAGE,
     "/api/pages": [{ page_id: "462828_p1", catalog: "462828", labeled: true }],
     "/api/offer-gold/462828_p1": {
       page_id: "462828_p1", words_hash: "abc", status: "untouched",
