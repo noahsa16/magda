@@ -32,6 +32,7 @@ export const api = {
     fetchJson<PageDetail>(
       `/api/pages/${id}${model ? `?model=${encodeURIComponent(model)}` : ""}`,
     ),
+  annotationPage: (id: string) => fetchJson<PageDetail>(`/api/annotation-page/${id}`),
   labelers: () => fetchJson<Labeler[]>("/api/labelers"),
   sources: () => fetchJson<LabelSource[]>("/api/sources"),
   labelsVsGold: () => fetchJson<LabelsVsGold>("/api/labels/vs-gold"),

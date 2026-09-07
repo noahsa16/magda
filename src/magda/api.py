@@ -26,7 +26,7 @@ from magda import (
     agreement, catalog_meta, catalogs, checkpoints, config, dedupe, jobs, runner,
     runs, scraping, uploads,
 )
-from magda import label_audit, offer_teacher, offers_gold
+from magda import label_audit, offers_gold
 from magda.gold import count_by_status, words_hash
 from magda.labels import ENTITY_TYPES, validate_spans
 
@@ -253,6 +253,21 @@ def get_page(page_id: str, model: str | None = None):
                 # Ohne dieses Feld weiß das Frontend nicht, wessen Labels es
                 # gerade anzeigt – bei mehreren Modellen ist das der halbe Sinn.
                 page["model"] = labeler
+    return page
+
+
+@app.get("/api/annotation-page/{page_id}")
+def get_annotation_page(page_id: str):
+    """Auswahlhilfe nur aus fertigen menschlichen Spans, niemals Lehrerlabels."""
+    from magda.labels import spans_to_bio
+
+    page = _load_words(page_id)
+    page["tags"] = ["O"] * len(page["words"])
+    annotation = get_gold(page_id)
+    if annotation["status"] == "done" and not annotation["stale"]:
+        spans = annotation.get("spans", [])
+        if not validate_spans(spans, len(page["words"])):
+            page["tags"] = spans_to_bio(len(page["words"]), spans)
     return page
 
 
@@ -576,19 +591,8 @@ def put_gold(page_id: str, payload: GoldPayload):
 # einer Datei hieße, dass eine halbfertige Gruppierung die fertigen Spans
 # derselben Seite mit in den Status "in_progress" zieht.
 #
-# Die Website zeigt sonnet-5 als Gold: `sonnet-5` IST die Projektreferenz
-# (Teamentscheidung 30.07.2026), und die Gruppierungen dazu liegen im
-# Teacher-Ordner data/offer_groups/claude-sonnet-5/. Über *jeder* dieser
-# Seiten liegt gold/offers/ als Hand-Override-Schicht: was ein Mensch
-# annotiert, ist genauer als die maschinelle Gruppierung und gewinnt.
-# Bewusst NICHT `offers_gold.reference_dir()` global umgebogen - die Funktion
-# speist auch `magda offers-gold`, und die Messung gegen den Teacher wäre
-# Selbstbezug. Deshalb liest hier die API die Overlay-Sicht, während die
-# Messreferenz und das Schreibziel gold/offers/ bleiben.
-
-# Ordnername der sonnet-Gruppierungen unter data/offer_groups/. Konstante
-# statt Parameter: die Website hat genau eine Referenz, und das ist sonnet.
-_OFFER_REFERENCE_SOURCE = "claude-sonnet-5"
+# Maschinelle Referenzen bleiben unter data/offer_groups/ getrennt sichtbar.
+# Der Handeditor liest ausschließlich gold/offers/.
 
 
 class OfferGoldPayload(BaseModel):
@@ -599,21 +603,9 @@ class OfferGoldPayload(BaseModel):
 
 
 def _offer_reference_file(page_id: str):
-    """Welche Gruppierungsdatei diese Seite hat und woher sie stammt.
-
-    Hand-Override vor maschineller Referenz: liegt für die Seite eine
-    Handannotation in gold/offers/, gilt die; sonst die sonnet-Gruppierung.
-    Rückgabe ``(pfad_oder_None, quelle)`` mit ``quelle`` in
-    ``{"gold", "sonnet", "untouched"}`` - die Website zeigt die Herkunft an,
-    damit sichtbar bleibt, was Mensch und was Modell gruppiert hat.
-    """
+    """Handannotation bleibt unabhängig von maschinellen Vergleichsquellen."""
     hand = offers_gold.reference_dir() / f"{page_id}.json"
-    if hand.exists():
-        return hand, "gold"
-    sonnet = offer_teacher.teacher_dir(_OFFER_REFERENCE_SOURCE) / f"{page_id}.json"
-    if sonnet.exists():
-        return sonnet, "sonnet"
-    return None, "untouched"
+    return (hand, "gold") if hand.exists() else (None, "untouched")
 
 
 @app.get("/api/offer-gold")
@@ -705,6 +697,7 @@ def put_offer_gold(page_id: str, payload: OfferGoldPayload):
         "annotator": payload.annotator,
         "updated": datetime.now().isoformat(timespec="seconds"),
         "groups": payload.groups,
+        "provenance": {"kind": "human", "method": "independent"},
     }
     # Dieselbe Schreibweise wie bei put_gold, aus demselben Grund: Die Datei
     # lässt sich nicht neu erzeugen und wird im Sekundentakt überschrieben.

@@ -53,8 +53,8 @@ export function GroupPage() {
   const status = useQuery({ queryKey: ["status"], queryFn: api.status })
   const task = useQuery({ queryKey: ["annotation-task"], queryFn: api.annotationTask })
   const page = useQuery({
-    queryKey: ["page", selected],
-    queryFn: () => api.page(selected!),
+    queryKey: ["annotation-page", selected],
+    queryFn: () => api.annotationPage(selected!),
     enabled: selected !== null,
   })
 
