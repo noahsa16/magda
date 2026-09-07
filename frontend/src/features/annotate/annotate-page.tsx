@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query"
-import { Check, ChevronLeft, ChevronRight } from "lucide-react"
+import { ArrowRight, Check, ChevronLeft, ChevronRight } from "lucide-react"
 import { useEffect, useMemo, useState } from "react"
-import { useSearchParams } from "react-router-dom"
+import { Link, useSearchParams } from "react-router-dom"
 import { CatalogGrid } from "@/components/catalog-grid"
 import { Crumbs } from "@/components/crumbs"
 import { PageOverlay } from "@/components/page-overlay"
@@ -303,15 +303,28 @@ export function AnnotatePage() {
                 <p className="font-mono text-sm tabular-nums">
                   {ann.spans.length} Spans · {data.words.length} Wörter
                 </p>
-                <Button
-                  size="sm"
-                  variant={ann.status === "done" ? "default" : "outline"}
-                  disabled={ann.conflict}
-                  onClick={toggleDone}
-                >
-                  <Check className="size-4" />
-                  {ann.status === "done" ? "Fertig" : "Als fertig markieren"}
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button
+                    size="sm"
+                    variant={ann.status === "done" ? "default" : "outline"}
+                    disabled={ann.conflict}
+                    onClick={toggleDone}
+                  >
+                    <Check className="size-4" />
+                    {ann.status === "done" ? "Fertig" : "Als fertig markieren"}
+                  </Button>
+                  {/* Der zweite Schritt der Aufgabe ist ein eigenes Werkzeug,
+                      und der Gruppierer nimmt nur fertige Spans an. Ohne den
+                      Link endete die Seite hier in einer Sackgasse. */}
+                  {ann.status === "done" && !ann.conflict && (
+                    <Button size="sm" variant="outline" asChild>
+                      <Link to={`/group?catalog=${catalog}&page=${selected}`}>
+                        Angebote gruppieren
+                        <ArrowRight className="size-4" />
+                      </Link>
+                    </Button>
+                  )}
+                </div>
               </div>
 
               <PageOverlay

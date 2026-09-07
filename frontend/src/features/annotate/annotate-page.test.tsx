@@ -115,6 +115,21 @@ describe("AnnotatePage", () => {
     expect(await screen.findByRole("button", { name: /^Fertig/ })).toBeInTheDocument()
   })
 
+  it("führt von der fertigen Seite zum Gruppierer", async () => {
+    // Der Gruppierer nimmt nur fertige Spans an und ist ein eigenes
+    // Werkzeug unter /group. Ohne den Link stand man nach dem Labeln vor
+    // der Frage "und wo gruppiere ich jetzt?".
+    const user = userEvent.setup()
+    setup()
+    await screen.findByText(/2 Wörter/)
+    expect(screen.queryByRole("link", { name: /Angebote gruppieren/ })).not.toBeInTheDocument()
+
+    await user.keyboard("f")
+
+    const link = await screen.findByRole("link", { name: /Angebote gruppieren/ })
+    expect(link).toHaveAttribute("href", "/group?catalog=462828&page=462828_p1")
+  })
+
   it("ignoriert Tastenkürzel mit gedrücktem Modifier", async () => {
     // Cmd+1 wechselt den Browser-Tab, Cmd+F öffnet die Suche. Beides sind
     // beiläufige Griffe und dürfen nicht in die Gold-Datei schreiben.
