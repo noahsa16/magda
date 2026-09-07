@@ -86,13 +86,19 @@ export function PageOverlay({
     dragStart.current = { clientX: e.clientX, clientY: e.clientY }
     const { x, y } = toPage(e)
     setDrag({ x0: x, y0: y, x1: x, y1: y })
-    // Capture hält das Ziehen auch über den Bildrand hinaus; jsdom kennt
-    // die Methode nicht.
-    e.currentTarget.setPointerCapture?.(e.pointerId)
   }
 
   function onPointerMove(e: React.PointerEvent) {
-    if (!dragStart.current) return
+    const start = dragStart.current
+    if (!start) return
+    // Capture hält das Ziehen auch über den Bildrand hinaus – aber erst ab
+    // der Schwelle. Mit gefangenem Zeiger wird das click-Ereignis dem SVG
+    // zugestellt statt der Wortbox, und ein blosser Klick erreichte
+    // onWordClick nie mehr (belegt am 07.09.2026: kein Angebot liess sich
+    // abwählen). jsdom kennt die Methode nicht.
+    if (Math.hypot(e.clientX - start.clientX, e.clientY - start.clientY) >= DRAG_THRESHOLD) {
+      e.currentTarget.setPointerCapture?.(e.pointerId)
+    }
     const { x, y } = toPage(e)
     setDrag((d) => (d ? { ...d, x1: x, y1: y } : d))
   }

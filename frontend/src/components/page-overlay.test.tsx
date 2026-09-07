@@ -76,8 +76,9 @@ describe("PageOverlay — Rechteck aufziehen", () => {
     // 2 px je PDF-Punkt.
     svg.getBoundingClientRect = () =>
       ({ left: 0, top: 0, width: 200, height: 200, right: 200, bottom: 200, x: 0, y: 0, toJSON() {} })
-    svg.setPointerCapture = () => {}
-    return { svg, onBoxSelect, onWordClick, container }
+    const capture = vi.fn()
+    svg.setPointerCapture = capture
+    return { svg, onBoxSelect, onWordClick, container, capture }
   }
 
   it("meldet die Wörter im aufgezogenen Rechteck und verschluckt den Klick danach", () => {
@@ -98,12 +99,24 @@ describe("PageOverlay — Rechteck aufziehen", () => {
   })
 
   it("wertet eine Bewegung unter der Schwelle als Klick", () => {
-    const { svg, onBoxSelect, onWordClick, container } = setup()
+    const { svg, onBoxSelect, onWordClick, container, capture } = setup()
     fireEvent.pointerDown(svg, { button: 0, clientX: 20, clientY: 20 })
+    fireEvent.pointerMove(svg, { clientX: 22, clientY: 21 })
     fireEvent.pointerUp(svg, { clientX: 22, clientY: 21 })
     fireEvent.click(container.querySelectorAll("rect")[0])
 
     expect(onBoxSelect).not.toHaveBeenCalled()
     expect(onWordClick).toHaveBeenCalledTimes(1)
+    // jsdom stellt click ohnehin der Box zu; im Browser täte es das mit
+    // gefangenem Zeiger nicht mehr. Deshalb wird die Ursache geprüft, nicht
+    // die Wirkung: unter der Schwelle wird der Zeiger nie gefangen.
+    expect(capture).not.toHaveBeenCalled()
+  })
+
+  it("fängt den Zeiger erst, wenn wirklich gezogen wird", () => {
+    const { svg, capture } = setup()
+    fireEvent.pointerDown(svg, { button: 0, clientX: 20, clientY: 20 })
+    fireEvent.pointerMove(svg, { clientX: 60, clientY: 60 })
+    expect(capture).toHaveBeenCalledTimes(1)
   })
 })
