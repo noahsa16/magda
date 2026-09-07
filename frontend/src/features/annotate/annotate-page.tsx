@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query"
-import { ArrowRight, Check, ChevronLeft, ChevronRight } from "lucide-react"
+import { ArrowRight, Check, ChevronLeft, ChevronRight, Trash2 } from "lucide-react"
 import { useEffect, useMemo, useState } from "react"
 import { Link, useSearchParams } from "react-router-dom"
 import { CatalogGrid } from "@/components/catalog-grid"
@@ -304,6 +304,21 @@ export function AnnotatePage() {
                   {ann.spans.length} Spans · {data.words.length} Wörter
                 </p>
                 <div className="flex items-center gap-2">
+                  {/* Rückfrage, weil es die Handarbeit einer ganzen Seite
+                      wegwirft und die Speicherung 300 ms später folgt. */}
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={ann.conflict || ann.spans.length === 0}
+                    onClick={() => {
+                      if (!window.confirm(`Alle ${ann.spans.length} Spans dieser Seite löschen?`)) return
+                      ann.setSpans([])
+                      setSel(null)
+                    }}
+                  >
+                    <Trash2 className="size-4" />
+                    Alle Spans löschen
+                  </Button>
                   <Button
                     size="sm"
                     variant={ann.status === "done" ? "default" : "outline"}

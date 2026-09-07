@@ -314,6 +314,15 @@ export function GroupPage() {
                     <Trash2 className="size-4" />
                     Auflösen
                   </Button>
+                  <Button size="sm" variant="outline" disabled={grouping.groups.length === 0}
+                    onClick={() => {
+                      if (!window.confirm(`Alle ${grouping.groups.length} Angebote dieser Seite auflösen?`)) return
+                      grouping.setGroups([])
+                      setActive(-1)
+                    }}>
+                    <Trash2 className="size-4" />
+                    Alle auflösen
+                  </Button>
                   <Button
                     size="sm"
                     variant={grouping.status === "done" ? "default" : "outline"}

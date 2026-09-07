@@ -115,6 +115,27 @@ describe("AnnotatePage", () => {
     expect(await screen.findByRole("button", { name: /^Fertig/ })).toBeInTheDocument()
   })
 
+  it("löscht alle Spans der Seite erst nach Rückfrage", async () => {
+    const user = userEvent.setup()
+    setup({
+      "/api/gold/462828_p1": {
+        page_id: "462828_p1", words_hash: "abc", status: "in_progress",
+        annotator: "", updated: null, stale: false,
+        spans: [{ start: 0, end: 1, label: "BRAND" }, { start: 1, end: 2, label: "PRODUCT" }],
+      },
+    })
+    await screen.findByText(/2 Spans/)
+
+    const confirm = vi.spyOn(window, "confirm").mockReturnValue(false)
+    await user.click(screen.getByRole("button", { name: /Alle Spans löschen/ }))
+    expect(screen.getByText(/2 Spans/)).toBeInTheDocument()
+
+    confirm.mockReturnValue(true)
+    await user.click(screen.getByRole("button", { name: /Alle Spans löschen/ }))
+    expect(await screen.findByText(/0 Spans/)).toBeInTheDocument()
+    confirm.mockRestore()
+  })
+
   it("führt von der fertigen Seite zum Gruppierer", async () => {
     // Der Gruppierer nimmt nur fertige Spans an und ist ein eigenes
     // Werkzeug unter /group. Ohne den Link stand man nach dem Labeln vor

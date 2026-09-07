@@ -120,6 +120,26 @@ describe("GroupPage", () => {
     expect(boxes[0].getAttribute("fill")).not.toBe("none")
   })
 
+  it("löst alle Angebote der Seite erst nach Rückfrage auf", async () => {
+    const user = userEvent.setup()
+    setup({
+      "/api/offer-gold/462828_p1": {
+        page_id: "462828_p1", words_hash: "abc", status: "in_progress",
+        annotator: "", updated: null, groups: [[0, 1], [2]], stale: false,
+      },
+    })
+    await screen.findByText(/2 Angebote/)
+
+    const confirm = vi.spyOn(window, "confirm").mockReturnValue(false)
+    await user.click(screen.getByRole("button", { name: /Alle auflösen/ }))
+    expect(screen.getByText(/2 Angebote/)).toBeInTheDocument()
+
+    confirm.mockReturnValue(true)
+    await user.click(screen.getByRole("button", { name: /Alle auflösen/ }))
+    expect(await screen.findByText(/0 Angebote/)).toBeInTheDocument()
+    confirm.mockRestore()
+  })
+
   it("sperrt die Seite bei veralteter Wortliste", async () => {
     setup({
       "/api/offer-gold/462828_p1": {
