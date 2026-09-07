@@ -31,12 +31,14 @@ export function startGroup(groups: Groups): ToggleResult {
 }
 
 /**
- * Die Wörter [start, end) dem aktiven Angebot zuschlagen.
+ * Die Wörter [start, end) dem aktiven Angebot zuschlagen – oder freigeben.
  *
- * Stehen sie bereits vollständig darin, werden sie entfernt – derselbe Klick
- * nimmt zurück, was er gesetzt hat. Aus einem fremden Angebot werden sie
- * herausgelöst: ein Wort kann nur einem gehören, und die Alternative wäre,
- * den Klick wirkungslos zu lassen und den Grund dafür zu verstecken.
+ * Liegt eines davon schon in irgendeinem Angebot, werden alle freigegeben,
+ * auch aus einem fremden. Bis zum 07.09.2026 wanderte ein Wort aus einem
+ * fremden Angebot stattdessen ins aktive: damit liess sich ein Fehlgriff
+ * in einem früheren Angebot gar nicht mehr abwählen, jeder Klick zog ihn
+ * nur weiter. Verschieben kostet jetzt zwei Klicks (freigeben, zuordnen),
+ * dafür tut ein Klick auf ein gefärbtes Wort immer dasselbe.
  */
 export function toggleRange(
   groups: Groups,
@@ -45,16 +47,17 @@ export function toggleRange(
   end: number,
 ): ToggleResult {
   const words = Array.from({ length: end - start }, (_, i) => start + i)
-  const alreadyActive =
-    active >= 0 && active < groups.length && words.every((w) => groups[active].includes(w))
+  const assigned = words.some((w) => groupOf(groups, w) >= 0)
 
-  const stripped = groups.map((group) => group.filter((w) => !words.includes(w)))
-  if (alreadyActive) return compact(stripped, active)
+  if (assigned) {
+    return compact(groups.map((group) => group.filter((w) => !words.includes(w))), active)
+  }
 
-  const target = active >= 0 ? active : stripped.length
-  while (stripped.length <= target) stripped.push([])
-  stripped[target] = [...stripped[target], ...words].sort((a, b) => a - b)
-  return compact(stripped, target)
+  const target = active >= 0 ? active : groups.length
+  const next = groups.map((group) => [...group])
+  while (next.length <= target) next.push([])
+  next[target] = [...next[target], ...words].sort((a, b) => a - b)
+  return compact(next, target)
 }
 
 /**

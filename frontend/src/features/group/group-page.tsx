@@ -355,7 +355,9 @@ export function GroupPage() {
             <li><kbd className="font-mono">← →</kbd> Seite wechseln</li>
           </ul>
           <p className="border-t-2 border-foreground/10 pt-3 text-xs text-muted-foreground">
-            Ein erneuter Klick nimmt die Zuordnung zurück. Was zu keinem Angebot
+            Ein Klick auf eine gefärbte Entity gibt sie frei, aus welchem Angebot
+            auch immer; ein Klick auf eine freie ordnet sie dem aktiven zu. Der
+            Rahmen holt Entities auch aus fremden Angeboten. Was zu keinem Angebot
             gehört – Kleingedrucktes, Seitenkopf – bleibt ungefärbt und zählt
             in keiner Messung mit.
           </p>
