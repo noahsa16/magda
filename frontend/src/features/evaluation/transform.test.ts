@@ -115,11 +115,11 @@ describe("Protokolle", () => {
     expect(overallF1(REPORTS, "gbert", "report")).toBe(0.75)
   })
 
-  it("fällt auf das Primärprotokoll zurück, wenn ein Report es nicht kennt", () => {
+  it("zeigt keine Ersatzmetrik, wenn das Protokoll fehlt", () => {
     // Ältere Dateien in data/eval/ haben nur `report`. Eine leere Tabelle
     // sähe aus wie "gemessen und nichts gefunden" statt "gar nicht gemessen".
-    expect(overallF1(REPORTS, "layoutxlm", "report_no_windows")).toBe(0.85)
-    expect(reportOf(REPORTS[1], "report_truncated")).toBe(REPORTS[1].report)
+    expect(overallF1(REPORTS, "layoutxlm", "report_no_windows")).toBeNull()
+    expect(reportOf(REPORTS[1], "report_truncated")).toEqual({})
   })
 
   it("meldet ein Protokoll nur als vorhanden, wenn es wirklich dasteht", () => {
@@ -218,6 +218,32 @@ describe("significanceFor", () => {
     expect(significanceFor([report], "gbert", "layoutxlm")).toBe(report)
   })
 
+  it("verknüpft Legacy-Reports ohne Fingerabdruck über den Punktwert", () => {
+    // data/eval/ vom 25.08.2026 trägt weder reference_sha256 noch checkpoint_sha256.
+    // Die Intervalle dort sind reproduziert und dürfen nicht verschwinden.
+    const legacy = (variant: string, f1: number): EvalReport => ({
+      variant, split: "test", num_pages: 100, created: "2026-08-02", protocol: "windowed",
+      report: { "micro avg": metrics(f1) },
+    })
+    const matching = [legacy("gbert", 0.89384), legacy("layoutxlm", 0.89517)]
+    expect(significanceFor([report], "gbert", "layoutxlm", matching)).toBe(report)
+    const otherCheckpoint = [legacy("gbert", 0.9271), legacy("layoutxlm", 0.89517)]
+    expect(significanceFor([report], "gbert", "layoutxlm", otherCheckpoint)).toBeNull()
+    expect(significanceFor([report], "gbert", "layoutxlm", matching, "report_no_windows")).toBeNull()
+  })
+
+  it("verlangt gleiche Fingerabdrücke, sobald beide Seiten einen tragen", () => {
+    const stamped = { ...report, reference_sha256: "ref-a", checkpoints: { gbert: "w1", layoutxlm: "w2" } }
+    const reports = (ref: string): EvalReport[] => [
+      { variant: "gbert", split: "test", num_pages: 100, created: "2026-08-02", reference_sha256: ref,
+        checkpoint_sha256: "w1", report: { "micro avg": metrics(0.8938) } },
+      { variant: "layoutxlm", split: "test", num_pages: 100, created: "2026-08-02", reference_sha256: ref,
+        checkpoint_sha256: "w2", report: { "micro avg": metrics(0.8952) } },
+    ]
+    expect(significanceFor([stamped], "gbert", "layoutxlm", reports("ref-a"))).toBe(stamped)
+    expect(significanceFor([stamped], "gbert", "layoutxlm", reports("ref-b"))).toBeNull()
+  })
+
   it("null statt eines fremden Vergleichs", () => {
     // Ein Lauf gbert-gegen-flair darf nicht als Layout-Vergleich durchgehen.
     expect(significanceFor([report], "gbert", "flair")).toBeNull()
@@ -309,5 +335,21 @@ describe("reportsOfOneSplit", () => {
   it("faellt auf den haeufigsten Split zurueck, wenn test fehlt", () => {
     const nurDev = gemischt.filter((r) => r.split === "dev")
     expect(reportsOfOneSplit(nurDev)).toEqual(nurDev)
+  })
+})
+
+
+describe("Experimente bleiben getrennt", () => {
+  it("verwirft andere Checkpoints auch bei neuerem Datum", () => {
+    const archive = { ...REPORTS[0], checkpoint: "gbert-sonnet-5-app", created: "2099", split: "dev" }
+    expect(reportsOfOneSplit([archive, ...REPORTS])).toEqual(REPORTS)
+  })
+
+  it("mischt verschiedene Referenzfingerabdruecke nicht", () => {
+    const selected = reportsOfOneSplit([
+      { ...REPORTS[0], reference_sha256: "first" },
+      { ...REPORTS[1], reference_sha256: "second" },
+    ])
+    expect(selected).toHaveLength(1)
   })
 })

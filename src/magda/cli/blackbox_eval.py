@@ -1,55 +1,11 @@
-"""Die LLM-Blackbox gegen die eigene Pipeline stellen - Produkt gegen Produkt.
+"""Blackbox gegen eigene Pipeline: Name und Aktionspreis je Preisvariante.
 
-    magda blackbox-eval --pages <dev-liste> --dry-run   # nur Verdrahtung
-    magda blackbox-eval --pages data/eval/test_cluster_pages.txt
-
-Der Vergleich ist dreispaltig, weil zwei Zahlen die falsche Frage
-beantworten wuerden:
-
-    Blackbox        gegen Referenz
-    eigene Pipeline gegen Referenz
-    Blackbox        gegen eigene Pipeline
-
-Referenz sind die Angebote, die aus den Lehrer-Labels gebaut werden. Sie ist
-**selbst LLM-erzeugt** - die ersten beiden Zeilen messen also Naehe zur
-Lehrerausgabe, nicht Richtigkeit, dieselbe Einschraenkung wie bei `magda
-agreement`. Die dritte Zeile kommt ohne Referenz aus und ist reine
-Uebereinstimmung. Wer eine der Zahlen berichtet, nennt die Einschraenkung
-mit, sonst behauptet er mehr als der Aufbau hergibt.
-
-Der eigentliche Nebengewinn ist die **Zeit**: die 170x-Zahl des Projekts
-vergleicht bisher Labeling gegen Inferenz, also einen Zwischenschritt gegen
-einen anderen. Hier laufen beide Wege bis zum fertigen Angebot.
-
-`--dry-run` macht alles ausser dem LLM-Aufruf und gibt **keine Quoten** aus.
-Damit laesst sich die Verdrahtung pruefen, ohne Kontingent zu verbrennen.
-Dass der Probelauf schweigt, ist kein Schoenheitsfehler: er rechnet
-"eigene Pipeline gegen Referenz" auch ohne die Blackbox, und wer ihn auf
-`test_cluster_pages.txt` laufen liesse, haette den Testsplit angefasst,
-bevor der Schlussbatch ueberhaupt beginnt.
-
-Was "Referenz" heisst, entscheidet `--reference-groups`. Der Default
-`heuristic` bildet `cluster_page`-Angebote aus den Lehrer-Labels - also
-**dieselbe Gruppierungsheuristik**, die mit `--grouper heuristic` auch auf
-der eigenen Seite laeuft. Die Zeile "eigene gegen Referenz" vergleicht damit
-die Heuristik weitgehend mit sich selbst und faellt entsprechend hoch aus.
-Gemessen am 03.09.2026 (`scripts/blackbox_decompose.py`): Heuristik gegen
-Heuristik-Referenz 0.839, Paarmodell gegen dieselbe Referenz 0.695 - obwohl
-das Paarmodell auf dem vollen Testsplit Gruppen-F1 0.778 gegen 0.439
-erreicht. Gegen die Teacher-Gruppierung (`--reference-groups teacher`)
-dreht sich das Bild: 0.811 gegen 0.708. Wer den Grouper wechselt, muss die
-Referenz mitwechseln, sonst misst er die Selbstaehnlichkeit der Heuristik.
-Die Blackbox-Antworten liegen als `blackbox_deals` im Report; ein Wechsel
-von Grouper oder Referenz braucht deshalb keinen neuen API-Lauf -
-`--blackbox-from <report.json>` liest sie wieder ein, statt die API zu rufen.
-
-`--reference-groups gold` ist die einzige Einstellung, bei der die ersten
-beiden Zeilen **Richtigkeit** messen statt Naehe zum Lehrer: Entities aus
-den handannotierten Spans in `gold/`, Angebote aus `gold/offers/`. Beides
-muss fuer eine Seite `status: done` tragen, sonst wird sie nicht gemessen -
-eine halb annotierte Seite als leere Referenz zu werten hiesse "alles
-falsch" statt "nicht gemessen". Die Seitenliste schrumpft dabei auf die
-fertig annotierten Seiten, und der Report nennt, welche fehlen.
+Default: LayoutXLM-Vorhersagen, Paarmodell, menschliche Spans und Gruppen.
+Die vollständige angeforderte Gold-Seitenliste muss fertig sein; Teilmessungen
+brauchen --allow-partial. --blackbox-from verwendet gespeicherte Antworten
+ohne API-Aufruf. Alte Reports bleiben erhalten; das Bewertungsprotokoll v2
+trägt einen eigenen Dateinamen. Altpreis und Zusatzfelder werden aufbewahrt,
+aber nicht durch den Haupt-F1 bewertet.
 """
 
 from __future__ import annotations
@@ -57,8 +13,9 @@ from __future__ import annotations
 import argparse
 import json
 import time
+from pathlib import Path
 
-from magda import blackbox_eval, config
+from magda import blackbox_eval, config, provenance
 
 
 def _pdf_path(page_id: str):
@@ -74,9 +31,7 @@ def _offers_of(page: dict, grouper: str, model=None):
 
     "heuristic" ist `offers.cluster_page` - reine Abstands-/Preisregeln,
     kein Training. "pair-model" ist das trainierte Paarmodell samt
-    ILP-Dekoder (`checkpoints/offer_pairs/model.pt`), das schwaechere von
-    beiden ist bewusst der Default, um bestehende Laeufe nicht stillschweigend
-    zu aendern - fuer die "beste lokale Konfiguration" explizit anfordern.
+    ILP-Dekoder (`checkpoints/offer_pairs/model.pt`).
     """
     if grouper == "heuristic":
         from magda import offers
@@ -98,11 +53,11 @@ def _deals_by_page(pages: list[dict], grouper: str = "heuristic", model=None) ->
     for page in pages:
         deals = []
         for offer in _offers_of(page, grouper, model):
-            deal = blackbox_eval.deal_from_offer(offer)
-            if deal is None:
+            projected = blackbox_eval.deals_from_offer(offer)
+            if not projected:
                 fragments += 1
             else:
-                deals.append(deal)
+                deals.extend(projected)
         result[page["page_id"]] = deals
     result["__fragments__"] = fragments  # type: ignore[assignment]
     return result
@@ -125,15 +80,14 @@ def _teacher_deals_by_page(pages: list[dict], reference_from: str) -> dict[str, 
     for page in pages:
         assignment = reference.assignments.get(page["page_id"])
         if assignment is None:
-            result[page["page_id"]] = []
-            continue
+            raise ValueError(f"Fertige Teacher-Gruppierung fehlt: {page['page_id']}")
         deals = []
         for offer in offers_gold.offers_from_reference(page, assignment):
-            deal = blackbox_eval.deal_from_offer(offer)
-            if deal is None:
+            projected = blackbox_eval.deals_from_offer(offer)
+            if not projected:
                 fragments += 1
             else:
-                deals.append(deal)
+                deals.extend(projected)
         result[page["page_id"]] = deals
     result["__fragments__"] = fragments  # type: ignore[assignment]
     return result
@@ -163,11 +117,11 @@ def _gold_deals_by_page(page_ids: list[str]) -> tuple[dict[str, list[dict]], lis
             continue
         deals = []
         for offer in offers_gold.offers_from_reference(page, assignment):
-            deal = blackbox_eval.deal_from_offer(offer)
-            if deal is None:
+            projected = blackbox_eval.deals_from_offer(offer)
+            if not projected:
                 fragments += 1
             else:
-                deals.append(deal)
+                deals.extend(projected)
         result[page_id] = deals
     result["__fragments__"] = fragments  # type: ignore[assignment]
     return result, missing
@@ -189,26 +143,26 @@ def main(argv=None):
                         help="Datei mit page_ids, eine je Zeile")
     parser.add_argument("--labels-from", default="sonnet-5",
                         help="Labelquelle der Referenzangebote")
-    parser.add_argument("--predictions", default="gbert",
+    parser.add_argument("--predictions", default="layoutxlm",
                         help="Vorhersagevariante der eigenen Pipeline")
-    parser.add_argument("--grouper", default="heuristic",
+    parser.add_argument("--grouper", default="pair-model",
                         choices=("heuristic", "pair-model"),
                         help="Wie die eigene Seite Entities zu Angeboten gruppiert.\n"
-                             "heuristic = offers.cluster_page (Default, ungetraint).\n"
-                             "pair-model = trainiertes Paarmodell + ILP-Dekoder")
+                             "heuristic = offers.cluster_page (untrainiert).\n"
+                             "pair-model = trainiertes Paarmodell + ILP-Dekoder (Default)")
     parser.add_argument("--checkpoint", default=None,
                         help="Checkpoint fuer --grouper pair-model "
                              "(Default: checkpoints/offer_pairs/model.pt)")
-    parser.add_argument("--reference-groups", default="heuristic",
+    parser.add_argument("--reference-groups", default="gold",
                         choices=("heuristic", "teacher", "gold"),
                         help="Wie die Referenzangebote gebildet werden.\n"
                              "heuristic = offers.cluster_page auf den Lehrer-Labels\n"
-                             "  (Default - Achtung, das ist dieselbe Heuristik wie\n"
+                             "  (Achtung, das ist dieselbe Heuristik wie\n"
                              "  --grouper heuristic und vergleicht sich teilweise\n"
                              "  selbst, siehe Moduldocstring).\n"
                              "teacher = data/offer_groups/<--reference-from>, die\n"
                              "  tatsaechlich vom Teacher gebildete Gruppierung.\n"
-                             "gold = Handannotation (Spans aus gold/, Gruppen aus\n"
+                             "gold = Handannotation (Default; Spans aus gold/, Gruppen aus\n"
                              "  gold/offers/) - die einzige Referenz, die\n"
                              "  Richtigkeit misst; nur fertige Seiten zaehlen")
     parser.add_argument("--reference-from", default="claude-sonnet-5",
@@ -225,12 +179,15 @@ def main(argv=None):
                              "neuen Lauf. --model wird aus dem Report uebernommen.")
     parser.add_argument("--limit", type=int,
                         help="nur die ersten N Seiten (Probelauf)")
+    parser.add_argument("--allow-partial", action="store_true",
+                        help="Unfertige Gold-Seiten ausdrücklich auslassen (explorative Teilmessung).")
     args = parser.parse_args(argv)
 
     from magda.cli.evaluate import read_page_ids
     from magda.cli.offers import _load_labeled_pages, _load_predicted_pages
 
     page_ids = read_page_ids(args.pages)
+    requested_pages = list(page_ids)
     if args.limit:
         page_ids = page_ids[:args.limit]
 
@@ -243,14 +200,17 @@ def main(argv=None):
     gold_reference = None
     if args.reference_groups == "gold":
         gold_reference, gold_missing = _gold_deals_by_page(page_ids)
+        if gold_missing and not args.allow_partial:
+            parser.exit(1, "Handannotation unvollständig. Alle Seiten brauchen fertige Spans und Gruppen. "
+                           "Für eine Teilmessung ausdrücklich --allow-partial setzen.\n")
         page_ids = [p for p in page_ids if p not in set(gold_missing)]
         if not page_ids:
             parser.exit(1, "Keine der Seiten ist in gold/ und gold/offers/ fertig "
                            "annotiert (status: done in beiden). Nichts zu messen.\n")
 
     wanted = set(page_ids)
-    reference_pages = [p for p in _load_labeled_pages(args.labels_from)
-                       if p.get("page_id") in wanted]
+    reference_pages = ([] if args.reference_groups == "gold" else
+                       [p for p in _load_labeled_pages(args.labels_from) if p.get("page_id") in wanted])
     predicted_pages = [p for p in _load_predicted_pages(args.predictions)
                        if p.get("page_id") in wanted]
 
@@ -260,22 +220,33 @@ def main(argv=None):
                        f"z. B. {sorted(missing)[0]}. Erst `magda predict "
                        f"{args.predictions}` auf diesen Seiten laufen lassen.\n")
 
+    for page in predicted_pages:
+        current = json.loads((config.WORDS_DIR / f"{page['page_id']}.json").read_text())
+        if [w["text"] for w in current["words"]] != [w["text"] for w in page["words"]]:
+            parser.exit(1, f"Vorhersage passt nicht zur Wortliste: {page['page_id']}.\n")
+    if replay is not None:
+        attempted = set(replay.get("pages", replay["blackbox_deals"]))
+        if wanted - attempted:
+            parser.exit(1, "Der gespeicherte Blackbox-Lauf enthält nicht alle angeforderten Seiten.\n")
+
     grouper_model = None
     if args.grouper == "pair-model":
         from magda import offer_model
         from magda.cli.offers_model import DEFAULT_CHECKPOINT
         grouper_model = offer_model.load(args.checkpoint or DEFAULT_CHECKPOINT)
 
-    started = time.perf_counter()
     if args.reference_groups == "gold":
         reference = gold_reference
     elif args.reference_groups == "teacher":
         reference = _teacher_deals_by_page(reference_pages, args.reference_from)
     else:
         reference = _deals_by_page(reference_pages)
+    started = time.perf_counter()
+    if wanted - set(reference):
+        parser.exit(1, "Referenz fehlt für angeforderte Seiten.\n")
     own = _deals_by_page(predicted_pages, args.grouper, grouper_model)
     own_fragments = own.pop("__fragments__")
-    reference.pop("__fragments__")
+    reference_fragments = reference.pop("__fragments__")
     own_seconds = time.perf_counter() - started
 
     reference_is_llm = args.reference_groups != "gold"
@@ -309,7 +280,9 @@ def main(argv=None):
         if not_replayed:
             errors.append(f"{len(not_replayed)} Seite(n) ohne Blackbox-Antwort im "
                           f"Report, z. B. {not_replayed[0]}")
-        blackbox_seconds = replay.get("seconds", {}).get("blackbox", 0.0)
+        blackbox_seconds = None
+        errors.extend(error for error in replay.get("errors", [])
+                      if any(error.startswith(page_id + ":") for page_id in page_ids))
         print(f"Blackbox-Antworten aus {args.blackbox_from} wiederverwendet "
               f"({len(blackbox_deals)} Seiten, kein API-Aufruf).\n")
     else:
@@ -347,6 +320,13 @@ def main(argv=None):
                   f"  {len(blackbox_deals.get(page_id, [])):>3} Angebote", flush=True)
         blackbox_seconds = time.perf_counter() - started
 
+    raw_blackbox_deals = blackbox_deals
+    blackbox_deals = {
+        page_id: [deal for deal in deals if deal.get("name") and deal.get("price") is not None]
+        for page_id, deals in raw_blackbox_deals.items()
+    }
+    blackbox_fragments = sum(len(deals) for deals in raw_blackbox_deals.values()) - sum(len(deals) for deals in blackbox_deals.values())
+
     def paired(a: dict, b: dict) -> dict:
         return blackbox_eval.compare_pages(
             {p: (a.get(p) or [], b.get(p) or []) for p in page_ids})
@@ -359,10 +339,11 @@ def main(argv=None):
               f"gebildet - Verdrahtung steht, keine Quote berechnet.")
         return
 
-    comparisons = {"eigene_vs_referenz": paired(own, reference)}
-    if blackbox_deals:
-        comparisons["blackbox_vs_referenz"] = paired(blackbox_deals, reference)
-        comparisons["blackbox_vs_eigene"] = paired(blackbox_deals, own)
+    comparisons = {
+        "eigene_vs_referenz": paired(own, reference),
+        "blackbox_vs_referenz": paired(blackbox_deals, reference),
+        "blackbox_vs_eigene": paired(blackbox_deals, own),
+    }
 
     print()
     print(f"  {'Vergleich':<34} {'Treffer':>7} {'System':>8} "
@@ -379,16 +360,22 @@ def main(argv=None):
     if blackbox_deals and replay is None:
         print(f"  Blackbox:        {blackbox_seconds / max(len(page_ids), 1):.1f} s je Seite")
     elif blackbox_deals:
-        print("  Blackbox:        Zeit aus dem wiederverwendeten Report, nicht neu gemessen")
+        print("  Blackbox:        Replay ohne API-Aufruf; keine neue Laufzeitmessung")
     for line in errors:
         print(f"  ! {line}")
 
     payload = {
+        "evaluation_version": blackbox_eval.EVALUATION_VERSION,
+        "matching_fields": list(blackbox_eval.COMMON_FIELDS),
+        "name_similarity": blackbox_eval.NAME_SIMILARITY,
+        "price_tolerance": 0.0,
+        "requested_pages": requested_pages,
         "pages": page_ids,
         "model": args.model,
         "prompt_version": (replay.get("prompt_version") if replay is not None
                            else None if args.dry_run else blackbox.PROMPT_VERSION),
         "blackbox_from": args.blackbox_from,
+        "replay_sha256": provenance.file_digest(Path(args.blackbox_from)) if replay is not None else None,
         "labels_from": config.model_slug(args.labels_from),
         "predictions": config.model_slug(args.predictions),
         "grouper": args.grouper,
@@ -398,10 +385,20 @@ def main(argv=None):
         "reference_is_llm": reference_is_llm,
         "gold_missing": gold_missing,
         "own_fragments": own_fragments,
+        "reference_fragments": reference_fragments,
+        "own_deals": own,
+        "reference_deals": reference,
+        "reference_sha256": provenance.digest(reference),
+        "prediction_sha256": provenance.prediction_identity(
+            config.DATA_DIR / "predictions" / config.model_slug(args.predictions), page_ids),
+        "checkpoint_sha256": provenance.checkpoint_digest(
+            Path(args.checkpoint or DEFAULT_CHECKPOINT)) if grouper_model else None,
+        "code": provenance.code_version(),
         "seconds": {"own_grouping": round(own_seconds, 3),
-                    "blackbox": round(blackbox_seconds, 1)},
+                    "blackbox": round(blackbox_seconds, 1) if blackbox_seconds is not None else None},
         "comparisons": comparisons,
-        "blackbox_deals": blackbox_deals,
+        "blackbox_deals": raw_blackbox_deals,
+        "blackbox_fragments": blackbox_fragments,
         "errors": errors,
     }
     config.EVAL_DIR.mkdir(parents=True, exist_ok=True)
@@ -412,7 +409,7 @@ def main(argv=None):
     # Frage beantwortet.
     suffix = f"_{args.grouper}" if args.grouper != "heuristic" else ""
     suffix += f"_ref-{args.reference_groups}" if args.reference_groups != "heuristic" else ""
-    out_path = config.EVAL_DIR / f"blackbox_test_{config.model_slug(args.model)}{suffix}.json"
+    out_path = config.EVAL_DIR / f"blackbox_test_{config.model_slug(args.model)}{suffix}_{blackbox_eval.EVALUATION_VERSION}.json"
     with open(out_path, "w") as f:
         json.dump(payload, f, indent=2, ensure_ascii=False)
     print(f"\nReport: {out_path}")

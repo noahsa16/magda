@@ -22,6 +22,7 @@ from datetime import datetime
 from magda.config import DATA_DIR, EVAL_DIR, VARIANTS, WORDS_DIR, labeled_dir
 from magda.dataset import get_or_create_splits, load_labeled_pages
 from magda.dedupe import group
+from magda import provenance
 from magda.significance import bootstrap_f1, paired_bootstrap
 
 CLUSTER_THRESHOLD = 0.7
@@ -126,11 +127,24 @@ def main(argv=None):
               f"und bleiben draussen (Vorhersagen frueherer Laeufe).")
 
     reference = []
+    reference_pages = []
+    checkpoint_hashes = {}
     for pid in shared:
         path = labeled_dir(args.labels_from) / f"{pid}.json"
         if not path.exists():
             sys.exit(f"Referenz fehlt: {path}")
-        reference.append(json.loads(path.read_text())["tags"])
+        page = json.loads(path.read_text())
+        page["page_id"] = pid
+        reference_pages.append(page)
+        reference.append(page["tags"])
+        for name in (a, b):
+            prediction = json.loads((DATA_DIR / "predictions" / name / f"{pid}.json").read_text())
+            if [w["text"] for w in prediction["words"]] != [w["text"] for w in page["words"]]:
+                sys.exit(f"Vorhersage von {name} passt nicht zur Wortliste {pid}.")
+            identity = (prediction.get("checkpoint_sha256"), prediction.get("protocol"))
+            if name in checkpoint_hashes and checkpoint_hashes[name] != identity:
+                sys.exit(f"Gemischte Checkpoints/Protokolle in den Vorhersagen von {name}.")
+            checkpoint_hashes[name] = identity
 
     clusters = test_clusters(shared)
     print(f"{len(shared)} Seiten in {len(clusters)} Clustern "
@@ -166,6 +180,13 @@ def main(argv=None):
             {
                 "created": datetime.now().isoformat(timespec="seconds"),
                 "labels_from": args.labels_from,
+                "split": "test",
+                "protocol": "windowed" if all(value[1] == "windowed" for value in checkpoint_hashes.values()) else "unknown",
+                "model_order": [a, b],
+                "checkpoints": {name: value[0] for name, value in checkpoint_hashes.items()},
+                **provenance.reference_identity(reference_pages),
+                "prediction_sha256": {name: provenance.prediction_identity(DATA_DIR / "predictions" / name, shared) for name in (a, b)},
+                "code": provenance.code_version(),
                 "pages": len(shared),
                 "clusters": len(clusters),
                 "cluster_threshold": CLUSTER_THRESHOLD,
