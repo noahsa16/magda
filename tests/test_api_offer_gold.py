@@ -134,28 +134,16 @@ def test_uebersicht_nennt_stand_und_veraltung(client):
     assert zeilen[0]["stale"] is False
 
 
-def test_sonnet_gruppierung_ist_die_website_referenz(client):
-    """sonnet-5 IST Gold: ohne Handannotation zeigt die Seite die sonnet-Gruppen.
-
-    Vor dem Overlay lieferte eine Seite ohne gold/offers/-Datei "untouched" und
-    leere Gruppen - die 142 sonnet-Gruppierungen waren auf der Website
-    unsichtbar, obwohl sonnet die Projektreferenz ist.
-    """
+def test_lehrergruppen_bleiben_aus_der_handannotation_heraus(client):
     _write_sonnet([[0, 1, 2]])
-
-    antwort = client.get("/api/offer-gold/1_p1").json()
-
-    assert antwort["groups"] == [[0, 1, 2]]
-    assert antwort["status"] == "done"
-    assert antwort["source"] == "sonnet"
+    response = client.get("/api/offer-gold/1_p1").json()
+    assert response["groups"] == []
+    assert response["status"] == "untouched"
+    assert response["source"] == "untouched"
 
 
 def test_handannotation_schlaegt_die_sonnet_referenz(client):
-    """Was ein Mensch gruppiert, gewinnt ueber die maschinelle Referenz.
-
-    gold/offers/ bleibt die Override-Schicht: die Handannotation ist genauer
-    als das Modell und schattet die sonnet-Gruppierung derselben Seite.
-    """
+    """Die Handdatei wird unabhängig vom vorhandenen Teacher gelesen."""
     _write_sonnet([[0, 1, 2]])
     client.put("/api/offer-gold/1_p1", json={
         "words_hash": _hash(), "status": "done", "annotator": "noah", "groups": [[0, 1]],
@@ -167,15 +155,27 @@ def test_handannotation_schlaegt_die_sonnet_referenz(client):
     assert antwort["source"] == "gold"
 
 
-def test_uebersicht_zeigt_sonnet_als_quelle(client):
+def test_uebersicht_zaehlt_lehrergruppen_nicht_als_handarbeit(client):
     """Die Herkunft steht in der Liste, damit Mensch und Modell unterscheidbar bleiben."""
     _write_sonnet([[0, 1, 2]])
 
     zeilen = client.get("/api/offer-gold").json()
 
-    assert zeilen[0]["source"] == "sonnet"
-    assert zeilen[0]["num_offers"] == 1
+    assert zeilen[0]["source"] == "untouched"
+    assert zeilen[0]["num_offers"] == 0
 
 
 def test_unbekannte_seite_ist_ein_404(client):
     assert client.get("/api/offer-gold/gibtsnicht").status_code == 404
+
+
+def test_auswahlhilfe_liest_nur_fertige_gold_spans(client):
+    directory = config.LABELED_DIR / config.CANONICAL_LABELS
+    directory.mkdir()
+    (directory / "1_p1.json").write_text(json.dumps({**SEITE, "tags": ["B-PRODUCT", "I-PRODUCT", "B-PRICE"]}))
+    assert client.get("/api/annotation-page/1_p1").json()["tags"] == ["O"] * 3
+    client.put("/api/gold/1_p1", json={
+        "words_hash": _hash(), "status": "done", "annotator": "test",
+        "spans": [{"start": 1, "end": 2, "label": "PRODUCT"}],
+    })
+    assert client.get("/api/annotation-page/1_p1").json()["tags"] == ["O", "B-PRODUCT", "O"]
