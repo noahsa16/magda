@@ -1,5 +1,6 @@
 import { screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
+import { useLocation } from "react-router-dom"
 import { afterEach, describe, expect, it, vi } from "vitest"
 import { mockFetch, renderWithProviders } from "@/test/utils"
 import { AnnotatePage } from "./annotate-page"
@@ -38,6 +39,11 @@ function setup({ route, ...overrides }: Record<string, unknown> & { route?: stri
   return renderWithProviders(<AnnotatePage />, {
     route: (route as string | undefined) ?? "/annotate?catalog=462828&page=462828_p1",
   })
+}
+
+/** Macht die URL im DOM sichtbar: renderWithProviders gibt keinen Router zurück. */
+function LocationProbe() {
+  return <span data-testid="location">{useLocation().search}</span>
 }
 
 afterEach(() => vi.unstubAllGlobals())
@@ -188,6 +194,41 @@ describe("AnnotatePage — Ebenen", () => {
     setup({ route: "/annotate" })
     await user.click(await screen.findByRole("button", { name: /462828/ }))
     expect(await screen.findByLabelText("Annotator")).toBeInTheDocument()
+  })
+
+  it("behält den Annotator-Ordner beim Öffnen einer Seite in der URL", async () => {
+    // Belegter Fall (07.09.2026): Aus dem Ordner "Noah" einen Katalog und
+    // dann eine Seite anklicken warf ?annotator= aus der URL – und BrowsePage
+    // schickte einen damit auf die Quellenübersicht zurück.
+    const user = userEvent.setup()
+    mockFetch({
+      "/api/schema": { entity_types: ["PRODUCT", "BRAND"] },
+      "/api/status": STATUS,
+      "/api/pages/462828_p1": PAGE,
+      "/api/pages": [{ page_id: "462828_p1", catalog: "462828", labeled: false }],
+      "/api/gold/462828_p1": {
+        page_id: "462828_p1", words_hash: "abc", status: "untouched",
+        annotator: "", updated: null, spans: [], stale: false,
+      },
+      "/api/gold": [{
+        page_id: "462828_p1", catalog: "462828", status: "untouched",
+        annotator: "", num_spans: 0, stale: false,
+      }],
+    })
+    renderWithProviders(
+      <>
+        <AnnotatePage />
+        <LocationProbe />
+      </>,
+      { route: "/annotate?annotator=Noah" },
+    )
+    await user.click(await screen.findByRole("button", { name: /462828/ }))
+    expect(screen.getByTestId("location").textContent).toContain("annotator=Noah")
+    await user.click(await screen.findByRole("button", { name: /^p1/ }))
+    await waitFor(() =>
+      expect(screen.getByTestId("location").textContent).toContain("page=462828_p1"),
+    )
+    expect(screen.getByTestId("location").textContent).toContain("annotator=Noah")
   })
 
   it("führt über den Brotkrumen zurück zur Übersicht", async () => {

@@ -4,6 +4,7 @@ import { Crumbs } from "@/components/crumbs"
 import { FolderGrid, type FolderItem } from "@/components/folder-grid"
 import { Skeleton } from "@/components/ui/skeleton"
 import { AnnotatePage } from "@/features/annotate/annotate-page"
+import { taskProgress } from "@/features/annotate/task-banner"
 import { InspectorPage } from "@/features/inspector/inspector-page"
 import { api } from "@/lib/api"
 
@@ -20,6 +21,9 @@ import { api } from "@/lib/api"
  * Labels an, AnnotatePage bearbeitet Gold. Diese Seite entscheidet nur, welche
  * von beiden dran ist.
  */
+/** Kachel-ID der Aufgabe; kann mit keinem Annotatornamen kollidieren. */
+const TASK_FOLDER = "__task__"
+
 export function BrowsePage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const navigate = useNavigate()
@@ -31,11 +35,17 @@ export function BrowsePage() {
   // Nur anbieten, was auch vorsortiert ist: ohne `magda audit` führte der Link
   // auf eine leere Seite mit einer Kommandozeile darauf.
   const audits = useQuery({ queryKey: ["audits"], queryFn: api.audits })
+  // Die abgesprochene Aufgabe ist der eigentliche Einstieg in die
+  // Handannotation. Ihre Seiten haben noch keine Gold-Datei und damit keinen
+  // Annotator – in den Urheber-Ordnern kommt sie deshalb nicht vor.
+  const task = useQuery({ queryKey: ["annotation-task"], queryFn: api.annotationTask })
+  const gold = useQuery({ queryKey: ["gold"], queryFn: api.gold })
 
   // Ist eine Quelle gewählt, übernimmt die zuständige Seite vollständig –
-  // samt eigener Brotkrumen, Blättern und Tastatursteuerung.
+  // samt eigener Brotkrumen, Blättern und Tastatursteuerung. `annotator=`
+  // ohne Wert ist "alle Seiten" und muss genauso in den Annotator führen.
   if (model) return <InspectorPage />
-  if (annotator) return <AnnotatePage />
+  if (annotator !== null) return <AnnotatePage />
 
   if (sources.isPending) return <Skeleton className="h-40 w-full" />
 
@@ -91,6 +101,17 @@ export function BrowsePage() {
   }
 
   if (group === "gold") {
+    const taskItem: FolderItem[] = []
+    if (task.data && task.data.pages.length > 0) {
+      const { done } = taskProgress(task.data, gold.data ?? [])
+      taskItem.push({
+        id: TASK_FOLDER,
+        label: task.data.title,
+        sublabel: `${done} von ${task.data.pages.length} Seiten fertig`,
+        badge: task.data.for.length > 0 ? `für ${task.data.for.join(" und ")}` : undefined,
+        tone: "gold",
+      })
+    }
     const items: FolderItem[] = golds.map((source) => {
       // Ungeprüfte Vorannotation ist etwas anderes als bestätigte Handarbeit
       // und darf nicht gleich aussehen – sonst verlässt sich jemand darauf.
@@ -112,8 +133,11 @@ export function BrowsePage() {
           { label: "Handannotation" },
         ])}
         <FolderGrid
-          items={items}
-          onOpen={(id) => setSearchParams({ annotator: id })}
+          items={[...taskItem, ...items]}
+          // Die Aufgabe geht quer über Kataloge und Annotatoren: sie öffnet
+          // den Annotator ungefiltert, dort steht sie als Banner mit
+          // "Nächste offene Seite".
+          onOpen={(id) => setSearchParams({ annotator: id === TASK_FOLDER ? "" : id })}
           emptyHint="Noch nichts von Hand annotiert."
         />
         <button

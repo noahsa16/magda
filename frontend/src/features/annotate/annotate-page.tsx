@@ -48,7 +48,16 @@ export function AnnotatePage() {
   const task = useQuery({ queryKey: ["annotation-task"], queryFn: api.annotationTask })
   // Wer hat annotiert? Beim Durchsehen ist das die erste Frage: eigene
   // Seiten bestätigen heißt etwas anderes als Vorannotation prüfen.
-  const annotatorFilter = searchParams.get("annotator") ?? undefined
+  // `annotator=` ohne Wert heißt "alle Seiten ohne Filter": ?? liesse den
+  // Leerstring durch und filterte dann auf Seiten ohne Annotatornamen.
+  const annotatorFilter = searchParams.get("annotator") || undefined
+  // Jede Navigation innerhalb des Annotators muss den Ordner mitführen:
+  // BrowsePage entscheidet allein an diesem Parameter, dass der Annotator
+  // dran ist. Ohne ihn landete jeder Seitenwechsel auf der Quellenübersicht.
+  const inFolder = (params: Record<string, string>) =>
+    searchParams.has("annotator")
+      ? { annotator: searchParams.get("annotator")!, ...params }
+      : params
   const page = useQuery({
     queryKey: ["page", selected],
     queryFn: () => api.page(selected!),
@@ -96,7 +105,7 @@ export function AnnotatePage() {
   }, [taskPages])
   const openTaskPage = (id: string) => {
     setSel(null)
-    setSearchParams({ catalog: id.split("_p")[0], page: id })
+    setSearchParams(inFolder({ catalog: id.split("_p")[0], page: id }))
   }
 
   useEffect(() => {
@@ -106,7 +115,7 @@ export function AnnotatePage() {
   function goto(i: number) {
     if (i < 0 || i >= ids.length) return
     setSel(null)
-    setSearchParams({ catalog: catalog!, page: ids[i] })
+    setSearchParams(inFolder({ catalog: catalog!, page: ids[i] }))
   }
 
   const range = sel ? { start: Math.min(sel.anchor, sel.focus), end: Math.max(sel.anchor, sel.focus) + 1 } : null
@@ -170,11 +179,7 @@ export function AnnotatePage() {
         <CatalogGrid
           tiles={tiles}
           unit="fertig"
-          onSelect={(id) =>
-            setSearchParams(
-              annotatorFilter ? { annotator: annotatorFilter, catalog: id } : { catalog: id },
-            )
-          }
+          onSelect={(id) => setSearchParams(inFolder({ catalog: id }))}
           emptyHint={EMPTY_HINT}
           taskCounts={taskCounts}
         />
@@ -195,7 +200,7 @@ export function AnnotatePage() {
         <CatalogGrid
           tiles={tiles}
           unit="fertig"
-          onSelect={(id) => setSearchParams({ catalog: id })}
+          onSelect={(id) => setSearchParams(inFolder({ catalog: id }))}
           emptyHint={EMPTY_HINT}
         />
       </div>
@@ -215,9 +220,9 @@ export function AnnotatePage() {
         <div className="flex items-baseline gap-3">
           <Crumbs
             items={[
-              { label: "Prospekte", onClick: () => setSearchParams({}) },
+              { label: "Prospekte", onClick: () => setSearchParams(inFolder({})) },
               selected
-                ? { label: catalog, onClick: () => setSearchParams({ catalog }) }
+                ? { label: catalog, onClick: () => setSearchParams(inFolder({ catalog })) }
                 : { label: catalog },
               ...(selected ? [{ label: selected.split("_").pop()! }] : []),
             ]}
@@ -266,7 +271,7 @@ export function AnnotatePage() {
         <PageList
           pages={catalogPages}
           selected={selected}
-          onSelect={(id) => { setSel(null); setSearchParams({ catalog: catalog, page: id }) }}
+          onSelect={(id) => { setSel(null); setSearchParams(inFolder({ catalog: catalog, page: id })) }}
           goldStatus={goldRows}
           taskPages={taskPages}
         />
