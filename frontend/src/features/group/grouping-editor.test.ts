@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { groupOf, removeGroup, startGroup, toggleRange } from "./grouping-editor"
+import { assignWords, groupOf, removeGroup, startGroup, toggleRange } from "./grouping-editor"
 
 /** Ein Wort in ein Angebot legen ist ein Klick; die Regeln dahinter sind
  * dieselben wie in der API: höchstens ein Angebot je Wort, keine leeren
@@ -36,12 +36,19 @@ describe("toggleRange", () => {
     expect(groups).toEqual([[3, 4]])
   })
 
-  it("löst ein Wort aus einem fremden Angebot heraus", () => {
-    // Ein Wort kann nur einem Angebot gehören. Den Klick wirkungslos zu
-    // lassen, versteckte den Grund - hier wechselt es sichtbar die Seite.
-    const { groups } = toggleRange([[0, 1], [5]], 1, 1, 2)
+  it("gibt ein Wort aus einem fremden Angebot frei, statt es herüberzuholen", () => {
+    // Belegter Fall (07.09.2026): Ein Fehlgriff in einem früheren Angebot
+    // liess sich nicht abwählen, weil jeder Klick ihn ins aktive zog.
+    const { groups, active } = toggleRange([[0, 1], [5]], 1, 1, 2)
 
-    expect(groups).toEqual([[0], [1, 5]])
+    expect(groups).toEqual([[0], [5]])
+    expect(active).toBe(1)
+  })
+
+  it("gibt eine halb zugeordnete Entity ganz frei, statt den Rest zuzuordnen", () => {
+    const { groups } = toggleRange([[0]], 1, 0, 2)
+
+    expect(groups).toEqual([])
   })
 
   it("hält die Wörter eines Angebots sortiert", () => {
@@ -66,12 +73,12 @@ describe("toggleRange", () => {
   })
 
   it("zieht den aktiven Index nach, wenn ein vorderes Angebot wegfällt", () => {
-    // Wort 0 wechselt aus dem ersten Angebot ins aktive dritte; das erste
-    // bleibt leer zurück und faellt weg. Ohne Nachfuehrung zeigte `active`
-    // danach auf das falsche Angebot.
+    // Wort 0 wird aus dem ersten Angebot freigegeben, während das dritte
+    // aktiv ist; das erste bleibt leer zurück und fällt weg. Ohne
+    // Nachführung zeigte `active` danach auf das falsche Angebot.
     const { groups, active } = toggleRange([[0], [5], [9]], 2, 0, 1)
 
-    expect(groups).toEqual([[5], [0, 9]])
+    expect(groups).toEqual([[5], [9]])
     expect(active).toBe(1)
   })
 })
@@ -103,5 +110,28 @@ describe("removeGroup", () => {
 
   it("lässt einen Index ausserhalb der Liste unberührt", () => {
     expect(removeGroup([[0]], 7).groups).toEqual([[0]])
+  })
+})
+
+describe("assignWords", () => {
+  it("nimmt schon zugeordnete Wörter nicht wieder heraus", () => {
+    // Der Unterschied zu toggleRange: ein zweites, grösseres Rechteck über
+    // dasselbe Angebot darf nichts zurücknehmen.
+    const { groups, active } = assignWords([[3, 4]], 0, [3, 4, 7])
+
+    expect(groups).toEqual([[3, 4, 7]])
+    expect(active).toBe(0)
+  })
+
+  it("legt ohne aktives Angebot ein neues an", () => {
+    expect(assignWords([[0]], -1, [5, 6]).groups).toEqual([[0], [5, 6]])
+  })
+
+  it("holt Wörter aus einem fremden Angebot herüber", () => {
+    expect(assignWords([[0, 1], [5]], 1, [1]).groups).toEqual([[0], [1, 5]])
+  })
+
+  it("ändert bei leerer Auswahl nichts", () => {
+    expect(assignWords([[0]], -1, [])).toEqual({ groups: [[0]], active: -1 })
   })
 })

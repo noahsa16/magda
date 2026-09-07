@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
-import { render, screen } from "@testing-library/react"
+import { render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { createMemoryRouter, RouterProvider } from "react-router-dom"
 import { describe, expect, it, vi } from "vitest"
@@ -37,8 +37,22 @@ const SOURCES: LabelSource[] = [
   },
 ]
 
+const TASK = {
+  title: "Testkatalog 1364390 von Hand annotieren",
+  created: "2026-09-03",
+  for: ["Kjell", "Bogdan"],
+  why: "",
+  pages: ["1364390_p1", "1364390_p2", "1364390_p3"],
+}
+
 function setup(route = "/labels", audits: { label: string; total: number; judged: number }[] = []) {
   vi.spyOn(api, "sources").mockResolvedValue(SOURCES)
+  vi.spyOn(api, "annotationTask").mockResolvedValue(TASK)
+  vi.spyOn(api, "gold").mockResolvedValue([
+    { page_id: "1364390_p1", catalog: "1364390", status: "done", annotator: "Kjell", num_spans: 4, stale: false },
+    { page_id: "1364390_p2", catalog: "1364390", status: "untouched", annotator: "", num_spans: 0, stale: false },
+    { page_id: "1364390_p3", catalog: "1364390", status: "untouched", annotator: "", num_spans: 0, stale: false },
+  ])
   vi.spyOn(api, "audits").mockResolvedValue({
     audits: audits.map((a) => ({
       labels_from: "sonnet-5",
@@ -51,6 +65,7 @@ function setup(route = "/labels", audits: { label: string; total: number; judged
     [
       { path: "/labels", element: <BrowsePage /> },
       { path: "/group", element: <div>Gruppierungsseite</div> },
+      { path: "/annotate", element: <div>Annotator</div> },
     ],
     { initialEntries: [route] },
   )
@@ -103,6 +118,33 @@ describe("BrowsePage — Ordnerebenen", () => {
   })
 })
 
+
+describe("BrowsePage — Annotationsaufgabe", () => {
+  it("zeigt die Aufgabe als ersten Ordner der Handannotation", async () => {
+    // Die Aufgabenseiten haben noch keine Gold-Datei, also keinen Annotator.
+    // In den Urheber-Ordnern ("Noah 3 von 3") kam die Aufgabe deshalb gar
+    // nicht vor – der Einstieg für Kjell und Bogdan fehlte.
+    const user = userEvent.setup()
+    setup()
+    await user.click(await screen.findByRole("button", { name: /Handannotation öffnen/ }))
+    expect(await screen.findByText(TASK.title)).toBeInTheDocument()
+    expect(screen.getByText("1 von 3 Seiten fertig")).toBeInTheDocument()
+    expect(screen.getByText("für Kjell und Bogdan")).toBeInTheDocument()
+  })
+
+  it("öffnet die Aufgabe im ungefilterten Annotator", async () => {
+    // `annotator=` ohne Wert: BrowsePage warf den Leerstring als "nicht
+    // gesetzt" weg und zeigte die Quellenübersicht statt des Annotators.
+    const user = userEvent.setup()
+    setup()
+    await user.click(await screen.findByRole("button", { name: /Handannotation öffnen/ }))
+    await user.click(await screen.findByText(TASK.title))
+    // AnnotatePage selbst lädt hier nicht (Fetch ist nicht gemockt); es
+    // reicht, dass die Ordnerebene weg ist und der Annotator übernimmt.
+    await waitFor(() => expect(screen.queryByText("Handannotation")).not.toBeInTheDocument())
+    expect(screen.queryByText("Modell-Labels")).not.toBeInTheDocument()
+  })
+})
 
 describe("BrowsePage — Label-Prüfung", () => {
   it("bietet die Prüfung nur an, wenn etwas vorsortiert ist", async () => {

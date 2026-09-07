@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query"
-import { Check, ChevronLeft, ChevronRight } from "lucide-react"
+import { ArrowRight, Check, ChevronLeft, ChevronRight, Trash2 } from "lucide-react"
 import { useEffect, useMemo, useState } from "react"
-import { useSearchParams } from "react-router-dom"
+import { Link, useSearchParams } from "react-router-dom"
 import { CatalogGrid } from "@/components/catalog-grid"
 import { Crumbs } from "@/components/crumbs"
 import { PageOverlay } from "@/components/page-overlay"
@@ -48,7 +48,16 @@ export function AnnotatePage() {
   const task = useQuery({ queryKey: ["annotation-task"], queryFn: api.annotationTask })
   // Wer hat annotiert? Beim Durchsehen ist das die erste Frage: eigene
   // Seiten bestätigen heißt etwas anderes als Vorannotation prüfen.
-  const annotatorFilter = searchParams.get("annotator") ?? undefined
+  // `annotator=` ohne Wert heißt "alle Seiten ohne Filter": ?? liesse den
+  // Leerstring durch und filterte dann auf Seiten ohne Annotatornamen.
+  const annotatorFilter = searchParams.get("annotator") || undefined
+  // Jede Navigation innerhalb des Annotators muss den Ordner mitführen:
+  // BrowsePage entscheidet allein an diesem Parameter, dass der Annotator
+  // dran ist. Ohne ihn landete jeder Seitenwechsel auf der Quellenübersicht.
+  const inFolder = (params: Record<string, string>) =>
+    searchParams.has("annotator")
+      ? { annotator: searchParams.get("annotator")!, ...params }
+      : params
   const page = useQuery({
     queryKey: ["page", selected],
     queryFn: () => api.page(selected!),
@@ -96,7 +105,7 @@ export function AnnotatePage() {
   }, [taskPages])
   const openTaskPage = (id: string) => {
     setSel(null)
-    setSearchParams({ catalog: id.split("_p")[0], page: id })
+    setSearchParams(inFolder({ catalog: id.split("_p")[0], page: id }))
   }
 
   useEffect(() => {
@@ -106,7 +115,7 @@ export function AnnotatePage() {
   function goto(i: number) {
     if (i < 0 || i >= ids.length) return
     setSel(null)
-    setSearchParams({ catalog: catalog!, page: ids[i] })
+    setSearchParams(inFolder({ catalog: catalog!, page: ids[i] }))
   }
 
   const range = sel ? { start: Math.min(sel.anchor, sel.focus), end: Math.max(sel.anchor, sel.focus) + 1 } : null
@@ -170,11 +179,7 @@ export function AnnotatePage() {
         <CatalogGrid
           tiles={tiles}
           unit="fertig"
-          onSelect={(id) =>
-            setSearchParams(
-              annotatorFilter ? { annotator: annotatorFilter, catalog: id } : { catalog: id },
-            )
-          }
+          onSelect={(id) => setSearchParams(inFolder({ catalog: id }))}
           emptyHint={EMPTY_HINT}
           taskCounts={taskCounts}
         />
@@ -195,7 +200,7 @@ export function AnnotatePage() {
         <CatalogGrid
           tiles={tiles}
           unit="fertig"
-          onSelect={(id) => setSearchParams({ catalog: id })}
+          onSelect={(id) => setSearchParams(inFolder({ catalog: id }))}
           emptyHint={EMPTY_HINT}
         />
       </div>
@@ -215,9 +220,9 @@ export function AnnotatePage() {
         <div className="flex items-baseline gap-3">
           <Crumbs
             items={[
-              { label: "Prospekte", onClick: () => setSearchParams({}) },
+              { label: "Prospekte", onClick: () => setSearchParams(inFolder({})) },
               selected
-                ? { label: catalog, onClick: () => setSearchParams({ catalog }) }
+                ? { label: catalog, onClick: () => setSearchParams(inFolder({ catalog })) }
                 : { label: catalog },
               ...(selected ? [{ label: selected.split("_").pop()! }] : []),
             ]}
@@ -266,7 +271,7 @@ export function AnnotatePage() {
         <PageList
           pages={catalogPages}
           selected={selected}
-          onSelect={(id) => { setSel(null); setSearchParams({ catalog: catalog, page: id }) }}
+          onSelect={(id) => { setSel(null); setSearchParams(inFolder({ catalog: catalog, page: id })) }}
           goldStatus={goldRows}
           taskPages={taskPages}
         />
@@ -298,15 +303,43 @@ export function AnnotatePage() {
                 <p className="font-mono text-sm tabular-nums">
                   {ann.spans.length} Spans · {data.words.length} Wörter
                 </p>
-                <Button
-                  size="sm"
-                  variant={ann.status === "done" ? "default" : "outline"}
-                  disabled={ann.conflict}
-                  onClick={toggleDone}
-                >
-                  <Check className="size-4" />
-                  {ann.status === "done" ? "Fertig" : "Als fertig markieren"}
-                </Button>
+                <div className="flex items-center gap-2">
+                  {/* Rückfrage, weil es die Handarbeit einer ganzen Seite
+                      wegwirft und die Speicherung 300 ms später folgt. */}
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={ann.conflict || ann.spans.length === 0}
+                    onClick={() => {
+                      if (!window.confirm(`Alle ${ann.spans.length} Spans dieser Seite löschen?`)) return
+                      ann.setSpans([])
+                      setSel(null)
+                    }}
+                  >
+                    <Trash2 className="size-4" />
+                    Alle Spans löschen
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant={ann.status === "done" ? "default" : "outline"}
+                    disabled={ann.conflict}
+                    onClick={toggleDone}
+                  >
+                    <Check className="size-4" />
+                    {ann.status === "done" ? "Fertig" : "Als fertig markieren"}
+                  </Button>
+                  {/* Der zweite Schritt der Aufgabe ist ein eigenes Werkzeug,
+                      und der Gruppierer nimmt nur fertige Spans an. Ohne den
+                      Link endete die Seite hier in einer Sackgasse. */}
+                  {ann.status === "done" && !ann.conflict && (
+                    <Button size="sm" variant="outline" asChild>
+                      <Link to={`/group?catalog=${catalog}&page=${selected}`}>
+                        Angebote gruppieren
+                        <ArrowRight className="size-4" />
+                      </Link>
+                    </Button>
+                  )}
+                </div>
               </div>
 
               <PageOverlay
