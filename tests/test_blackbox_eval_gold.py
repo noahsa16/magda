@@ -89,13 +89,14 @@ def test_replay_misst_gegen_gold_ohne_api_und_laesst_unfertige_seiten_aus(projek
     (projekt / "old_report.json").write_text(json.dumps(report))
 
     cli.main(["--pages", str(projekt / "pages.txt"), "--reference-groups", "gold",
-              "--blackbox-from", str(projekt / "old_report.json")])
+              "--blackbox-from", str(projekt / "old_report.json"),
+              "--predictions", "gbert", "--grouper", "heuristic", "--allow-partial"])
 
     out = capsys.readouterr().out
     assert "Seiten:     1 (2 ohne fertige Handannotation ausgelassen)" in out
     assert "Richtigkeit" in out
     written = json.loads((projekt / "eval" /
-                          "blackbox_test_irgendein-vision-modell_ref-gold.json").read_text())
+                          "blackbox_test_irgendein-vision-modell_ref-gold_offer-price-v2.json").read_text())
     assert written["pages"] == ["p_done"]
     assert written["reference_is_llm"] is False
     assert sorted(written["gold_missing"]) == ["p_half", "p_none"]
@@ -104,3 +105,8 @@ def test_replay_misst_gegen_gold_ohne_api_und_laesst_unfertige_seiten_aus(projek
     # gegen dieselben zwei Referenzangebote gemessen wird.
     assert written["comparisons"]["blackbox_vs_referenz"]["recall"] == 0.5
     assert written["comparisons"]["eigene_vs_referenz"]["reference"] == 2
+
+
+def test_abschlussmessung_verlangt_die_ganze_seitenliste(projekt):
+    with pytest.raises(SystemExit, match="1"):
+        cli.main(["--pages", str(projekt / "pages.txt"), "--reference-groups", "gold"])

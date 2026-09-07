@@ -83,7 +83,7 @@ export function JobForm({ job, values, onChange, onStart, disabled }: JobFormPro
                   <Input
                     id={id}
                     value={values[param.key] ?? ""}
-                    inputMode={param.kind === "str" ? "text" : "decimal"}
+                    inputMode={param.kind === "int" || param.kind === "float" ? "decimal" : "text"}
                     placeholder={param.help}
                     onChange={(e) => onChange(param.key, e.target.value)}
                   />

@@ -164,6 +164,12 @@ export type SchemeKey = "strict" | "exact" | "partial" | "type"
 export type ProtocolKey = "report" | "report_no_windows" | "report_truncated"
 
 export interface EvalReport {
+  checkpoint?: string
+  checkpoint_sha256?: string
+  labels_from?: string
+  reference?: string
+  reference_sha256?: string
+  page_ids?: string[]
   // Offen, nicht als Union: die Arme stehen in `config.VARIANTS` im Backend,
   // und eine zweite Liste hier driftet davon ab. Die Anzeigereihenfolge
   // regelt `transform.variantsOf`, nicht der Typ.
@@ -192,6 +198,12 @@ export interface EvalReport {
 
 /** Gepaarter Cluster-Bootstrap aus `magda significance`. */
 export interface SignificanceReport {
+  protocol?: string
+  split?: string
+  reference_sha256?: string
+  model_order?: string[]
+  checkpoints?: Record<string, string>
+  page_ids?: string[]
   created: string
   labels_from: string
   pages: number
@@ -221,7 +233,7 @@ export interface ModelStatus {
 export interface JobParam {
   key: string
   label: string
-  kind: "str" | "int" | "float" | "choice" | "flag"
+  kind: "str" | "int" | "float" | "choice" | "flag" | "pattern"
   /** Nur zum Vorbelegen des Feldes – nicht gesetzte Werte landen nicht im argv. */
   default: string | number | null
   choices: string[]

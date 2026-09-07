@@ -7,6 +7,7 @@ import type { AnnotationTask } from "@/lib/types"
 interface TaskRow {
   page_id: string
   status: string
+  source?: string
   stale: boolean
 }
 
@@ -28,7 +29,7 @@ export function taskProgress(task: AnnotationTask, rows: TaskRow[]) {
   const byId = new Map(rows.map((r) => [r.page_id, r]))
   const isDone = (id: string) => {
     const row = byId.get(id)
-    return row?.status === "done" && !row.stale
+    return row?.status === "done" && !row.stale && (!row.source || row.source === "gold")
   }
   const done = task.pages.filter(isDone).length
   const next = task.pages.find((id) => !isDone(id)) ?? null

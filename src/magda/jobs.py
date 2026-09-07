@@ -122,6 +122,51 @@ JOBS: dict[str, Job] = {
             Param("--labels-from", "str", "Labels von Modell"),
         ),
     ),
+    "predict": Job(
+        title="Modellvorhersagen exportieren",
+        what="Schreibt Wortlabels des gewählten Checkpoints für die anschließende Auswertung.",
+        params=(
+            Param("variant", "choice", "Modell", choices=VARIANTS, required=True),
+            Param("--split", "choice", "Split", choices=("train", "dev", "test"), default="test"),
+            Param("--labels-from", "str", "Labelquelle", default=config.CANONICAL_LABELS),
+        ),
+    ),
+    "eval-gold": Job(
+        title="Student gegen Handspans",
+        what="Entity-F1 aus vorhandenen Vorhersagen. Alle angeforderten Handspans müssen fertig sein.",
+        params=(
+            Param("variant", "choice", "Modell", choices=VARIANTS, required=True),
+            Param("--pages", "choice", "Seitenliste", required=True,
+                  choices=("data/eval/test_cluster_pages.txt",), default="data/eval/test_cluster_pages.txt"),
+        ),
+    ),
+    "blackbox-eval": Job(
+        title="Blackbox gegen Handreferenz",
+        what="Vergleicht Preisvarianten mit fertigen Handspans und Handgruppen. "
+             "Vorhandene Blackbox-Antworten wiederverwenden spart einen API-Aufruf.",
+        params=(
+            Param("--pages", "choice", "Seitenliste", required=True,
+                  choices=("data/eval/test_cluster_pages.txt",), default="data/eval/test_cluster_pages.txt"),
+            Param("--predictions", "choice", "Eigene Vorhersagen", choices=VARIANTS, default="layoutxlm"),
+            Param("--grouper", "choice", "Gruppierung", choices=("pair-model", "heuristic"), default="pair-model"),
+            Param("--reference-groups", "choice", "Referenz", choices=("gold",), default="gold"),
+            Param("--blackbox-from", "pattern", "Gespeicherter Blackbox-Report",
+                  pattern=r"data/eval/blackbox_test_[A-Za-z0-9_.-]+\.json",
+                  default="data/eval/blackbox_test_gemma-4-31b-it_pair-model_ref-teacher.json",
+                  help="Leer lassen für einen neuen API-Lauf; sonst Modell aus dem Report."),
+            Param("--model", "choice", "Blackbox-Modell bei neuem API-Lauf",
+                  choices=tuple(config.VISION_MODELS), default=config.CHAT_AI_VISION_MODEL),
+            Param("--dry-run", "flag", "Verdrahtung prüfen, keine Kennzahlen berechnen"),
+        ),
+    ),
+    "significance": Job(
+        title="Konfidenzintervalle",
+        what="Cluster-Bootstrap für GBERT gegen LayoutXLM auf dem Testsplit; liest vorhandene Vorhersagen.",
+        params=(
+            Param("--labels-from", "str", "Labelquelle", required=True, default=config.CANONICAL_LABELS),
+            Param("--resamples", "int", "Bootstrap-Wiederholungen", default=10000),
+        ),
+    ),
     "dedupe": Job(
         title="Duplikate prüfen",
         what="Findet Seiten, die sich nur in der Druckkennung oder in Kleinigkeiten "

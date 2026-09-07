@@ -189,7 +189,9 @@ def load_ner_model(variant: str, checkpoint: str | None = None):
         raise FileNotFoundError(
             f"Kein trainiertes Modell unter {model_dir}. Erst `magda train` laufen lassen."
         )
-    tokenizer = AutoTokenizer.from_pretrained(spec.model_name)
+    tokenizer = AutoTokenizer.from_pretrained(
+        model_dir if (model_dir / "tokenizer_config.json").exists() else spec.model_name
+    )
     model = AutoModelForTokenClassification.from_pretrained(model_dir)
     return model, tokenizer, spec
 

@@ -34,7 +34,8 @@ describe("OverviewPage", () => {
   it("zeigt je Variante den F1-Wert aus dem Evaluationsreport", async () => {
     mockFetch(base({
       "/api/model": [{ variant: "gbert", trained: true, epoch: 10 }],
-      "/api/evaluation": [{
+      "/api/evaluation": [{ variant: "gbert", checkpoint: "gbert-sonnet-5-app", split: "dev",
+        report: { "micro avg": { "f1-score": 0.927 } } }, {
         variant: "gbert",
         report: { "micro avg": { "f1-score": 0.908, precision: 0.889, recall: 0.927, support: 3901 } },
       }],

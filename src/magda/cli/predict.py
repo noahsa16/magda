@@ -17,6 +17,8 @@ Vorhersage und Referenz nebeneinander legen kann.
 import argparse
 import json
 import sys
+
+from magda import provenance
 from pathlib import Path
 
 from magda.config import (
@@ -112,6 +114,14 @@ def main(argv=None):
         for page, (tags, scores) in zip(pages, predictions)
     ]
 
+    identity = {
+        "checkpoint": args.checkpoint or args.variant,
+        "checkpoint_sha256": provenance.checkpoint_digest(model_dir),
+        "protocol": "no-windows" if args.no_windows else "windowed",
+        "code": provenance.code_version(),
+    }
+    for output in outputs:
+        output.update(identity)
     target = Path(args.out) if args.out else DATA_DIR / "predictions" / args.variant
     index = write_pages(outputs, target)
 

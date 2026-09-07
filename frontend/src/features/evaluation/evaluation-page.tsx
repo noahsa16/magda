@@ -116,7 +116,7 @@ export function EvaluationPage() {
   const pairs = variantPairs(variants)
   const pair = pairs[Math.min(pairIndex, pairs.length - 1)]
   const alone = variants.length < 2
-  const paired = pair ? significanceFor(significance.data, pair[0], pair[1]) : null
+  const paired = pair ? significanceFor(significance.data, pair[0], pair[1], comparable, protocol) : null
 
   const rows = sortRows(
     perEntityRows(comparable, metric, protocol, pair), sort.key, sort.descending)
@@ -136,10 +136,12 @@ export function EvaluationPage() {
       </div>
 
       <p className="max-w-3xl text-sm text-muted-foreground">
-        Gemessen wird, wie weit die eigenen Modelle die Labels des Vision-LLM
-        reproduzieren – nicht, wie gut sie Prospekte im absoluten Sinn verstehen.
-        Genau das ist die Projektfrage: ein Modell mit 109 Mio. Parametern läuft
-        lokal auf CPU, das LLM braucht Netz, Key und Kontingent.
+        {reference.reference === "gold"
+          ? "Gemessen gegen fertig annotierte menschliche Spans – Richtigkeit, nicht Übereinstimmung."
+          : "Gemessen wird, wie weit die eigenen Modelle die Labels des Vision-LLM " +
+            "reproduzieren – nicht, wie gut sie Prospekte im absoluten Sinn verstehen. " +
+            "Genau das ist die Projektfrage: ein Modell mit 109 Mio. Parametern läuft " +
+            "lokal auf CPU, das LLM braucht Netz, Key und Kontingent."}
       </p>
 
       <ResultCard
@@ -152,6 +154,7 @@ export function EvaluationPage() {
         onPairChange={setPairIndex}
         paired={paired}
         pending={significance.isPending}
+        showCommand={protocol === "report" && reference.reference !== "gold"}
       />
 
       {alone && (
@@ -255,7 +258,7 @@ export function EvaluationPage() {
  * gibt es nur paarweise, gebootstrappt über dieselben Cluster.
  */
 function ResultCard({
-  variants, f1, pairs, pairIndex, onPairChange, paired, pending,
+  variants, f1, pairs, pairIndex, onPairChange, paired, pending, showCommand,
 }: {
   variants: string[]
   f1: Record<string, number | null>
@@ -263,6 +266,7 @@ function ResultCard({
   pairIndex: number
   onPairChange: (index: number) => void
   paired: ReturnType<typeof significanceFor>
+  showCommand: boolean
   pending: boolean
 }) {
   const pair = pairs[pairIndex]
@@ -333,16 +337,18 @@ function ResultCard({
                 tone: toneOf(v),
               }))}
             />
+            <p className="text-sm">Differenz {variantLabel(pair![1])} minus {variantLabel(pair![0])}</p>
             <DifferencePlot
-              difference={paired.paired.difference}
-              ci95={paired.paired.ci95}
+              difference={paired.per_model[pair![1]].f1 - paired.per_model[pair![0]].f1}
+              ci95={(paired.model_order ?? Object.keys(paired.per_model))[0] === pair![0]
+                ? [-paired.paired.ci95[1], -paired.paired.ci95[0]] : paired.paired.ci95}
               pValue={paired.paired.p_value}
             />
             <div className="rounded-md border-l-4 border-primary bg-muted/40 px-4 py-3 text-sm">
               <p className="font-semibold">
                 {paired.paired.significant
-                  ? "Der Unterschied ist über die Cluster hinweg stabil."
-                  : "Kein Effekt nachweisbar – in keine Richtung."}
+                  ? "Das unbereinigte 95%-Intervall schließt null aus."
+                  : "Kein Unterschied nachgewiesen. Das belegt keine Gleichwertigkeit."}
               </p>
               <p className="mt-1 text-muted-foreground">
                 Gebootstrappt über{" "}
@@ -350,7 +356,8 @@ function ResultCard({
                 Duplikat-Cluster (Jaccard {paired.cluster_threshold}), nicht über{" "}
                 <span className="font-mono tabular-nums">{paired.pages}</span> Seiten:
                 elf Regionalfassungen derselben Vorlage sind eine Beobachtung, nicht elf.
-                Über Seiten gezogen wäre das Intervall zu eng.
+                Das Intervall beschreibt Stichprobenunsicherheit bei festen Modellen.
+                Trainingsseeds und mehrere Modellvergleiche sind damit nicht abgesichert.
               </p>
             </div>
           </>
@@ -358,8 +365,8 @@ function ResultCard({
           <p className="rounded-md border-2 border-dashed border-foreground/30 px-4 py-3 text-sm text-muted-foreground">
             {pending
               ? "Konfidenzintervall wird geladen …"
-              : "Kein Konfidenzintervall vorhanden. Eine Differenz ohne Intervall behauptet mehr, als die Daten hergeben – "}
-            {!pending && pair && (
+              : "Für diesen Modellstand und dieses Protokoll ist kein verknüpftes Konfidenzintervall vorhanden. "}
+            {!pending && pair && showCommand && (
               <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">
                 magda significance --compare {pair[0]} {pair[1]} --labels-from sonnet-5
               </code>

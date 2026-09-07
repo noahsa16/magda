@@ -1,3 +1,4 @@
+import { reportsOfOneSplit } from "../evaluation/transform"
 import { useQuery } from "@tanstack/react-query"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -36,7 +37,7 @@ function StatCard({
 
 function ModelSummary({ models, reports }: { models: ModelStatus[]; reports: EvalReport[] }) {
   const best = (variant: string) =>
-    reports.find((r) => r.variant === variant)?.report["micro avg"]?.["f1-score"] ?? null
+    reportsOfOneSplit(reports).find((r) => r.variant === variant)?.report["micro avg"]?.["f1-score"] ?? null
 
   return (
     <section className="space-y-3">

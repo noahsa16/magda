@@ -6,8 +6,9 @@ Rechnet aus den gespeicherten Blackbox-Antworten (`blackbox_deals` in
 `data/eval/blackbox_test_*.json`) nach, wie viel vom Unterschied zwischen
 dem ersten Lauf (Heuristik als Grouper, cluster_page-Referenz) und dem
 zweiten (Paarmodell, Teacher-Referenz) an welcher der beiden Einstellungen
-haengt - ohne einen einzigen API-Aufruf. Beleg fuer die 2x2-Tabelle in
-`reports/woche-08.md`.
+haengt - ohne einen einzigen API-Aufruf. Vergleich nach dem aktuellen
+Bewertungsprotokoll. Historische v1-Zahlen in `reports/woche-08.md` erfordern
+den damaligen Code- und Datenstand; sie werden hier nicht überschrieben.
 
 Braucht `checkpoints/offer_pairs/model.pt` und die LayoutXLM-Vorhersagen
 fuer die Seiten aus `data/eval/test_cluster_pages.txt`.
@@ -25,6 +26,7 @@ MODELS = ("qwen3.6-35b-a3b", "mistral-medium-3.5-128b", "gemma-4-31b-it")
 
 
 def main():
+    print(f"Aktuelles Bewertungsprotokoll: {blackbox_eval.EVALUATION_VERSION}; historische Antworten, aktueller Grouper.")
     page_ids = read_page_ids(config.EVAL_DIR / "test_cluster_pages.txt")
     wanted = set(page_ids)
     reference_pages = [p for p in _load_labeled_pages("sonnet-5") if p["page_id"] in wanted]

@@ -37,20 +37,19 @@ ohnehin. Wer das Repo schon hat, holt sich den Stand mit
 Dann http://localhost:5173/group öffnen. Oben steht ein blauer Kasten
 „Aufgabe für Kjell und Bogdan" mit Fortschritt und dem Knopf **Nächste
 offene Seite**. Die Katalogkachel 1364390 ist blau umrandet, in der
-Seitenliste stehen die Aufgabenseiten mit blauer Kante ganz oben. Bei der Abgabe zählen zuerst
-die Dateien unter `gold/offers/`.
+Seitenliste stehen die Aufgabenseiten mit blauer Kante ganz oben. Für die Abgabe zählen Spans und Gruppen gleichermaßen.
 
-## Reihenfolge: erst Angebote, dann Spans
+## Beide Durchgänge sind verpflichtend
 
-**Die Gruppierung ist das, worauf es ankommt.** Der Blackbox-Vergleich
-misst Angebote (Name plus Preis), und die Frage ist, was zusammengehört.
-Deshalb zuerst alle 43 Seiten unter `/group`; die Spans unter `/annotate`
-sind der zweite Durchgang, falls Zeit bleibt. `/group` braucht keine
-handannotierten Spans: gruppiert werden Wortindizes, der Klick nimmt nur
-zur Bequemlichkeit die Sonnet-Entity mit. Stimmt ein Span nicht, mit
-Shift-Klick wortweise korrigieren.
+Zuerst alle Spans unter `/annotate`, danach die Angebote unter `/group`.
+Der Abschlussvergleich benötigt auf jeder ausgewählten Seite **beide Dateien
+mit `status: done`**. Die Gruppierung beginnt leer; nur fertige menschliche
+Spans dienen als Klickhilfe. Ohne fertige Spans erfolgt die Auswahl wortweise.
+Sonnet-Gruppen werden im Handeditor nicht vorgeladen.
 
-**1. Angebote (`/group`)** – wozu ein Wort gehört.
+Die folgenden Bedienhinweise beschreiben beide Werkzeuge:
+
+**Angebote (`/group`)** – wozu ein Wort gehört.
 
 - Namen oben rechts eintragen, er landet in jeder gespeicherten Datei.
 - Ein Klick nimmt die ganze Entity ins aktive Angebot, Shift-Klick einen
@@ -60,9 +59,9 @@ Shift-Klick wortweise korrigieren.
 - `f` markiert die Seite als fertig, Pfeiltasten wechseln die Seite,
   gespeichert wird nach `gold/offers/<seite>.json`.
 
-**2. Spans (`/annotate`)** – was ein Wort ist.
+**Spans (`/annotate`)** – was ein Wort ist.
 
-- Wort anklicken, Shift-Klick erweitert die Auswahl, Ziffer 1–8 vergibt
+- Wort anklicken, Shift-Klick erweitert die Auswahl, Ziffer 1–9 vergibt
   das Label aus der Legende rechts, 0 oder Backspace löscht.
 - `f` markiert die Seite als fertig, gespeichert wird nach
   `gold/<seite>.json`.
@@ -99,8 +98,24 @@ Danach auf GitHub einen Pull Request nach `development` aufmachen. Zwischendrin
 committen ist ausdrücklich erwünscht: 43 Seiten sind mehrere Sitzungen, und ein
 Zwischenstand im Branch ist sicherer als 43 ungespeicherte Seiten.
 
-Oder die Dateien unter `gold/1364390_*.json` und `gold/offers/1364390_*.json`
-schicken. Gemessen wird danach mit `magda gold` (Labels) und `magda
-offers-gold` (Gruppierung); für den Blackbox-Vergleich fehlt noch ein
-`--reference-groups gold` in `blackbox_eval.py`, das kommt, sobald die
-Referenz da ist.
+Auch die vier Regionalvertreter gehören zur Abgabe, nicht nur Dateien mit
+Präfix `1364390`. Gebraucht werden jeweils `gold/<seite>.json` und
+`gold/offers/<seite>.json` für die gesamte Aufgabe.
+
+Danach auf `/pipeline`:
+
+1. **Student gegen Handspans** für die gewünschten trainierten Modelle.
+2. **Blackbox gegen Handreferenz** mit den gespeicherten Reports für Gemma,
+   Qwen und Mistral; dadurch entstehen keine neuen API-Kosten.
+
+Die feste Vergleichsliste `data/eval/test_cluster_pages.txt` enthält je einen
+Clustervertreter. Sie ist eine Teilmenge der Annotationsaufgabe. Die zusätzlichen
+Annotationsseiten werden nicht stillschweigend in den Testvergleich aufgenommen.
+Details und CLI-Aufrufe: [evaluation-protocol.md](evaluation-protocol.md).
+
+Vor Beginn werden offene Konventionen (insbesondere Gebinde-Komposita) im Team
+festgelegt und dokumentiert. Unklare Fälle werden gesammelt, nicht pro Seite
+anders entschieden. Einen Teil der Seiten unabhängig doppelt annotieren und
+Abweichungen vor der Endauswertung gemeinsam auflösen. Bereits früher aus
+Sonnet-Vorbelegungen gespeicherte Gruppen gelten nicht nachträglich als blind
+annotiert; ihre Herkunft muss geprüft und im Bericht genannt werden.

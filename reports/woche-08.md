@@ -1,5 +1,16 @@
 # Woche 8 — Erste Testmessung der Gruppierungskette
 
+**Methodische Korrektur vom 06.09.2026:** Die folgenden Tabellen beschreiben
+das historische Bewertungsprotokoll v1. Es reduzierte eigene und Referenzgruppen
+auf den ersten Preis, obwohl die Blackbox eine Zeile je Variantenpreis liefern
+sollte. Außerdem war das Matching reihenfolgeabhängig. Diese F1-Werte sind daher
+kein abschließender fairer Qualitätsvergleich. Altpreise wurden entgegen der
+früheren Beschreibung nicht bewertet. Neue Auswertungen verwenden
+`offer-price-v2` und eigene Reportdateien; die alten Antworten bleiben verwendbar.
+Das heutige Nachrechnungsskript nutzt den aktuellen Code und reproduziert die
+historische Heuristik nicht bytegleich. Alte Messungen erfordern den damaligen
+Code- und Datenstand. Siehe [Abschlussprotokoll](../docs/evaluation-protocol.md).
+
 Stand: 02.–03.09.2026
 
 ## Kurzfassung

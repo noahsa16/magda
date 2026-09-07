@@ -32,6 +32,7 @@ from transformers import (
     AutoTokenizer,
     Trainer,
     TrainingArguments,
+    set_seed,
 )
 
 from magda.config import (
@@ -164,6 +165,7 @@ def main(argv=None):
     model_name, train_ds, dev_ds = build_datasets(
         args.variant, args.labels_from, args.train_pages)
 
+    set_seed(SEED)
     model = AutoModelForTokenClassification.from_pretrained(
         model_name,
         num_labels=len(LABELS),
@@ -200,5 +202,6 @@ def main(argv=None):
     # bestes Modell separat ablegen, darauf zeigt dann `magda eval`
     best_dir = output_dir / "best"
     trainer.save_model(str(best_dir))
+    AutoTokenizer.from_pretrained(model_name).save_pretrained(str(best_dir))
     print(f"Bestes Modell gespeichert unter {best_dir}")
 

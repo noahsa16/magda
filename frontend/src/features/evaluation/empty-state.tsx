@@ -34,7 +34,7 @@ export function EvaluationEmptyState() {
             Hier steht später die Antwort auf die Forschungsfrage
           </h2>
           <p className="text-muted-foreground">
-            Gemessen wird auf Entity-Ebene mit seqeval: ein Angebot zählt nur als Treffer, wenn
+            Gemessen wird auf Entity-Ebene mit seqeval: eine Entity zählt nur als Treffer, wenn
             Span <em>und</em> Typ exakt stimmen. Das ist strenger als Token-Genauigkeit und
             entspricht dem, was im Proposal steht.
           </p>
@@ -50,8 +50,8 @@ export function EvaluationEmptyState() {
             Textencoder.
           </p>
           <Button asChild>
-            <Link to="/">
-              Training auf der Übersicht starten <ArrowRight className="size-4" />
+            <Link to="/pipeline">
+              Training in der Pipeline starten <ArrowRight className="size-4" />
             </Link>
           </Button>
         </div>
