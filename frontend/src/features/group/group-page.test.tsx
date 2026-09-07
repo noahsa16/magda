@@ -140,6 +140,17 @@ describe("GroupPage", () => {
     confirm.mockRestore()
   })
 
+  it("sperrt das Gruppieren, solange die Spans nicht fertig sind", async () => {
+    // Belegter Fall (07.09.2026): Nach "Nächste Seite" stand der Gruppierer
+    // auf einer Seite ohne fertige Spans und liess wortweise klicken.
+    setup({ "/api/annotation-page/462828_p1": { ...PAGE, tags: ["O", "O", "O"] } })
+    expect(await screen.findByText(/Spans dieser Seite sind noch nicht fertig/)).toBeInTheDocument()
+    expect(screen.getByRole("link", { name: /Spans annotieren/ }))
+      .toHaveAttribute("href", "/annotate?catalog=462828&page=462828_p1")
+    expect(screen.queryByText(/0 Angebote/)).not.toBeInTheDocument()
+    expect(document.querySelectorAll("svg rect")).toHaveLength(0)
+  })
+
   it("sperrt die Seite bei veralteter Wortliste", async () => {
     setup({
       "/api/offer-gold/462828_p1": {

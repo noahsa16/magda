@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query"
-import { Check, ChevronLeft, ChevronRight, Plus, Trash2 } from "lucide-react"
+import { ArrowRight, Check, ChevronLeft, ChevronRight, Plus, Trash2 } from "lucide-react"
 import { useEffect, useMemo, useState } from "react"
-import { useSearchParams } from "react-router-dom"
+import { Link, useSearchParams } from "react-router-dom"
 import { CatalogGrid } from "@/components/catalog-grid"
 import { Crumbs } from "@/components/crumbs"
 import { PageOverlay } from "@/components/page-overlay"
@@ -103,6 +103,10 @@ export function GroupPage() {
     () => (data?.tags ? groupEntities(data.words, data.tags) : []),
     [data],
   )
+  // /api/annotation-page liefert nur fertige, nicht veraltete Handspans;
+  // sonst lauter O. Ohne Entities gibt es nichts zu gruppieren – wortweise
+  // Klicks zuzulassen erzeugte eine Referenz, die zu keinem Span passt.
+  const spansMissing = data !== undefined && entities.length === 0
 
   function goto(i: number) {
     if (i < 0 || i >= ids.length) return
@@ -292,7 +296,25 @@ export function GroupPage() {
             <Skeleton className="aspect-[595/842] w-full" />
           )}
 
-          {selected && data && !page.isPending && !grouping.isPending && (
+          {selected && spansMissing && !page.isPending && (
+            <Alert>
+              <AlertTitle>Spans dieser Seite sind noch nicht fertig</AlertTitle>
+              <AlertDescription className="flex flex-wrap items-center gap-3">
+                <span>
+                  Gruppiert wird, was von Hand annotiert und mit <kbd className="font-mono">f</kbd> als
+                  fertig markiert ist. Erst die Spans setzen, dann hierher zurück.
+                </span>
+                <Button size="sm" variant="outline" asChild>
+                  <Link to={`/annotate?catalog=${catalog}&page=${selected}`}>
+                    Spans annotieren
+                    <ArrowRight className="size-4" />
+                  </Link>
+                </Button>
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {selected && data && !page.isPending && !grouping.isPending && !spansMissing && (
             <>
               <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border-2 border-foreground bg-card px-4 py-2.5">
                 <p className="font-mono text-sm tabular-nums">
