@@ -139,10 +139,14 @@ offen erreichbaren Server.
 cd frontend && npm test           # Frontend (Vitest)
 ```
 
-## Offene Punkte
+## Abschluss
 
-- [ ] Vergleich gegen die LLM-Blackbox (`src/magda/blackbox.py`): das LLM
-      extrahiert direkt, ohne Umweg über Training
-- [ ] PRODUCT-Konvention schärfen: wo endet die Sorte, wo beginnt der Werbetext
-- [ ] Seiten über 512 Subwords werden abgeschnitten – Sliding Window nötig?
-- [ ] Dritte Erntewoche: acht Dev-Seiten sind zu wenig für die Modellauswahl
+- Handspans und Handgruppen vollständig annotieren; Anleitung:
+  [docs/annotation-task.md](docs/annotation-task.md).
+- Unter **Pipeline** die Studentenvorhersagen gegen Handspans und die gespeicherten
+  Blackbox-Antworten gegen Handangebote auswerten.
+- Die endgültigen Tabellen aus dem versionierten Bewertungsprotokoll erstellen,
+  einschließlich Referenz, Seitenliste, Modellstand und Einschränkungen.
+
+Sliding Window ist für die aktuelle Inferenz implementiert. Training und
+Checkpointauswahl verwenden weiterhin das erste Fenster einer Seite.

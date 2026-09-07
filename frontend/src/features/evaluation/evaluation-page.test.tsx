@@ -16,6 +16,7 @@ const scheme = (f1: number): SchemeCounts => ({
 
 const EVAL: EvalReport[] = [
   {
+    reference_sha256: "ref", checkpoint_sha256: "gbert-weights", labels_from: "sonnet-5",
     variant: "gbert", split: "test", num_pages: 100, created: "2026-08-02T21:00:00",
     protocol: "windowed", window_stride: 128, words_without_prediction_unwindowed: 1476,
     report: { PRODUCT: metrics(0.824, 1003), "micro avg": metrics(0.8938, 5080) },
@@ -26,6 +27,7 @@ const EVAL: EvalReport[] = [
     },
   },
   {
+    reference_sha256: "ref", checkpoint_sha256: "layout-weights", labels_from: "sonnet-5", protocol: "windowed",
     variant: "layoutxlm", split: "test", num_pages: 100, created: "2026-08-02T21:00:00",
     report: { PRODUCT: metrics(0.841, 1003), "micro avg": metrics(0.8952, 5080) },
     matching_schemes: {
@@ -38,16 +40,20 @@ const EVAL: EvalReport[] = [
 const VIER: EvalReport[] = [
   ...EVAL,
   {
+    reference_sha256: "ref", labels_from: "sonnet-5",
     variant: "xlmr", split: "test", num_pages: 100, created: "2026-08-25T10:00:00",
     report: { PRODUCT: metrics(0.80, 1003), "micro avg": metrics(0.881, 5080) },
   },
   {
+    reference_sha256: "ref", labels_from: "sonnet-5",
     variant: "lilt", split: "test", num_pages: 100, created: "2026-08-25T10:00:00",
     report: { PRODUCT: metrics(0.83, 1003), "micro avg": metrics(0.890, 5080) },
   },
 ]
 
 const SIGNIFICANCE = [{
+  reference_sha256: "ref", split: "test", protocol: "windowed", model_order: ["gbert", "layoutxlm"],
+  checkpoints: { gbert: "gbert-weights", layoutxlm: "layout-weights" },
   created: "2026-08-02T23:36:07", labels_from: "sonnet-5", pages: 100, clusters: 43,
   cluster_threshold: 0.7,
   per_model: {
@@ -117,7 +123,7 @@ describe("EvaluationPage", () => {
     renderWithProviders(<EvaluationPage />)
     expect(await screen.findByText(/Forschungsfrage/)).toBeInTheDocument()
     expect(screen.getByText(/seqeval/)).toBeInTheDocument()
-    expect(screen.getByRole("link", { name: /Training/ })).toHaveAttribute("href", "/")
+    expect(screen.getByRole("link", { name: /Training/ })).toHaveAttribute("href", "/pipeline")
   })
 
   it("nennt zur Differenz das Intervall und den p-Wert", async () => {
@@ -127,8 +133,8 @@ describe("EvaluationPage", () => {
     mockFetch({ "/api/evaluation": EVAL, "/api/significance": SIGNIFICANCE })
     renderWithProviders(<EvaluationPage />)
 
-    expect(await screen.findByText(/Kein Effekt nachweisbar/)).toBeInTheDocument()
-    expect(screen.getByText(/\[-0\.0164, 0\.0108\]/)).toBeInTheDocument()
+    expect(await screen.findByText(/Kein Unterschied nachgewiesen/)).toBeInTheDocument()
+    expect(screen.getByText(/\[-0\.0108, 0\.0164\]/)).toBeInTheDocument()
     expect(screen.getByText(/0\.843/)).toBeInTheDocument()
     expect(screen.getByText(/Duplikat-Cluster/)).toBeInTheDocument()
   })
@@ -164,6 +170,8 @@ describe("EvaluationPage", () => {
     expect(within(headline).getByText("0.894")).toBeInTheDocument()
     await userEvent.click(screen.getByRole("tab", { name: "no-windows" }))
     expect(within(headline).getByText("0.875")).toBeInTheDocument()
+    expect(screen.queryByText(/Kein Unterschied nachgewiesen/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/0\.843/)).not.toBeInTheDocument()
   })
 
   it("sortiert die Entity-Tabelle auf Klick um", async () => {

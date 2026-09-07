@@ -58,7 +58,7 @@ from magda.dataset import (
     load_labeled_pages,
     select_split,
 )
-from magda import matching
+from magda import matching, config, provenance
 from magda.evaluation import (
     full_report,
     report_dict,
@@ -156,7 +156,9 @@ def main(argv=None):
     # Tokenizer kommt vom Basismodell, nicht aus dem Checkpoint –
     # wir speichern in `magda train` nur die Modellgewichte.
     spec = variant_spec(args.variant)
-    tokenizer = AutoTokenizer.from_pretrained(spec.model_name)
+    tokenizer = AutoTokenizer.from_pretrained(
+        model_dir if (model_dir / "tokenizer_config.json").exists() else spec.model_name
+    )
     model = AutoModelForTokenClassification.from_pretrained(model_dir)
 
     reference = [page["tags"] for page in eval_pages]
@@ -226,6 +228,11 @@ def main(argv=None):
     with open(out_file, "w") as f:
         json.dump(
             {
+                "labels_from": args.labels_from or config.default_labeled_model(),
+                "reference": "llm",
+                **provenance.reference_identity(eval_pages),
+                "checkpoint_sha256": provenance.checkpoint_digest(model_dir),
+                "code": provenance.code_version(),
                 "variant": args.variant,
                 "checkpoint": args.checkpoint or args.variant,
                 "split": scope,

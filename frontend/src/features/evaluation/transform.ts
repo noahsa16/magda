@@ -77,19 +77,25 @@ export function restrictedArms(
  * der jüngere – nachvollziehbar statt alphabetisch.
  */
 export function reportsOfOneSplit(reports: EvalReport[]): EvalReport[] {
-  if (reports.length === 0) return []
-  const splits = new Map<string, number>()
-  for (const r of reports) splits.set(r.split, (splits.get(r.split) ?? 0) + 1)
-  const gewaehlt = splits.has("test")
-    ? "test"
-    : [...splits.entries()].sort((a, b) => b[1] - a[1])[0][0]
-
-  const neuester = new Map<string, EvalReport>()
-  for (const r of reports.filter((r) => r.split === gewaehlt)) {
-    const bisher = neuester.get(r.variant)
-    if (!bisher || r.created > bisher.created) neuester.set(r.variant, r)
+  const current = reports.filter((r) => !r.checkpoint || r.checkpoint === r.variant)
+  const cohorts = new Map<string, EvalReport[]>()
+  for (const report of current) {
+    const key = JSON.stringify([report.split, report.reference ?? "llm",
+      report.labels_from ?? "unknown", report.reference_sha256 ?? "legacy", report.num_pages])
+    cohorts.set(key, [...(cohorts.get(key) ?? []), report])
   }
-  return [...neuester.values()]
+  const selected = [...cohorts.values()].sort((a, b) =>
+    Number(b[0].split === "test") - Number(a[0].split === "test") ||
+    Number(Boolean(b[0].reference_sha256)) - Number(Boolean(a[0].reference_sha256)) ||
+    new Set(b.map((r) => r.variant)).size - new Set(a.map((r) => r.variant)).size ||
+    (b[0].created ?? "").localeCompare(a[0].created ?? ""),
+  )[0] ?? []
+  const latest = new Map<string, EvalReport>()
+  for (const report of selected) {
+    const previous = latest.get(report.variant)
+    if (!previous || report.created > previous.created) latest.set(report.variant, report)
+  }
+  return [...latest.values()]
 }
 
 /** Welche Arme wirklich ausgewertet sind, in Kettenreihenfolge. */
@@ -106,16 +112,10 @@ export function variantsOf(reports: EvalReport[]): string[] {
 // per-Entity-Diagramm.
 const AVG_KEYS = new Set(["micro avg", "macro avg", "weighted avg"])
 
-/**
- * Der Report eines Protokolls, mit Rückfall auf das Primärprotokoll.
- *
- * `report_no_windows` und `report_truncated` fehlen in älteren Dateien. Ohne
- * Rückfall zeigte die Seite dann eine leere Tabelle, und das sieht aus wie
- * "gemessen und nichts gefunden" statt "gar nicht gemessen".
- */
+/** Fehlendes Protokoll bleibt leer; keine Ersatzkennzahl aus einem anderen Lauf. */
 export function reportOf(r: EvalReport, protocol: ProtocolKey): Record<string, EntityMetrics> {
   if (protocol === "report") return r.report ?? {}
-  return r[protocol] ?? r.report ?? {}
+  return r[protocol] ?? {}
 }
 
 export function hasProtocol(reports: EvalReport[], protocol: ProtocolKey): boolean {
@@ -231,19 +231,46 @@ export function errorComposition(counts: SchemeCounts) {
   }
 }
 
-/** Der Bootstrap-Vergleich, der zu genau diesen beiden Varianten gehört. */
+/**
+ * Der Bootstrap-Vergleich, der zu genau diesen beiden Varianten gehört.
+ *
+ * Ein Intervall gilt nur für das Primärprotokoll (`report` = windowed), denn
+ * `magda significance` misst nur dieses. Tragen Report und Vergleich beide
+ * einen Fingerabdruck (Referenz und Checkpoint), müssen sie übereinstimmen.
+ * Ältere Dateien in `data/eval/` haben keinen; dort verbindet der Punktwert:
+ * `magda significance` schreibt F1 auf vier Stellen gerundet, und ein Report
+ * mit anderem Checkpoint träfe diesen Wert nicht.
+ */
 export function significanceFor(
   results: SignificanceReport[] | undefined,
   a: string,
   b: string,
+  reports?: EvalReport[],
+  protocol: ProtocolKey = "report",
 ): SignificanceReport | null {
-  return (
-    results?.find((r) => {
-      const models = Object.keys(r.per_model ?? {})
-      return models.includes(a) && models.includes(b)
-    }) ?? null
-  )
+  if (protocol !== "report") return null
+  return results?.find((result) => {
+    if (!result.per_model[a] || !result.per_model[b]) return false
+    if (!reports) return true
+    return [a, b].every((variant) => {
+      const report = reports.find((r) => r.variant === variant)
+      if (!report) return false
+      const f1 = report.report["micro avg"]?.["f1-score"]
+      if (f1 == null || Math.abs(result.per_model[variant].f1 - f1) > F1_ROUNDING) return false
+      if (result.split && result.split !== report.split) return false
+      if (result.protocol && report.protocol && result.protocol !== report.protocol) return false
+      if (result.labels_from && report.labels_from && result.labels_from !== report.labels_from) return false
+      if (result.reference_sha256 && report.reference_sha256 &&
+          result.reference_sha256 !== report.reference_sha256) return false
+      const checkpoint = result.checkpoints?.[variant]
+      if (checkpoint && report.checkpoint_sha256 && checkpoint !== report.checkpoint_sha256) return false
+      return true
+    })
+  }) ?? null
 }
+
+/** `magda significance` rundet F1 auf vier Stellen; `magda eval` nicht. */
+const F1_ROUNDING = 0.00005 + 1e-12
 
 
 /**

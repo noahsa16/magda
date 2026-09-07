@@ -1,19 +1,8 @@
-"""Die LLM-Blackbox gegen die eigene Pipeline messen.
+"""Angebotsvergleich v2: Name und Aktionspreis je Preisvariante.
 
-Der Vergleich laeuft ueber die *gemeinsame* Feldmenge (name, price,
-original_price). Das Blackbox-Schema kennt weder App-Preise noch
-Menge/Grundpreis - ihr das anzulasten hiesse, sie an einer Aufgabe zu
-messen, die sie nie hatte. Umgekehrt gilt dasselbe: unsere Zusatzfelder
-zaehlen hier nicht als Vorsprung.
-
-Gepaart wird ueber den Preis (exakt) und den Namen (unscharf): Preise sind
-in einem Prospekt eindeutig, Namen variieren in Sortenzusaetzen - genau die
-Grenzfrage, die im Projekt ohnehin offen ist. Jedes Angebot wird hoechstens
-einmal gepaart, sonst treibt ein System seinen Recall mit Duplikaten hoch.
-
-Beide Seiten laufen durch **dieselbe** Funktion. Wer die Blackbox unscharf
-und die eigene Ausgabe exakt matcht, verzerrt in unbekannte Richtung - und
-zwar in die eigene.
+Altpreis und Zusatzfelder sind nicht Teil des Haupt-F1. Beide Systeme und
+Referenzen werden auf dieselbe Einheit projiziert; ein maximales bipartites
+Matching verhindert einen Einfluss der Ausgabereihenfolge auf die Trefferzahl.
 """
 
 from __future__ import annotations
@@ -28,18 +17,14 @@ from difflib import SequenceMatcher
 NAME_SIMILARITY = 0.6
 
 # Was beide Systeme ausdruecken koennen. Alles andere bleibt draussen.
-COMMON_FIELDS = ("name", "price", "original_price")
+COMMON_FIELDS = ("name", "price")
+EVALUATION_VERSION = "offer-price-v2"
 
 _PRICE = re.compile(r"\d+(?:[.,]\d+)?")
 
 
 def parse_price(text) -> float | None:
-    """Erste Zahl aus einem Wertfeld, deutsche und englische Schreibweise.
-
-    `Offer.values()` joint mehrere Angaben mit " | ". Genommen wird die
-    erste - bei Groessenvarianten ist das die in Lesereihenfolge erste, und
-    die Blackbox nennt in aller Regel ebenfalls nur eine.
-    """
+    """Eine einzelne Preisangabe; Varianten werden vor dem Parsen getrennt."""
     if text is None:
         return None
     match = _PRICE.search(str(text))
@@ -48,49 +33,61 @@ def parse_price(text) -> float | None:
     return float(match.group().replace(",", "."))
 
 
-def deal_from_offer(offer) -> dict | None:
-    """Projiziert ein Angebot der eigenen Pipeline auf die gemeinsame Feldmenge.
+def deals_from_offer(offer) -> list[dict]:
+    """Eine Zeile je unterschiedlichem Aktionspreis derselben Angebotsgruppe.
 
-    Ohne Name *und* Preis ist es kein Angebot, sondern ein Fragment. Solche
-    Bruchstuecke gelten nicht als Ausgabe: sie als Falsch-Positive zu zaehlen
-    haette kein Gegenstueck auf der Blackbox-Seite, die gar keine Fragmente
-    ausgibt. Gezaehlt werden sie trotzdem - `compare_pages` weist sie aus.
+    Gleiche Preise innerhalb einer Gruppe entsprechen dem Promptfall
+    „Varianten mit gemeinsamem Preis“. Altpreise bleiben Zusatzinformationen.
     """
     values = offer.values()
-    name = " ".join(part for part in (values.get("brand"), values.get("product"))
-                    if part).strip()
-    price = parse_price(values.get("price"))
-    if not name or price is None:
-        return None
-    return {"name": name, "price": price,
-            "original_price": parse_price(values.get("old_price"))}
+    name = " ".join(part for part in (values.get("brand"), values.get("product")) if part).strip()
+    if not name:
+        return []
+    prices = (values.get("price") or "").split(" | ")
+    old_prices = (values.get("old_price") or "").split(" | ")
+    result = {}
+    for index, value in enumerate(prices):
+        price = parse_price(value)
+        if price is not None:
+            result.setdefault(price, {
+                "name": name, "price": price,
+                "original_price": parse_price(old_prices[index]) if index < len(old_prices) else None,
+            })
+    return list(result.values())
 
 
 def _similar(a: str, b: str) -> float:
-    return SequenceMatcher(None, (a or "").lower(), (b or "").lower()).ratio()
+    # SequenceMatcher kann bei gleicher Eingabe in umgekehrter Richtung
+    # unterschiedlich werten. Der Mittelwert macht die Kanten symmetrisch.
+    a, b = (a or "").lower(), (b or "").lower()
+    return (SequenceMatcher(None, a, b).ratio() + SequenceMatcher(None, b, a).ratio()) / 2
 
 
 def match_deals(system: list[dict], reference: list[dict],
                 price_tolerance: float = 0.0) -> dict:
-    """Paart zwei Angebotslisten einer Seite ueber Preis und Name."""
-    unused = list(range(len(reference)))
-    matched = 0
+    """Maximale Trefferzahl; Preise exakt, Namensähnlichkeit als feste Schwelle."""
+    edges = []
     for deal in system:
         price = deal.get("price")
-        best, best_score = None, 0.0
-        for index in unused:
-            other = reference[index]
-            if price is None or other.get("price") is None:
-                continue
-            if abs(float(price) - float(other["price"])) > price_tolerance:
-                continue
-            score = _similar(deal.get("name", ""), other.get("name", ""))
-            if score >= NAME_SIMILARITY and score > best_score:
-                best, best_score = index, score
-        if best is not None:
-            unused.remove(best)
-            matched += 1
+        edges.append([
+            index for index, other in enumerate(reference)
+            if price is not None and other.get("price") is not None
+            and abs(float(price) - float(other["price"])) <= price_tolerance
+            and _similar(deal.get("name", ""), other.get("name", "")) >= NAME_SIMILARITY
+        ])
+    assigned: dict[int, int] = {}
 
+    def augment(index: int, seen: set[int]) -> bool:
+        for target in edges[index]:
+            if target in seen:
+                continue
+            seen.add(target)
+            if target not in assigned or augment(assigned[target], seen):
+                assigned[target] = index
+                return True
+        return False
+
+    matched = sum(augment(index, set()) for index in range(len(system)))
     return _rates(matched, len(system), len(reference))
 
 

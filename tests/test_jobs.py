@@ -24,7 +24,7 @@ def test_build_command_kennt_alle_pipeline_schritte():
     assert set(jobs.JOBS) == {
         "harvest", "download", "extract", "label",
         "train", "eval", "dedupe", "flair",
-        "gold", "agreement", "extract-pdf",
+        "gold", "agreement", "extract-pdf", "predict", "eval-gold", "blackbox-eval", "significance",
     }
 
 
@@ -153,3 +153,14 @@ def test_extract_pdf_uebernimmt_die_variante():
 
     assert "--variant" in cmd
     assert cmd[cmd.index("--variant") + 1] == "layoutxlm"
+
+
+def test_blackbox_replay_akzeptiert_nur_reportpfade():
+    with pytest.raises(ValueError):
+        jobs.build_command("blackbox-eval", {"pages": "data/eval/test_cluster_pages.txt", "blackbox_from": "../../secret.json"})
+    command = jobs.build_command("blackbox-eval", {
+        "pages": "data/eval/test_cluster_pages.txt", "reference_groups": "gold",
+        "blackbox_from": "data/eval/blackbox_test_gemma-4-31b-it_pair-model_ref-teacher.json",
+    })
+    assert "--blackbox-from" in command
+    assert "--allow-partial" not in command

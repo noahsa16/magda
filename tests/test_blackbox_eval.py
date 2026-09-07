@@ -1,10 +1,4 @@
-"""Blackbox gegen eigene Pipeline - ueber die gemeinsame Feldmenge.
-
-Die Blackbox kennt per Design keine App-Preise und keinen Grundpreis; ihr
-Prompt sagt "Skip ... app labels". Verglichen wird deshalb nur ueber
-name/price/original_price - und dasselbe Matching gilt fuer BEIDE Seiten,
-sonst ist der Vergleich in unbekannte Richtung unfair.
-"""
+"""Name und Aktionspreis je Preisvariante, symmetrisch für beide Systeme."""
 
 import pytest
 
@@ -48,8 +42,7 @@ def test_leere_seiten_auf_beiden_seiten_ergeben_keine_quote():
 
 
 def test_die_gemeinsame_feldmenge_ignoriert_app_preise():
-    """Die Blackbox kann APP_PRICE gar nicht ausdruecken - das darf der
-    eigenen Pipeline nicht als Fehler angelastet werden."""
+    """Zusatzfelder sind nicht Teil des vorab festgelegten Haupt-F1."""
     system = [{"name": "Butter", "price": 1.29, "app_price": 0.99}]
     reference = [{"name": "Butter", "price": 1.29}]
 
@@ -104,33 +97,34 @@ def test_ein_angebot_ohne_preis_ist_kein_vergleichbares_angebot():
     """Fragmente sind kein Extraktionsergebnis - sie wuerden die Praezision
     der eigenen Pipeline druecken, ohne dass die Blackbox ein Gegenstueck
     haette. Sie werden gezaehlt und getrennt ausgewiesen."""
-    assert blackbox_eval.deal_from_offer(_offer(product="Butter", price=None)) is None
+    assert blackbox_eval.deals_from_offer(_offer(product="Butter", price=None)) == []
 
 
 def test_ein_angebot_ohne_namen_ist_kein_vergleichbares_angebot():
-    assert blackbox_eval.deal_from_offer(_offer(product=None, price="1.29")) is None
+    assert blackbox_eval.deals_from_offer(_offer(product=None, price="1.29")) == []
 
 
 def test_marke_und_produkt_ergeben_zusammen_den_namen():
     """Die Blackbox liefert einen Fliesstext-Namen; unsere Pipeline trennt
     BRAND und PRODUCT. Getrennt verglichen waere der Name systematisch kuerzer."""
-    deal = blackbox_eval.deal_from_offer(
+    [deal] = blackbox_eval.deals_from_offer(
         _offer(brand="Landliebe", product="Butter", price="1.29"))
 
     assert deal["name"] == "Landliebe Butter"
     assert deal["price"] == 1.29
 
 
-def test_der_streichpreis_wandert_ins_gemeinsame_feld():
-    deal = blackbox_eval.deal_from_offer(
+def test_der_streichpreis_wird_mitgefuehrt_aber_nicht_bewertet():
+    [deal] = blackbox_eval.deals_from_offer(
         _offer(product="Butter", price="1.29", old_price="1.99"))
 
     assert deal["original_price"] == 1.99
+    assert "original_price" not in blackbox_eval.COMMON_FIELDS
 
 
 def test_der_app_preis_taucht_in_der_projektion_nicht_auf():
-    """Was die Blackbox nicht ausdruecken kann, gehoert nicht in den Vergleich."""
-    deal = blackbox_eval.deal_from_offer(
+    """Die Blackbox kann APP_PRICE nicht ausdruecken - er gehoert nicht in den Vergleich."""
+    [deal] = blackbox_eval.deals_from_offer(
         _offer(product="Butter", price="1.29", app_price="0.99"))
 
     assert "app_price" not in deal
@@ -151,3 +145,23 @@ def test_die_seitenweisen_zahlen_werden_aufsummiert_nicht_gemittelt():
     assert result["matched"] == 1
     assert result["only_reference"] == 9
     assert result["recall"] == pytest.approx(0.1)
+
+
+def test_preisvarianten_werden_auf_beiden_seiten_gleich_gezaehlt():
+    reference = blackbox_eval.deals_from_offer(_offer(product="Pfanne", price="9.99 | 14.99"))
+    system = [{"name": "Pfanne", "price": 9.99}, {"name": "Pfanne", "price": 14.99}]
+    assert blackbox_eval.match_deals(system, reference)["f1"] == 1.0
+
+
+def test_maximalmatching_bleibt_bei_vertauschter_reihenfolge_gleich():
+    from itertools import permutations
+    system = [{"name": name, "price": 1} for name in ("Butter", "Landliebe Butter mild")]
+    reference = [{"name": name, "price": 1} for name in ("Butter mild", "Kerrygold Butter mild")]
+    for own in permutations(system):
+        for other in permutations(reference):
+            assert blackbox_eval.match_deals(own, other)["matched"] == 2
+            assert blackbox_eval.match_deals(other, own)["matched"] == 2
+
+
+def test_altpreise_sind_ausdruecklich_nicht_im_haupt_f1():
+    assert blackbox_eval.COMMON_FIELDS == ("name", "price")
