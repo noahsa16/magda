@@ -1,14 +1,14 @@
 {
- "page_id": "1364390_p1",
- "words_hash": "9a2b10fc130ddf248bfa8eae088d26a90be412406e1e5c26674cf4edf11a8c88",
+ "page_id": "1364390_p12",
+ "words_hash": "c9b306ca6a1ffd99820d187f5dc04a2368c373263fbd061f0eff791979d74bea",
  "status": "done",
  "annotator": "",
- "updated": "2026-09-14T15:49:16",
+ "updated": "2026-09-14T16:36:09",
  "spans": [
   {
    "start": 0,
    "end": 1,
-   "label": "BRAND"
+   "label": "PRICE"
   },
   {
    "start": 1,
@@ -16,9 +16,24 @@
    "label": "BRAND"
   },
   {
+   "start": 2,
+   "end": 3,
+   "label": "PRODUCT"
+  },
+  {
+   "start": 3,
+   "end": 4,
+   "label": "PRODUCT"
+  },
+  {
+   "start": 4,
+   "end": 5,
+   "label": "PRODUCT"
+  },
+  {
    "start": 5,
    "end": 6,
-   "label": "BRAND"
+   "label": "PRODUCT"
   },
   {
    "start": 6,
@@ -28,22 +43,32 @@
   {
    "start": 7,
    "end": 8,
-   "label": "PRODUCT"
+   "label": "QUANTITY"
+  },
+  {
+   "start": 8,
+   "end": 9,
+   "label": "QUANTITY"
+  },
+  {
+   "start": 9,
+   "end": 10,
+   "label": "QUANTITY"
   },
   {
    "start": 10,
    "end": 11,
-   "label": "QUANTITY"
+   "label": "UNIT_PRICE"
   },
   {
    "start": 11,
    "end": 12,
-   "label": "QUANTITY"
+   "label": "UNIT_PRICE"
   },
   {
    "start": 12,
    "end": 13,
-   "label": "QUANTITY"
+   "label": "UNIT_PRICE"
   },
   {
    "start": 13,
@@ -53,22 +78,22 @@
   {
    "start": 14,
    "end": 15,
-   "label": "UNIT_PRICE"
+   "label": "PRICE"
   },
   {
    "start": 15,
    "end": 16,
-   "label": "UNIT_PRICE"
+   "label": "BRAND"
   },
   {
    "start": 16,
    "end": 17,
-   "label": "UNIT_PRICE"
+   "label": "PRODUCT"
   },
   {
    "start": 17,
    "end": 18,
-   "label": "BRAND"
+   "label": "PRODUCT"
   },
   {
    "start": 18,
@@ -128,42 +153,47 @@
   {
    "start": 29,
    "end": 30,
-   "label": "DISCOUNT"
+   "label": "PRICE"
   },
   {
    "start": 30,
    "end": 31,
-   "label": "PRICE"
+   "label": "BRAND"
+  },
+  {
+   "start": 31,
+   "end": 32,
+   "label": "PRODUCT"
   },
   {
    "start": 32,
    "end": 33,
-   "label": "OLD_PRICE"
+   "label": "PRODUCT"
   },
   {
    "start": 33,
    "end": 34,
-   "label": "BRAND"
+   "label": "PRODUCT"
   },
   {
    "start": 34,
    "end": 35,
-   "label": "BRAND"
+   "label": "PRODUCT"
   },
   {
    "start": 35,
    "end": 36,
-   "label": "BRAND"
+   "label": "PRODUCT"
   },
   {
    "start": 36,
    "end": 37,
-   "label": "QUANTITY"
+   "label": "PRODUCT"
   },
   {
    "start": 37,
    "end": 38,
-   "label": "QUANTITY"
+   "label": "PRODUCT"
   },
   {
    "start": 38,
@@ -183,12 +213,12 @@
   {
    "start": 41,
    "end": 42,
-   "label": "QUANTITY"
+   "label": "UNIT_PRICE"
   },
   {
    "start": 42,
    "end": 43,
-   "label": "QUANTITY"
+   "label": "UNIT_PRICE"
   },
   {
    "start": 43,
@@ -203,12 +233,17 @@
   {
    "start": 45,
    "end": 46,
-   "label": "UNIT_PRICE"
+   "label": "DISCOUNT"
   },
   {
    "start": 46,
    "end": 47,
-   "label": "UNIT_PRICE"
+   "label": "PRICE"
+  },
+  {
+   "start": 47,
+   "end": 48,
+   "label": "OLD_PRICE"
   },
   {
    "start": 48,
@@ -218,12 +253,12 @@
   {
    "start": 49,
    "end": 50,
-   "label": "QUANTITY"
+   "label": "PRODUCT"
   },
   {
    "start": 50,
    "end": 51,
-   "label": "QUANTITY"
+   "label": "PRODUCT"
   },
   {
    "start": 51,
@@ -243,12 +278,12 @@
   {
    "start": 54,
    "end": 55,
-   "label": "QUANTITY"
+   "label": "UNIT_PRICE"
   },
   {
    "start": 55,
    "end": 56,
-   "label": "QUANTITY"
+   "label": "UNIT_PRICE"
   },
   {
    "start": 56,
@@ -263,17 +298,22 @@
   {
    "start": 58,
    "end": 59,
-   "label": "UNIT_PRICE"
+   "label": "DISCOUNT"
   },
   {
    "start": 59,
    "end": 60,
-   "label": "UNIT_PRICE"
+   "label": "PRICE"
+  },
+  {
+   "start": 60,
+   "end": 61,
+   "label": "OLD_PRICE"
   },
   {
    "start": 61,
    "end": 62,
-   "label": "PRICE"
+   "label": "BRAND"
   },
   {
    "start": 62,
@@ -326,39 +366,54 @@
    "label": "UNIT_PRICE"
   },
   {
+   "start": 72,
+   "end": 73,
+   "label": "DISCOUNT"
+  },
+  {
+   "start": 74,
+   "end": 75,
+   "label": "APP_PRICE"
+  },
+  {
    "start": 75,
    "end": 76,
-   "label": "DISCOUNT"
+   "label": "OLD_PRICE"
   },
   {
    "start": 76,
    "end": 77,
-   "label": "PRICE"
+   "label": "BRAND"
+  },
+  {
+   "start": 77,
+   "end": 78,
+   "label": "PRODUCT"
   },
   {
    "start": 78,
    "end": 79,
-   "label": "OLD_PRICE"
+   "label": "PRODUCT"
   },
   {
    "start": 79,
    "end": 80,
-   "label": "BRAND"
+   "label": "PRODUCT"
   },
   {
    "start": 80,
    "end": 81,
-   "label": "BRAND"
+   "label": "PRODUCT"
   },
   {
    "start": 81,
    "end": 82,
-   "label": "BRAND"
+   "label": "PRODUCT"
   },
   {
    "start": 82,
    "end": 83,
-   "label": "BRAND"
+   "label": "PRODUCT"
   },
   {
    "start": 83,
@@ -401,24 +456,29 @@
    "label": "UNIT_PRICE"
   },
   {
+   "start": 91,
+   "end": 92,
+   "label": "PRICE"
+  },
+  {
    "start": 92,
    "end": 93,
-   "label": "PRODUCT"
+   "label": "PRICE"
   },
   {
    "start": 93,
    "end": 94,
-   "label": "QUANTITY"
+   "label": "PRICE"
   },
   {
    "start": 94,
    "end": 95,
-   "label": "QUANTITY"
+   "label": "PRICE"
   },
   {
    "start": 95,
    "end": 96,
-   "label": "QUANTITY"
+   "label": "UNIT_PRICE"
   },
   {
    "start": 96,
@@ -438,271 +498,16 @@
   {
    "start": 99,
    "end": 100,
-   "label": "UNIT_PRICE"
+   "label": "VALID"
   },
   {
    "start": 100,
    "end": 101,
-   "label": "DISCOUNT"
+   "label": "VALID"
   },
   {
    "start": 101,
    "end": 102,
-   "label": "PRICE"
-  },
-  {
-   "start": 103,
-   "end": 104,
-   "label": "OLD_PRICE"
-  },
-  {
-   "start": 104,
-   "end": 105,
-   "label": "APP_PRICE"
-  },
-  {
-   "start": 106,
-   "end": 107,
-   "label": "DISCOUNT"
-  },
-  {
-   "start": 107,
-   "end": 108,
-   "label": "DISCOUNT"
-  },
-  {
-   "start": 108,
-   "end": 109,
-   "label": "PRICE"
-  },
-  {
-   "start": 110,
-   "end": 111,
-   "label": "OLD_PRICE"
-  },
-  {
-   "start": 111,
-   "end": 112,
-   "label": "APP_PRICE"
-  },
-  {
-   "start": 113,
-   "end": 114,
-   "label": "DISCOUNT"
-  },
-  {
-   "start": 114,
-   "end": 115,
-   "label": "BRAND"
-  },
-  {
-   "start": 115,
-   "end": 116,
-   "label": "PRODUCT"
-  },
-  {
-   "start": 116,
-   "end": 117,
-   "label": "PRODUCT"
-  },
-  {
-   "start": 117,
-   "end": 118,
-   "label": "PRODUCT"
-  },
-  {
-   "start": 118,
-   "end": 119,
-   "label": "QUANTITY"
-  },
-  {
-   "start": 119,
-   "end": 120,
-   "label": "QUANTITY"
-  },
-  {
-   "start": 120,
-   "end": 121,
-   "label": "QUANTITY"
-  },
-  {
-   "start": 121,
-   "end": 122,
-   "label": "UNIT_PRICE"
-  },
-  {
-   "start": 122,
-   "end": 123,
-   "label": "UNIT_PRICE"
-  },
-  {
-   "start": 123,
-   "end": 124,
-   "label": "UNIT_PRICE"
-  },
-  {
-   "start": 124,
-   "end": 125,
-   "label": "UNIT_PRICE"
-  },
-  {
-   "start": 128,
-   "end": 129,
-   "label": "APP_PRICE"
-  },
-  {
-   "start": 129,
-   "end": 130,
-   "label": "APP_PRICE"
-  },
-  {
-   "start": 130,
-   "end": 131,
-   "label": "APP_PRICE"
-  },
-  {
-   "start": 131,
-   "end": 132,
-   "label": "APP_PRICE"
-  },
-  {
-   "start": 132,
-   "end": 133,
-   "label": "APP_PRICE"
-  },
-  {
-   "start": 136,
-   "end": 137,
-   "label": "APP_PRICE"
-  },
-  {
-   "start": 137,
-   "end": 138,
-   "label": "APP_PRICE"
-  },
-  {
-   "start": 138,
-   "end": 139,
-   "label": "APP_PRICE"
-  },
-  {
-   "start": 139,
-   "end": 140,
-   "label": "APP_PRICE"
-  },
-  {
-   "start": 140,
-   "end": 141,
-   "label": "APP_PRICE"
-  },
-  {
-   "start": 141,
-   "end": 142,
-   "label": "PRODUCT"
-  },
-  {
-   "start": 142,
-   "end": 143,
-   "label": "PRODUCT"
-  },
-  {
-   "start": 143,
-   "end": 144,
-   "label": "PRODUCT"
-  },
-  {
-   "start": 146,
-   "end": 147,
-   "label": "QUANTITY"
-  },
-  {
-   "start": 147,
-   "end": 148,
-   "label": "QUANTITY"
-  },
-  {
-   "start": 148,
-   "end": 149,
-   "label": "UNIT_PRICE"
-  },
-  {
-   "start": 149,
-   "end": 150,
-   "label": "UNIT_PRICE"
-  },
-  {
-   "start": 150,
-   "end": 151,
-   "label": "UNIT_PRICE"
-  },
-  {
-   "start": 151,
-   "end": 152,
-   "label": "UNIT_PRICE"
-  },
-  {
-   "start": 154,
-   "end": 155,
-   "label": "PRICE"
-  },
-  {
-   "start": 158,
-   "end": 159,
-   "label": "DISCOUNT"
-  },
-  {
-   "start": 159,
-   "end": 160,
-   "label": "PRICE"
-  },
-  {
-   "start": 161,
-   "end": 162,
-   "label": "OLD_PRICE"
-  },
-  {
-   "start": 162,
-   "end": 163,
-   "label": "APP_PRICE"
-  },
-  {
-   "start": 164,
-   "end": 165,
-   "label": "DISCOUNT"
-  },
-  {
-   "start": 168,
-   "end": 169,
-   "label": "APP_PRICE"
-  },
-  {
-   "start": 169,
-   "end": 170,
-   "label": "APP_PRICE"
-  },
-  {
-   "start": 170,
-   "end": 171,
-   "label": "APP_PRICE"
-  },
-  {
-   "start": 171,
-   "end": 172,
-   "label": "APP_PRICE"
-  },
-  {
-   "start": 172,
-   "end": 173,
-   "label": "APP_PRICE"
-  },
-  {
-   "start": 184,
-   "end": 185,
-   "label": "VALID"
-  },
-  {
-   "start": 185,
-   "end": 191,
    "label": "VALID"
   }
  ]
