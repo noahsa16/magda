@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="de"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Magda · unabhängige Annotation</title>
+<style>
+body{font:16px system-ui;margin:0;color:#183027;background:#f5f6f2}header,aside{padding:18px}header{background:white;border-bottom:1px solid #ccd3ca}h1{font-size:22px;margin:0 0 8px}button,select,input{font:inherit;padding:8px;border:1px solid #708779;border-radius:5px;background:white;color:#183027}button{cursor:pointer}button:focus-visible,select:focus-visible,input:focus-visible{outline:3px solid #1e6faf}button.primary{background:#185a45;color:white}nav{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:12px}main{display:grid;grid-template-columns:minmax(480px,2fr) minmax(320px,1fr)}aside{position:sticky;top:0;align-self:start;max-height:90vh;overflow:auto}.sheet{margin:16px;position:relative}.sheet img{width:100%;display:block}.sheet svg{position:absolute;inset:0;width:100%;height:100%}rect{cursor:pointer;stroke-width:.7;fill:transparent;stroke:transparent}rect.labeled{fill:#25876325;stroke:#18765e}rect.selected{fill:#eb9a2255;stroke:#a85400;stroke-width:1.5}label{display:block;margin:12px 0}p{line-height:1.45}.notice{color:#725215}#message{min-height:1.5em;font-weight:600}#words{max-height:30vh;overflow:auto;background:white;padding:8px}#words button{padding:4px;margin:2px;font-size:13px}.selected{background:#ffe0a1}#spans li{font-size:14px;margin:8px 0}small{line-height:1.4} @media(max-width:850px){main{display:block}aside{position:static;max-height:none}}
+</style>
+<header><h1>Unabhängige Annotation · Person <span id="role"></span></h1>
+<p>Annotiere aus dem Prospektbild. Dieses Paket enthält keine Goldlabels oder Modellausgaben. Arbeitet getrennt und besprecht die Seiten erst nach beiden Abgaben.</p>
+<nav><label for="page">Seite</label><select id="page"></select><button id="undo">Letzte Änderung zurück</button><button id="export" class="primary">Gesamte Abgabe herunterladen</button></nav>
+</header>
+<main><div class="sheet"><img id="image" alt="Prospektseite als Grundlage der Annotation"><svg id="overlay" aria-label="Wörter auswählen"></svg></div>
+<aside>
+<p><a href="../../../docs/annotation-guidelines-v1.md">Annotationsregeln</a> · <span id="progress"></span></p>
+<p>Wörter im Bild oder unten auswählen. Umschalt-Klick wählt einen Indexbereich. Grün zeigt gelabelte Wörter, Orange die aktuelle Auswahl. Die Wortliste zeigt Label und Angebotsnummer.</p>
+<nav><select id="label" aria-label="Entity-Typ"></select><button id="assign">Label setzen</button><button id="erase">Ausgewählte Entities löschen</button><button id="clear">Auswahl leeren</button></nav>
+<nav><input id="group" type="number" min="1" value="1" aria-label="Angebotsnummer" style="width:75px"><button id="groupAssign">Zum Angebot zuordnen</button><button id="groupClear">Zuordnung entfernen</button></nav>
+<p><small>Gib zusammengehörigen Entities dieselbe Angebotsnummer. Für ein neues Angebot verwende eine neue Nummer. Globale Gültigkeit bleibt ohne Angebot. Nicht benachbarte Wortindizes werden als getrennte Spans gespeichert; prüfe die Spanliste.</small></p>
+<div id="message" role="status" aria-live="polite"></div><div id="words" aria-label="Wortliste zur Tastaturbedienung"></div><ul id="spans"></ul>
+<label><input id="done" type="checkbox"> Diese Seite ist vollständig annotiert und geprüft.</label>
+<label>Notizen zu Zweifelsfällen<textarea id="notes" rows="3" style="width:95%"></textarea></label>
+<label>Dein Name <input id="name" autocomplete="name"></label>
+<label>Frühere Einsicht in diese Seiten oder deren Labels <select id="exposure"><option value="unknown">Bitte auswählen</option><option value="not_seen">Nein</option><option value="seen_before">Ja</option></select></label>
+<label><input id="independent" type="checkbox"> Ich habe diese Abgabe selbst erstellt, ohne währenddessen Goldlabels, Modellausgaben oder die Abgabe der anderen Person einzusehen.</label>
+<p class="notice">Entwürfe werden in diesem Browser gespeichert. Lade die Abgabe zusätzlich herunter. Eine Abgabe ist erst nach Abschluss aller Seiten möglich.</p>
+</aside></main>
+<script>
+const packet=__PAYLOAD__;
+const byId=id=>document.getElementById(id), key='magda-independent-'+packet.packet_id+'-'+packet.role;
+let state=JSON.parse(localStorage.getItem(key)||'null')||{name:'',exposure:'unknown',independent:false,pages:{}};
+let selected=new Set(),last=null,history=[];
+for(const page of packet.pages) state.pages[page.page_id]??={spans:[],membership:{},done:false,notes:''};
+byId('role').textContent=packet.role.toUpperCase();
+for(const page of packet.pages){const option=new Option(page.page_id,page.page_id);byId('page').add(option)}
+for(const label of packet.labels) byId('label').add(new Option(label,label));
+byId('name').value=state.name;byId('exposure').value=state.exposure;byId('independent').checked=state.independent;
+const page=()=>packet.pages.find(p=>p.page_id===byId('page').value), record=()=>state.pages[page().page_id];
+function save(){try{localStorage.setItem(key,JSON.stringify(state))}catch(error){byId('message').textContent='Speichern im Browser fehlgeschlagen: '+error.message}}
+function begin(){history.push(JSON.stringify(state));if(history.length>30)history.shift();record().done=false;byId('message').textContent=''}
+function selectWord(index,shift){if(shift&&last!==null){for(let i=Math.min(last,index);i<=Math.max(last,index);i++)selected.add(i)}else if(selected.has(index))selected.delete(index);else selected.add(index);last=index;render()}
+function render(){
+ const p=page(),r=record(),svg=byId('overlay');svg.replaceChildren();svg.setAttribute('viewBox',`0 0 ${p.width} ${p.height}`);byId('image').src=p.image;
+ byId('done').checked=r.done;byId('notes').value=r.notes;byId('progress').textContent=Object.values(state.pages).filter(p=>p.done).length+' / '+packet.pages.length+' Seiten fertig';
+ const list=byId('words');list.replaceChildren();
+ p.words.forEach((word,i)=>{const label=r.spans.find(s=>s.start<=i&&i<s.end)?.label||'O';const box=document.createElementNS('http://www.w3.org/2000/svg','rect');const [x1,y1,x2,y2]=word.bbox;for(const [name,value] of Object.entries({x:x1,y:y1,width:x2-x1,height:y2-y1}))box.setAttribute(name,value);box.setAttribute('class',selected.has(i)?'selected':label!=='O'?'labeled':'');const title=document.createElementNS('http://www.w3.org/2000/svg','title');title.textContent=`${i}: ${word.text} · ${label} · Angebot ${r.membership[i]||'–'}`;box.append(title);box.onclick=e=>selectWord(i,e.shiftKey);svg.append(box);const button=document.createElement('button');button.textContent=title.textContent;button.className=selected.has(i)?'selected':'';button.setAttribute('aria-pressed',selected.has(i));button.onclick=e=>selectWord(i,e.shiftKey);list.append(button)});
+ byId('spans').replaceChildren();r.spans.forEach(span=>{const item=document.createElement('li');item.textContent=`${span.start}–${span.end} (Ende exklusiv) ${span.label}: `+p.words.slice(span.start,span.end).map(w=>w.text).join(' ');byId('spans').append(item)});
+}
+byId('page').onchange=()=>{selected.clear();last=null;render()};
+byId('clear').onclick=()=>{selected.clear();render()};
+byId('assign').onclick=()=>{
+ if(!selected.size)return;const r=record();
+ if(r.spans.some(s=>Array.from({length:s.end-s.start},(_,i)=>s.start+i).some(i=>selected.has(i))&&!Array.from({length:s.end-s.start},(_,i)=>s.start+i).every(i=>selected.has(i)))){byId('message').textContent='Bestehenden Span vollständig auswählen oder zuerst löschen.';return}
+ begin();r.spans=r.spans.filter(s=>!selected.has(s.start));let indices=[...selected].sort((a,b)=>a-b),start=indices[0],end=start+1;for(const index of indices.slice(1)){if(index===end)end++;else{r.spans.push({start,end,label:byId('label').value});start=index;end=index+1}}r.spans.push({start,end,label:byId('label').value});r.spans.sort((a,b)=>a.start-b.start);save();render();
+};
+byId('erase').onclick=()=>{begin();const r=record(),removed=r.spans.filter(s=>[...selected].some(i=>s.start<=i&&i<s.end));r.spans=r.spans.filter(s=>!removed.includes(s));for(const s of removed)for(let i=s.start;i<s.end;i++)delete r.membership[i];save();render()};
+byId('groupAssign').onclick=()=>{const number=Number(byId('group').value);if(!Number.isInteger(number)||number<1)return;const r=record();if([...selected].some(i=>!r.spans.some(s=>s.start<=i&&i<s.end))){byId('message').textContent='Bitte die Wörter zuerst labeln.';return}if(r.spans.some(s=>[...selected].some(i=>s.start<=i&&i<s.end)&&!Array.from({length:s.end-s.start},(_,i)=>s.start+i).every(i=>selected.has(i)))){byId('message').textContent='Bitte ganze Entities auswählen.';return}begin();for(const i of selected)r.membership[i]=number;save();render()};
+byId('groupClear').onclick=()=>{begin();for(const i of selected)delete record().membership[i];save();render()};
+byId('undo').onclick=()=>{if(history.length){state=JSON.parse(history.pop());save();render()}};
+byId('done').onchange=()=>{record().done=byId('done').checked;save();render()};byId('notes').oninput=()=>{record().notes=byId('notes').value;save()};
+byId('name').oninput=()=>{state.name=byId('name').value;save()};byId('exposure').onchange=()=>{state.exposure=byId('exposure').value;save()};byId('independent').onchange=()=>{state.independent=byId('independent').checked;save()};
+byId('export').onclick=()=>{
+ if(!state.name.trim()||!state.independent||state.exposure==='unknown'||packet.pages.some(p=>!state.pages[p.page_id].done)){byId('message').textContent='Bitte alle Seiten abschließen, Namen und Erklärung ergänzen.';return}
+ const pages=packet.pages.map(p=>{const r=state.pages[p.page_id],groups={};for(const [word,group] of Object.entries(r.membership))(groups[group]??=[]).push(Number(word));return {page_id:p.page_id,words_hash:p.words_hash,packet_id:packet.packet_id,status:'done',annotator:state.name.trim(),independent_annotation:true,prior_exposure:state.exposure,role:packet.role,created:new Date().toISOString(),spans:r.spans,groups:Object.values(groups).map(g=>g.sort((a,b)=>a-b)),notes:r.notes}});
+ const url=URL.createObjectURL(new Blob([JSON.stringify({packet_id:packet.packet_id,pages},null,2)],{type:'application/json'}));const link=document.createElement('a');link.href=url;link.download='magda-review-'+packet.role+'.json';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);byId('message').textContent='Abgabe heruntergeladen. Originaldatei vor dem gemeinsamen Abgleich aufbewahren.';
+};
+render();
+</script></html>

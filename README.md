@@ -8,15 +8,27 @@ Produkt, Marke, Preis, Streichpreis, Menge, Grundpreis, Rabatt, Gültigkeit,
 App-Preis. Ein großes Vision-LLM labelt die Trainingsdaten, darauf trainieren
 wir ein eigenes, kleines Modell.
 
-Zwei Fragen stehen dahinter. Erstens: **Wie viel von dem, was ein LLM kann,
-passt in ein Modell, das man selbst betreibt?** Gemessen erreicht GBERT F1
-0.908 gegen die LLM-Labels, bei 0,264 statt 44,8 Sekunden je Seite — 109 Mio.
-Parameter, lokal auf CPU, ohne Netz und API-Kontingent. Zweitens: **Wie viel
-bringt Layout-Information?** Mit vier Armen getrennt gemessen (KW35): der
-Layout-Schritt `xlmr → lilt` bringt −0.0003 [−0.0063, +0.0058] — nichts, und
-das ist die präziseste Null des Projekts. Das *Seitenbild* bringt dagegen
-+0.0096 [+0.0033, +0.0182]. Wortkoordinaten sagen, wo ein Wort steht, nicht wie
-es gesetzt ist.
+Zwei Fragen stehen dahinter: **Wie gut extrahiert ein selbst betriebenes
+Modell gegenüber einer menschlichen Referenz und einer LLM-Blackbox?** Und:
+**Welche Unterschiede zeigen Text-, Layout- und Bildarchitekturen?**
+Die historischen Messungen gegen LLM-Labels stehen in den Wochenberichten.
+Sie messen Lehrerübereinstimmung. Architekturunterschiede isolieren keine
+einzelne kausale Wirkung von Layout oder Bildinformation; ein Intervall über
+null belegt keine Wirkungslosigkeit.
+
+Die [abgeschlossene Fallstudie](data/eval/study-2026-09-16/report.md) ergänzt
+SemEval gegen Gold, Gruppierungsmetriken und gepaarte Cluster-Intervalle.
+Sie verwendet die bestehende Referenz. Mehrdeutige Angebotsgrenzen,
+Referenzfehler und fehlende unabhängige Doppelannotation begrenzen die
+Aussagen; eine weitere Labelrunde gehört nicht zum Studienumfang. Die
+[Abschlussdokumentation](docs/finish-study.md) beschreibt Ergebnisse und
+Reproduktion. Laufzeitwerte einzelner Pipeline-Stufen werden nicht als
+Ende-zu-Ende-Speedup ausgegeben.
+
+Der Bericht erklärt die ML-Begriffe anhand der Angebotsextraktion, unterscheidet
+Entity-Erkennung, Heuristik, Paarmodell und LLM-Blackbox und rechnet Precision,
+Recall und F1 an den tatsächlichen Ergebnissen vor. Ein eigener Abschnitt
+ordnet die Umsetzung den fünf Anforderungen des Proposals zu.
 
 Grundlage ist das [Proposal](docs/proposal/IE_ProjectProposal_Magda.pdf), der
 Stand steht in [reports/](reports/).

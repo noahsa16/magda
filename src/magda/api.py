@@ -27,7 +27,7 @@ from magda import (
     runs, scraping, uploads,
 )
 from magda import label_audit, offers_gold
-from magda.gold import count_by_status, words_hash
+from magda.gold import count_by_status, words_hash, preserve_annotation_metadata
 from magda.labels import ENTITY_TYPES, validate_spans
 
 app = FastAPI(title="Magda API")
@@ -551,14 +551,14 @@ def put_gold(page_id: str, payload: GoldPayload):
         raise HTTPException(422, " ".join(errors))
 
     config.GOLD_DIR.mkdir(parents=True, exist_ok=True)
-    record = {
+    record = preserve_annotation_metadata(config.GOLD_DIR / f"{page_id}.json", {
         "page_id": page_id,
         "words_hash": payload.words_hash,
         "status": payload.status,
         "annotator": payload.annotator,
         "updated": datetime.now().isoformat(timespec="seconds"),
         "spans": spans,
-    }
+    })
     # Erst in eine Nachbardatei schreiben, dann per os.replace umhängen: Die
     # Gold-Datei ist das einzige Artefakt, das sich nicht neu erzeugen lässt,
     # und sie wird während einer Sitzung im Sekundentakt überschrieben. Ein
@@ -690,15 +690,14 @@ def put_offer_gold(page_id: str, payload: OfferGoldPayload):
 
     directory = offers_gold.reference_dir()
     directory.mkdir(parents=True, exist_ok=True)
-    record = {
+    record = preserve_annotation_metadata(directory / f"{page_id}.json", {
         "page_id": page_id,
         "words_hash": payload.words_hash,
         "status": payload.status,
         "annotator": payload.annotator,
         "updated": datetime.now().isoformat(timespec="seconds"),
         "groups": payload.groups,
-        "provenance": {"kind": "human", "method": "independent"},
-    }
+    })
     # Dieselbe Schreibweise wie bei put_gold, aus demselben Grund: Die Datei
     # lässt sich nicht neu erzeugen und wird im Sekundentakt überschrieben.
     fd, tmp_path = tempfile.mkstemp(dir=directory, prefix=f".{page_id}.", suffix=".tmp")
