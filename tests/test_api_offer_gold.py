@@ -179,3 +179,38 @@ def test_auswahlhilfe_liest_nur_fertige_gold_spans(client):
         "spans": [{"start": 1, "end": 2, "label": "PRODUCT"}],
     })
     assert client.get("/api/annotation-page/1_p1").json()["tags"] == ["O", "B-PRODUCT", "O"]
+
+
+@pytest.mark.parametrize("kind", ["groups", "spans"])
+def test_speichern_erhaelt_ki_herkunft_und_notizen(client, kind):
+    from magda import provenance
+
+    directory = config.GOLD_DIR / "offers" if kind == "groups" else config.GOLD_DIR
+    directory.mkdir(exist_ok=True)
+    path = directory / "1_p1.json"
+    origin = {"kind": "human", "method": "llm_assisted", "initial_annotator": "Codex"}
+    path.write_text(json.dumps({
+        "page_id": "1_p1", "words_hash": _hash(), "status": "done",
+        "annotator": "Noah", "provenance": origin, "notes": "Frühere Prüfung erhalten",
+        kind: [[0, 1]] if kind == "groups" else [{"start": 1, "end": 2, "label": "PRODUCT"}],
+    }))
+    previous = provenance.file_digest(path)
+    endpoint = "offer-gold" if kind == "groups" else "gold"
+    content = [[0, 1, 2]] if kind == "groups" else [{"start": 1, "end": 3, "label": "PRODUCT"}]
+    response = client.put(f"/api/{endpoint}/1_p1", json={
+        "words_hash": _hash(), "status": "in_progress", "annotator": "Kjell", kind: content,
+    })
+    assert response.status_code == 200
+    saved = json.loads(path.read_text())
+    assert saved["provenance"] == origin
+    assert saved["notes"] == "Frühere Prüfung erhalten"
+    assert saved["last_edit"]["previous_sha256"] == previous
+    assert saved["last_edit"]["annotator"] == "Kjell"
+    assert saved[kind] == content
+
+
+def test_neue_editorannotation_behauptet_keine_unabhaengigkeit(client):
+    response = client.put("/api/offer-gold/1_p1", json={
+        "words_hash": _hash(), "status": "done", "annotator": "Noah", "groups": [[0, 1, 2]],
+    })
+    assert response.json()["provenance"] == {"kind": "human", "method": "manual_editor"}

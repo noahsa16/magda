@@ -40,13 +40,14 @@ def _single_page_pdf(text: str) -> bytes:
 
 
 def test_save_pdf_vergibt_eine_id_ohne_den_dateinamen_des_nutzers(uploads_dir):
-    result = uploads.save_pdf(_tiny_pdf(2))
+    payload = _tiny_pdf(2)
+    result = uploads.save_pdf(payload)
 
     assert uploads.is_valid_id(result["upload_id"])
     assert result["pages"] == 2
-    assert result["bytes"] == len(_tiny_pdf(2))
+    assert result["bytes"] == len(payload)
     # Die Datei liegt unter der ID, nicht unter irgendeinem Nutzernamen.
-    assert (uploads_dir / f"{result['upload_id']}.pdf").is_file()
+    assert (uploads_dir / f"{result['upload_id']}.pdf").read_bytes() == payload
 
 
 def test_save_pdf_zwei_uploads_bekommen_verschiedene_ids(uploads_dir):

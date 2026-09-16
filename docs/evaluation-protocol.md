@@ -1,5 +1,15 @@
 # Abschlussmessung und Bedeutung der Zahlen
 
+Ergänzung vom 16.09.2026: Die reproduzierbare gemeinsame Auswertung läuft mit
+`magda study-eval --output data/eval/study-2026-09-16`. Sie ergänzt SemEval
+gegen Gold, die bedingte Gruppierung und gepaarte Cluster-Intervalle. Der
+Studienumfang endet mit der bestehenden Referenz; weitere Annotation und
+Adjudikation entfallen. Unklare Angebotsgrenzen, uneinheitliche Labels,
+bekannte Referenzfehler und fehlende unabhängige Doppelannotation werden als
+Limitationen berichtet. Einzelheiten und die nachträgliche Umfangsentscheidung
+stehen in [study-protocol-v1.md](study-protocol-v1.md). Die folgende ältere
+Methodenbeschreibung gilt mit dieser Ergänzung.
+
 Stand: 2026-09-07. Dieses Protokoll legt fest, wie die Abschlussmessung gegen
 die Handreferenz läuft und was die Zahlen bedeuten. Alte Reports und
 Teacherlabels werden nicht überschrieben. Das Blackbox-Protokoll heißt
@@ -15,8 +25,8 @@ fertig und an die aktuelle Wortreihenfolge gebunden sein.
 Der Handeditor lädt keine Lehrergruppen. Fertige menschliche Spans dienen als
 Auswahlhilfe beim Gruppieren. Bereits früher mit Vorbelegung erstellte Golddateien
 müssen hinsichtlich ihrer Herkunft geprüft werden. Korrektur einer LLM-Ausgabe
-ist keine unabhängige Blindannotation. Offene Labelkonventionen und die
-Auflösung von Uneinigkeiten im Team vor der Schlussmessung dokumentieren.
+ist keine unabhängige Blindannotation. Offene Labelkonventionen und fehlender
+Abgleich werden für diesen Abschluss als Grenzen der Referenz dokumentiert.
 
 Testseiten wurden bereits in früheren Vergleichen betrachtet. Die Goldmessung
 ist eine neue Referenzbewertung derselben festgelegten Testmenge, kein bislang
@@ -85,10 +95,9 @@ Deshalb Entity-F1, überlebende Referenzpaare und Gruppierungs-F1 gemeinsam nenn
 Gruppen-F1 allein ist kein vollständiger Ende-zu-Ende-Score (siehe die Kette
 in `CLAUDE.md`, „Die Kette kostet fast nichts").
 
-Wie die Ablationskette `xlmr → lilt → layoutxlm` im Bericht zu deuten ist
-(kontrollierte Ablation oder Architekturvergleich), ist eine Teamentscheidung
-und hier nicht festgelegt. Die Zahlen und ihre Einschränkungen stehen in
-`reports/woche-06.md`.
+Die Kette `xlmr → lilt → layoutxlm` ist ein Architekturvergleich. Wegen
+unterschiedlicher Vortrainingsverfahren isoliert sie keine kausale Wirkung
+einer einzelnen Modalität. Historische Zahlen stehen in `reports/woche-06.md`.
 
 ## Unsicherheit, Herkunft und Laufzeit
 
