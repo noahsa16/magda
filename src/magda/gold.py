@@ -12,8 +12,31 @@ import hashlib
 import json
 from typing import NamedTuple
 
-from magda import config
+from magda import config, provenance
 from magda.labels import spans_to_bio
+
+
+def preserve_annotation_metadata(path, record):
+    """Ein Editorspeichern darf die Entstehung einer Annotation nicht umetikettieren.
+
+    Die aktuellen Inhaltsfelder kommen aus dem validierten Payload. Herkunft
+    und Notizen bleiben aus der bisherigen Datei erhalten; der letzte Edit
+    verweist auf deren Hash. Vollständige Historie bleibt Aufgabe der Versionierung.
+    """
+    exists = path.exists()
+    previous = json.loads(path.read_text()) if exists else {}
+    if not isinstance(previous, dict):
+        raise ValueError(f"Vorhandene Annotation ist kein Objekt: {path}")
+    merged = {**previous, **record}
+    merged["provenance"] = previous.get("provenance", {
+        "kind": "unknown" if exists else "human",
+        "method": "legacy_unknown" if exists else "manual_editor",
+    })
+    merged["last_edit"] = {
+        "annotator": record["annotator"], "updated": record["updated"],
+        "previous_sha256": provenance.file_digest(path) if exists else None,
+    }
+    return merged
 
 
 def words_hash(words: list[dict]) -> str:

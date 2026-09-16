@@ -40,6 +40,7 @@ PIPELINE = (
 VERGLEICH = (
     Befehl("flair", "flair", "Fertiges deutsches NER-Modell als Vergleich (nur BRAND)"),
     Befehl("eval-gold", "evaluate_gold", "Studentenvorhersagen gegen Handspans messen"),
+    Befehl("study-eval", "study_eval", "Fallstudie mit SemEval, Intervallen und Referenzlimitationen"),
     Befehl("gold", "compare", "Labeling-Modelle gegen die Handannotation messen"),
     Befehl("agreement", "agreement", "Zwei Labeling-Modelle gegeneinander halten"),
     Befehl("queue", "queue", "Welche Gold-Seiten als Nächstes durchzusehen sind"),

@@ -26,6 +26,7 @@ dependencies = [
     "pillow",             # Seitenbilder fuer den visuellen Backbone von LayoutXLM
     "numpy",
     "seqeval",
+    "nervaluate==1.2.1",  # SemEval-Auswertung mit festgehaltener Implementierung
 
     # Frontend-API
     "fastapi",
@@ -69,6 +70,9 @@ dev = ["pytest", "httpx", "pulp", "highspy"]
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.package-data]
+magda = ["templates/*.html"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
