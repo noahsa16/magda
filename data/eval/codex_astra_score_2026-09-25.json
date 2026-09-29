@@ -1,0 +1,213 @@
+{
+  "protocol": "offer-price-v2",
+  "prompt_version": 1,
+  "model": "gpt-6-astra",
+  "api_host": null,
+  "system": "astra_codex",
+  "source_protocol": "codex-image-offer-extraction-v1",
+  "runtime_sha256": "f9f753556ee9bb8d9c6c2f6f07e71ee6e345e0f302e1bd2b98590ac4d25b68fe",
+  "reference": "gold/ + gold/offers/",
+  "matching_fields": [
+    "name",
+    "price"
+  ],
+  "name_similarity": 0.6,
+  "failed_pages": [],
+  "raw_records": 315,
+  "unscored_fragments": 0,
+  "counts": {
+    "matched": 241,
+    "only_system": 74,
+    "only_reference": 38,
+    "system": 315,
+    "reference": 279,
+    "precision": 0.765079365079365,
+    "recall": 0.8637992831541219,
+    "f1": 0.8114478114478114,
+    "pages": 42
+  },
+  "paired_with_local": {
+    "method": "paired-cluster-percentile-bootstrap",
+    "seed": 42,
+    "resamples": 10000,
+    "clusters": [
+      [
+        0
+      ],
+      [
+        1
+      ],
+      [
+        2
+      ],
+      [
+        3
+      ],
+      [
+        4
+      ],
+      [
+        5
+      ],
+      [
+        6
+      ],
+      [
+        7
+      ],
+      [
+        8
+      ],
+      [
+        9
+      ],
+      [
+        10
+      ],
+      [
+        11
+      ],
+      [
+        12
+      ],
+      [
+        13
+      ],
+      [
+        14
+      ],
+      [
+        15
+      ],
+      [
+        16
+      ],
+      [
+        17
+      ],
+      [
+        18
+      ],
+      [
+        19
+      ],
+      [
+        20
+      ],
+      [
+        21
+      ],
+      [
+        22
+      ],
+      [
+        23
+      ],
+      [
+        24
+      ],
+      [
+        25
+      ],
+      [
+        26
+      ],
+      [
+        27
+      ],
+      [
+        28
+      ],
+      [
+        29
+      ],
+      [
+        30
+      ],
+      [
+        31
+      ],
+      [
+        32
+      ],
+      [
+        33
+      ],
+      [
+        34
+      ],
+      [
+        35
+      ],
+      [
+        36
+      ],
+      [
+        37
+      ],
+      [
+        38
+      ],
+      [
+        39
+      ],
+      [
+        40
+      ],
+      [
+        41
+      ]
+    ],
+    "num_clusters": 42,
+    "pages": 42,
+    "family_size": 1,
+    "familywise_method": "Bonferroni",
+    "systems": {
+      "astra_codex": {
+        "f1": 0.8114478114478114,
+        "ci95": [
+          0.7255192208286857,
+          0.8892563370125909
+        ],
+        "undefined_resamples": 0,
+        "counts": [
+          241.0,
+          315.0,
+          279.0
+        ]
+      },
+      "local_pipeline": {
+        "f1": 0.7571428571428571,
+        "ci95": [
+          0.6551096164411003,
+          0.8520720476706393
+        ],
+        "undefined_resamples": 0,
+        "counts": [
+          212.0,
+          281.0,
+          279.0
+        ]
+      }
+    },
+    "comparisons": [
+      {
+        "a": "astra_codex",
+        "b": "local_pipeline",
+        "direction": "a_minus_b",
+        "difference": 0.0543049543049543,
+        "ci95": [
+          -0.030809498081203777,
+          0.15465816289608617
+        ],
+        "ci_familywise": [
+          -0.030809498081203777,
+          0.15465816289608617
+        ],
+        "undefined_resamples": 0
+      }
+    ],
+    "scope": "Stichprobenunsicherheit bei festen Modellen und fester Referenz; keine Seed-Streuung."
+  },
+  "study_sha256": "1267452340b2ac6a0d60915a3fdd54395dbde2b1b39f5e1d0aac822250a3d24f"
+}

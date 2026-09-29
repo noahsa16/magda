@@ -1,164 +1,55 @@
-# Magda – Information Extraction aus Supermarkt-Prospekten
+# Magda
 
-Semesterprojekt im Kurs *Information Extraction* (SoSe 2026).
+**Strukturierte Angebote aus PENNY-Prospekten.** Selbst trainierte Modelle erkennen
+Produkte, Marken und Preise; ein Paarmodell ordnet sie zu Angeboten zu.
+Die Weboberfläche zeigt Daten, Annotationen und Modellvergleiche.
+
+Semesterprojekt · Information Extraction · Leuphana · SoSe 2026
+
 Bogdan Roth · Kjell Lavezzari · Noah Samel
 
-Aus deutschen Penny-Prospekten werden strukturierte Angebotsdaten extrahiert:
-Produkt, Marke, Preis, Streichpreis, Menge, Grundpreis, Rabatt, Gültigkeit,
-App-Preis. Ein großes Vision-LLM labelt die Trainingsdaten, darauf trainieren
-wir ein eigenes, kleines Modell.
+![Label-Inspektor: Prospekt und automatisch annotierte Entitäten](docs/screenshots/inspector.png)
 
-Zwei Fragen stehen dahinter: **Wie gut extrahiert ein selbst betriebenes
-Modell gegenüber einer menschlichen Referenz und einer LLM-Blackbox?** Und:
-**Welche Unterschiede zeigen Text-, Layout- und Bildarchitekturen?**
-Die historischen Messungen gegen LLM-Labels stehen in den Wochenberichten.
-Sie messen Lehrerübereinstimmung. Architekturunterschiede isolieren keine
-einzelne kausale Wirkung von Layout oder Bildinformation; ein Intervall über
-null belegt keine Wirkungslosigkeit.
+## Starten
 
-Die [abgeschlossene Fallstudie](data/eval/study-2026-09-16/report.md) ergänzt
-SemEval gegen Gold, Gruppierungsmetriken und gepaarte Cluster-Intervalle.
-Sie verwendet die bestehende Referenz. Mehrdeutige Angebotsgrenzen,
-Referenzfehler und fehlende unabhängige Doppelannotation begrenzen die
-Aussagen; eine weitere Labelrunde gehört nicht zum Studienumfang. Die
-[Abschlussdokumentation](docs/finish-study.md) beschreibt Ergebnisse und
-Reproduktion. Laufzeitwerte einzelner Pipeline-Stufen werden nicht als
-Ende-zu-Ende-Speedup ausgegeben.
-
-Der Bericht erklärt die ML-Begriffe anhand der Angebotsextraktion, unterscheidet
-Entity-Erkennung, Heuristik, Paarmodell und LLM-Blackbox und rechnet Precision,
-Recall und F1 an den tatsächlichen Ergebnissen vor. Ein eigener Abschnitt
-ordnet die Umsetzung den fünf Anforderungen des Proposals zu.
-
-Grundlage ist das [Proposal](docs/proposal/IE_ProjectProposal_Magda.pdf), der
-Stand steht in [reports/](reports/).
-
-**Neu im Team?** [docs/onboarding.md](docs/onboarding.md) ist die kurze
-Einführung, gedacht zum Vorlegen an Claude Code.
-
-## Setup
+Python ab 3.11 und Node.js ab 22.12 mit npm. Befehle aus dem Projektroot ausführen:
 
 ```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install -e '.[dev]'
-cp .env.example .env       # API-Key für die GWDG Academic Cloud eintragen
+git clone https://github.com/noahsa16/magda.git
+cd magda
+python3 -m venv .venv
+.venv/bin/python -m pip install -e '.[dev]'
+npm --prefix frontend ci
+.venv/bin/magda serve --frontend
 ```
 
-LayoutXLM braucht zusätzlich detectron2 (visueller Backbone von LayoutLMv2).
-Die Installation ist plattformabhängig; für das Training auf einer gemieteten
-GPU siehe [docs/runpod.md](docs/runpod.md).
+Oberfläche: [localhost:5173](http://localhost:5173).
+Vorhandene Daten und Ergebnisse lassen sich ohne API-Key ansehen.
+Neue PDF-Auswertungen benötigen die trainierten Modelle.
 
-## Rohdaten
+![Prospektübersicht nach Woche und Region](docs/screenshots/data.png)
 
-Die Original-PDFs (`data/raw/`) und die gerenderten Seitenbilder
-(`data/images/`) liegen **nicht im Repo**, sondern in einem geteilten
-Google-Drive-Ordner – zusammen 1,57 GB gegen ~32 MB für alles andere unter
-`data/`. Wer trainiert oder auswertet, braucht sie nicht: `data/words/` und
-`data/labeled/` bleiben versioniert.
+## Ergebnisse reproduzieren
 
-Eine Ausnahme liegt doch im Repo: die 43 Seitenbilder der Handannotation
-(`docs/annotation-task.md`). Wer nur annotiert, braucht das Archiv also gar
-nicht.
+Wortlisten, Labels, feste Splits, menschliche Referenzen und gespeicherte
+Vorhersagen liegen bei. Den späteren Qwen-Vergleich gegen die menschliche
+Referenz und Magdas gespeicherte Ausgabe nachrechnen, ohne API oder Modellgewichte:
 
 ```bash
-shasum -a 256 -c docs/archive/data-raw.sha256   # heruntergeladenes Archiv prüfen
-magda extract --render-missing                  # Seitenbilder daraus neu rendern
+.venv/bin/python scripts/score_runtime_offers.py \
+  data/eval/runtime_thl_qwen3.8-27b_2026-09-24.json \
+  --output /tmp/magda-qwen-score.json
 ```
 
-**`--render-missing` ist hier Pflicht, nicht Geschmack.** Der normale Lauf
-überspringt eine Seite an ihrer vorhandenen Wortdatei – und `data/words/` ist
-versioniert. Ohne die Option rendert `magda extract` in einem frischen Klon
-kein einziges Bild und meldet trotzdem Erfolg („0 Seiten verarbeitet, 666 schon
-vorhanden"). Die Option lässt die Wortlisten unangetastet; ihre Reihenfolge ist
-der Vertrag, an dem alle Label-Indizes hängen.
+[Reproduktionsanleitung](docs/report/README.md): Hauptstudie, Astra-Vergleich,
+Tabellen und LaTeX-Bericht. Die vollständige Neuberechnung der Gruppierung
+benötigt den ursprünglichen Paarmodell-Checkpoint vom Team. Für Training und
+neue Inferenz sind weitere Modellgewichte bzw. Seitenbilder nötig:
+[Rohdaten](docs/archive/README.md) · [GPU-Setup](docs/runpod.md).
+Referenzlabels und Splits für die Reproduktion unverändert lassen.
 
-Details, Begründung und der Weg zum Ordner: [docs/archive/](docs/archive/README.md).
+[Studienergebnisse](data/eval/study-2026-09-16/report.md) ·
+[Bewertungsprotokoll](docs/evaluation-protocol.md) ·
+[Proposal](docs/proposal/IE_ProjectProposal_Magda.pdf)
 
-## Pipeline
-
-```bash
-magda harvest                  # laufende Woche, alle 44 Regionen  -> data/raw/
-magda extract                  # Wörter + Boxen, Seitenbilder      -> data/words/, data/images/
-magda dedupe --apply           # Beinah-Duplikate aussortieren     -> data/excluded.json
-magda label                    # BIO-Tags vom Vision-LLM           -> data/labeled/<modell>/
-magda split --strategy week    # Train/Dev/Test einfrieren         -> data/splits/split.json
-magda train gbert              # bzw. layoutxlm                    -> checkpoints/
-magda eval gbert --split test  # Entity-Level P/R/F1               -> data/eval/
-```
-
-`magda --help` listet alle Schritte in dieser Reihenfolge auf, `magda <schritt>
---help` die Optionen eines einzelnen. Jeder Schritt liest vom Vorgänger über
-die Platte und überspringt, was schon verarbeitet ist – ein Lauf über mehrere
-tausend Seiten beginnt nach einem Abbruch nicht von vorn. Immer aus dem
-Projektroot starten, die Schritte lesen und schreiben relativ dazu.
-
-Daneben gibt es Vergleichsarme und Auswertungen: `magda flair` (fertiges
-deutsches NER-Modell, misst nur BRAND), `magda gold` (Labeling-Modelle gegen
-`gold/`), `magda agreement` (Labeling-Modelle gegeneinander).
-
-## Struktur
-
-```
-src/magda/     Kern-Package: die gesamte Logik, inklusive api.py
-    cli/       ein Modul je Pipeline-Schritt, Einstieg über `magda`
-frontend/      React-SPA (Vite, Tailwind, shadcn), liest data/ über die API
-tests/         pytest
-gold/          handannotierte Referenz – versioniert, weil nicht reproduzierbar
-data/          versioniert, außer data/raw und data/images (siehe Rohdaten)
-checkpoints/   trainierte Modelle, gitignored
-docs/          Proposal, RunPod-Anleitung, Ursprungs-Prototyp
-reports/       Wochenberichte
-```
-
-## Frontend
-
-```bash
-magda serve --frontend      # API auf 8000, Oberfläche auf 5173
-```
-
-Beides in einem Befehl; `magda serve` allein startet nur die API. Wer die
-Prozesse getrennt haben will, nimmt zwei Terminals:
-
-```bash
-magda serve
-cd frontend && npm run dev
-```
-
-Nicht `uvicorn magda.api:app` – das `uvicorn` im PATH gehört meist zu einer
-anderen Python-Installation, in der `magda` nicht liegt, und der Start endet
-in `ModuleNotFoundError`.
-
-Die Oberfläche läuft auf http://localhost:5173 und proxied `/api` ans Backend.
-Vier Bereiche:
-**Übersicht** (Datenstand und F1 je Variante), **Pipeline** (Schritte starten,
-Live-Ausgabe, Lauf-Historie), **Daten** (Label-Quellen als Ordner, darunter
-Inspektor und Annotator) und **Ergebnis** (F1 pro Entity-Typ).
-
-Der Annotator unter `/annotate` erzeugt die Referenzdaten in `gold/`: Wort
-anklicken, Shift-Klick erweitert, Ziffer `1`–`9` setzt das Label, `0` entfernt
-es, `f` markiert die Seite als fertig.
-
-Die Pipeline-Schritte laufen als Subprozess auf demselben Rechner wie das
-Backend. Startbar sind nur die in `src/magda/jobs.py` deklarierten Jobs mit
-ihren deklarierten Parametern – gedacht für das lokale Setup, nicht für einen
-offen erreichbaren Server.
-
-## Tests
-
-```bash
-.venv/bin/python -m pytest        # Backend und Pipeline
-cd frontend && npm test           # Frontend (Vitest)
-```
-
-## Abschluss
-
-- Handspans und Handgruppen vollständig annotieren; Anleitung:
-  [docs/annotation-task.md](docs/annotation-task.md).
-- Unter **Pipeline** die Studentenvorhersagen gegen Handspans und die gespeicherten
-  Blackbox-Antworten gegen Handangebote auswerten.
-- Die endgültigen Tabellen aus dem versionierten Bewertungsprotokoll erstellen,
-  einschließlich Referenz, Seitenliste, Modellstand und Einschränkungen.
-
-Sliding Window ist für die aktuelle Inferenz implementiert. Training und
-Checkpointauswahl verwenden weiterhin das erste Fenster einer Seite.
+Tests: `.venv/bin/python -m pytest` und `npm --prefix frontend test`.

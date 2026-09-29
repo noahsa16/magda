@@ -1,0 +1,16 @@
+*.aux
+*.bbl
+*.blg
+*.out
+*.synctex.gz
+main.pdf
+
+# Lokale Redaktionsnotizen und Zwischenfassungen, keine Studienartefakte.
+EDITORIAL_NOTES.md
+GPTZERO_REVIEW.md
+gptzero_scan_results.json
+summarize_gptzero_review.py
+SENTENCE_REVISION*.md
+sentence_revisions*.json
+prepare_sentence_review.py
+versions/

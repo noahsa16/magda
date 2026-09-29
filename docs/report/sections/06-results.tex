@@ -1,0 +1,77 @@
+\section{Results and Error Analysis}\label{sec:results}
+\subsection{Entity recognition}
+Strict F1 is similar across the four models on 42 human-annotated pages (Table~\ref{tab:ner}). LayoutXLM scores highest, but all adjusted paired intervals include zero (Appendix~\ref{app:tables}). Thus, LiLT and LayoutXLM from Section~\ref{sec:layout-models} show no clear advantage over the text-only baselines here. Different pretraining also prevents isolating the effect of layout or images.
+
+\begin{table}[htbp]
+\centering\small
+\caption{Entity recognition against the human reference. Scores pool counts across the 42 pages. Intervals are individual 95\% cluster intervals.}\label{tab:ner}
+\input{generated/ner}
+\end{table}
+
+\begin{table}[htbp]
+\centering\small
+\caption{Strict F1 by entity type on the same 42 human-annotated pages. Both word boundaries and entity type must match. The reference count gives the number of annotated entities of each type.}\label{tab:entity-scores}
+\input{generated/labels}
+\end{table}
+
+The larger differences are between entity types (Table~\ref{tab:entity-scores}). Product names and quantities are harder to match exactly than regular and old prices. Every model scores below 0.38 on QUANTITY, despite this being the most frequent reference type. The error analysis below shows how inconsistent span boundaries contribute to this problem.
+
+For LayoutXLM, changing the matching scheme raises F1 from 0.7170 under Strict to 0.8720 under Type. The predictions are unchanged. Type accepts overlapping spans with the correct label, so this gap shows how much the result depends on requiring exact boundaries. Appendix~\ref{app:tables} reports all four matching schemes.
+
+\subsection{Grouping and component experiments}\label{sec:grouping-results}
+On the same human-annotated entities, learned grouping increases exact group F1 from 0.4164 to 0.7112 (Table~\ref{tab:grouping}). Because both methods receive identical fields, this difference comes from assigning them to offers. Pair F1 is higher than exact group F1 for both methods. Many individual links can be correct while one missing or additional entity still makes the complete group fail.
+
+\begin{table}[htbp]
+\centering\small
+\caption{All rows are evaluated against human-annotated offer groups. The first two use identical human-annotated entities and compare grouping alone. The third uses LayoutXLM predictions. Unmapped entities cannot be assigned to the grouping reference. Intervals are individual 95\% intervals, with no separate paired test.}\label{tab:grouping}
+\input{generated/grouping}
+\end{table}
+
+Using predicted entities gives a slightly higher conditional grouping score, but unmapped entities increase from 49 to 212. The set of evaluable pairs changes with the input. This higher score therefore does not mean that recognition errors improve grouping. The record comparison below includes their effect on the final output.
+
+Earlier experiments helped us choose the grouping features. Each variant was trained on 494 pages, with the classifier architecture and ILP decoder held fixed and its threshold calibrated on training folds. The reference consisted of automatically generated groups. Adding extended geometry and lexical cues gave the highest exact group F1 in this comparison (Table~\ref{tab:features}). This gain belongs to the combined feature set, so it cannot be attributed to lexical cues alone. Adding anchor features to that combination reduced the score. More features did not automatically help.
+
+\begin{table}[htbp]
+\centering\footnotesize
+\caption{Earlier feature comparison on 56 development pages in 25 clusters, against automatic annotations. Each variant was retrained and calibrated. Difference intervals use 1,000 bootstrap resamples without correction for multiple comparisons.}\label{tab:features}
+\input{generated/features}
+\tabnote{Feature blocks are explained in Section~\ref{sec:pair-features}. Base contains entity types and base geometry. Geometry denotes the additional spatial context. Count is the number of input features.}
+\end{table}
+
+A separate earlier decoder experiment used 75 pages in 68 clusters, evaluated out of fold against automatic groups. With separately calibrated thresholds, ILP increased exact group F1 from 0.4526 to 0.5530, while pair F1 fell from 0.7153 to 0.5694. The procedures were calibrated for exact group F1, and the two metrics favoured different outcomes. The group F1 difference had an unadjusted 95\% interval of $[+0.0668,+0.1332]$ from 1,000 bootstrap resamples. This compares decoding together with calibration. The saved run includes fallback for large components and lacks a complete page inventory, which limits its reproducibility.
+
+\subsection{Complete pipeline and model comparison}\label{sec:record-results}
+Magda matches 212 of 279 reference records among 281 outputs (Table~\ref{tab:offers}). Qwen3.8 matches more reference records, but also returns more outputs without a match, giving it higher recall and lower precision. Their F1 scores are close because F1 combines both. An unmatched output can reflect an extraction error, a different offer boundary or a problem in the reference.
+
+\begin{table}[htbp]
+\centering\small
+\caption{Product-name and regular-price matching on the same 42 pages and 279 reference records. The later API and Codex runs are separated from the original comparison.}\label{tab:offers}
+\input{generated/offers_all}
+\tabnote{Gemma had five pages without usable responses and Mistral three, counted as empty outputs. Astra used a shared Codex conversation with high reasoning, rather than separate API requests.}
+\end{table}
+
+The supplementary Astra run has the highest F1 point estimate. It matches one more reference record than Qwen3.8 with fewer outputs, giving it higher precision. Its shared conversation and tool use differ from the API setup, so this is an additional comparison under different conditions.
+
+For the comparison model's F1 minus Magda's F1, the paired 95\% interval is $[-0.0759,+0.1110]$ for Qwen3.8 and $[-0.0308,+0.1547]$ for Astra. Negative values favour Magda, positive values favour the comparison model. Both ranges cross zero and include sizeable differences in either direction. The available pages therefore establish neither a clear winner nor equivalent performance. The original API intervals also include zero before and after correction (Appendix~\ref{app:tables}). The later intervals are exploratory and separate from the original comparison family.
+
+The score excludes 22 reference fragments, 106 Magda fragments and six Qwen3.8 fragments without a usable name or regular price. It therefore describes matching on those two fields, rather than the proportion of complete offers extracted correctly.
+
+Processing prepared pages took Magda an average of 0.695 seconds per page, compared with 26.965 seconds for Qwen3.8 through the TH L\"ubeck API. Local model loading took 4.439 seconds separately. Magda was faster in this setup. PDF preparation was excluded, and Qwen's time includes network and server delays on uncontrolled remote hardware. No comparable timing was recorded for Astra.
+
+\subsection{Error analysis}\label{sec:error-results}
+Boundary and merge deviations were the most frequent category among reference entities without an exact match. Table~\ref{tab:examples} illustrates why these disagreements need inspection. Some concern span definitions, while others change the product-price association or originate in the reference itself.
+
+\begin{table}[htbp]
+\centering\small
+\caption{Examples from catalogue 1364390, based on saved span diagnostics and the exploratory visual review.}\label{tab:examples}
+\begin{tabularx}{\linewidth}{@{}>{\raggedright\arraybackslash}p{2.4cm}X@{}}
+\toprule Case & Observation and consequence \\ \midrule
+Span boundary, p.~1 & LayoutXLM predicts ``500 g'' as one QUANTITY span. The reference stores ``500'' and ``g'' separately. The amount is recognisable, but the spans fail Strict matching. \\
+Wrong price, p.~22 & Magda assigns 3.49 to Philadelphia cream cheese instead of the displayed 2.29. Recognising the product alone does not produce a correct record. \\
+Duplicate, p.~21 & Qwen3.8 returns ``Tempo Taschent\"ucher'' at 2.99 twice. A reference record can match only one of these outputs. \\
+Reference error, p.~3 & The regular price 2.69 after ``ohne PENNY App'' is labelled OLD\_PRICE. If its group has no PRICE, it produces no scored reference record. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+A separate review checked every scored Magda and Qwen3.8 output against its page image. It identified ten Qwen duplicates, while many additional outputs represented visible offers or variants. This was a single AI review of emitted records, not an independent human reference or a check of all missed offers. The original annotations and reported scores remain unchanged.

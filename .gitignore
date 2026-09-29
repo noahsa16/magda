@@ -46,6 +46,9 @@ data/uploads/**
 
 # persönliche Notizen, bleiben lokal
 EXPLANATION.md
+AGENTS.md
+CLAUDE.md
+.DS_Store
 
 # Node: das Frontend hat eine eigene .gitignore, hier landet nur der
 # Vitest-Cache, wenn npm test aus dem Projektroot gestartet wird.
@@ -278,3 +281,11 @@ __marimo__/
 
 # Lokale Browser-Bedienprüfungen; keine Studienergebnisse.
 /output/playwright/
+
+# Lokale PDF-Builds und Overleaf-Zwischenstände.
+/output/pdf/
+/output/overleaf/
+
+# Bytegleiche Kopien der bereits versionierten Seitenbilder; Protokoll und
+# Originalantworten des Versuchs bleiben versioniert.
+/output/benchmarks/astra-codex-2026-09-25/input/*.png

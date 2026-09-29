@@ -1,0 +1,49 @@
+\section{Methods}\label{sec:methods}
+\subsection{Pipeline overview}
+Figure~\ref{fig:pipeline} shows how Magda processes a flyer page. First, a recognition model identifies product details, for example ``Frische Butter'' as PRODUCT, ``250 g'' as QUANTITY and ``1.29'' as PRICE. A separate model scores pairs of entities according to whether they belong to the same offer. A decoder then uses these scores to form groups, linking product descriptions with their prices and other details. For comparison, vision-language models receive the page images and return structured offers directly as JSON.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[font=\small,node distance=7mm,
+  box/.style={draw=black!65,rounded corners=2pt,align=center,text width=31mm,minimum height=14mm,inner sep=4pt},
+  arrow/.style={-{Stealth[length=2mm]},thick,draw=black!65}]
+\node[box] (pdf) {Flyer PDF\\text + image};
+\node[box,right=of pdf] (ner) {Entity recognition\\GBERT / XLM-R\\LiLT / LayoutXLM};
+\node[box,right=of ner] (group) {Offer grouping\\heuristic or\\pair model + ILP};
+\node[box,right=of group,text width=23mm] (out) {Structured\\offer records};
+\node[box,below=10mm of ner,text width=47mm] (llm) {Vision-language model\\image-to-JSON comparison};
+\draw[arrow] (pdf) -- (ner); \draw[arrow] (ner) -- (group); \draw[arrow] (group) -- (out);
+\draw[arrow] (pdf.south) |- (llm.west); \draw[arrow] (llm.east) -| (out.south);
+\end{tikzpicture}
+\caption{Inference paths. LayoutXLM uses the page image as well as words and positions. All local entity outputs remain anchored to extracted words. LLM-assisted training annotation is a separate, earlier process.}\label{fig:pipeline}
+\end{figure}
+
+\subsection{Entity recognition}
+Entity recognition assigns a label to each extracted word. Following the BIO scheme covered in Week 5 \citep[p.~8]{iecourse2026}, ``Frische'' receives B-PRODUCT and ``Butter'' receives I-PRODUCT. B marks the beginning of an entity, I its continuation, and O a word outside the defined entity types. This allows the model to recognise a product name that spans several words.
+
+The four models use different inputs. GBERT and XLM-R receive text, LiLT also receives word positions, and LayoutXLM additionally receives the page image. Each model's pretrained encoder turns its input into numerical representations that include context. A classification layer uses these representations to predict BIO labels. During fine-tuning, both the encoder and this layer are adjusted using our labelled pages, following the approach discussed in Week 8 \citep[p.~21]{iecourse2026}. The training procedure selects the checkpoint with the highest development F1.
+
+Tokenisation can split a word into several smaller pieces. Only the first piece receives the word's training label. The remaining pieces stay in the input but are excluded from the loss calculation, so a word is not counted several times simply because it was split. During training, inputs exceeding the model's length limit are truncated. At inference, overlapping windows allow longer pages to be processed and their predictions combined.
+
+\subsection{Pairwise offer membership}\label{sec:pair-features}
+For grouping, we compared a rule-based heuristic with a multilayer perceptron (MLP). The heuristic first groups nearby descriptive fields and price badges separately. It then links these groups using quantity times unit price where possible, and spatial proximity otherwise.
+
+The final MLP uses 43 numerical features per entity pair. \emph{Base} combines entity-type indicators with distances, bounding-box overlap, text height and position in the word sequence. \emph{Extended geometry}, called Geometry in Table~\ref{tab:features}, describes nearby alternatives and intervening product names or words. For example, another product closer to a price may be a better match. \emph{Lexical} features indicate words such as ``je'' or ``Aktion'' before an entity, or ``oder'' between entities. These are inputs whose influence the MLP learns, rather than fixed grouping rules.
+
+Additional variants tested \emph{anchor} and \emph{colour} features. Anchor features indicate whether both entities share the same nearest product or brand name as a reference point, and their distances to their respective anchors. Colour features compare the entities' backgrounds and colour continuity along the line between them. Neither block is included in the final model.
+
+The MLP combines these inputs through two hidden layers with 64 and 32 units and ReLU activations. These nonlinear layers allow combinations of features to influence the prediction. Training pairs from the same Claude-annotated offer are labelled positive, while pairs from different offers are labelled negative. Training adjusts the network's weights to reduce prediction errors on these examples. A sigmoid function converts its output into a score between zero and one, which the decoder uses to construct offer groups.
+
+\subsection{Consistent groups through structured decoding}
+We compared two methods for turning pair scores into offer groups. Using Union-Find \citep{tarjan1975}, entities are merged when their pair score meets a threshold. This also creates indirect links. If A is linked to B and B to C, all three form one group. An incorrect link can therefore combine separate offers.
+
+The second method uses integer linear programming (ILP), following the clustering formulation studied by \citet{groetschel1989}. It weighs supporting and conflicting pair scores together when choosing groups. This allows it to reject a connection that would otherwise join poorly matching entities. For very large candidate groups, our implementation retains the Union-Find result to limit computation.
+
+The choice was practical. Union-Find provided a simple baseline, while ILP achieved better exact group matching in our earlier comparison against automatically annotated offer groups (Section~\ref{sec:grouping-results}).
+
+\subsection{Direct extraction with vision-language models}
+Gemma-4-31B-IT, Qwen3.6-35B-A3B and Mistral-Medium-3.5-128B were selected from the vision-language models available to us through Academic Cloud. Each received images of the same 42 test pages and a prompt specifying the offer fields and JSON format. They were not fine-tuned for this project. A later run added Qwen3.8-27B through the TH L\"ubeck API, using the same extraction prompt with thinking disabled.
+
+GPT-6 Astra was evaluated separately in a fresh Codex conversation with reasoning effort set to \texttt{high}, using the same images and extraction instructions. The model was instructed to use only these inputs and save each page's JSON output before evaluation. Unlike the separate API requests, this run retained context across pages and used tools to view images and save files. We therefore report it as a supplementary comparison. Since the direct outputs do not provide aligned entity spans, all systems are compared on product names and regular prices against the same human reference.
+
+Processing time was measured for Magda and Qwen3.8-27B, with pages processed sequentially. PDF download, text extraction and image rendering were completed beforehand. Local model loading was recorded separately, and an additional warm-up run was excluded from timing. Magda ran on the local macOS machine. API times include network and server delays, and the remote hardware was not controlled. These timings describe the tested setup and exclude the Codex run.

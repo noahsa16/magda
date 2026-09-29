@@ -1,0 +1,38 @@
+\section{Data and Task Definition}\label{sec:data}
+\subsection{Flyer collection and preparation}
+Collecting the flyers first required identifying the PDF download URLs behind PENNY's online catalogue viewer. The collection script queried PENNY's store API, which provided links to the current flyers. These links contained catalogue IDs. Using these IDs and the URL pattern for individual pages, the downloader could retrieve the PDFs automatically.
+
+To collect more training material within the project timeframe, we included regional editions of the weekly flyers. These editions contain differences such as regional products or changed product descriptions, providing additional examples without having to wait for another publication week.
+
+Duplicate filtering used two stages. First, pages with identical extracted word lists were detected. For nearly identical pages, regional print codes were excluded from the comparison because these can differ even when the offer content is unchanged. The remaining words were compared using Jaccard similarity, calculated as the number of distinct words shared by both pages divided by the number appearing on either page. Pages with a similarity of at least 0.95 were linked into duplicate groups. One representative page per group was normally retained, while existing human annotations were protected.
+
+The text acquisition stage discussed in Week 2 \citep[pp.~4--5]{iecourse2026} is handled through PDF text extraction. PENNY's PDFs contain embedded text, so no OCR is required. PyMuPDF extracts each word with a bounding box, a rectangle describing its position on the page. Page images are also saved for models that use visual input. Extraction can still produce missing words or an incorrect reading order.
+
+\subsection{Annotation and data splits}
+Claude Sonnet 5 received each page image, a numbered list of the extracted words and definitions of the entity types in Table~\ref{tab:schema}. It returned labelled spans with start and end positions in the word list. Validation rejected spans with invalid word indices or unknown entity types. Rule-based corrections shortened spans at separators such as ``oder'' and removed price or quantity annotations that contained no digits. The remaining spans were converted into BIO tags for training.
+
+Separate Claude annotations recorded which entities belonged to the same offer. These groups provided training examples for the grouping model.
+
+\begin{table}[htbp]
+\centering\small
+\caption{Entity schema. The scored record projection uses BRAND, PRODUCT and regular PRICE. The remaining types still belong to the recognition task.}\label{tab:schema}
+\begin{tabularx}{\linewidth}{@{}lX@{}}
+\toprule Type & Meaning \\ \midrule
+\entity{PRODUCT} & Product description, including annotated variants \\
+\entity{BRAND} & Brand name \\
+\entity{PRICE} & Current regular price without an app condition \\
+\entity{OLD\_PRICE} & Former or crossed-out comparison price \\
+\entity{APP\_PRICE} & Price conditional on app use \\
+\entity{QUANTITY} & Amount, weight, volume or item count \\
+\entity{UNIT\_PRICE} & Unit price, for example per kilogram \\
+\entity{DISCOUNT} & Explicit discount statement \\
+\entity{VALID} & Validity period \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+The resulting dataset contains 666 pages with 33,457 labelled entity spans. The fixed split assigns 494 pages to training, 56 to development and 116 to testing. Training pages were used to fine-tune the recognition models, and development pages to select checkpoints. Test pages were used for evaluation.
+
+The main comparison uses 42 test pages selected to represent groups of similar pages. Human annotations of both entities and offer groups provide the reference, so the evaluation goes beyond agreement with the automatic labels. Some reference annotations were based on human-reviewed AI suggestions. The pages were not systematically annotated by two independent people.
+
+For evaluation, the brand and product descriptions within each group form the offer name. Each distinct regular price produces one record with that name and price. Groups without a usable name or regular price are excluded from record scoring.
