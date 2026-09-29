@@ -1,0 +1,15 @@
+\section{Background and Related Work}\label{sec:related}
+The Information Extraction course covers rules, learned entity recognition and extraction from document images \citep[Weeks 3--9]{iecourse2026}. Magda applies these ideas to supermarket offers. Our proposal took \citet{akbik2018} as its course reference for sequence labelling and LayoutLM \citep{xu2020} as the starting point for using document layout.
+
+\subsection{Entity recognition}
+Week 5 introduces sequence labelling as assigning labels to tokens, including the boundaries of entities spanning several words \citep[pp.~7--8]{iecourse2026}. For Magda, this means recognising ``Frische Butter'' as one product name. \citet{akbik2018} propose contextual string embeddings, which represent words through character-level language models and their surrounding text. The authors report improvements on sequence labelling tasks, including named entity recognition.
+
+Week 8 presents pretrained transformers and fine-tuning for token classification \citep[pp.~18--21]{iecourse2026}. Magda uses this approach with GBERT, the German BERT model introduced by \citet{chan2020}, and XLM-R, the multilingual model presented by \citet{conneau2020}. Both are adapted to our offer labels and serve as baselines using text alone.
+
+\subsection{Document layout and images}\label{sec:layout-models}
+Week 9 illustrates how converting a page into plain text can lose spatial relationships \citep[p.~7]{iecourse2026}. In a flyer, these relationships can help distinguish neighbouring offers. \citet{xu2020} propose LayoutLM to learn from text and page layout. \citet{xu2022xfund} present LayoutXLM for multilingual documents using text, layout and images. \citet{wang2022} propose LiLT, whose layout component can be combined with pretrained text models for different languages. In Magda, LiLT uses text and word positions, while LayoutXLM also receives the page image. On flyers, coordinates show which words lie close together. Images additionally capture coloured price badges and product photographs, which may help distinguish offer fields.
+
+\subsection{Relations and structured outputs}
+The course distinguishes recognising entities from identifying their relationships \citep[Week 1, p.~12]{iecourse2026}. Similarly, \citet{xu2022xfund} evaluate both entity recognition and key-value relations on XFUND. Magda learns a different relation: whether two recognised fields belong to the same offer. A pair classifier supplies scores, which a decoder combines into consistent groups.
+
+\citet{ashok2023} investigate entity extraction through instructions and examples given to a language model. Our comparison uses vision-language models to return offers directly from page images. Week 10 discusses defining output schemas and enforcing their format \citep[pp.~6--12]{iecourse2026}. A valid JSON structure alone does not establish that the extracted product and price are correct. Magda and the external models are therefore compared against the same reference records.

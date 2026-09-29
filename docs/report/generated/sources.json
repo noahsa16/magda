@@ -1,0 +1,22 @@
+{
+  "study": {
+    "path": "data/eval/study-2026-09-16/study.json",
+    "sha256": "1267452340b2ac6a0d60915a3fdd54395dbde2b1b39f5e1d0aac822250a3d24f"
+  },
+  "features": {
+    "path": "data/eval/offers_grid_dev_ilp.json",
+    "sha256": "406348d5cb42f5e41b246d2987b017bca139e5f91727890ded1de0247195d29e"
+  },
+  "decoder": {
+    "path": "data/eval/offers_grid_dev_cv_union-ilp.json",
+    "sha256": "8963f8250e777ba032bfcfed84cfaa591de274e18e744012b40d1961a043dbdc"
+  },
+  "qwen_later": {
+    "path": "data/eval/runtime_thl_qwen3.8-27b_score_2026-09-24.json",
+    "sha256": "1589ce0cedb1750214f241ee5c62d508b0a617ff2151e9ab63a479f9c4c97e8a"
+  },
+  "astra": {
+    "path": "data/eval/codex_astra_score_2026-09-25.json",
+    "sha256": "4296d4cda2f733412345a8cdc3459c53066ca45a09d87b6f507210d9fa205720"
+  }
+}

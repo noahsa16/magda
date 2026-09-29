@@ -1,0 +1,6 @@
+\section{Conclusion and Outlook}\label{sec:conclusion}
+We built Magda to extract offers from PENNY flyers with models that run locally. The pipeline first recognises product names, prices and other details, then decides which belong together. Evaluating these steps separately helped us understand where errors occur.
+
+The four recognition models reached similar overall F1 scores. Learned grouping performed better than fixed rules when both used the same human-annotated entities. On the same pages, Magda reached F1 scores close to Qwen for product names and regular prices, without an external model call for each page. This supports local extraction as a feasible approach for these fields in our PENNY case study. Astra scored higher in a separate Codex run, but its setup differed. The paired comparisons with Qwen and Astra did not establish a clear winner. Similar scores also do not prove equal performance.
+
+Magda is a working prototype and a starting point for further research. A next study could improve the annotation rules and test the pipeline on a new flyer week with independently checked labels. Additional post-processing, such as standardising quantity formats and handling duplicates, could be developed on training and development pages before testing whether it improves the final records.

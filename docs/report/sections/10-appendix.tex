@@ -1,0 +1,39 @@
+\section{Supplementary Results}\label{app:tables}
+\captionsetup{hypcap=false}
+The tables below retain the full paired comparisons from the original study. Bonferroni intervals use separate families for recognition and record reconstruction. The offer tables refer to the original Academic Cloud runs. Section~\ref{sec:record-results} reports the later Qwen3.8 and Astra comparisons. The individual intervals in Table~\ref{tab:offer-intervals} do not replace paired differences.
+
+\begin{center}\begin{minipage}{\linewidth}
+\centering\small
+\captionof{table}{Recognition F1 under four matching schemes on the same human-reference pages.}
+\input{generated/schemes}
+\end{minipage}\end{center}
+
+\begin{center}\begin{minipage}{\linewidth}
+\centering\small
+\captionof{table}{Paired recognition differences, with a family of four comparisons.}
+\input{generated/ner_differences}
+\end{minipage}\end{center}
+
+\begin{center}\begin{minipage}{\linewidth}
+\centering\small
+\captionof{table}{Individual intervals for record-level F1.}\label{tab:offer-intervals}
+\input{generated/offer_intervals}
+\end{minipage}\end{center}
+
+\begin{center}\begin{minipage}{\linewidth}
+\centering\small
+\captionof{table}{External system minus local pipeline: paired record-level differences, with a family of three comparisons.}
+\input{generated/offer_differences}
+\end{minipage}\end{center}
+
+\small
+\section{Reproducibility and Availability}
+The project repository is \href{https://github.com/noahsa16/magda}{github.com/noahsa16/magda}. It is private, but we are happy to invite both of you on request so you can access the code and supporting materials. Evaluation uses saved predictions and model responses, with file hashes identifying the evaluated inputs. Instructions for rebuilding the report and repeating the main and supplementary analyses are documented in \file{docs/report/README.md}. These analyses require no new API calls. Model weights and most raw PDFs and page images are stored separately and are not included in a standard clone.
+
+\section{Relation to the Project Proposal}\label{app:proposal}
+The proposal called for trained extraction, documented entity scores, a text/layout comparison, error analysis, and an LLM comparison with an operational discussion. Magda addresses these within the stated scope, adding learned grouping and uncertainty analysis.
+
+PENNY's text layer replaces the proposed OCR stage. Runs with Gemma, Qwen, Mistral and Astra replace the earlier Gemini prototype in the final comparison. Costs are discussed qualitatively, without a measured cost advantage.
+
+\section{Use of AI}
+Claude Sonnet 5 supplied training annotations and grouping suggestions. Vision-language models provided comparison outputs, including GPT-6 Astra in Codex. Codex also supported implementation and LaTeX typesetting. It helped formulate and revise the report in English.

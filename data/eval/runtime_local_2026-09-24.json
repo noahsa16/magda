@@ -1,0 +1,273 @@
+{
+  "protocol": "prepared-page-offer-runtime-v1",
+  "system": "local",
+  "input_scope": "Gespeicherte PDF-Wortlisten und PNGs",
+  "excluded": "PDF-Download, Textextraktion, Bildrendering und Trainingszeit",
+  "hardware": "macOS-26.6.2-arm64-arm-64bit",
+  "python": "3.12.7",
+  "page_list": "data/eval/test_cluster_pages.txt",
+  "page_list_sha256": "a74aca964db6068739e80851adc944de57818458e25678dd79a948c083752fc2",
+  "model_load_seconds": 4.439,
+  "per_page": [
+    {
+      "page_id": "1364390_p1",
+      "seconds": 0.815,
+      "offer_groups_or_responses": 11,
+      "error": null
+    },
+    {
+      "page_id": "1364390_p10",
+      "seconds": 0.973,
+      "offer_groups_or_responses": 9,
+      "error": null
+    },
+    {
+      "page_id": "1364390_p11",
+      "seconds": 0.675,
+      "offer_groups_or_responses": 10,
+      "error": null
+    },
+    {
+      "page_id": "1364390_p12",
+      "seconds": 0.531,
+      "offer_groups_or_responses": 8,
+      "error": null
+    },
+    {
+      "page_id": "1364390_p13",
+      "seconds": 0.78,
+      "offer_groups_or_responses": 10,
+      "error": null
+    },
+    {
+      "page_id": "1364390_p14",
+      "seconds": 0.523,
+      "offer_groups_or_responses": 10,
+      "error": null
+    },
+    {
+      "page_id": "1364390_p15",
+      "seconds": 0.361,
+      "offer_groups_or_responses": 0,
+      "error": null
+    },
+    {
+      "page_id": "1364390_p16",
+      "seconds": 0.549,
+      "offer_groups_or_responses": 8,
+      "error": null
+    },
+    {
+      "page_id": "1364390_p17",
+      "seconds": 0.777,
+      "offer_groups_or_responses": 12,
+      "error": null
+    },
+    {
+      "page_id": "1364390_p18",
+      "seconds": 0.783,
+      "offer_groups_or_responses": 10,
+      "error": null
+    },
+    {
+      "page_id": "1364390_p19",
+      "seconds": 0.617,
+      "offer_groups_or_responses": 8,
+      "error": null
+    },
+    {
+      "page_id": "1364390_p2",
+      "seconds": 0.434,
+      "offer_groups_or_responses": 9,
+      "error": null
+    },
+    {
+      "page_id": "1364390_p20",
+      "seconds": 1.381,
+      "offer_groups_or_responses": 9,
+      "error": null
+    },
+    {
+      "page_id": "1364390_p21",
+      "seconds": 1.408,
+      "offer_groups_or_responses": 13,
+      "error": null
+    },
+    {
+      "page_id": "1364390_p22",
+      "seconds": 1.121,
+      "offer_groups_or_responses": 15,
+      "error": null
+    },
+    {
+      "page_id": "1364390_p23",
+      "seconds": 0.363,
+      "offer_groups_or_responses": 1,
+      "error": null
+    },
+    {
+      "page_id": "1364390_p24",
+      "seconds": 0.698,
+      "offer_groups_or_responses": 10,
+      "error": null
+    },
+    {
+      "page_id": "1364390_p25",
+      "seconds": 1.063,
+      "offer_groups_or_responses": 12,
+      "error": null
+    },
+    {
+      "page_id": "1364390_p26",
+      "seconds": 0.502,
+      "offer_groups_or_responses": 8,
+      "error": null
+    },
+    {
+      "page_id": "1364390_p27",
+      "seconds": 0.622,
+      "offer_groups_or_responses": 7,
+      "error": null
+    },
+    {
+      "page_id": "1364390_p28",
+      "seconds": 0.982,
+      "offer_groups_or_responses": 11,
+      "error": null
+    },
+    {
+      "page_id": "1364390_p29",
+      "seconds": 0.463,
+      "offer_groups_or_responses": 11,
+      "error": null
+    },
+    {
+      "page_id": "1364390_p3",
+      "seconds": 0.524,
+      "offer_groups_or_responses": 9,
+      "error": null
+    },
+    {
+      "page_id": "1364390_p30",
+      "seconds": 0.374,
+      "offer_groups_or_responses": 2,
+      "error": null
+    },
+    {
+      "page_id": "1364390_p31",
+      "seconds": 0.369,
+      "offer_groups_or_responses": 2,
+      "error": null
+    },
+    {
+      "page_id": "1364390_p32",
+      "seconds": 0.565,
+      "offer_groups_or_responses": 10,
+      "error": null
+    },
+    {
+      "page_id": "1364390_p33",
+      "seconds": 1.024,
+      "offer_groups_or_responses": 11,
+      "error": null
+    },
+    {
+      "page_id": "1364390_p34",
+      "seconds": 0.558,
+      "offer_groups_or_responses": 9,
+      "error": null
+    },
+    {
+      "page_id": "1364390_p35",
+      "seconds": 0.506,
+      "offer_groups_or_responses": 9,
+      "error": null
+    },
+    {
+      "page_id": "1364390_p36",
+      "seconds": 0.619,
+      "offer_groups_or_responses": 8,
+      "error": null
+    },
+    {
+      "page_id": "1364390_p37",
+      "seconds": 1.348,
+      "offer_groups_or_responses": 11,
+      "error": null
+    },
+    {
+      "page_id": "1364390_p38",
+      "seconds": 0.472,
+      "offer_groups_or_responses": 6,
+      "error": null
+    },
+    {
+      "page_id": "1364390_p40",
+      "seconds": 1.125,
+      "offer_groups_or_responses": 10,
+      "error": null
+    },
+    {
+      "page_id": "1364390_p5",
+      "seconds": 0.374,
+      "offer_groups_or_responses": 2,
+      "error": null
+    },
+    {
+      "page_id": "1364390_p6",
+      "seconds": 0.398,
+      "offer_groups_or_responses": 3,
+      "error": null
+    },
+    {
+      "page_id": "1364390_p7",
+      "seconds": 0.414,
+      "offer_groups_or_responses": 6,
+      "error": null
+    },
+    {
+      "page_id": "1364390_p8",
+      "seconds": 0.564,
+      "offer_groups_or_responses": 10,
+      "error": null
+    },
+    {
+      "page_id": "1364390_p9",
+      "seconds": 0.517,
+      "offer_groups_or_responses": 8,
+      "error": null
+    },
+    {
+      "page_id": "1364393_p15",
+      "seconds": 0.557,
+      "offer_groups_or_responses": 9,
+      "error": null
+    },
+    {
+      "page_id": "1364393_p25",
+      "seconds": 1.125,
+      "offer_groups_or_responses": 11,
+      "error": null
+    },
+    {
+      "page_id": "1364411_p9",
+      "seconds": 0.767,
+      "offer_groups_or_responses": 12,
+      "error": null
+    },
+    {
+      "page_id": "1364420_p8",
+      "seconds": 0.571,
+      "offer_groups_or_responses": 9,
+      "error": null
+    }
+  ],
+  "summary": {
+    "successful_pages": 42,
+    "failed_pages": 0,
+    "total_seconds": 29.192,
+    "mean_seconds_per_page": 0.695,
+    "median_seconds_per_page": 0.568,
+    "p90_seconds_per_page": 1.121
+  }
+}
