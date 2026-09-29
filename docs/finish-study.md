@@ -22,9 +22,11 @@ gegenüber und erklärt die Änderungen gegenüber dem ursprünglichen Plan.
 Aus dem Projektroot mit der Projektumgebung ausführen:
 
 ```bash
-.venv/bin/magda study-eval --output data/eval/study-2026-09-16
+.venv/bin/magda study-eval --output /tmp/magda-study-reproduction
 ```
 
+Der ursprüngliche Paarmodell-Checkpoint wird dafür zusätzlich benötigt;
+Voraussetzungen stehen in der [Reproduktionsanleitung](report/README.md).
 Der Befehl wertet vorhandene Vorhersagen und gespeicherte Blackbox-Antworten
 aus. Er ruft keine LLM-API auf, trainiert kein Modell und verändert keine
 Annotation. Ohne ausdrücklich angegebenes `--review-packet` erzeugt er keine

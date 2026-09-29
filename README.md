@@ -50,6 +50,6 @@ Referenzlabels und Splits für die Reproduktion unverändert lassen.
 
 [Studienergebnisse](data/eval/study-2026-09-16/report.md) ·
 [Bewertungsprotokoll](docs/evaluation-protocol.md) ·
-[Proposal](docs/proposal/IE_ProjectProposal_Magda.pdf)
+[Dokumentation und Projektstruktur](docs/README.md)
 
 Tests: `.venv/bin/python -m pytest` und `npm --prefix frontend test`.

@@ -251,7 +251,7 @@ mitzuführen und die alte Dev-Zahl zu zitieren.
 
 ## Nachtrag 4 — ILP-Dekoder (11.08.2026) — **fertig gemessen**
 
-Nach `docs/superpowers/specs/2026-08-10-ilp-frontier-und-auswahl-design.md`,
+Nach `docs/archive/development/specs/2026-08-10-ilp-frontier-und-auswahl-design.md`,
 Teil 1. Neu: `src/magda/offer_ilp.py`, `tests/test_offer_ilp.py`, dazu der
 `decoder`-Parameter in `offer_model.py`, `offer_grid.py` und den beiden CLIs.
 523 Tests grün.
