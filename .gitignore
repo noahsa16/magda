@@ -276,16 +276,11 @@ __marimo__/
 # PyCharm-Projektdateien: rechnerspezifisch, gehören niemandem sonst
 .idea/
 
-# Codex-Konfiguration, maschinenlokal
+# Agent-Konfiguration und lokale Arbeitsstände
 .codex/
+.claude/
+.superpowers/
 
-# Lokale Browser-Bedienprüfungen; keine Studienergebnisse.
-/output/playwright/
-
-# Lokale PDF-Builds und Overleaf-Zwischenstände.
-/output/pdf/
-/output/overleaf/
-
-# Bytegleiche Kopien der bereits versionierten Seitenbilder; Protokoll und
-# Originalantworten des Versuchs bleiben versioniert.
-/output/benchmarks/astra-codex-2026-09-25/input/*.png
+# Lokale Builds, Screenshots und Arbeitskopien. Versionierte Messbelege
+# liegen unter data/eval/ und data/benchmarks/.
+/output/

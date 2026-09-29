@@ -30,7 +30,7 @@ Die F1-Differenz Astra minus Magda beträgt +0.0543. Das gepaarte 95-%-Bootstrap
 
 ## Artefakte und Reproduktion
 
-- Eingabemanifest, Arbeitsanweisung, Abschlussmeldung und Originalantworten: `output/benchmarks/astra-codex-2026-09-25/`.
+- Eingabemanifest, Arbeitsanweisung, Abschlussmeldung und Originalantworten: `data/benchmarks/astra-codex-2026-09-25/`.
 - Eingefrorene Antworten: `data/eval/codex_astra_2026-09-25.json`.
 - Auswertung: `data/eval/codex_astra_score_2026-09-25.json`.
 - Codex-Aufgabe: `01a0d8ec-3749-7d73-83f1-9d3c8b0242f7`.

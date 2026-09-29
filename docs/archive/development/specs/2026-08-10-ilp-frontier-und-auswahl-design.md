@@ -388,7 +388,7 @@ Erst wenn 1–3 beantwortet sind, lohnt der Merkmalsentwurf.
 
 Geschrieben wurde dieser Spec am 10.08. gegen 22:50. In derselben Nacht haben
 parallele Sessions die Gruppierungsreferenz ausgebaut und den Messaufbau
-umgestellt (`docs/superpowers/notes/2026-08-10-nachtlauf-stand.md`). Zwei der
+umgestellt (`docs/archive/development/notes/2026-08-10-nachtlauf-stand.md`). Zwei der
 vier Teile stehen dadurch anders da.
 
 ## Teil 3 wird nicht gebaut — zurückgestellt wie Teil 4
