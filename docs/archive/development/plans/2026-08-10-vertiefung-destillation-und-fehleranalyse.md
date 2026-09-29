@@ -31,7 +31,7 @@
 
 ## Aufgabe 1 (PFLICHT): Blackbox-Vergleichsarm
 
-**Warum:** Nachgeprüft und offen. [`CLAUDE.md:190`](../../../CLAUDE.md) („bleibt als Vergleichssystem für die Requirements-Stufe ‚Excellent'"), [`src/magda/cli/evaluate.py:34`](../../../src/magda/cli/evaluate.py) („**Noch offen** (Requirements-Stufe ‚Excellent')"), [`reports/woche-03.md:342`](../../../reports/woche-03.md) führt es als offenen Punkt — und in `data/eval/` liegt **kein** Blackbox-Report.
+**Warum:** Nachgeprüft und offen. `CLAUDE.md:190` (historisches Projektgedächtnis) („bleibt als Vergleichssystem für die Requirements-Stufe ‚Excellent'"), [`src/magda/cli/evaluate.py:34`](../../../../src/magda/cli/evaluate.py) („**Noch offen** (Requirements-Stufe ‚Excellent')"), [`reports/woche-03.md:342`](../../../../reports/woche-03.md) führt es als offenen Punkt — und in `data/eval/` liegt **kein** Blackbox-Report.
 
 **Zwei Fallen, die den Vergleich sonst wertlos machen:**
 1. Das Blackbox-Schema kennt per Design weder App-Preise noch Menge/Grundpreis (der Prompt sagt wörtlich „Skip … app labels"). Verglichen wird über die **gemeinsame Feldmenge**: `name`, `price`, `original_price`.

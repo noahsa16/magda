@@ -157,7 +157,7 @@ die später ergänzten Metadatenfelder `system` und `source_protocol`.
 
 `scripts/codex_offer_benchmark.py` dokumentiert Vorbereitung und Sammlung
 des Astra-Laufs. Protokoll, Eingabemanifest und Originalantworten liegen unter
-`output/benchmarks/astra-codex-2026-09-25/`. Die dort ursprünglich kopierten
+`data/benchmarks/astra-codex-2026-09-25/`. Die dort ursprünglich kopierten
 Eingabebilder liegen bytegleich unter `data/images/`; sie werden nicht doppelt
 versioniert. Der lesbare Vergleich steht in
 `reports/astra_codex_benchmark_2026-09-25.md` und wird aus den gespeicherten

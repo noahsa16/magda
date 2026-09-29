@@ -8,7 +8,7 @@
 
 **Tech-Stack:** Python 3.12, FastAPI, pydantic, pytest · React 19, TypeScript, TanStack Query, Vite, Vitest, Tailwind
 
-Zugrundeliegende Spec: `docs/superpowers/specs/2026-07-28-gold-annotation-design.md`
+Zugrundeliegende Spec: `docs/archive/development/specs/2026-07-28-gold-annotation-design.md`
 
 ## Globale Randbedingungen
 

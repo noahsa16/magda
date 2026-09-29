@@ -27,3 +27,11 @@ vorhandenen Wortdateien, auch wenn das Bild fehlt.
 `data/words/` nicht löschen oder neu sortieren: Alle Span-Labels beziehen sich
 auf die gespeicherte Wortreihenfolge. Seitenbilder nicht verkleinern, da auch
 Farbmerkmale aus ihnen berechnet werden.
+
+## Historische Unterlagen
+
+- [Entwicklungspläne und Untersuchungsnotizen](development/README.md)
+- [Ursprünglicher Gemini-Prototyp](prototype/README.md)
+
+Diese Unterlagen beschreiben frühere Arbeitsstände. Für den aktuellen
+Abgabestand gilt die [Dokumentationsübersicht](../README.md).
