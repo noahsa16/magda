@@ -76,9 +76,9 @@ Fortschritt.
   daneben aufmacht, ankert daran, und die Messung misst hinterher das
   Ankern mit.
 - Was ein Label bedeutet, steht in der Legende und in `labeling.py`
-  (`_PROMPT`); die offenen Konventionsfragen (Sortenangaben ins PRODUCT,
-  Gebinde-Komposita) stehen in `CLAUDE.md`. Im Zweifel die Sortenangabe
-  mitnehmen (Teamentscheidung vom 2026-07-30).
+  (`_PROMPT`). Sortenangaben gehören ins PRODUCT (Teamentscheidung vom
+  2026-07-30). Für Gebinde-Komposita wie `50-ml-Fläschchen` gibt es noch
+  keine einheitliche Regel; solche Fälle vor einer Änderung im Team klären.
 - Eine Seite mit dem Hinweis „Wortliste hat sich geändert" nicht
   bearbeiten, sondern melden – dann passt Schritt 02 nicht mehr zur
   Aufgabe.

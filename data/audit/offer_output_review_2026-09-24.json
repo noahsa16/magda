@@ -1,0 +1,227 @@
+{
+  "protocol": "visual-offer-pair-review-v1",
+  "reviewer": "Codex, visuelle Einzelfallprüfung; keine unabhängige Humanannotation",
+  "criterion": "Gedrucktes Produkt mit regulärem Preis auf derselben Seite. App- und Vergleichspreise zählen nicht als regulärer Preis. Echte Preis- oder Produktvarianten dürfen getrennte Angebote sein. Nach dem ersten Eintrag sind identische Ausgaben Dubletten.",
+  "codes": {
+    "C": "Produkt und Preis auf der Seite korrekt zugeordnet",
+    "I": "Produkt und Preis erkennbar, Name, Gruppierung oder Bedingung ungenau",
+    "W": "Produkt sichtbar, aber falscher Preis oder falsche Bedingung",
+    "D": "Dublette eines anderen ausgegebenen Angebots",
+    "S": "Kein entsprechendes Angebot auf der Seite",
+    "U": "Anhand des Seitenbildes nicht sicher entscheidbar"
+  },
+  "study_sha256": "1267452340b2ac6a0d60915a3fdd54395dbde2b1b39f5e1d0aac822250a3d24f",
+  "runtime_sha256": "1b776d147e7ff14260fb31a50d88954d00f3576a7777b94cba7ab2d75d9ab57b",
+  "pages": {
+    "1364390_p1": {
+      "magda": "CCCCC",
+      "qwen": "CCCCCCCCC",
+      "note": "Beide Systeme nennen nur gedruckte Produkt-Preis-Paare. Qwen trennt Pizza- und Schokoriegelvarianten."
+    },
+    "1364390_p10": {
+      "magda": "CCCCCCCC",
+      "qwen": "CCCICCCC",
+      "note": "Qwen schreibt Salakis Schaufskäse statt Schafskäse; Produkt und Preis sind erkennbar."
+    },
+    "1364390_p11": {
+      "magda": "CCCCCCC",
+      "qwen": "CCCCWICC",
+      "note": "Qwen nimmt beim Naturjoghurt den App-Preis 0,69 als regulären Preis. VFOOD ist ein Schreibfehler für YFOOD."
+    },
+    "1364390_p12": {
+      "magda": "CCCCC",
+      "qwen": "WCCCCCCCC",
+      "note": "Qwen setzt Suppennudeln auf 2,58 statt des gedruckten regulären Preises 1,39."
+    },
+    "1364390_p13": {
+      "magda": "CCCCCCCCC",
+      "qwen": "CCWCCWCCW",
+      "note": "Qwen verwendet bei Bratkartoffeln, Paniermehl und Milchreis App- statt regulärer Preise."
+    },
+    "1364390_p14": {
+      "magda": "CCCCCCC",
+      "qwen": "ICCCCCCC",
+      "note": "Apfeldreieck 1,00 gilt nur für zwei Stück zusammen; Qwen lässt die Mengenbedingung im Produkt-Preis-Paar weg."
+    },
+    "1364390_p15": {
+      "magda": "",
+      "qwen": "",
+      "note": "Reine Image-/Markenseite ohne ausgezeichnete Angebote."
+    },
+    "1364390_p16": {
+      "magda": "CCCC",
+      "qwen": "CCCCCC",
+      "note": "Alle genannten regulären Produkt-Preis-Paare sind sichtbar; Qwen findet zusätzlich Lasagne und Gnocchi."
+    },
+    "1364390_p17": {
+      "magda": "CCCCCCCC",
+      "qwen": "CCCCCCCCC",
+      "note": "Alle regulären Paare sichtbar; Qwen ergänzt Mini Mozzarella."
+    },
+    "1364390_p18": {
+      "magda": "CCCCCCC",
+      "qwen": "CCCCCCCC",
+      "note": "Alle regulären Paare sichtbar; Qwen ergänzt Jacobs Kaffee."
+    },
+    "1364390_p19": {
+      "magda": "CCCCCCC",
+      "qwen": "CCCCCCCC",
+      "note": "Alle regulären Paare sichtbar; Qwen trennt die beiden Mirácoli-Sorten."
+    },
+    "1364390_p2": {
+      "magda": "CCCCCC",
+      "qwen": "CICCCIC",
+      "note": "Die Referenz bündelt mehrere Obstarten und lässt die Blumen aus. Beide Systeme nennen sichtbare Angebote. Qwen vertippt Chiquita und Glattblattaster."
+    },
+    "1364390_p20": {
+      "magda": "CCCCCCCC",
+      "qwen": "CCCCWCCC",
+      "note": "Qwen nimmt für Gösser den App-Preis 0,79 statt 1,09 ohne App."
+    },
+    "1364390_p21": {
+      "magda": "IICCCCCCCC",
+      "qwen": "ICCCCCCCDCDCC",
+      "note": "Magda vermischt Parfum und Duschgel in beiden Namen. Qwen trennt sie, wiederholt Nimm2 und Tempo aber je einmal identisch."
+    },
+    "1364390_p22": {
+      "magda": "WWWWWWWW",
+      "qwen": "CCCCCCCCCCCC",
+      "note": "Magda ordnet auf der Vergleichsseite nahezu alle Preise den Nachbarprodukten zu; Qwen liest alle zwölf Paarungen korrekt."
+    },
+    "1364390_p23": {
+      "magda": "",
+      "qwen": "",
+      "note": "App-Werbeseite ohne konkrete Produktangebote."
+    },
+    "1364390_p24": {
+      "magda": "IIIICCCC",
+      "qwen": "WCDCDCCCCCCC",
+      "note": "Magda vermischt Always- und Gillette-Produkte mit verschiedenen Preisen in den Namen. Qwen wiederholt Ariel-Varianten und liest den nur mit App gültigen Oral-B-Preis als regulär."
+    },
+    "1364390_p25": {
+      "magda": "IIICCCCCCCCIIC",
+      "qwen": "CCCCCCCCCCCCCCCC",
+      "note": "Magda vermischt bei Bettwäsche und Frottier mehrere unterschiedlich bepreiste Produkte in einem Namen. Qwen trennt die gedruckten Varianten korrekt."
+    },
+    "1364390_p26": {
+      "magda": "IIIIICCC",
+      "qwen": "CCCCCCCCIC",
+      "note": "Magda nennt für fünf Kesper-Preise jeweils alle fünf Produkte. Qwen trennt sie, vertippt aber die Krups-Modellnummer."
+    },
+    "1364390_p27": {
+      "magda": "IICIIICCCII",
+      "qwen": "CCCCCCCWCCCCCC",
+      "note": "Magda vermischt mehrfach verschieden bepreiste Produkte. Qwen nennt die Etagere fälschlich mit 3,99 statt 9,99."
+    },
+    "1364390_p28": {
+      "magda": "CWCCCICCCC",
+      "qwen": "CCCCCCCCCCC",
+      "note": "Magda setzt den Multi-Roller auf 39,99 statt 9,99 und vermischt bei Socken Marken und Sorten. Qwen nennt die drei Transporthilfen getrennt."
+    },
+    "1364390_p29": {
+      "magda": "CCIICC",
+      "qwen": "CCCCCWCCC",
+      "note": "Magda bündelt verschiedene Elektroartikel unter mehreren Preisen. Qwen nennt die 5-fach-Steckdosenleiste mit 3,99 statt 4,99."
+    },
+    "1364390_p3": {
+      "magda": "CCCWIC",
+      "qwen": "CCCIIC",
+      "note": "Beide Systeme lassen beim Croissant die Bedingung zwei Stück für 1,00 weg. Magda gibt für sechs Brötchen den App-Preis 0,76 an; Qwen den Normalpreis 1,14, ebenfalls ohne Mengenangabe."
+    },
+    "1364390_p30": {
+      "magda": "C",
+      "qwen": "C",
+      "note": "Beide Systeme nennen das eine sichtbare Angebot."
+    },
+    "1364390_p31": {
+      "magda": "C",
+      "qwen": "C",
+      "note": "Beide Systeme nennen das eine sichtbare Angebot."
+    },
+    "1364390_p32": {
+      "magda": "CCCCCCCCC",
+      "qwen": "CCCCCCCCC",
+      "note": "Alle neun ausgegebenen Produkt-Preis-Paare beider Systeme sind sichtbar."
+    },
+    "1364390_p33": {
+      "magda": "CCCCCCCCCC",
+      "qwen": "CCCCCCICCCCCC",
+      "note": "Beide Systeme nennen die sichtbaren Paare. Qwen schreibt Zott Fruchtyoghurt statt Fruchtjoghurt."
+    },
+    "1364390_p34": {
+      "magda": "CCCCCCCC",
+      "qwen": "CCCCCCCC",
+      "note": "Alle sichtbaren XXL-Produkt-Preis-Paare korrekt."
+    },
+    "1364390_p35": {
+      "magda": "CCCCCCCC",
+      "qwen": "CCCCCCCC",
+      "note": "Alle sichtbaren XXL-Produkt-Preis-Paare korrekt."
+    },
+    "1364390_p36": {
+      "magda": "CCCCC",
+      "qwen": "CCCCCCCCI",
+      "note": "Alle Angebote im Bild sichtbar. Qwen schreibt Würzsauce am Ende unvollständig."
+    },
+    "1364390_p37": {
+      "magda": "CCCCCCCCCCC",
+      "qwen": "CCCCCCCCCCCCC",
+      "note": "Alle Produkt-Preis-Paare sichtbar; Qwen trennt Varianten häufiger einzeln."
+    },
+    "1364390_p38": {
+      "magda": "CCCC",
+      "qwen": "CCCCC",
+      "note": "Alle Paare sichtbar; Magda kombiniert LIGHT LIVE und FABER zum gleichen Preis."
+    },
+    "1364390_p40": {
+      "magda": "CCCCC",
+      "qwen": "ICCCCCCC",
+      "note": "SAN FABIO gilt nur beim Kauf von zwölf Gläsern; Qwen nennt die Bedingung im Angebot nicht."
+    },
+    "1364390_p5": {
+      "magda": "C",
+      "qwen": "C",
+      "note": "Rote Paprika mit 1,19 Euro sichtbar."
+    },
+    "1364390_p6": {
+      "magda": "CC",
+      "qwen": "CC",
+      "note": "Beide Naturgut-Angebote mit 1,99 Euro sichtbar."
+    },
+    "1364390_p7": {
+      "magda": "C",
+      "qwen": "CCC",
+      "note": "Qwen erkennt zusätzlich Kartoffeln und Möhren, die Magda nicht ausgibt."
+    },
+    "1364390_p8": {
+      "magda": "CCCCCCC",
+      "qwen": "CCCCCCCI",
+      "note": "Qwen schreibt Kasseler-Vollbraten statt Kasseler-Hüftbraten; Preis stimmt."
+    },
+    "1364390_p9": {
+      "magda": "CCCCCCC",
+      "qwen": "CCCCCCCC",
+      "note": "Alle Produkt-Preis-Paare sichtbar. Die beiden Wiener-Varianten haben denselben Preis."
+    },
+    "1364393_p15": {
+      "magda": "CCCCCCCC",
+      "qwen": "CCCCCCCC",
+      "note": "Alle acht sichtbaren Backwaren mit passenden Preisen."
+    },
+    "1364393_p25": {
+      "magda": "CIICIIIIIIIICC",
+      "qwen": "CCDIIIDICIIIIDIDCIDDIC",
+      "note": "Mehrere Varianten und Größen mit verschiedenen Preisen. Magda mischt Produktnamen über Preisgrenzen; Qwen dupliziert Angebote und lässt teils die preisbestimmende Größe oder Packung weg."
+    },
+    "1364411_p9": {
+      "magda": "CCCWCICCC",
+      "qwen": "CCCCCCCCICICCC",
+      "note": "Magda gibt den beiden kleinen Wiener-Produkten 2,99 statt 1,99 Euro und mischt bei WASNER Käsekrainer mit Regensburger. Qwen hat zwei Schreibfehler bei Käsekrainer."
+    },
+    "1364420_p8": {
+      "magda": "CCCCCCCC",
+      "qwen": "CCCCCCCI",
+      "note": "Alle Paare passen. Qwen schreibt Kasseler-Vollbraten statt Kasseler-Hüftbraten."
+    }
+  }
+}

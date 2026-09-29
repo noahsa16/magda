@@ -1,0 +1,25 @@
+\section{Experimental Design and Evaluation}\label{sec:evaluation}
+\subsection{Evaluation setup}
+To create the human reference, we developed a web-based annotation tool that displays the extracted words on the flyer image. Annotation followed two steps. First, entity spans such as product names, prices and quantities were labelled and reviewed manually. The labelled entities were then assigned to offer groups. This produced separate references for entity recognition and grouping on the 42 test pages.
+
+For the grouping comparison, the rule-based heuristic and learned model receive the same human-annotated entities. The learned grouper is also evaluated on LayoutXLM predictions to include recognition errors. Finally, Magda and the vision-language systems are compared on product names and regular prices. Earlier feature and decoder experiments use automatically annotated groups as their reference and are reported separately.
+
+\subsection{Evaluation metrics}
+Precision ($P$) is the proportion of predictions that match the reference. Recall ($R$) is the proportion of reference items recovered. F1 combines both:
+\begin{equation}
+ F_1=\frac{2PR}{P+R}.
+\end{equation}
+Counts are pooled across pages before calculating micro-F1.
+
+Entity recognition uses the SemEval matching schemes \citep{segura2013}. \emph{Strict}, our primary metric, requires exact word boundaries and the correct entity type. \emph{Exact} checks boundaries only. \emph{Partial} ignores type and gives full credit for exact boundaries or half credit for an overlapping span. \emph{Type} requires the correct type and at least one overlapping word. Thus, predicting ``Butter'' instead of ``Frische Butter'' fails Strict but can receive Partial or Type credit.
+
+Pair F1 measures whether entity pairs share an offer as in the reference. Large groups contribute more pairs. Exact group F1 requires the complete set of matched entities to agree, so one missing or additional entity can invalidate a group. Unmapped entities are reported separately.
+
+A predicted record matches a reference record if their regular prices are identical and their names reach a character-based similarity score of at least 0.6 on a scale from 0 to 1. This cutoff was chosen to allow differences in wording and was not calibrated as an optimal value. The assignment maximises the number of matches while counting each prediction and reference record at most once. Records without a usable name or regular price are excluded from both predictions and reference. Failed external responses count as empty outputs. Record F1 covers product names and regular prices. Other fields, such as quantity and app conditions, are outside this score.
+
+\subsection{Uncertainty and interpretation}
+A small F1 difference may depend on which pages are evaluated. To examine this uncertainty, we use a paired bootstrap, a resampling approach discussed by \citet{dror2018}. Each resample draws 42 times from the 42 test pages, with replacement. Some pages therefore appear several times, while others are absent. For example, three pages $A,B,C$ could be resampled as $A,A,C$. The sample size stays constant, but $A$ counts twice and $B$ does not contribute. Both systems receive exactly the same selection. Their saved outputs are used to recompute pooled F1 and the difference between systems, without retraining or new model requests.
+
+The 42 pages each represent a different template cluster, formed using word-set Jaccard similarity at a threshold of 0.7. This lower cutoff groups broader regional variants, whereas duplicate filtering at 0.95 targets nearly identical content. Both cutoffs were chosen heuristically and were not calibrated as optimal values. Selecting one page per cluster limits repeated regional variants but does not guarantee independence. The percentile bootstrap uses 10,000 resamples with seed 42. It estimates uncertainty from the available pages and does not provide new test data.
+
+An unadjusted 95\% interval spans the middle 95\% of the resampled F1 differences. Bonferroni-adjusted intervals account for multiple comparisons in two exploratory families, four recognition comparisons and three original API comparisons against Magda. The later Qwen3.8 and Astra comparisons are reported separately. An interval that includes zero establishes neither a clear winner nor equivalence. These intervals describe resampling of fixed outputs and labels, excluding uncertainty from annotation errors, retraining or repeated model requests.

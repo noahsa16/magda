@@ -1,0 +1,62 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[margin=28mm,top=24mm,bottom=26mm]{geometry}
+\usepackage{fontspec}
+\IfFontExistsTF{TeX Gyre Termes}{\setmainfont{TeX Gyre Termes}}{\setmainfont{Times New Roman}}
+\IfFontExistsTF{TeX Gyre Heros}{\setsansfont{TeX Gyre Heros}}{\setsansfont{Arial}}
+\IfFontExistsTF{TeX Gyre Cursor}{\setmonofont{TeX Gyre Cursor}[Scale=0.85]}{\setmonofont{Courier New}[Scale=0.85]}
+\usepackage{microtype,amsmath,booktabs,tabularx,graphicx,caption}
+\usepackage[authoryear,round]{natbib}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning}
+\usepackage[hidelinks]{hyperref}
+\hypersetup{pdftitle={Magda: From Supermarket Flyers to Structured Offers},
+  pdfauthor={Bogdan Roth, Kjell Lavezzari, Noah Samel},
+  pdfsubject={Information Extraction, Summer Semester 2026}}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{5pt plus 1pt minus 1pt}
+\linespread{1.04}
+\setlength{\emergencystretch}{2em}
+\setlength{\tabcolsep}{5pt}
+\renewcommand{\arraystretch}{1.15}
+\captionsetup{font=small,labelfont=bf,skip=7pt}
+\setlength{\textfloatsep}{16pt plus 3pt minus 3pt}
+\renewcommand{\topfraction}{.9}
+\renewcommand{\bottomfraction}{.8}
+\renewcommand{\textfraction}{.08}
+\renewcommand{\floatpagefraction}{.8}
+\setcounter{totalnumber}{6}
+\setcounter{topnumber}{4}
+\setcounter{bottomnumber}{4}
+\newcommand{\entity}[1]{\textsf{\small #1}}
+\newcommand{\file}[1]{{\small\nolinkurl{#1}}}
+\newcommand{\tabnote}[1]{\par\vspace{3pt}{\footnotesize #1\par}}
+\title{\vspace{-1.3em}Magda: From Supermarket Flyers\\to Structured Offers}
+\author{Bogdan Roth\qquad Kjell Lavezzari\qquad Noah Samel\\[4pt]
+  \small Leuphana University Lüneburg\\
+  \small Information Extraction, Summer Semester 2026}
+\date{23 September 2026}
+
+\begin{document}
+\maketitle
+\vspace{-1.3em}
+\input{sections/00-abstract}
+\input{sections/01-introduction}
+\input{sections/02-related-work}
+\input{sections/03-data}
+\input{sections/04-methods}
+\input{sections/05-evaluation}
+\input{sections/06-results}
+\input{sections/07-discussion}
+\input{sections/08-limitations}
+\input{sections/09-conclusion}
+\begingroup
+\small
+\setlength{\bibsep}{4pt}
+\interlinepenalty=10000
+\exhyphenpenalty=10000
+\bibliographystyle{plainnat}
+\bibliography{references}
+\endgroup
+\appendix
+\input{sections/10-appendix}
+\end{document}

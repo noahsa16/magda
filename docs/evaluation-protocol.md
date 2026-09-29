@@ -92,8 +92,9 @@ Historische v1-Ergebnisse sind nicht direkt mit v2 vergleichbar.
 Paar- und exakte Gruppen-F1 bewerten die Gruppierung der vorhandenen Entities.
 Bei vorhergesagten Entities ist diese Aufgabe bedingt auf die Ausgabe des NER.
 Deshalb Entity-F1, überlebende Referenzpaare und Gruppierungs-F1 gemeinsam nennen;
-Gruppen-F1 allein ist kein vollständiger Ende-zu-Ende-Score (siehe die Kette
-in `CLAUDE.md`, „Die Kette kostet fast nichts").
+Gruppen-F1 allein ist kein vollständiger Ende-zu-Ende-Score. Die
+[Fallstudie](../data/eval/study-2026-09-16/report.md) berichtet Erkennung,
+Gruppierung und Produkt-Preis-Matching getrennt.
 
 Die Kette `xlmr → lilt → layoutxlm` ist ein Architekturvergleich. Wegen
 unterschiedlicher Vortrainingsverfahren isoliert sie keine kausale Wirkung

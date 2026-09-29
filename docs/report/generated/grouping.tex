@@ -1,0 +1,10 @@
+% Automatisch aus gespeicherten Ergebnissen erzeugt.
+\begin{tabular}{@{}l>{\raggedright\arraybackslash}p{29mm}rrlr@{}}
+\toprule
+Grouping method & Entity input & Pair F1 & Group F1 & 95\% CI (group) & Unmapped \\
+\midrule
+Rule-based & Human-annotated entities & 0.7291 & 0.4164 & $[0.3094,\,0.5329]$ & 49 \\
+MLP + ILP & Human-annotated entities & 0.9168 & 0.7112 & $[0.5977,\,0.8090]$ & 49 \\
+MLP + ILP & LayoutXLM predictions & 0.9267 & 0.7264 & $[0.6197,\,0.8180]$ & 212 \\
+\bottomrule
+\end{tabular}
